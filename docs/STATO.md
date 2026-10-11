@@ -2,13 +2,21 @@
 
 Ultimo aggiornamento: 2026-10-11
 
+## Prossima sessione: Fase 1.5 – Laboratorio (base)
+
+Approvata da Giuse il 2026-10-11. Schede:
+1. **Campionati**: scegli campionato e stagione → classifica finale e numeri del campionato (1/X/2, media gol, Over 2.5, Goal, fattore campo), confronto tra stagioni e gironi.
+2. **Squadre**: storia stagione per stagione, tutte le partite, casa/trasferta, scontri diretti.
+
+Poi: Fase 2 – Giocate (registrazione giocate reali e simulate, statistiche di gioco, limiti, fotografia al momento della giocata).
+
 ## Da fare al PC (Giuse)
 
 Le attività manuali sono raccolte qui, da fare tutte insieme quando sei al computer.
 
 Nessuna attività in sospeso. (Account API-Football creato il 2026-10-11, chiave salvata in `backend/.env`.)
 
-## Fase 1 – Partite (in corso)
+## Fase 1 – Partite: CONCLUSA per il piano gratuito (2026-10-11)
 
 Criterio di fine fase: dati Serie A, B e C (storico e calendario), elenco partite con filtri, pagina partita con statistiche vere.
 
@@ -26,7 +34,7 @@ Criterio di fine fase: dati Serie A, B e C (storico e calendario), elenco partit
 
 Test: 66 backend + 6 frontend, tutti verdi.
 
-Nota: con il piano gratuito il criterio "calendario Serie C" della Fase 1 resta aperto; tutto il resto della fase è fatto. Proposta: considerare la Fase 1 chiusa "per il piano gratuito" e passare alla Fase 2 (giocate), che non dipende dai dati in diretta.
+Il criterio "calendario Serie C in corso" si completa attivando il piano a pagamento (vedi sopra); Giuse ha deciso di farlo quando tutto sarà pronto.
 
 ## Fase 0 – Setup: CONCLUSA (2026-10-11)
 

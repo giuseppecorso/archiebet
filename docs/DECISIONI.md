@@ -45,6 +45,9 @@ Ogni decisione importante con data, scelta e motivo. Le decisioni di prodotto so
 | D31 | Salvati stadio, città e giornata; tabella `match_sources` con l'id della partita su ogni fonte | Stadio e città servono per meteo, campi sintetici e distanze di trasferta (focus Serie C); l'id serve per formazioni e live. |
 | D32 | Freni su API-Football: 6,5 secondi tra le chiamate, riserva di 10 richieste al giorno, errori mai salvati in cache | Rispetta i limiti del piano (10 al minuto, 100 al giorno) anche con l'aggiornamento automatico. |
 
+| D33 | Nuova sezione **Laboratorio** (idea di Giuse): schede Campionati e Squadre subito (Fase 1.5), Strategie in Fase 7 | Serve a studiare i campionati (soprattutto la Serie C) prima di modellarli; perimetro piccolo per non rallentare modello e valore. |
+| D34 | Fase 1 chiusa "per il piano gratuito": la stagione in corso arriva con il piano a pagamento di API-Football | Decisione di Giuse: si paga quando tutto è pronto. |
+
 **Scoperte sui dati (da usare in Fase 3-4):**
 - football-data aggiorna i risultati della stagione in corso con settimane di ritardo (ultimo aggiornamento al 21/09/2026). Il calendario delle prossime partite invece è fresco. Serve API-Football per risultati recenti e Serie C.
 - Pinnacle sparisce a metà 2025/26 (200 partite su 380 in A, 90 in B) e manca nel 2026/27. Betfair Exchange copre ~95% delle partite dal 2024/25. **Da decidere in Fase 3:** riferimento di mercato e CLV per la cassaforte 2025/26 (proposta: Pinnacle dove c'è, altrimenti Betfair Exchange di chiusura).

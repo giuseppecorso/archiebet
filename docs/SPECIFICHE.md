@@ -38,7 +38,12 @@ Colori con significato fisso: verde = valore/vinta, rosso = persa/valore negativ
 5. Gioca (solo crediti finti)
    - Simulatore partita (10.000 simulazioni, partita "dal vivo" sul tabellone, comandi "E se...").
    - Sfida contro Archie (pronostici a giornata, crediti, classifica, amici invitabili).
-6. Impostazioni: limiti di gioco (budget settimanale/mensile), campionati seguiti, bookmaker (Sisal, Eurobet, bet365, Snai, Lottomatica, Goldbet, Betsson, Planetwin365), soglie di valore, squadra del cuore.
+6. Laboratorio (aggiunto il 2026-10-11, idea di Giuse)
+   - Campionati: per campionato e stagione, classifica finale e numeri del campionato (1/X/2 in casa e fuori, media gol, Over 2.5, Goal), confronto tra stagioni e tra gironi.
+   - Squadre: storia stagione per stagione (categoria, posizione, punti, gol), tutte le partite, casa/trasferta, scontri diretti.
+   - Strategie: il "Laboratorio strategie" della sezione 6.5 (Fase 7).
+   - Solo dati e numeri calcolati dal codice; niente pronostici.
+7. Impostazioni: limiti di gioco (budget settimanale/mensile), campionati seguiti, bookmaker (Sisal, Eurobet, bet365, Snai, Lottomatica, Goldbet, Betsson, Planetwin365), soglie di valore, squadra del cuore.
 
 ## 4. Regole di decisione di Archie
 1. Il modello (Dixon-Coles all'inizio) stima la probabilità di ogni risultato esatto; da lì tutti i mercati, coerenti tra loro.
@@ -118,6 +123,7 @@ Forma squadra (xG, Elo, punti), forma e importanza dei giocatori, infortuni e sq
 ## 13. Fasi (ognuna finisce solo quando il criterio è soddisfatto)
 - Fase 0 – Setup: controllo Python, Node.js, Git sul PC; repo GitHub privato; scheletro backend e frontend in stile approvato, già con le basi di scalabilità (sezione 14); docs/STATO.md, docs/DECISIONI.md, docs/IDEE.md. Fatto: l'app si apre con il menu delle sezioni.
 - Fase 1 – Partite: dati Serie A, B e C (storico e calendario), elenco partite con filtri, pagina partita con statistiche vere.
+- Fase 1.5 – Laboratorio (base): schede Campionati e Squadre sui dati già presenti. Fatto: si studiano classifica e numeri di ogni campionato/stagione e la storia di ogni squadra.
 - Fase 2 – Giocate: registrazione giocate reali e simulate, chiusura automatica, statistiche di gioco, limiti, fotografia al momento della giocata.
 - Fase 3 – Modello: Dixon-Coles + rating di forza (anche per la Serie C), mercati, backtest walk-forward, prova del nove dei fattori, verdetto sulla cassaforte. Suggerimenti "in prova" fino al verdetto.
 - Fase 4 – Quote e valore: test OddsPapi, quote automatiche, valore, radar mercato, quote fuori linea, Multipla del giorno, generatore, dove conviene giocarla, Io contro Archie. Parte il mese di simulazione (giudicato su CLV e calibrazione).
