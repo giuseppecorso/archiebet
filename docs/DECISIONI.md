@@ -39,7 +39,15 @@ Ogni decisione importante con data, scelta e motivo. Le decisioni di prodotto so
 | D26 | Avviso "Dati incompleti" quando mancano risultati già giocati | Archie non mostra mai numeri incompleti come se fossero completi. |
 | D27 | Budget stile per componente portato a 8 kB (avviso) | Le pagine dense di dati superano i 4 kB predefiniti; gli stili comuni delle tabelle sono stati spostati nello stile globale. |
 
+| D28 | API-Football con piano **gratuito** finché tutto è pronto (decisione di Giuse) | Il piano Free dà solo le stagioni 2022-2024; la stagione in corso richiede il piano a pagamento, da attivare quando servono i dati in diretta. |
+| D29 | Squadre di API-Football riconosciute dal loro id numerico, non dal nome | API-Football usa il nome attuale anche nelle stagioni vecchie (Monterosi Tuscia → "Guidonia Montecelio 1937"). |
+| D30 | Unione delle squadre tra fonti con nomi "ripuliti" + regole esplicite per le rifondazioni (Vicenza, Siena, Carpi) e nomi italiani per le seconde squadre (Atalanta U23, Milan Futuro) | 34 squadre unite automaticamente tra Serie B e C; comando `tidy-teams` per riapplicare le regole. |
+| D31 | Salvati stadio, città e giornata; tabella `match_sources` con l'id della partita su ogni fonte | Stadio e città servono per meteo, campi sintetici e distanze di trasferta (focus Serie C); l'id serve per formazioni e live. |
+| D32 | Freni su API-Football: 6,5 secondi tra le chiamate, riserva di 10 richieste al giorno, errori mai salvati in cache | Rispetta i limiti del piano (10 al minuto, 100 al giorno) anche con l'aggiornamento automatico. |
+
 **Scoperte sui dati (da usare in Fase 3-4):**
 - football-data aggiorna i risultati della stagione in corso con settimane di ritardo (ultimo aggiornamento al 21/09/2026). Il calendario delle prossime partite invece è fresco. Serve API-Football per risultati recenti e Serie C.
 - Pinnacle sparisce a metà 2025/26 (200 partite su 380 in A, 90 in B) e manca nel 2026/27. Betfair Exchange copre ~95% delle partite dal 2024/25. **Da decidere in Fase 3:** riferimento di mercato e CLV per la cassaforte 2025/26 (proposta: Pinnacle dove c'è, altrimenti Betfair Exchange di chiusura).
 - Gli xG di football-data esistono solo dal 2026/27.
+- API-Football, Serie C: risultati, stadi, giornate, formazioni e classifiche sì; statistiche delle partite (tiri, corner) no. Codici: Serie A 135, Serie B 136, Serie C gironi A/B/C 138/942/943.
+- La stagione 2025/26 della Serie C (cassaforte) non è nel piano gratuito: servirà il piano a pagamento almeno per un mese prima del verdetto.

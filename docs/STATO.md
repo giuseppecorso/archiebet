@@ -6,7 +6,7 @@ Ultimo aggiornamento: 2026-10-11
 
 Le attività manuali sono raccolte qui, da fare tutte insieme quando sei al computer.
 
-1. **Account API-Football (gratis)**: registrati su https://dashboard.api-football.com/register e copia la tua API key. Poi la inseriamo insieme nel file `backend/.env` (mai in chat, mai su Git). Serve per: risultati recenti di Serie A e B, tutta la Serie C.
+Nessuna attività in sospeso. (Account API-Football creato il 2026-10-11, chiave salvata in `backend/.env`.)
 
 ## Fase 1 – Partite (in corso)
 
@@ -19,10 +19,14 @@ Criterio di fine fase: dati Serie A, B e C (storico e calendario), elenco partit
 - [x] Aggiornamento automatico ogni 6 ore mentre il backend è acceso (anche a mano: `python -m app.cli sync`)
 - [x] Dashboard: filtri Serie A/B, schede Tutte / Prossime / Risultati (Live in Fase 5), quote medie, stato "Risultato in arrivo"
 - [x] Pagina partita: forma (V verde, N ambra, P rossa), statistiche a confronto, classifica, precedenti, ultime partite, quote apertura → chiusura, statistiche della partita, avviso "Dati incompleti"
-- [ ] **API-Football** (serve la chiave): risultati recenti di Serie A e B, calendario e risultati della Serie C (3 gironi)
-- [ ] Serie C nella dashboard e nella pagina partita
+- [x] API-Football collegato (piano gratuito): storico Serie C 2022/23-2024/25, 3 gironi → 3.420 partite con stadi e giornate
+- [x] Squadre unite tra le due fonti (34 automaticamente, 3 rifondazioni a mano), nomi italiani per le seconde squadre
+- [x] Serie C nella dashboard (filtri per girone) e nella pagina partita
+- [ ] **Stagione in corso di Serie C e risultati aggiornati di A e B**: arrivano con il piano a pagamento di API-Football, da attivare quando tutto è pronto (decisione di Giuse). Basterà aggiungere `2025,2026` a `API_FOOTBALL_SEASONS` e `135,136` a `API_FOOTBALL_LEAGUES` in `backend/.env`.
 
-Test: 53 backend + 6 frontend, tutti verdi.
+Test: 66 backend + 6 frontend, tutti verdi.
+
+Nota: con il piano gratuito il criterio "calendario Serie C" della Fase 1 resta aperto; tutto il resto della fase è fatto. Proposta: considerare la Fase 1 chiusa "per il piano gratuito" e passare alla Fase 2 (giocate), che non dipende dai dati in diretta.
 
 ## Fase 0 – Setup: CONCLUSA (2026-10-11)
 
