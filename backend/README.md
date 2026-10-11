@@ -6,17 +6,17 @@ FastAPI + SQLAlchemy (SQLite in locale). Comandi da lanciare dentro `backend/` (
 
 ```powershell
 python -m venv .venv
-.venv\Scripts\python -m pip install -e ".[dev]"
+.\.venv\Scripts\python -m pip install -e ".[dev]"
 copy .env.example .env
-.venv\Scripts\alembic upgrade head
-.venv\Scripts\python -m app.cli create-user giuse --admin
+.\.venv\Scripts\alembic upgrade head
+.\.venv\Scripts\python -m app.cli create-user giuse --admin
 ```
 
 ## Uso quotidiano
 
 ```powershell
-.venv\Scripts\uvicorn app.main:app --reload --port 8000   # avvia il server
-.venv\Scripts\python -m pytest                             # esegue i test
+.\.venv\Scripts\uvicorn app.main:app --reload --port 8000   # avvia il server
+.\.venv\Scripts\python -m pytest                             # esegue i test
 ```
 
 Documentazione interattiva delle API: http://localhost:8000/docs
@@ -26,8 +26,8 @@ Documentazione interattiva delle API: http://localhost:8000/docs
 Dopo aver cambiato un modello in `app/models/`:
 
 ```powershell
-.venv\Scripts\alembic revision --autogenerate -m "descrizione della modifica"
-.venv\Scripts\alembic upgrade head
+.\.venv\Scripts\alembic revision --autogenerate -m "descrizione della modifica"
+.\.venv\Scripts\alembic upgrade head
 ```
 
 ## Struttura

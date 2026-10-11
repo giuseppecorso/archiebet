@@ -16,7 +16,7 @@ Servono due terminali aperti nella cartella del progetto.
 
 ```powershell
 cd backend
-.venv\Scripts\uvicorn app.main:app --reload --port 8000
+.\.venv\Scripts\uvicorn app.main:app --reload --port 8000
 ```
 
 **Terminale 2 – frontend**
@@ -32,9 +32,12 @@ Poi apri http://localhost:4200
 
 ```powershell
 cd backend
-.venv\Scripts\python -m app.cli create-user giuse --admin
+.\.venv\Scripts\python -m app.cli create-user giuse --admin
 ```
 
 La password (almeno 10 caratteri) non si vede mentre la scrivi: è normale.
+
+> In PowerShell i programmi con percorso relativo vanno scritti con `.\` davanti
+> (`.\.venv\...`), altrimenti PowerShell risponde "Impossibile caricare il modulo".
 
 Dettagli del backend: [backend/README.md](backend/README.md).
