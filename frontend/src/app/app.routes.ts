@@ -3,7 +3,12 @@ import { authGuard } from './core/auth.guard';
 import { SECTIONS } from './core/sections';
 import { Shell } from './layout/shell';
 import { Login } from './pages/login/login';
+import { MatchPage } from './pages/match/match';
+import { Matches } from './pages/matches/matches';
 import { SectionPlaceholder } from './pages/section-placeholder/section-placeholder';
+
+/** Sezioni già costruite; le altre mostrano la pagina provvisoria */
+const BUILT: Record<string, Routes[number]['component']> = { partite: Matches };
 
 export const routes: Routes = [
   { path: 'login', component: Login, title: 'Accedi · ArchieBet' },
@@ -13,9 +18,10 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'partite' },
+      { path: 'partite/:id', component: MatchPage, title: 'Partita · ArchieBet' },
       ...SECTIONS.map((section) => ({
         path: section.path,
-        component: SectionPlaceholder,
+        component: BUILT[section.path] ?? SectionPlaceholder,
         title: `${section.label} · ArchieBet`,
         data: { section },
       })),

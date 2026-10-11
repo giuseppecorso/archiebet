@@ -90,6 +90,7 @@ def test_match_detail_uses_only_past_data(logged_client, seeded, db):
 
     assert [(h["home"]["name"], h["home_goals"]) for h in detail["head_to_head"]] == [("Inter", 2)]
     assert detail["match_stats"] is None
+    assert detail["missing_results"] == 1  # Lazio-Milan, giocata 3 giorni fa, senza risultato
     avg = next(o for o in detail["odds"] if o["bookmaker"] == "market_avg" and o["market"] == "1X2")
     assert avg["opening"] == {"1": 3.1, "X": 3.4, "2": 2.3} and avg["closing"] == {}
 
@@ -100,6 +101,7 @@ def test_finished_match_has_stats_and_pre_match_table(logged_client, seeded, db)
     assert detail["match_stats"]["shots"] == [7, 14]
     # La classifica è quella PRIMA della partita: dopo una sola giornata
     assert [row["played"] for row in detail["standings"]] == [1, 1, 1, 1]
+    assert detail["missing_results"] == 0  # Lazio-Milan è successiva a questa partita
 
 
 def test_unknown_match(logged_client, seeded):

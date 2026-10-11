@@ -1,0 +1,68 @@
+import { httpResource } from '@angular/common/http';
+import { Component, computed, effect, signal } from '@angular/core';
+import { Competition, CompetitionGroup } from '../../core/football';
+import { MatchRow } from '../../shared/match-row';
+
+type Tab = 'tutte' | 'prossime' | 'risultati';
+const STORAGE_KEY = 'archiebet.matches.filters';
+
+/** Dashboard "Partite": elenco per campionato con filtri. Multipla, schedina e ArchieTV arrivano nelle fasi successive. */
+@Component({
+  selector: 'ab-matches',
+  imports: [MatchRow],
+  templateUrl: './matches.html',
+  styleUrl: './matches.scss',
+})
+export class Matches {
+  private readonly saved = readSaved();
+
+  protected readonly tab = signal<Tab>(this.saved.tab ?? 'tutte');
+  /** Campionati esclusi dal filtro (così quelli nuovi compaiono da soli) */
+  protected readonly hidden = signal<string[]>(this.saved.hidden ?? []);
+
+  protected readonly competitions = httpResource<Competition[]>(() => '/api/competitions', { defaultValue: [] });
+  protected readonly selected = computed(() =>
+    this.competitions.value().filter((c) => !this.hidden().includes(c.code)),
+  );
+
+  private readonly query = computed(() => {
+    const codes = this.selected().map((c) => c.code);
+    return codes.length ? `&competitions=${codes.join(',')}` : null;
+  });
+
+  protected readonly upcoming = httpResource<CompetitionGroup[]>(() => {
+    const q = this.query();
+    return q && this.tab() !== 'risultati' ? `/api/matches?view=upcoming${q}` : undefined;
+  });
+  protected readonly results = httpResource<CompetitionGroup[]>(() => {
+    const q = this.query();
+    const limit = this.tab() === 'tutte' ? 10 : 40;
+    return q && this.tab() !== 'prossime' ? `/api/matches?view=results&limit=${limit}${q}` : undefined;
+  });
+
+  constructor() {
+    effect(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ tab: this.tab(), hidden: this.hidden() }));
+      } catch {
+        // memoria del browser non disponibile: i filtri valgono solo per questa visita
+      }
+    });
+  }
+
+  protected toggle(code: string): void {
+    this.hidden.update((h) => (h.includes(code) ? h.filter((c) => c !== code) : [...h, code]));
+  }
+
+  protected isOn(code: string): boolean {
+    return !this.hidden().includes(code);
+  }
+}
+
+function readSaved(): { tab?: Tab; hidden?: string[] } {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
+  } catch {
+    return {};
+  }
+}

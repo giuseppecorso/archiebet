@@ -1,0 +1,187 @@
+<div class="top">
+  <a routerLink="/partite" class="back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    Torna alle partite
+  </a>
+  <span class="badge info">Statistiche al calcio d'inizio</span>
+</div>
+
+@if (detail.isLoading() && !detail.hasValue()) {
+  <p class="state">Carico la partita…</p>
+} @else if (detail.error()) {
+  <p class="state error" role="alert">Partita non trovata o backend spento.</p>
+} @else if (detail.value(); as d) {
+  @let m = d.match;
+
+  <section class="header" aria-label="Intestazione partita">
+    <div class="side-team">
+      <h1 class="title team-name">{{ m.home.name }}</h1>
+      <ab-form-badges [outcomes]="outcomes('home')" [team]="m.home.name" />
+    </div>
+
+    <div class="center">
+      <div class="label">{{ m.competition.name }} · {{ m.season }}</div>
+      @if (m.status === 'finished') {
+        <div class="led big-score" [attr.aria-label]="'Finita ' + m.home_goals + ' a ' + m.away_goals">{{ m.home_goals }}-{{ m.away_goals }}</div>
+        <div class="when">Finale · {{ fmt.longDate(m.kickoff_at) }}</div>
+      } @else {
+        <div class="led big-time">{{ fmt.kickoffTime(m.kickoff_at, m.kickoff_has_time) }}</div>
+        <div class="when">{{ fmt.dayLabel(m.kickoff_at) }} · {{ fmt.longDate(m.kickoff_at) }}</div>
+        @if (m.status === 'awaiting_result') {
+          <span class="badge awaiting">Risultato in arrivo</span>
+        }
+      }
+    </div>
+
+    <div class="side-team">
+      <h1 class="title team-name">{{ m.away.name }}</h1>
+      <ab-form-badges [outcomes]="outcomes('away')" [team]="m.away.name" />
+    </div>
+  </section>
+
+  @if (d.missing_results > 0) {
+    <p class="warning" role="status">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l10 18H2z"></path><path d="M12 10v5"></path><path d="M12 18h.01"></path></svg>
+      <span><strong>Dati incompleti:</strong> mancano almeno {{ d.missing_results }} risultati di {{ m.competition.name }} già giocati. La fonte attuale li pubblica in ritardo: classifica e medie potrebbero non essere aggiornate.</span>
+    </p>
+  }
+
+  <section class="panel archie-soon" aria-label="Probabilità di Archie">
+    <span class="title">Probabilità di Archie</span>
+    <span>Le stime 1 / X / 2 e il valore arrivano con il modello (Fase 3) e le quote dei bookmaker italiani (Fase 4).</span>
+  </section>
+
+  <div class="grid">
+    <div class="main-col">
+      <section class="panel box" aria-labelledby="cmp-title">
+        <div class="box-head">
+          <h2 id="cmp-title" class="title box-title">Statistiche a confronto</h2>
+          <div role="tablist" aria-label="Partite considerate" class="seg">
+            <button type="button" role="tab" [attr.aria-selected]="scope() === 'season'" (click)="scope.set('season')">Stagione</button>
+            <button type="button" role="tab" [attr.aria-selected]="scope() === 'venue'" (click)="scope.set('venue')">Casa · Trasferta</button>
+          </div>
+        </div>
+        <div class="cmp-teams title">
+          <span class="home-name">{{ m.home.name }} <small>({{ d.home[scope()].played }} partite{{ scope() === 'venue' ? ' in casa' : '' }})</small></span>
+          <span>{{ m.away.name }} <small>({{ d.away[scope()].played }}{{ scope() === 'venue' ? ' in trasferta' : ' partite' }})</small></span>
+        </div>
+        <div class="bars">
+          @for (s of stats(); track s.label) {
+            <div class="bar-row">
+              <span class="led v home">{{ s.home }}</span>
+              <div class="track right"><div class="fill home" [style.width.%]="s.homeWidth"></div></div>
+              <span class="bar-label">{{ s.label }}</span>
+              <div class="track"><div class="fill away" [style.width.%]="s.awayWidth"></div></div>
+              <span class="led v away">{{ s.away }}</span>
+            </div>
+          }
+        </div>
+        <p class="note">Solo partite di {{ m.competition.name }} {{ m.season }} giocate prima del calcio d'inizio. Gli xG sono disponibili dalla stagione 2026/27.</p>
+      </section>
+
+      @if (matchStats().length) {
+        <section class="panel box" aria-labelledby="ms-title">
+          <h2 id="ms-title" class="title box-title">La partita</h2>
+          <table class="simple">
+            <thead><tr><th scope="col">{{ m.home.name }}</th><th scope="col"><span class="visually-hidden">Statistica</span></th><th scope="col">{{ m.away.name }}</th></tr></thead>
+            <tbody>
+              @for (s of matchStats(); track s.label) {
+                <tr><td class="led num">{{ s.home }}</td><th scope="row">{{ s.label }}</th><td class="led num">{{ s.away }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+
+      <section class="panel box" aria-labelledby="odds-title">
+        <div class="box-head">
+          <h2 id="odds-title" class="title box-title">Quote</h2>
+          <span class="muted small">apertura → chiusura · fonte football-data</span>
+        </div>
+        @if (oddsRows().length) {
+          <div class="table-wrap">
+            <table class="odds">
+              <thead>
+                <tr><th scope="col">Bookmaker</th><th scope="col">1</th><th scope="col">X</th><th scope="col">2</th><th scope="col">Over 2.5</th><th scope="col">Under 2.5</th></tr>
+              </thead>
+              <tbody>
+                @for (row of oddsRows(); track row.label) {
+                  <tr>
+                    <th scope="row">{{ row.label }}</th>
+                    @for (cell of row.cells; track $index) {
+                      <td>
+                        @if (cell.open || cell.close) {
+                          <span class="led price">{{ fmt.odds(cell.open) }}</span>
+                          @if (cell.close) {
+                            <span class="close">→ {{ fmt.odds(cell.close) }}</span>
+                          }
+                        } @else {
+                          <span class="muted">–</span>
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="muted">Nessuna quota disponibile per questa partita.</p>
+        }
+      </section>
+    </div>
+
+    <aside class="side-col">
+      <section class="panel box" aria-labelledby="table-title">
+        <h2 id="table-title" class="title box-title">Classifica</h2>
+        @if (d.standings.length) {
+          <table class="standings">
+            <thead>
+              <tr><th scope="col">#</th><th scope="col">Squadra</th><th scope="col"><abbr title="Partite giocate">G</abbr></th><th scope="col"><abbr title="Differenza reti">DR</abbr></th><th scope="col"><abbr title="Punti">Pt</abbr></th></tr>
+            </thead>
+            <tbody>
+              @for (row of d.standings; track row.team.id) {
+                <tr [class.playing]="isPlaying(row.team.id)">
+                  <td>{{ row.rank }}</td>
+                  <th scope="row">{{ row.team.name }}</th>
+                  <td>{{ row.played }}</td>
+                  <td>{{ row.goals_for - row.goals_against > 0 ? '+' : '' }}{{ row.goals_for - row.goals_against }}</td>
+                  <td class="led pts">{{ row.points }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <p class="note">Prima di questa partita. Senza eventuali penalizzazioni.</p>
+        } @else {
+          <p class="muted">Prima giornata: classifica non ancora disponibile.</p>
+        }
+      </section>
+
+      <section class="panel box" aria-labelledby="h2h-title">
+        <h2 id="h2h-title" class="title box-title">Precedenti</h2>
+        @for (h of d.head_to_head; track h.id) {
+          <a class="h2h" [routerLink]="['/partite', h.id]">
+            <span class="muted small">{{ h.season }}</span>
+            <span class="h2h-teams">{{ h.home.name }} <span class="led">{{ h.home_goals }}-{{ h.away_goals }}</span> {{ h.away.name }}</span>
+          </a>
+        } @empty {
+          <p class="muted">Nessun precedente dal 2005 nei nostri dati.</p>
+        }
+      </section>
+
+      <section class="panel box" aria-labelledby="form-title">
+        <h2 id="form-title" class="title box-title">Ultime partite</h2>
+        @for (side of [d.home, d.away]; track side.team.id) {
+          <div class="form-team title">{{ side.team.name }}</div>
+          @for (f of side.form; track f.match_id) {
+            <a class="form-row" [routerLink]="['/partite', f.match_id]">
+              <span [class]="'res ' + f.outcome" [attr.aria-label]="f.outcome === 'V' ? 'vinta' : f.outcome === 'N' ? 'pareggio' : 'persa'">{{ f.outcome }}</span>
+              <span>{{ f.venue === 'C' ? 'vs' : '@' }} {{ f.opponent }}</span>
+              <span class="led">{{ f.score }}</span>
+            </a>
+          }
+        }
+      </section>
+    </aside>
+  </div>
+}

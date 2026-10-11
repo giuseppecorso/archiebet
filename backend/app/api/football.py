@@ -100,6 +100,7 @@ class SideStats(BaseModel):
 class MatchDetail(BaseModel):
     match: MatchCard
     stats_as_of: datetime  # tutte le statistiche usano solo partite giocate prima di questo istante
+    missing_results: int  # partite di campionato già giocate ma senza risultato nei nostri dati: statistiche incomplete
     home: SideStats
     away: SideStats
     head_to_head: list[MatchCard]
@@ -251,6 +252,17 @@ def match_detail(match_id: int, _: CurrentUser, db: DbSession) -> MatchDetail:
             Match.season == match.season,
         )
     ).all()
+    # Partite dello stesso campionato già giocate (prima di questa) di cui la fonte non ha ancora il risultato
+    missing_results = len(
+        db.scalars(
+            select(Match.id).where(
+                Match.status == MatchStatus.SCHEDULED,
+                Match.kickoff_at < min(before, now - RESULT_GRACE),
+                Match.competition_id == match.competition_id,
+                Match.season == match.season,
+            )
+        ).all()
+    )
     team_results = [_result(m) for m in team_games]
     season_results = [_result(m) for m in season_games]
     by_id = {m.id: m for m in team_games}
@@ -309,6 +321,7 @@ def match_detail(match_id: int, _: CurrentUser, db: DbSession) -> MatchDetail:
     return MatchDetail(
         match=_cards(db, [match], now)[0],
         stats_as_of=before,
+        missing_results=missing_results,
         home=side(match.home_team_id, "home"),
         away=side(match.away_team_id, "away"),
         head_to_head=h2h,

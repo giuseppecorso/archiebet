@@ -1,0 +1,94 @@
+<div class="filters" role="group" aria-label="Campionati">
+  <span class="title filters-title">Italia</span>
+  @for (c of competitions.value(); track c.code) {
+    <button type="button" class="chip" [class.on]="isOn(c.code)" [attr.aria-pressed]="isOn(c.code)" (click)="toggle(c.code)">
+      @if (isOn(c.code)) {
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+      }
+      {{ c.name }}
+    </button>
+  }
+  <span class="chip disabled" title="Arriva con la fonte dati della Serie C">Serie C · in arrivo</span>
+</div>
+
+<div class="layout">
+  <section class="panel list" aria-label="Elenco partite">
+    <div class="list-head">
+      <div role="tablist" aria-label="Filtra partite" class="tabs">
+        <button type="button" role="tab" class="tab title" [attr.aria-selected]="tab() === 'tutte'" (click)="tab.set('tutte')">Tutte</button>
+        <button type="button" role="tab" class="tab title" aria-selected="false" aria-disabled="true" disabled title="I risultati in diretta arrivano nella Fase 5">Live · Fase 5</button>
+        <button type="button" role="tab" class="tab title" [attr.aria-selected]="tab() === 'prossime'" (click)="tab.set('prossime')">Prossime</button>
+        <button type="button" role="tab" class="tab title" [attr.aria-selected]="tab() === 'risultati'" (click)="tab.set('risultati')">Risultati</button>
+      </div>
+      <span class="badge source">Quote: media di mercato</span>
+    </div>
+
+    @if (selected().length === 0 && competitions.hasValue()) {
+      <p class="empty">Nessun campionato selezionato: scegline almeno uno qui sopra.</p>
+    }
+
+    @if (tab() !== 'risultati') {
+      @if (tab() === 'tutte') {
+        <h2 class="block-title title">Prossime partite</h2>
+      }
+      @if (upcoming.isLoading() && !upcoming.hasValue()) {
+        <p class="empty">Carico le partite…</p>
+      } @else if (upcoming.error()) {
+        <p class="empty error" role="alert">Non riesco a caricare le partite. Il backend è acceso?</p>
+      } @else if (upcoming.hasValue()) {
+        @for (group of upcoming.value(); track group.competition.code) {
+          <div class="group-head">
+            <span class="title">{{ group.competition.name }}</span>
+          </div>
+          @for (m of group.matches; track m.id) {
+            <ab-match-row [match]="m" />
+          }
+        } @empty {
+          <p class="empty">Nessuna partita in programma nei campionati scelti.</p>
+        }
+      }
+    }
+
+    @if (tab() !== 'prossime') {
+      @if (tab() === 'tutte') {
+        <h2 class="block-title title">Ultimi risultati</h2>
+      }
+      @if (results.isLoading() && !results.hasValue()) {
+        <p class="empty">Carico i risultati…</p>
+      } @else if (results.error()) {
+        <p class="empty error" role="alert">Non riesco a caricare i risultati. Il backend è acceso?</p>
+      } @else if (results.hasValue()) {
+        @for (group of results.value(); track group.competition.code) {
+          <div class="group-head">
+            <span class="title">{{ group.competition.name }}</span>
+          </div>
+          @for (m of group.matches; track m.id) {
+            <ab-match-row [match]="m" />
+          }
+        } @empty {
+          <p class="empty">Nessun risultato nei campionati scelti.</p>
+        }
+      }
+    }
+
+    <p class="hint">Clicca una partita per aprire statistiche, classifica, precedenti e quote.</p>
+  </section>
+
+  <aside class="side" aria-label="In arrivo">
+    <section class="panel soon">
+      <div class="title soon-title">Multipla del giorno</div>
+      <p>La più facile e sensata, solo con giocate di valore. Arriva con le quote e il modello.</p>
+      <span class="badge phase">Fase 4</span>
+    </section>
+    <section class="panel soon">
+      <div class="title soon-title">La mia schedina</div>
+      <p>Registra le giocate reali e simulate e seguile fino alla fine.</p>
+      <span class="badge phase">Fase 2</span>
+    </section>
+    <section class="panel soon">
+      <div class="soon-title"><span class="led archie-tv">ARCHIE</span><span class="title"> TV</span></div>
+      <p>Highlights dai canali ufficiali delle leghe e canali gratuiti in diretta.</p>
+      <span class="badge phase">Fase 6</span>
+    </section>
+  </aside>
+</div>

@@ -1,0 +1,396 @@
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+.info {
+  color: var(--muted);
+  border-color: var(--line-muted);
+}
+
+.state {
+  color: var(--muted);
+  &.error {
+    color: var(--loss);
+  }
+}
+
+/* Intestazione: righe verticali come un campo, in attesa delle foto degli stadi */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background-color: #0c1410;
+  background-image: repeating-linear-gradient(90deg, #0f1914 0, #0f1914 90px, #0c1410 90px, #0c1410 180px);
+}
+.side-team {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.team-name {
+  margin: 0;
+  font-size: 38px;
+  letter-spacing: 3px;
+  text-align: center;
+}
+.center {
+  flex: 0 1 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.big-time,
+.big-score {
+  font-size: 56px;
+  line-height: 1;
+}
+.big-score {
+  letter-spacing: 4px;
+}
+.when {
+  font-size: 14px;
+  color: var(--text-2);
+  &::first-letter {
+    text-transform: uppercase;
+  }
+}
+.awaiting {
+  color: var(--amber);
+  border-style: dashed;
+}
+
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 20px 0 0;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text);
+  background: #14120a;
+  border: 1px dashed var(--amber);
+  border-radius: 4px;
+
+  svg {
+    flex: 0 0 auto;
+    color: var(--amber);
+  }
+  strong {
+    color: var(--amber);
+  }
+}
+
+.archie-soon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+  margin: 20px 0;
+  padding: 14px 20px;
+  border-style: dashed;
+  font-size: 14px;
+  color: var(--text-2);
+
+  .title {
+    font-size: 20px;
+    color: var(--amber);
+  }
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+}
+.main-col {
+  flex: 999 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.side-col {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.box {
+  padding: 16px 20px;
+}
+.box-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.box-title {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+.box-head .box-title {
+  margin: 0;
+}
+
+.seg {
+  display: flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  overflow: hidden;
+
+  button {
+    min-height: 36px;
+    padding: 4px 12px;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-2);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+
+    & + button {
+      border-left: 1px solid var(--line-strong);
+    }
+    &[aria-selected='true'] {
+      color: var(--bg);
+      background: var(--text);
+      font-weight: 700;
+    }
+  }
+}
+
+.cmp-teams {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 16px;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  color: var(--text-2);
+
+  .home-name {
+    color: var(--amber);
+  }
+  small {
+    font-family: var(--font-text);
+    font-size: 11px;
+    letter-spacing: 0;
+    color: var(--muted);
+  }
+}
+
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 170px minmax(0, 1fr) 56px;
+  align-items: center;
+  gap: 10px;
+}
+.v {
+  font-size: 17px;
+  &.home {
+    text-align: right;
+  }
+  &.away {
+    color: var(--text-2);
+    text-shadow: none;
+  }
+}
+.track {
+  height: 10px;
+  display: flex;
+  background: var(--bg);
+  border-radius: 2px;
+  &.right {
+    justify-content: flex-end;
+  }
+}
+.fill {
+  height: 100%;
+  border-radius: 2px;
+  &.home {
+    background: var(--amber);
+  }
+  &.away {
+    background: var(--text-2);
+  }
+}
+.bar-label {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.simple {
+  td.num {
+    font-size: 18px;
+    width: 30%;
+    &:last-child {
+      text-align: right;
+      color: var(--text-2);
+      text-shadow: none;
+    }
+  }
+  th[scope='row'] {
+    text-align: center;
+    font-weight: 500;
+    color: var(--text-2);
+  }
+  thead th:last-child {
+    text-align: right;
+  }
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+.odds {
+  min-width: 520px;
+  th[scope='row'] {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .price {
+    font-size: 16px;
+    color: var(--text);
+    text-shadow: var(--led-glow-small);
+  }
+  .close {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+  }
+}
+
+.standings {
+  td,
+  th {
+    padding: 5px 6px;
+  }
+  th[scope='row'] {
+    font-weight: 500;
+  }
+  td:not(:first-child) {
+    text-align: right;
+  }
+  thead th:nth-child(n + 3) {
+    text-align: right;
+  }
+  .pts {
+    font-size: 15px;
+  }
+  tr.playing {
+    background: #1a1608;
+    th,
+    td {
+      color: var(--amber);
+      font-weight: 700;
+    }
+  }
+}
+
+.h2h,
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line-row);
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--panel-head);
+  }
+}
+.h2h-teams {
+  flex: 1;
+  .led {
+    margin: 0 6px;
+  }
+}
+.form-team {
+  margin-top: 8px;
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  color: var(--text-2);
+}
+.form-row {
+  span:nth-child(2) {
+    flex: 1;
+  }
+}
+.res {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--bg);
+  border-radius: 3px;
+
+  &.V {
+    background: var(--value);
+  }
+  &.N {
+    background: var(--amber);
+  }
+  &.P {
+    background: var(--loss);
+  }
+}
+
+@media (max-width: 700px) {
+  .header {
+    padding: 20px 16px;
+  }
+  .team-name {
+    font-size: 30px;
+  }
+  .bar-row {
+    grid-template-columns: 44px minmax(0, 1fr) 110px minmax(0, 1fr) 44px;
+    gap: 6px;
+  }
+  .bar-label {
+    font-size: 12px;
+  }
+}

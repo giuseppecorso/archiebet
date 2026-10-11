@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpRequest, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
@@ -22,13 +22,13 @@ describe('ArchieBet: navigazione', () => {
   afterEach(() => http.verify());
 
   /** La navigazione è asincrona: aspetta che il guard faccia partire la richiesta. */
-  async function nextRequest(url: string) {
+  async function nextRequest(url: string | ((req: HttpRequest<unknown>) => boolean)) {
     for (let attempt = 0; attempt < 50; attempt++) {
       const [request] = http.match(url);
       if (request) return request;
       await new Promise((resolve) => setTimeout(resolve));
     }
-    throw new Error(`Nessuna richiesta a ${url}`);
+    throw new Error(`Nessuna richiesta a ${String(url)}`);
   }
 
   async function navigateAs(url: string, loggedIn: boolean): Promise<RouterTestingHarness> {
@@ -49,14 +49,37 @@ describe('ArchieBet: navigazione', () => {
     expect(TestBed.inject(Router).url).toBe('/login');
   });
 
-  it('dopo il login mostra il menu con le quattro sezioni', async () => {
+  it('dopo il login mostra il menu e le partite della dashboard', async () => {
     const harness = await navigateAs('/', true);
     expect(TestBed.inject(Router).url).toBe('/partite');
 
-    const links = [...harness.routeNativeElement!.querySelectorAll('nav a')].map((a) =>
-      a.textContent?.trim(),
-    );
+    const links = [...harness.routeNativeElement!.querySelectorAll('nav a')].map((a) => a.textContent?.trim());
     expect(links).toEqual(['Partite', 'Le mie schedine', 'Le mie statistiche', 'Gioca']);
+
+    const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
+    (await nextRequest('/api/competitions')).flush([serieA]);
+    const upcoming = await nextRequest((r) => r.url.startsWith('/api/matches?view=upcoming'));
+    expect(upcoming.request.url).toContain('competitions=ITA-A');
+    upcoming.flush([
+      {
+        competition: serieA,
+        matches: [
+          {
+            id: 7, competition: serieA, season: '2026/27', kickoff_at: '2026-10-10T18:45:00Z', kickoff_has_time: true,
+            status: 'scheduled', home: { id: 1, name: 'Napoli' }, away: { id: 2, name: 'Frosinone' },
+            home_goals: null, away_goals: null, odds_1x2: { '1': 1.44, X: 4.75, '2': 7 },
+          },
+        ],
+      },
+    ]);
+    (await nextRequest((r) => r.url.startsWith('/api/matches?view=results'))).flush([]);
+    await harness.fixture.whenStable();
+
+    const row = harness.routeNativeElement!.querySelector('ab-match-row a') as HTMLAnchorElement;
+    expect(row.textContent).toContain('Napoli');
+    expect(row.textContent).toContain('20:45'); // 18:45 UTC in ora italiana
+    expect(row.textContent).toContain('1.44');
+    expect(row.getAttribute('href')).toBe('/partite/7');
   });
 
   it('ogni sezione mostra la sua pagina con la fase in cui arriva', async () => {

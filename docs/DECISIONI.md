@@ -21,3 +21,25 @@ Ogni decisione importante con data, scelta e motivo. Le decisioni di prodotto so
 | D13 | Il frontend chiama il backend tramite proxy (`/api` → porta 8000) | Stessa origine per il browser: il cookie di login funziona senza configurare CORS. |
 | D14 | Porta fissa del frontend: 4280 (in `angular.json`) | Gli altri progetti Angular di Giuse usano la 4200: così non si scontrano. |
 | D15 | Comando `set-password` per cambiare la password da terminale | Recupero semplice se la password si dimentica; chiude anche le sessioni aperte. |
+
+## 2026-10-11 — Fase 1 (decise da Claude su mandato di Giuse: "scegli tu quasi tutto")
+
+| # | Decisione | Perché |
+|---|-----------|--------|
+| D16 | Storico Serie A e B da football-data.co.uk dal 2005/06 | Gratis, senza account; 20 stagioni bastano per modello e backtest walk-forward. Formato verificato sui file reali. |
+| D17 | Orari di football-data trattati come ora di Londra, salvati in UTC, mostrati in ora italiana | Verificato: Napoli–Frosinone delle 20:45 italiane risulta 19:45 nel file. |
+| D18 | Quote salvate in formato "lungo" (una riga per partita × bookmaker × mercato × esito × apertura/chiusura) | Aggiungere bookmaker o mercati (OddsPapi in Fase 4) non cambia le tabelle. Salvati: Pinnacle, bet365, Betfair Exchange, massimo e media di mercato; mercati 1X2 e Over/Under 2.5. |
+| D19 | Anagrafica squadre unica + tabella dei nomi per fonte (`team_aliases`) | Fonti diverse chiamano le squadre in modo diverso; così si uniscono senza doppioni. |
+| D20 | Statistiche come funzioni pure con parametro `before` = calcio d'inizio | Principio 3: nessun dato dal futuro, nemmeno nelle schermate. Testate con valori calcolati a mano. |
+| D21 | Classifica: punti → classifica avulsa (punti e differenza reti negli scontri diretti) → differenza reti → gol fatti | Regola dei campionati italiani. Penalizzazioni non gestite finché non avremo i dati (Serie C). |
+| D22 | Aggiornamento automatico con APScheduler ogni 6 ore dentro il backend | Già previsto nello stack; niente servizi esterni. Stagioni concluse in cache per sempre: si scarica solo la stagione in corso. |
+| D23 | Client HTTP `httpx2` e `tzdata` per i fusi orari su Windows | `httpx2` è il successore ufficiale di httpx (stesso autore, organizzazione Pydantic), già richiesto da Starlette. |
+| D24 | Frontend: `httpResource` di Angular 22 per caricare i dati | API stabile dalla 22.0; meno codice e stati di caricamento/errore già pronti. |
+| D25 | Quote nell'elenco partite: media di mercato (apertura per le prossime, chiusura per le giocate) | È il riferimento più neutro finché non avremo le quote dei bookmaker italiani (Fase 4). |
+| D26 | Avviso "Dati incompleti" quando mancano risultati già giocati | Archie non mostra mai numeri incompleti come se fossero completi. |
+| D27 | Budget stile per componente portato a 8 kB (avviso) | Le pagine dense di dati superano i 4 kB predefiniti; gli stili comuni delle tabelle sono stati spostati nello stile globale. |
+
+**Scoperte sui dati (da usare in Fase 3-4):**
+- football-data aggiorna i risultati della stagione in corso con settimane di ritardo (ultimo aggiornamento al 21/09/2026). Il calendario delle prossime partite invece è fresco. Serve API-Football per risultati recenti e Serie C.
+- Pinnacle sparisce a metà 2025/26 (200 partite su 380 in A, 90 in B) e manca nel 2026/27. Betfair Exchange copre ~95% delle partite dal 2024/25. **Da decidere in Fase 3:** riferimento di mercato e CLV per la cassaforte 2025/26 (proposta: Pinnacle dove c'è, altrimenti Betfair Exchange di chiusura).
+- Gli xG di football-data esistono solo dal 2026/27.

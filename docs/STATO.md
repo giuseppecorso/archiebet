@@ -2,32 +2,38 @@
 
 Ultimo aggiornamento: 2026-10-11
 
+## Da fare al PC (Giuse)
+
+Le attività manuali sono raccolte qui, da fare tutte insieme quando sei al computer.
+
+1. **Account API-Football (gratis)**: registrati su https://dashboard.api-football.com/register e copia la tua API key. Poi la inseriamo insieme nel file `backend/.env` (mai in chat, mai su Git). Serve per: risultati recenti di Serie A e B, tutta la Serie C.
+
+## Fase 1 – Partite (in corso)
+
+Criterio di fine fase: dati Serie A, B e C (storico e calendario), elenco partite con filtri, pagina partita con statistiche vere.
+
+- [x] Tabelle per partita: campionati, squadre con nomi per fonte, partite con statistiche e xG, quote (apertura e chiusura)
+- [x] Import football-data: Serie A e B dal 2005/06 → 17.108 partite, 412.190 quote (25 secondi la prima volta)
+- [x] Statistiche calcolate dal codice e testate: forma, medie stagione e casa/trasferta, scontri diretti, classifica con avulsa — sempre "al calcio d'inizio"
+- [x] API: elenco partite (prossime / risultati, filtro campionati), dettaglio partita
+- [x] Aggiornamento automatico ogni 6 ore mentre il backend è acceso (anche a mano: `python -m app.cli sync`)
+- [x] Dashboard: filtri Serie A/B, schede Tutte / Prossime / Risultati (Live in Fase 5), quote medie, stato "Risultato in arrivo"
+- [x] Pagina partita: forma (V verde, N ambra, P rossa), statistiche a confronto, classifica, precedenti, ultime partite, quote apertura → chiusura, statistiche della partita, avviso "Dati incompleti"
+- [ ] **API-Football** (serve la chiave): risultati recenti di Serie A e B, calendario e risultati della Serie C (3 gironi)
+- [ ] Serie C nella dashboard e nella pagina partita
+
+Test: 53 backend + 6 frontend, tutti verdi.
+
 ## Fase 0 – Setup: CONCLUSA (2026-10-11)
 
-Criterio di fine fase: l'app si apre con il menu delle sezioni. → **Superato**, provato da Giuse con il suo utente (login, menu, sezioni, impostazioni, esci, password errata).
-
-- [x] Controllo programmi sul PC: Python 3.14.2, Node 24.21, npm 11.19, Git 2.52, GitHub CLI 2.102 (loggato), Docker 29.8, Angular CLI 22.1.8
-- [x] Repository Git, `.gitignore`, `.gitattributes`, documenti STATO / DECISIONI / IDEE
-- [x] Repository GitHub privato `giuseppecorso/archiebet`, commit con la Gmail di Giuse
-- [x] Backend: FastAPI, SQLAlchemy + Alembic, login con cookie di sessione, config da `.env`, adapter base con cache, gateway AI con tetto di spesa, registro consumi, comandi `create-user` e `set-password` — 19 test verdi
-- [x] Frontend: Angular 22 in stile tabellone LED, login, menu delle sezioni, pagine provvisorie, porta fissa 4280 — 3 test verdi, build pulita
-- [x] Utente `giuse` creato
-
-## Cosa c'è
-
-| Parte | Dove | Note |
-|-------|------|------|
-| API | `backend/app/` | `/api/health`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me` |
-| Tabelle | `users`, `user_sessions`, `usage_events` | migrazione `157fb30e21e8` |
-| Pagine | `/login`, `/partite`, `/schedine`, `/statistiche`, `/gioca`, `/impostazioni` | le sezioni sono segnaposto con la fase in cui arrivano |
-| Avvio | backend porta 8000, frontend porta 4280 | istruzioni nel README |
+App con login e menu delle sezioni; repository GitHub privato `giuseppecorso/archiebet`; frontend su porta fissa 4280, backend su 8000.
 
 ## Rimandato (consapevolmente)
 
-- Pagina di amministrazione del registro consumi (sezione 14.7): il registro esiste già nel DB; la pagina arriva con la prima fonte dati (Fase 1).
-- Limite ai tentativi di login: non serve finché l'app gira solo sul PC; obbligatorio prima di andare online.
+- Pagina di amministrazione del registro consumi (sezione 14.7): il registro si sta già riempiendo (ogni download è registrato); la pagina arriva quando ci saranno costi veri (API-Football, AI).
+- Limite ai tentativi di login: obbligatorio prima di andare online.
+- Penalizzazioni in classifica: con i dati della Serie C.
 
-## Prossimo passo: Fase 1 – Partite
+## Da decidere più avanti
 
-Dati Serie A, B e C (storico e calendario), elenco partite con filtri, pagina partita con statistiche vere.
-Prima decisione da prendere: fonti per storico (football-data.co.uk) e calendario Serie C (API-Football, piano gratuito → serve creare l'account e la chiave).
+- **Fase 3:** riferimento di mercato per CLV e verdetto sulla cassaforte 2025/26, visto che Pinnacle copre solo metà di quella stagione (dettagli in DECISIONI.md).
