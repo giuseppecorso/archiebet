@@ -49,3 +49,23 @@ def test_cached_none_is_not_refetched(tmp_path):
     adapter.cached("k", timedelta(hours=1), lambda: fetches.append(1))
     adapter.cached("k", timedelta(hours=1), lambda: fetches.append(1))
     assert len(fetches) == 1
+
+
+def test_scheduler_off_when_disabled():
+    from app.config import Settings
+    from app.jobs import start_scheduler
+
+    assert start_scheduler(Settings(sync_enabled=False)) is None
+
+
+def test_scheduler_registers_sync_job():
+    from app.config import Settings
+    from app.jobs import start_scheduler
+
+    scheduler = start_scheduler(Settings(sync_enabled=True, sync_interval_hours=6))
+    try:
+        [job] = scheduler.get_jobs()
+        assert job.id == "sync-football-data"
+        assert job.trigger.interval.total_seconds() == 6 * 3600
+    finally:
+        scheduler.shutdown(wait=False)

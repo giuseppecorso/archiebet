@@ -25,6 +25,10 @@ class Settings(BaseSettings):
 
     data_cache_dir: Path = Path("data/cache")
 
+    # Aggiornamento automatico dei dati mentre il backend è acceso
+    sync_enabled: bool = True
+    sync_interval_hours: int = 6
+
     ai_monthly_budget_eur: float = 15.0
     ai_user_monthly_quota_eur: float = 10.0
     ai_budget_warning_ratio: float = 0.8

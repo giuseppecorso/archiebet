@@ -12,6 +12,7 @@ dependencies = [
     "pwdlib[argon2]==0.3.1",
     "httpx2==2.13.1",
     "tzdata==2026.5",
+    "apscheduler==3.11.3",
 ]
 
 [project.optional-dependencies]

@@ -2,6 +2,7 @@ import os
 
 # I test non toccano mai il database vero
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+os.environ["SYNC_ENABLED"] = "false"  # nessun download durante i test
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -29,3 +30,12 @@ def client(db: Session) -> TestClient:
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def logged_client(client: TestClient, db: Session) -> TestClient:
+    from app.auth.service import create_user
+
+    create_user(db, "giuse", "una-password-lunga")
+    assert client.post("/api/auth/login", json={"username": "giuse", "password": "una-password-lunga"}).status_code == 200
+    return client
