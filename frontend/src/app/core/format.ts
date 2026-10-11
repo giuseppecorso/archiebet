@@ -6,6 +6,7 @@ const timeFmt = new Intl.DateTimeFormat('it-IT', { timeZone: TZ, hour: '2-digit'
 const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
 const weekdayFmt = new Intl.DateTimeFormat('it-IT', { timeZone: TZ, weekday: 'short' });
 const shortDateFmt = new Intl.DateTimeFormat('it-IT', { timeZone: TZ, day: '2-digit', month: '2-digit' });
+const dateWithYearFmt = new Intl.DateTimeFormat('it-IT', { timeZone: TZ, day: '2-digit', month: '2-digit', year: '2-digit' });
 const longDateFmt = new Intl.DateTimeFormat('it-IT', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
 /** "2026-10-11" del giorno in Italia: serve a confrontare i giorni senza sorprese di fuso. */
@@ -18,7 +19,7 @@ export function kickoffTime(iso: string, hasTime = true): string {
   return hasTime ? timeFmt.format(new Date(iso)) : '--:--';
 }
 
-/** Etichetta corta del giorno: OGGI, DOMANI, IERI, oppure "SAB 10/10". */
+/** Etichetta corta del giorno: OGGI, DOMANI, IERI, "SAB 10/10", oppure "26/04/25" se è lontana più di 4 mesi. */
 export function dayLabel(iso: string, now: Date = new Date()): string {
   const date = new Date(iso);
   const day = dayKey(date);
@@ -27,6 +28,9 @@ export function dayLabel(iso: string, now: Date = new Date()): string {
     if (day === dayKey(new Date(now.getTime() + Number(offset) * 86_400_000))) {
       return label;
     }
+  }
+  if (Math.abs(date.getTime() - now.getTime()) > 120 * 86_400_000) {
+    return dateWithYearFmt.format(date);
   }
   return `${weekdayFmt.format(date).replace('.', '').toUpperCase()} ${shortDateFmt.format(date)}`;
 }

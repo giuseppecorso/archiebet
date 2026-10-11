@@ -50,7 +50,7 @@ def test_requires_login(client):
 
 def test_competitions(logged_client, seeded):
     codes = [c["code"] for c in logged_client.get("/api/competitions").json()]
-    assert codes == ["ITA-A", "ITA-B"]
+    assert codes == ["ITA-A", "ITA-B", "ITA-C-A", "ITA-C-B", "ITA-C-C"]
 
 
 def test_upcoming_grouped_by_competition(logged_client, seeded):

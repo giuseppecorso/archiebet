@@ -13,6 +13,7 @@ describe('formattazione', () => {
     expect(dayLabel('2026-10-11T22:30:00Z', now)).toBe('DOMANI'); // 00:30 del 12 in Italia
     expect(dayLabel('2026-10-10T18:45:00Z', now)).toBe('IERI');
     expect(dayLabel('2026-10-17T13:00:00Z', now)).toBe('SAB 17/10');
+    expect(dayLabel('2025-04-26T13:00:00Z', now)).toBe('26/04/25'); // lontana: con l'anno
   });
 
   it('formatta quote, numeri e percentuali', () => {

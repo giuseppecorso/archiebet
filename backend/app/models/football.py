@@ -43,6 +43,8 @@ class TeamAlias(Base):
 class MatchStatus:
     SCHEDULED = "scheduled"
     FINISHED = "finished"
+    POSTPONED = "postponed"  # rinviata, data da definire
+    CANCELLED = "cancelled"  # annullata o sospesa senza risultato
 
 
 class Match(Base):
@@ -63,6 +65,9 @@ class Match(Base):
     home_team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"))
     away_team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"))
     status: Mapped[str] = mapped_column(String(20), default=MatchStatus.SCHEDULED)
+    matchday: Mapped[int | None] = mapped_column(Integer)  # giornata di campionato
+    venue_name: Mapped[str | None] = mapped_column(String(120))
+    venue_city: Mapped[str | None] = mapped_column(String(80))
 
     home_goals: Mapped[int | None] = mapped_column(Integer)
     away_goals: Mapped[int | None] = mapped_column(Integer)
@@ -89,6 +94,18 @@ class Match(Base):
     competition: Mapped[Competition] = relationship(lazy="joined")
     home_team: Mapped[Team] = relationship(foreign_keys=[home_team_id], lazy="joined")
     away_team: Mapped[Team] = relationship(foreign_keys=[away_team_id], lazy="joined")
+
+
+class MatchSource(Base):
+    """Codice della partita presso ogni fonte (es. id del fixture su API-Football): serve per formazioni e live."""
+
+    __tablename__ = "match_sources"
+    __table_args__ = (UniqueConstraint("source", "external_id"), UniqueConstraint("match_id", "source"))
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"))
+    source: Mapped[str] = mapped_column(String(30))
+    external_id: Mapped[str] = mapped_column(String(40))
 
 
 class MatchOdds(Base):

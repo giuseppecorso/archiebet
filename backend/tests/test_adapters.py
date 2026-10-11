@@ -65,7 +65,7 @@ def test_scheduler_registers_sync_job():
     scheduler = start_scheduler(Settings(sync_enabled=True, sync_interval_hours=6))
     try:
         [job] = scheduler.get_jobs()
-        assert job.id == "sync-football-data"
+        assert job.id == "sync-data"
         assert job.trigger.interval.total_seconds() == 6 * 3600
     finally:
         scheduler.shutdown(wait=False)

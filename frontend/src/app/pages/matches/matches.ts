@@ -54,6 +54,14 @@ export class Matches {
     this.hidden.update((h) => (h.includes(code) ? h.filter((c) => c !== code) : [...h, code]));
   }
 
+  /** Nota per i gruppi fermi a una stagione passata (es. Serie C con il piano gratuito di API-Football) */
+  protected staleNote(group: CompetitionGroup): string | null {
+    const latest = group.matches[0];
+    if (!latest) return null;
+    const ageDays = (Date.now() - new Date(latest.kickoff_at).getTime()) / 86_400_000;
+    return ageDays > 60 ? `Dati fino alla stagione ${latest.season}: la stagione in corso arriverà con il piano completo della fonte` : null;
+  }
+
   protected isOn(code: string): boolean {
     return !this.hidden().includes(code);
   }

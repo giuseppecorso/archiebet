@@ -8,7 +8,6 @@
       {{ c.name }}
     </button>
   }
-  <span class="chip disabled" title="Arriva con la fonte dati della Serie C">Serie C · in arrivo</span>
 </div>
 
 <div class="layout">
@@ -61,6 +60,9 @@
         @for (group of results.value(); track group.competition.code) {
           <div class="group-head">
             <span class="title">{{ group.competition.name }}</span>
+            @if (staleNote(group); as note) {
+              <span class="stale">{{ note }}</span>
+            }
           </div>
           @for (m of group.matches; track m.id) {
             <ab-match-row [match]="m" />

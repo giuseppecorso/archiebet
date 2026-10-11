@@ -98,6 +98,11 @@
 }
 
 .group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
   padding: 10px 20px;
   background: var(--panel-head);
   border-top: 1px solid var(--line-row);
@@ -107,6 +112,11 @@
     letter-spacing: 2px;
     color: var(--text-2);
   }
+}
+
+.stale {
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .empty {
