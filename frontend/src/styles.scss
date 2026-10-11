@@ -1,0 +1,155 @@
+/* ArchieBet — stile tabellone da stadio a LED (vedi docs/design/).
+   Colori con significato fisso: verde = valore/vinta, rosso = persa/valore negativo,
+   ambra = live, in corso, quote e orari. Il colore non è mai l'unico segnale. */
+
+:root {
+  --bg: #0a0c0b;
+  --bg-deep: #050605;
+  --bg-header: #0f1211;
+  --bg-ticker: #070908;
+  --panel: #111513;
+  --panel-head: #0d100f;
+  --chip: #1a1f1c;
+
+  --line: #222a26;
+  --line-strong: #2a322e;
+  --line-row: #1c2320;
+  --line-muted: #3a443f;
+
+  --text: #ededed;
+  --text-2: #c9d1cc;
+  --muted: #8e9892;
+  --dim: #5c6661;
+
+  --amber: #ffb000;
+  --amber-hover: #ffc94d;
+  --value: #3dff6e;
+  --loss: #ff6b5e;
+
+  --font-led: 'Doto', ui-monospace, monospace;
+  --font-title: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  --font-text: 'Barlow', system-ui, sans-serif;
+
+  --led-glow: 0 0 8px currentColor;
+  --led-glow-small: 0 0 4px currentColor;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-text);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+a {
+  color: var(--amber);
+}
+a:hover {
+  color: var(--amber-hover);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+/* Cifre e scritte a punti luminosi: solo per numeri e logo */
+.led {
+  font-family: var(--font-led);
+  font-weight: 900;
+  color: var(--amber);
+  text-shadow: var(--led-glow);
+}
+
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  letter-spacing: 1.5px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 2px 8px;
+}
+
+.btn-primary {
+  min-height: 48px;
+  padding: 8px 24px;
+  font-family: var(--font-title);
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--bg);
+  background: var(--amber);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  background: var(--amber-hover);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@keyframes ab-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+  }
+}

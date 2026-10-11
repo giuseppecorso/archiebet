@@ -1,0 +1,31 @@
+<main class="wrap">
+  <section class="panel box" aria-labelledby="login-title">
+    <div class="logo" aria-hidden="true">
+      <span class="led archie">ARCHIE</span><span class="title bet">BET</span>
+    </div>
+    <h1 id="login-title" class="visually-hidden">Accedi ad ArchieBet</h1>
+    <p class="motto">Give me the odds, I'll move the world.</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label class="field">
+        <span class="label">Nome utente</span>
+        <input formControlName="username" autocomplete="username" autocapitalize="none" spellcheck="false" />
+      </label>
+      <label class="field">
+        <span class="label">Password</span>
+        <input formControlName="password" type="password" autocomplete="current-password" />
+      </label>
+
+      @if (error(); as message) {
+        <p class="error" role="alert">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"></circle><path d="M12 7v6"></path><path d="M12 17h.01"></path>
+          </svg>
+          {{ message }}
+        </p>
+      }
+
+      <button type="submit" class="btn-primary" [disabled]="busy()">{{ busy() ? 'Entro…' : 'Entra' }}</button>
+    </form>
+  </section>
+</main>

@@ -1,0 +1,78 @@
+.wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.box {
+  width: 100%;
+  max-width: 400px;
+  padding: 28px 24px;
+  border-color: var(--amber);
+}
+
+.logo {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+}
+.archie {
+  font-size: 44px;
+  letter-spacing: 3px;
+}
+.bet {
+  font-size: 44px;
+  letter-spacing: 4px;
+}
+
+.motto {
+  margin: 4px 0 24px;
+  text-align: center;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  input {
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 16px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+
+    &:focus {
+      border-color: var(--amber);
+      outline: none;
+    }
+  }
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--loss);
+}
+
+.btn-primary {
+  margin-top: 6px;
+}

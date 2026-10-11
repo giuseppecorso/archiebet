@@ -1,0 +1,20 @@
+<section class="panel board" [attr.aria-labelledby]="'title-' + section().path">
+  <div class="head">
+    <h1 class="title page-title" [id]="'title-' + section().path">{{ section().label }}</h1>
+    <span class="badge soon">In costruzione</span>
+  </div>
+
+  <div class="scoreboard" role="img" [attr.aria-label]="'Questa sezione arriva nella fase ' + section().phase">
+    <span class="label">Arriva nella fase</span>
+    <span class="led phase">{{ section().phase }}</span>
+  </div>
+
+  <p class="summary">{{ section().summary }}</p>
+
+  <h2 class="label">Cosa troverai qui</h2>
+  <ul class="features">
+    @for (feature of section().features; track feature) {
+      <li>{{ feature }}</li>
+    }
+  </ul>
+</section>
