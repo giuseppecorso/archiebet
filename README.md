@@ -7,3 +7,34 @@ Esperto personale di pronostici sul calcio: stima le probabilità, le confronta 
 - Specifiche: [docs/SPECIFICHE.md](docs/SPECIFICHE.md)
 - Stato del lavoro: [docs/STATO.md](docs/STATO.md)
 - Decisioni: [docs/DECISIONI.md](docs/DECISIONI.md)
+
+## Avviare l'app (PowerShell)
+
+Servono due terminali aperti nella cartella del progetto.
+
+**Terminale 1 – backend**
+
+```powershell
+cd backend
+.venv\Scripts\uvicorn app.main:app --reload --port 8000
+```
+
+**Terminale 2 – frontend**
+
+```powershell
+cd frontend
+npm start
+```
+
+Poi apri http://localhost:4200
+
+### Solo la prima volta: crea il tuo utente
+
+```powershell
+cd backend
+.venv\Scripts\python -m app.cli create-user giuse --admin
+```
+
+La password (almeno 10 caratteri) non si vede mentre la scrivi: è normale.
+
+Dettagli del backend: [backend/README.md](backend/README.md).

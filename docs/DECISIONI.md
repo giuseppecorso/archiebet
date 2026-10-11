@@ -15,3 +15,7 @@ Ogni decisione importante con data, scelta e motivo. Le decisioni di prodotto so
 | D7 | Configurazione con `pydantic-settings` letta da `.env` | Nessun valore fisso nel codice (sezione 14.6); i valori vengono controllati all'avvio. |
 | D8 | Utenti creati da riga di comando (`python -m app.cli create-user`) | Nessuna pagina di registrazione aperta: per ora l'utente è uno solo. |
 | D9 | Font caricati da Google Fonts (Doto, Bebas Neue, Barlow) come nei mockup | Nessuna libreria in più; si potranno ospitare in locale quando si va online. |
+| D10 | Per i test del backend `httpx2` invece di `httpx` | Lo chiede Starlette stessa (avviso di deprecazione nella versione installata). |
+| D11 | Email dei commit di questo repo: indirizzo anonimo GitHub `…+giuseppecorso@users.noreply.github.com` | L'account GitHub blocca i push che espongono l'email personale; così resta privata. Impostato solo per questo progetto. |
+| D12 | Frontend Angular 22 zoneless, componenti standalone, test con Vitest | Sono i valori predefiniti attuali di Angular CLI: meno codice e meno dipendenze. |
+| D13 | Il frontend chiama il backend tramite proxy (`/api` → porta 8000) | Stessa origine per il browser: il cookie di login funziona senza configurare CORS. |
