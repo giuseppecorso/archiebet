@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import select
 
 from app.auth.security import hash_password, hash_token, verify_password
-from app.auth.service import create_user, open_session, user_from_token
+from app.auth.service import authenticate, create_user, open_session, set_password, user_from_token
 from app.models import UserSession
 from app.models.base import utcnow
 
@@ -49,6 +49,20 @@ def test_expired_session_rejected(db):
     stored.expires_at = utcnow() - timedelta(seconds=1)
     db.commit()
     assert user_from_token(db, token) is None
+
+
+def test_set_password_replaces_old_and_closes_sessions(db):
+    user = create_user(db, "giuse", PASSWORD)
+    token = open_session(db, user, days=30)
+    set_password(db, "Giuse", "nuova-password-lunga")
+    assert authenticate(db, "giuse", PASSWORD) is None
+    assert authenticate(db, "giuse", "nuova-password-lunga").id == user.id
+    assert user_from_token(db, token) is None
+
+
+def test_set_password_unknown_user(db):
+    with pytest.raises(ValueError):
+        set_password(db, "nessuno", "nuova-password-lunga")
 
 
 def test_login_me_logout_flow(client, db):

@@ -37,6 +37,12 @@ cd backend
 
 La password (almeno 10 caratteri) non si vede mentre la scrivi: è normale.
 
+Password dimenticata? Dalla cartella `backend`:
+
+```powershell
+.\.venv\Scripts\python -m app.cli set-password giuse
+```
+
 > In PowerShell i programmi con percorso relativo vanno scritti con `.\` davanti
 > (`.\.venv\...`), altrimenti PowerShell risponde "Impossibile caricare il modulo".
 

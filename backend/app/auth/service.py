@@ -20,6 +20,17 @@ def create_user(db: Session, username: str, password: str, is_admin: bool = Fals
     return user
 
 
+def set_password(db: Session, username: str, password: str) -> User:
+    """Cambia la password e chiude tutte le sessioni aperte dell'utente."""
+    user = db.scalar(select(User).where(User.username == username.strip().lower()))
+    if user is None:
+        raise ValueError(f"L'utente '{username}' non esiste")
+    user.password_hash = hash_password(password)
+    db.execute(delete(UserSession).where(UserSession.user_id == user.id))
+    db.commit()
+    return user
+
+
 def authenticate(db: Session, username: str, password: str) -> User | None:
     user = db.scalar(select(User).where(User.username == username.strip().lower()))
     if not verify_password(password, user.password_hash if user else None):
