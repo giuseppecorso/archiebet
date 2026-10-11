@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>ArchieBet – Le mie statistiche</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&amp;family=Bebas+Neue&amp;family=Doto:wght@700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0C0B}
+*{box-sizing:border-box}
+a{color:#FFB000}a:hover{color:#FFC94D}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0A0C0B; color: #EDEDED; font-family: 'Barlow', system-ui, sans-serif; font-size: 15px; line-height: 1.4;">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; padding: 14px 24px; border-bottom: 1px solid #222A26; background: #0F1211;">
+<a href="Main.dc.html" aria-label="ArchieBet, torna alla dashboard" style="display: flex; align-items: baseline; gap: 8px; text-decoration: none;">
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 32px; letter-spacing: 2px; color: #FFB000; text-shadow: {{ledShadow}};">ARCHIE</span>
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 3px; color: #EDEDED;">BET</span>
+</a>
+<nav aria-label="Sezioni principali" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; flex: 1 1 auto;">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 1.5px; color: #EDEDED; text-decoration: none; border-bottom: 3px solid transparent;">Partite</a>
+<a href="Schedine.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 1.5px; color: #EDEDED; text-decoration: none; border-bottom: 3px solid transparent;">Le mie schedine <span style="font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #0A0C0B; background: #FFB000; border-radius: 3px; padding: 2px 6px;">2 LIVE</span></a>
+<a href="Statistiche.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 1.5px; color: #FFB000; text-decoration: none; border-bottom: 3px solid #FFB000;">Le mie statistiche</a>
+<a href="Gioca.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 1.5px; color: #EDEDED; text-decoration: none; border-bottom: 3px solid transparent;">Gioca</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 8px;">
+<button type="button" aria-label="Impostazioni e limiti di gioco" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; color: #EDEDED; border: 1px solid #2A322E; border-radius: 6px; cursor: pointer;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line><circle cx="9" cy="6" r="2" fill="#0F1211"></circle><circle cx="15" cy="12" r="2" fill="#0F1211"></circle><circle cx="7" cy="18" r="2" fill="#0F1211"></circle></svg>
+</button>
+<button type="button" aria-label="Il tuo profilo" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; color: #EDEDED; border: 1px solid #2A322E; border-radius: 6px; cursor: pointer;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>
+</button>
+</div>
+</header>
+
+<div style="display: flex; align-items: center; gap: 16px; padding: 8px 24px; background: #070908; border-bottom: 1px solid #222A26; overflow: hidden; white-space: nowrap;">
+<span style="flex: 0 0 auto; font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 2px; color: #0A0C0B; background: #FFB000; padding: 2px 10px; border-radius: 2px;">Ultim'ora</span>
+<div style="display: flex; align-items: center; gap: 24px; font-weight: 600; font-size: 14px; letter-spacing: 0.6px; text-transform: uppercase; color: #FFB000; overflow: hidden;">
+<a href="#" style="color: #FFB000; text-decoration: none;">Inter – Milan: 2-1 al 67'</a>
+<span aria-hidden="true" style="color: #5C6661;">•</span>
+<a href="#" style="color: #FFB000; text-decoration: none;">Archie: 4 partite con valore nel weekend</a>
+</div>
+</div>
+
+<main style="max-width: 1440px; margin: 0 auto; padding: 20px 24px 32px; display: flex; flex-direction: column; gap: 20px;">
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+<div role="tablist" aria-label="Periodo" style="display: flex; flex-wrap: wrap; gap: 4px;">
+<button type="button" role="tab" aria-selected="false" style="min-height: 40px; padding: 6px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1.2px; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Settimana</button>
+<button type="button" role="tab" aria-selected="true" style="min-height: 40px; padding: 6px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1.2px; color: #0A0C0B; background: #FFB000; border: 0; border-radius: 4px; cursor: pointer;">Ultimi 30 giorni</button>
+<button type="button" role="tab" aria-selected="false" style="min-height: 40px; padding: 6px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1.2px; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Stagione</button>
+<button type="button" role="tab" aria-selected="false" style="min-height: 40px; padding: 6px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1.2px; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Sempre</button>
+</div>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892; border: 1px solid #3A443F; border-radius: 3px; padding: 3px 8px;">DATI DI ESEMPIO</span>
+</div>
+
+<section aria-label="Riepilogo" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; padding: 14px; background: #050605; border: 2px solid #2A322E; border-radius: 6px;">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="6">
+<div style="text-align: center; padding: 4px 0;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">{{k.label}}</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 34px; line-height: 1.2; color: {{k.color}}; text-shadow: {{ledShadow}};">{{k.value}}</div>
+<div style="font-size: 12px; color: #8E9892;">{{k.sub}}</div>
+</div>
+</sc-for>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px;">
+
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px;">
+
+<section aria-label="Il tuo saldo contro quello di Archie" style="background: #111513; border: 1px solid #222A26; border-radius: 6px; padding: 16px 20px;">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 10px;">
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px;">Tu contro Archie</span>
+<div style="display: flex; gap: 16px; font-size: 13px;">
+<span style="display: flex; align-items: center; gap: 6px;"><span aria-hidden="true" style="width: 14px; height: 3px; background: #EDEDED;"></span>Il tuo saldo · <strong style="color: #FF6B5E;">−44 €</strong></span>
+<span style="display: flex; align-items: center; gap: 6px;"><span aria-hidden="true" style="width: 14px; height: 3px; background: #FFB000;"></span>Archie · <strong style="color: {{valore}};">+12 €</strong> virtuali</span>
+</div>
+</div>
+<div style="display: flex; gap: 8px;">
+<div style="display: flex; flex-direction: column; justify-content: space-between; height: 200px; font-family: 'Doto', monospace; font-weight: 700; font-size: 12px; color: #8E9892; text-align: right; width: 34px;">
+<span>+20</span><span>0</span><span>−25</span><span>−50</span>
+</div>
+<svg role="img" aria-label="Saldo negli ultimi 30 giorni: il tuo scende fino a meno 44 euro, quello virtuale di Archie sale fino a più 12" viewBox="0 0 600 200" preserveAspectRatio="none" style="flex: 1 1 auto; width: 100%; height: 200px; background: #0A0C0B; border: 1px solid #1C2320; border-radius: 4px;">
+<line x1="0" y1="57.1" x2="600" y2="57.1" stroke="#3A443F" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"></line>
+<line x1="0" y1="128.6" x2="600" y2="128.6" stroke="#1C2320" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+<polyline points="0,57.1 66.7,45.7 133.3,62.9 200,40 266.7,48.6 333.3,28.6 400,37.1 466.7,17.1 533.3,31.4 600,22.9" fill="none" stroke="#FFB000" stroke-width="3" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline>
+<polyline points="0,57.1 66.7,85.7 133.3,71.4 200,128.6 266.7,100 333.3,142.9 400,114.3 466.7,185.7 533.3,165.7 600,182.9" fill="none" stroke="#EDEDED" stroke-width="3" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline>
+</svg>
+</div>
+<div style="display: flex; justify-content: space-between; margin: 6px 0 0 42px; font-size: 12px; color: #8E9892;"><span>10 set</span><span>25 set</span><span>10 ott</span></div>
+<p style="margin: 10px 0 0; font-size: 14px; color: #C9D1CC;">Archie gioca in automatico i suoi suggerimenti con crediti finti, con le stesse regole e lo stesso budget. Così vedi chi dei due è più bravo.</p>
+</section>
+
+<section aria-label="Dove vinci e dove perdi" style="background: #111513; border: 1px solid #222A26; border-radius: 6px; padding: 16px 20px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px;">
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px;">Dove vinci e dove perdi</span>
+<span style="font-size: 12px; color: #8E9892;">rendimento: quanto torna ogni 100 € giocati, in più o in meno</span>
+</div>
+<sc-for list="{{groups}}" as="gr" hint-placeholder-count="3">
+<div style="margin-top: 12px;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892; margin-bottom: 6px;">{{gr.title}}</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<sc-for list="{{gr.rows}}" as="r" hint-placeholder-count="5">
+<div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr) 64px; align-items: center; gap: 8px;">
+<span style="font-size: 14px; font-weight: 600;">{{r.label}} <span style="font-weight: 400; font-size: 12px; color: #8E9892;">· {{r.n}}</span></span>
+<div style="height: 12px; display: flex; justify-content: flex-end; border-right: 1px solid #3A443F;"><div style="width: {{r.neg}}%; height: 100%; background: #FF6B5E; border-radius: 2px 0 0 2px;"></div></div>
+<div style="height: 12px; display: flex; justify-content: flex-start;"><div style="width: {{r.pos}}%; height: 100%; background: {{valore}}; border-radius: 0 2px 2px 0;"></div></div>
+<span style="text-align: right; font-family: 'Doto', monospace; font-weight: 900; font-size: 16px; color: {{r.color}};">{{r.text}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</section>
+
+<section aria-label="Le tue abitudini" style="background: #111513; border: 1px solid #222A26; border-radius: 6px; padding: 16px 20px;">
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px;">Le tue abitudini</span>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 10px;">
+<div style="flex: 1 1 260px; min-width: 0;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892; margin-bottom: 4px;">SQUADRE CHE GIOCHI DI PIÙ</div>
+<sc-for list="{{teams}}" as="t" hint-placeholder-count="4">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid #1C2320;">
+<span style="font-weight: 600;">{{t.name}} <span style="font-weight: 400; font-size: 12px; color: #8E9892;">· {{t.n}}</span></span>
+<span style="font-family: 'Doto', monospace; font-weight: 900; color: {{t.color}};">{{t.roi}}</span>
+</div>
+</sc-for>
+<p style="margin: 8px 0 0; font-size: 13px; color: #FF6B5E;">Sulla tua squadra del cuore perdi più che altrove: lì giochi col cuore, non con i numeri.</p>
+</div>
+<div style="flex: 1 1 260px; min-width: 0;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892; margin-bottom: 4px;">PREFERENZE</div>
+<sc-for list="{{prefs}}" as="p" hint-placeholder-count="4">
+<div style="display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid #1C2320;">
+<span style="color: #C9D1CC;">{{p.k}}</span><span style="font-weight: 700;">{{p.v}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+</div>
+
+<aside aria-label="Archie e i tuoi numeri" style="flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 20px;">
+
+<section aria-label="Chiedi ad Archie" style="background: #111513; border: 1px solid #222A26; border-radius: 6px; padding: 16px 20px;">
+<div style="font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px; margin-bottom: 10px;">Chiedi ad Archie</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+<button type="button" style="min-height: 36px; padding: 6px 10px; font-size: 13px; color: #C9D1CC; background: #0A0C0B; border: 1px solid #2A322E; border-radius: 18px; cursor: pointer;">Perché perdo sulle multiple?</button>
+<button type="button" style="min-height: 36px; padding: 6px 10px; font-size: 13px; color: #C9D1CC; background: #0A0C0B; border: 1px solid #2A322E; border-radius: 18px; cursor: pointer;">Su cosa sono più bravo?</button>
+<button type="button" style="min-height: 36px; padding: 6px 10px; font-size: 13px; color: #C9D1CC; background: #0A0C0B; border: 1px solid #2A322E; border-radius: 18px; cursor: pointer;">Quanto avrei fatto seguendo te?</button>
+</div>
+<form style="display: flex; gap: 8px;">
+<label for="ab-domanda-stat" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">La tua domanda sulle tue statistiche</label>
+<input id="ab-domanda-stat" type="text" placeholder="Chiedi qualcosa sui tuoi numeri" style="flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 8px 12px; font-family: 'Barlow', sans-serif; font-size: 15px; color: #EDEDED; background: #0A0C0B; border: 1px solid #2A322E; border-radius: 4px;">
+<button type="submit" aria-label="Invia la domanda" style="width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; color: #0A0C0B; background: #FFB000; border: 0; border-radius: 4px; cursor: pointer;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+</button>
+</form>
+</section>
+
+<section aria-label="Vincite e perdite" style="background: #111513; border: 1px solid #222A26; border-radius: 6px; padding: 16px 20px;">
+<div style="font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px; margin-bottom: 10px;">Vincite e perdite</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+<sc-for list="{{wl}}" as="w" hint-placeholder-count="6">
+<div style="background: #0A0C0B; border: 1px solid #222A26; border-radius: 4px; padding: 8px 10px;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">{{w.label}}</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 22px; color: {{w.color}};">{{w.value}}</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section aria-label="Il tuo stile di gioco" style="background: #14120A; border: 1px dashed #FFB000; border-radius: 6px; padding: 16px 20px;">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px;">
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px; color: #FFB000;">Il tuo stile di gioco</span>
+<span style="font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #FFB000; border: 1px solid #FFB000; border-radius: 3px; padding: 1px 6px;">SCRITTO DA ARCHIE</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+<span style="font-size: 12px; font-weight: 700; color: #FF6B5E; border: 1px solid #FF6B5E; border-radius: 12px; padding: 3px 10px;">Ama le multiple lunghe</span>
+<span style="font-size: 12px; font-weight: 700; color: {{valore}}; border: 1px solid {{valore}}; border-radius: 12px; padding: 3px 10px;">Bravo sugli Under/Over</span>
+<span style="font-size: 12px; font-weight: 700; color: #FF6B5E; border: 1px solid #FF6B5E; border-radius: 12px; padding: 3px 10px;">Gioca col cuore</span>
+</div>
+<p style="margin: 0; font-size: 14px; color: #EDEDED;">Il 60% delle tue schedine ha 3 partite o più, ed è lì che perdi. Sulle singole Under/Over invece sei in attivo.</p>
+<p style="margin: 8px 0 0; font-size: 14px; color: #C9D1CC;">Consiglio di Archie: sposta metà del budget sulle singole e tieni le multiple a 2 partite al massimo. Con le tue giocate degli ultimi 30 giorni saresti a −6 € invece di −44 €.</p>
+</section>
+</aside>
+</div>
+</main>
+
+<footer style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 16px 24px; border-top: 1px solid #222A26; font-size: 12px; color: #8E9892;">
+<span style="font-style: italic;">Give me the odds, I'll move the world.</span>
+<span>Uso privato · Limiti di gioco attivi</span>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"glow":{"editor":"boolean","default":true},"valore":{"editor":"color","default":"#3DFF6E","options":["#3DFF6E","#00E5FF","#FFD60A"]},"$preview":{"width":1440,"height":1550}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const glow = this.props.glow ?? true;
+    const V = this.props.valore ?? '#3DFF6E';
+    const AMBER = '#FFB000';
+    const RED = '#FF6B5E';
+    const WHITE = '#EDEDED';
+    const kpis = [
+      { label: 'GIOCATO €', value: '340', sub: '31 schedine', color: WHITE },
+      { label: 'TORNATO €', value: '296', sub: 'vincite incassate', color: WHITE },
+      { label: 'SALDO €', value: '−44', sub: 'ultimi 30 giorni', color: RED },
+      { label: 'RENDIMENTO', value: '−12.9%', sub: 'su ogni euro giocato', color: RED },
+      { label: 'VINTE', value: '10/31', sub: '32% delle schedine', color: AMBER },
+      { label: 'CLV MEDIO', value: '+1.8%', sub: 'prendi buone quote', color: V }
+    ];
+    const r = (label, n, v) => ({
+      label: label, n: n,
+      text: (v > 0 ? '+' : (v < 0 ? '−' : '')) + Math.abs(v) + '%',
+      neg: v < 0 ? Math.min(100, Math.round(Math.abs(v) / 45 * 100)) : 0,
+      pos: v > 0 ? Math.min(100, Math.round(v / 45 * 100)) : 0,
+      color: v > 0 ? V : (v < 0 ? RED : WHITE)
+    });
+    const groups = [
+      { title: 'PER NUMERO DI PARTITE NELLA SCHEDINA', rows: [
+        r('Singole', '12', 9), r('2 partite', '6', -2), r('3 partite', '5', -12), r('4 partite', '5', -27), r('5 o più', '3', -41)
+      ] },
+      { title: 'PER MERCATO', rows: [
+        r('Under / Over', '9', 6), r('Doppia chance', '5', 3), r('Gol squadra', '3', -8), r('Goal / NoGoal', '4', -15), r('1X2', '10', -22)
+      ] },
+      { title: 'PER CAMPIONATO', rows: [
+        r('Serie A', '20', -4), r('Serie B', '7', -21), r('Serie C', '4', -35)
+      ] }
+    ];
+    const teams = [
+      { name: 'Inter', n: '7 giocate', roi: '−10%', color: RED },
+      { name: 'Squadra del cuore', n: '6 giocate', roi: '−28%', color: RED },
+      { name: 'Napoli', n: '5 giocate', roi: '+12%', color: V },
+      { name: 'Milan', n: '4 giocate', roi: '−25%', color: RED }
+    ];
+    const prefs = [
+      { k: 'Mercato più giocato', v: '1X2 · 40%' },
+      { k: 'Giorno preferito', v: 'Sabato' },
+      { k: 'Quota media', v: '4.80' },
+      { k: 'Bookmaker più usato', v: 'Eurobet' }
+    ];
+    const wl = [
+      { label: 'VINTE', value: '10', color: V },
+      { label: 'PERSE', value: '21', color: RED },
+      { label: 'SERIE MIGLIORE', value: '3 vinte', color: V },
+      { label: 'SERIE PEGGIORE', value: '6 perse', color: RED },
+      { label: 'VINCITA PIÙ ALTA', value: '+86 €', color: V },
+      { label: 'PERDITA PIÙ ALTA', value: '−15 €', color: RED },
+      { label: 'QUOTA MEDIA VINTE', value: '2.40', color: WHITE },
+      { label: 'QUOTA MEDIA PERSE', value: '6.10', color: WHITE }
+    ];
+    return {
+      ledShadow: glow ? '0 0 8px currentColor' : 'none',
+      valore: V,
+      kpis: kpis,
+      groups: groups,
+      teams: teams,
+      prefs: prefs,
+      wl: wl
+    };
+  }
+}
+</script>
+</body>
+</html>

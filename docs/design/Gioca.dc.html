@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>ArchieBet – Gioca</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&amp;family=Bebas+Neue&amp;family=Doto:wght@700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0C0B}
+*{box-sizing:border-box}
+a{color:#FFB000}a:hover{color:#FFC94D}
+@keyframes ab-blink{0%,100%{opacity:1}50%{opacity:.25}}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0A0C0B; color: #EDEDED; font-family: 'Barlow', system-ui, sans-serif; font-size: 15px; line-height: 1.4;">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; padding: 14px 24px; border-bottom: 1px solid #222A26; background: #0F1211;">
+<a href="Main.dc.html" aria-label="ArchieBet, torna alla dashboard" style="display: flex; align-items: baseline; gap: 8px; text-decoration: none;">
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 32px; letter-spacing: 2px; color: #FFB000; text-shadow: {{ledShadow}};">ARCHIE</span>
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 3px; color: #EDEDED;">BET</span>
+</a>
+<nav aria-label="Sezioni principali" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; flex: 1 1 auto;">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 1.5px; color: #EDEDED; text-decoration: none; border-bottom: 3px solid transparent;">Partite</a>
+<a href="Schedine.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 1.5px; color: #EDEDED; text-decoration: none; border-bottom: 3px solid transparent;">Le mie schedine <span style="font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #0A0C0B; background: #FFB000; border-radius: 3px; padding: 2px 6px;">2 LIVE</span></a>
+<a href="Statistiche.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 1.5px; color: #EDEDED; text-decoration: none; border-bottom: 3px solid transparent;">Le mie statistiche</a>
+<a href="Gioca.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 1.5px; color: #FFB000; text-decoration: none; border-bottom: 3px solid #FFB000;">Gioca</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 8px;">
+<button type="button" aria-label="Impostazioni e limiti di gioco" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; color: #EDEDED; border: 1px solid #2A322E; border-radius: 6px; cursor: pointer;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line><circle cx="9" cy="6" r="2" fill="#0F1211"></circle><circle cx="15" cy="12" r="2" fill="#0F1211"></circle><circle cx="7" cy="18" r="2" fill="#0F1211"></circle></svg>
+</button>
+<button type="button" aria-label="Il tuo profilo" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; color: #EDEDED; border: 1px solid #2A322E; border-radius: 6px; cursor: pointer;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>
+</button>
+</div>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 24px; background: #070908; border-bottom: 1px solid #222A26;">
+<div style="display: flex; align-items: baseline; gap: 12px;">
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 2px;">Gioca</span>
+<span style="font-size: 14px; color: #C9D1CC;">Simulazioni e sfide con crediti finti. Qui non si spende un euro.</span>
+</div>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: {{valore}}; border: 1px solid {{valore}}; border-radius: 3px; padding: 3px 8px;">0 € · SOLO CREDITI FINTI</span>
+</div>
+
+<main style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 32px; max-width: 1440px; margin: 0 auto;">
+
+<section aria-label="Simulatore partita" style="flex: 1 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px;">
+
+<div style="background: #111513; border: 1px solid #222A26; border-radius: 6px; padding: 16px 20px;">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px;">
+<div>
+<div style="font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1.5px; color: #FFB000;">Simulatore partita</div>
+<div style="font-size: 13px; color: #8E9892;">Archie gioca la partita 10.000 volte e ti mostra cosa succede più spesso.</div>
+</div>
+<button type="button" style="display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 12px; font-weight: 600; font-size: 14px; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Napoli – Roma · oggi 20:45<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+</div>
+
+<div style="background: #050605; border: 2px solid #2A322E; border-radius: 6px; padding: 14px 16px;">
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892; margin-bottom: 4px;">
+<span>SIMULAZIONE 1 DI 10.000 · DAL VIVO</span>
+<span style="display: flex; align-items: center; gap: 6px; color: #FFB000;"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; background: #FFB000; animation: ab-blink 1.4s ease-in-out infinite;"></span>VELOCITÀ ×10</span>
+</div>
+<div style="display: flex; justify-content: space-between; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px;"><span>Napoli</span><span>Roma</span></div>
+<div style="display: flex; align-items: center; justify-content: space-between;">
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 64px; line-height: 1; color: #FFB000; text-shadow: {{ledShadow}};">1</span>
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 38px; line-height: 1; color: {{valore}}; text-shadow: {{ledShadow}};">72'</span>
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 64px; line-height: 1; color: #FFB000; text-shadow: {{ledShadow}};">1</span>
+</div>
+<ul style="list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px;">
+<li style="display: flex; gap: 12px;"><span style="width: 36px; font-family: 'Doto', monospace; font-weight: 900; color: #FFB000;">64'</span>Gol · Roma</li>
+<li style="display: flex; gap: 12px;"><span style="width: 36px; font-family: 'Doto', monospace; font-weight: 900; color: #FFB000;">18'</span>Gol · Napoli</li>
+</ul>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+<button type="button" style="min-height: 44px; padding: 6px 16px; font-weight: 700; font-size: 14px; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Pausa</button>
+<button type="button" style="min-height: 44px; padding: 6px 16px; font-weight: 700; font-size: 14px; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Vai al risultato</button>
+<button type="button" style="min-height: 44px; padding: 6px 16px; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1.5px; color: #0A0C0B; background: #FFB000; border: 0; border-radius: 4px; cursor: pointer;">Simula 10.000 volte</button>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px;">
+<div style="flex: 1 1 260px; min-width: 0; background: #111513; border: 1px solid #222A26; border-radius: 6px; padding: 16px 20px;">
+<div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1.5px;">Come finisce più spesso</div>
+<div style="font-size: 12px; color: #8E9892; margin-bottom: 8px;">Risultati esatti · situazione di partenza</div>
+<sc-for list="{{scores}}" as="sc" hint-placeholder-count="6">
+<div style="display: grid; grid-template-columns: 52px minmax(0, 1fr) 56px; align-items: center; gap: 8px; padding: 4px 0;">
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 18px; color: #FFB000;">{{sc.s}}</span>
+<div style="height: 10px; background: #0A0C0B; border-radius: 2px;"><div style="width: {{sc.w}}%; height: 100%; background: #FFB000; border-radius: 2px;"></div></div>
+<span style="text-align: right; font-family: 'Doto', monospace; font-weight: 900; font-size: 15px;">{{sc.p}}</span>
+</div>
+</sc-for>
+</div>
+
+<div style="flex: 1 1 300px; min-width: 0; background: #111513; border: 1px solid #FFB000; border-radius: 6px; padding: 16px 20px;">
+<div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1.5px; color: #FFB000;">E se...</div>
+<div style="font-size: 12px; color: #8E9892; margin-bottom: 8px;">Accendi e spegni: le probabilità cambiano subito.</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<sc-for list="{{toggles}}" as="t" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{t.pressed}}" onClick="{{t.toggle}}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 6px 10px; font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 600; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer; text-align: left;">
+<span>{{t.label}}</span>
+<span style="flex: 0 0 auto; min-width: 40px; text-align: center; font-size: 12px; font-weight: 700; color: {{t.color}}; background: {{t.bg}}; border: 1px solid #FFB000; border-radius: 3px; padding: 2px 6px;">{{t.mark}}</span>
+</button>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+<sc-for list="{{outcomes}}" as="o" hint-placeholder-count="4">
+<div>
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+<span style="font-size: 14px; font-weight: 600;">{{o.label}}</span>
+<span><span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 20px; color: #FFB000; text-shadow: {{glowSmall}};">{{o.pct}}%</span> <span style="font-size: 12px; color: #8E9892;">{{o.delta}}</span></span>
+</div>
+<div style="height: 8px; background: #0A0C0B; border-radius: 2px;"><div style="width: {{o.w}}%; height: 100%; background: #FFB000; border-radius: 2px;"></div></div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</section>
+
+<section aria-label="Sfida contro Archie" style="flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 20px;">
+<div style="background: #111513; border: 1px solid #222A26; border-radius: 6px; padding: 16px 20px;">
+<div style="font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1.5px; color: #FFB000;">Sfida contro Archie</div>
+<div style="font-size: 13px; color: #8E9892; margin-bottom: 12px;">Ogni giornata fai i tuoi pronostici, Archie fa i suoi. 100 crediti a partita, vince chi ne accumula di più.</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; gap: 8px; padding: 12px; background: #050605; border: 2px solid #2A322E; border-radius: 6px; text-align: center;">
+<div>
+<div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px;">Tu</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 44px; line-height: 1; color: #EDEDED; text-shadow: {{glowSmall}};">1240</div>
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">CREDITI</div>
+</div>
+<div>
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">GIORNATA</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 34px; color: #FFB000; text-shadow: {{ledShadow}};">8</div>
+</div>
+<div>
+<div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; color: #FFB000;">Archie</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 44px; line-height: 1; color: #FFB000; text-shadow: {{ledShadow}};">1410</div>
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">CREDITI</div>
+</div>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 16px 0 4px;">
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1.5px;">I tuoi pronostici</span>
+<span style="font-size: 13px; color: #C9D1CC;">{{agreeText}}</span>
+</div>
+<sc-for list="{{picks}}" as="p" hint-placeholder-count="4">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 0; border-top: 1px solid #1C2320;">
+<div style="flex: 1 1 180px; min-width: 0;">
+<div style="font-weight: 700;">{{p.match}}</div>
+<div style="font-size: 12px; color: #8E9892;">{{p.when}} · Archie dice <strong style="color: #FFB000;">{{p.archie}}</strong></div>
+</div>
+<div role="group" aria-label="Il tuo pronostico" style="display: flex; gap: 4px;">
+<sc-for list="{{p.options}}" as="op" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{op.pressed}}" onClick="{{op.pick}}" style="width: 44px; height: 44px; font-family: 'Doto', monospace; font-weight: 900; font-size: 18px; color: {{op.color}}; background: {{op.bg}}; border: 1px solid {{op.border}}; border-radius: 4px; cursor: pointer;">{{op.o}}</button>
+</sc-for>
+</div>
+<span style="width: 104px; text-align: right; font-size: 12px; font-weight: 700; color: {{p.vsColor}};">{{p.vs}}</span>
+</div>
+</sc-for>
+<button type="button" style="width: 100%; margin-top: 12px; min-height: 48px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: #0A0C0B; background: #FFB000; border: 0; border-radius: 4px; cursor: pointer;">Conferma i pronostici</button>
+</div>
+
+<div style="background: #111513; border: 1px solid #222A26; border-radius: 6px; padding: 16px 20px;">
+<div style="font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px; margin-bottom: 8px;">Classifica della stagione</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #1C2320;">
+<span style="width: 28px; font-family: 'Doto', monospace; font-weight: 900; font-size: 20px; color: #FFB000;">1</span>
+<span style="flex: 1 1 auto; font-weight: 700;">Archie</span>
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 18px; color: #FFB000;">1410</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #1C2320;">
+<span style="width: 28px; font-family: 'Doto', monospace; font-weight: 900; font-size: 20px; color: #EDEDED;">2</span>
+<span style="flex: 1 1 auto; font-weight: 700;">Tu</span>
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 18px;">1240</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #1C2320;">
+<span style="width: 28px; font-family: 'Doto', monospace; font-weight: 900; font-size: 20px; color: #5C6661;">3</span>
+<span style="flex: 1 1 auto; color: #8E9892;">Posto libero</span>
+<button type="button" style="min-height: 40px; padding: 6px 12px; font-weight: 600; font-size: 13px; color: #FFB000; background: transparent; border: 1px solid #FFB000; border-radius: 4px; cursor: pointer;">Invita un amico</button>
+</div>
+<p style="margin: 8px 0 0; font-size: 13px; color: #8E9892;">Archie ti batte da 3 giornate di fila. Per ora.</p>
+</div>
+</section>
+</main>
+
+<footer style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 16px 24px; border-top: 1px solid #222A26; font-size: 12px; color: #8E9892;">
+<span style="font-style: italic;">Give me the odds, I'll move the world.</span>
+<span>Crediti finti · Nessun soldo vero · Dati di esempio</span>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"glow":{"editor":"boolean","default":true},"valore":{"editor":"color","default":"#3DFF6E","options":["#3DFF6E","#00E5FF","#FFD60A"]},"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const glow = this.props.glow ?? true;
+    const V = this.props.valore ?? '#3DFF6E';
+    const AMBER = '#FFB000';
+    const LINE = '#2A322E';
+    const flags = {
+      striker: st.striker ?? true,
+      tired: st.tired ?? true,
+      rain: st.rain ?? false
+    };
+    let p1 = 51, px = 30, p2 = 19, ov = 44;
+    if (flags.striker) { p1 -= 4; px += 3; p2 += 1; ov -= 3; }
+    if (flags.tired) { p1 += 2; px -= 1; p2 -= 1; ov += 1; }
+    if (flags.rain) { p1 -= 1; px += 2; p2 -= 1; ov -= 4; }
+    const toggleDefs = [
+      { key: 'striker', label: "Manca l'attaccante titolare del Napoli" },
+      { key: 'tired', label: 'Roma stanca: ha giocato giovedì in coppa' },
+      { key: 'rain', label: 'Pioggia forte durante la partita' }
+    ];
+    const toggles = toggleDefs.map((t) => {
+      const on = flags[t.key];
+      return {
+        label: t.label,
+        pressed: on ? 'true' : 'false',
+        mark: on ? 'SÌ' : 'NO',
+        bg: on ? AMBER : 'transparent',
+        color: on ? '#0A0C0B' : '#C9D1CC',
+        toggle: () => { const patch = {}; patch[t.key] = !on; this.setState(patch); }
+      };
+    });
+    const out = (label, pct, base) => ({
+      label: label, pct: pct,
+      w: Math.min(100, Math.round(pct * 1.6)),
+      delta: pct === base ? 'come all\'inizio' : 'era ' + base + '%'
+    });
+    const outcomes = [
+      out('Vince il Napoli (1)', p1, 51),
+      out('Pareggio (X)', px, 30),
+      out('Vince la Roma (2)', p2, 19),
+      out('Over 2.5', ov, 44)
+    ];
+    const sc = (s, p) => ({ s: s, p: p.toFixed(1) + '%', w: Math.round(p / 12.6 * 100) });
+    const scores = [sc('1-1', 12.6), sc('1-0', 11.9), sc('0-0', 9.4), sc('2-1', 9.1), sc('2-0', 8.3), sc('0-1', 6.5)];
+    const defs = [
+      { match: 'Napoli – Roma', when: 'oggi 20:45', archie: 'X', mine: 'X' },
+      { match: 'Juventus – Torino', when: 'dom 15:00', archie: '1', mine: '1' },
+      { match: 'Bologna – Udinese', when: 'dom 18:00', archie: 'X', mine: '1' },
+      { match: 'Palermo – Bari', when: 'dom 15:00', archie: '1', mine: '2' }
+    ];
+    const chosen = st.picks || defs.map((d) => d.mine);
+    let agree = 0;
+    const picks = defs.map((d, i) => {
+      const mine = chosen[i];
+      if (mine === d.archie) { agree += 1; }
+      return {
+        match: d.match, when: d.when, archie: d.archie,
+        vs: mine === d.archie ? 'Come Archie' : 'Contro Archie',
+        vsColor: mine === d.archie ? '#8E9892' : AMBER,
+        options: ['1', 'X', '2'].map((o) => ({
+          o: o,
+          pressed: mine === o ? 'true' : 'false',
+          bg: mine === o ? AMBER : 'transparent',
+          color: mine === o ? '#0A0C0B' : '#EDEDED',
+          border: mine === o ? AMBER : LINE,
+          pick: () => { const next = chosen.slice(); next[i] = o; this.setState({ picks: next }); }
+        }))
+      };
+    });
+    return {
+      ledShadow: glow ? '0 0 8px currentColor' : 'none',
+      glowSmall: glow ? '0 0 4px currentColor' : 'none',
+      valore: V,
+      toggles: toggles,
+      outcomes: outcomes,
+      scores: scores,
+      picks: picks,
+      agreeText: 'D\'accordo con Archie su ' + agree + ' partite su ' + defs.length
+    };
+  }
+}
+</script>
+</body>
+</html>

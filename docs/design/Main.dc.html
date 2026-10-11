@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>ArchieBet – Dashboard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&amp;family=Bebas+Neue&amp;family=Doto:wght@700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0C0B}
+*{box-sizing:border-box}
+a{color:#FFB000}a:hover{color:#FFC94D}
+@keyframes ab-blink{0%,100%{opacity:1}50%{opacity:.25}}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0A0C0B; color: #EDEDED; font-family: 'Barlow', system-ui, sans-serif; font-size: 15px; line-height: 1.4;">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; padding: 14px 24px; border-bottom: 1px solid #222A26; background: #0F1211;">
+<div style="display: flex; align-items: baseline; gap: 8px;">
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 32px; letter-spacing: 2px; color: #FFB000; text-shadow: {{ledShadow}};">ARCHIE</span>
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 3px; color: #EDEDED;">BET</span>
+</div>
+<nav aria-label="Sezioni principali" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; flex: 1 1 auto;">
+<a href="Main.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 1.5px; color: #FFB000; text-decoration: none; border-bottom: 3px solid #FFB000;">Partite</a>
+<a href="Schedine.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 1.5px; color: #EDEDED; text-decoration: none; border-bottom: 3px solid transparent;">Le mie schedine <span style="font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #0A0C0B; background: #FFB000; border-radius: 3px; padding: 2px 6px;">2 LIVE</span></a>
+<a href="Statistiche.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 1.5px; color: #EDEDED; text-decoration: none; border-bottom: 3px solid transparent;">Le mie statistiche</a>
+<a href="Gioca.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 1.5px; color: #EDEDED; text-decoration: none; border-bottom: 3px solid transparent;">Gioca <span style="font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #EDEDED; border: 1px solid #EDEDED; border-radius: 3px; padding: 1px 6px;">NUOVO</span></a>
+</nav>
+<div style="display: flex; align-items: center; gap: 8px;">
+<button type="button" aria-label="Impostazioni e limiti di gioco" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; color: #EDEDED; border: 1px solid #2A322E; border-radius: 6px; cursor: pointer;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line><circle cx="9" cy="6" r="2" fill="#0F1211"></circle><circle cx="15" cy="12" r="2" fill="#0F1211"></circle><circle cx="7" cy="18" r="2" fill="#0F1211"></circle></svg>
+</button>
+<button type="button" aria-label="Il tuo profilo" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; color: #EDEDED; border: 1px solid #2A322E; border-radius: 6px; cursor: pointer;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>
+</button>
+</div>
+</header>
+
+<div style="display: flex; align-items: center; gap: 16px; padding: 8px 24px; background: #070908; border-bottom: 1px solid #222A26; overflow: hidden; white-space: nowrap;">
+<span style="flex: 0 0 auto; font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 2px; color: #0A0C0B; background: #FFB000; padding: 2px 10px; border-radius: 2px;">Ultim'ora</span>
+<div style="display: flex; align-items: center; gap: 24px; font-weight: 600; font-size: 14px; letter-spacing: 0.6px; text-transform: uppercase; color: #FFB000; overflow: hidden;">
+<a href="#" style="color: #FFB000; text-decoration: none;">Napoli – Roma: formazioni attese alle 19:45</a>
+<span aria-hidden="true" style="color: #5C6661;">•</span>
+<a href="#" style="color: #FFB000; text-decoration: none;">Serie C: anticipo del girone C spostato alle 17:30</a>
+<span aria-hidden="true" style="color: #5C6661;">•</span>
+<a href="#" style="color: #FFB000; text-decoration: none;">Meteo: pioggia prevista a Bologna domenica sera</a>
+<span aria-hidden="true" style="color: #5C6661;">•</span>
+<a href="#" style="color: #FFB000; text-decoration: none;">Archie: 4 partite con valore nel weekend</a>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 24px; border-bottom: 1px solid #222A26;">
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1.5px; color: #8E9892; margin-right: 4px;">Campionati</span>
+<button type="button" aria-expanded="false" style="display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 12px; font-weight: 600; font-size: 14px; color: #FFB000; background: #1A1F1C; border: 1px solid #FFB000; border-radius: 4px; cursor: pointer;">Italia · 3<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<button type="button" aria-expanded="false" style="display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 12px; font-weight: 600; font-size: 14px; color: #C9D1CC; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Inghilterra<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<button type="button" aria-expanded="false" style="display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 12px; font-weight: 600; font-size: 14px; color: #C9D1CC; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Spagna<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<button type="button" aria-expanded="false" style="display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 12px; font-weight: 600; font-size: 14px; color: #C9D1CC; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Germania<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<button type="button" aria-expanded="false" style="display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 12px; font-weight: 600; font-size: 14px; color: #C9D1CC; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Francia<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<button type="button" aria-expanded="false" style="display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 12px; font-weight: 600; font-size: 14px; color: #C9D1CC; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Coppe europee<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<span aria-hidden="true" style="width: 1px; height: 24px; background: #2A322E; margin: 0 6px;"></span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px;">
+<button type="button" aria-label="Togli Serie A dal filtro" style="display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: #EDEDED; background: #1A1F1C; border: 1px solid #2A322E; border-radius: 17px; cursor: pointer;">Serie A <span aria-hidden="true" style="color: #8E9892;">✕</span></button>
+<button type="button" aria-label="Togli Serie B dal filtro" style="display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: #EDEDED; background: #1A1F1C; border: 1px solid #2A322E; border-radius: 17px; cursor: pointer;">Serie B <span aria-hidden="true" style="color: #8E9892;">✕</span></button>
+<button type="button" aria-label="Togli Serie C dal filtro" style="display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: #EDEDED; background: #1A1F1C; border: 1px solid #2A322E; border-radius: 17px; cursor: pointer;">Serie C <span aria-hidden="true" style="color: #8E9892;">✕</span></button>
+</div>
+</div>
+
+<main style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px 32px; max-width: 1440px; margin: 0 auto;">
+
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px;">
+
+<section aria-label="Multipla su misura" style="background: #111513; border: 1px solid #FFB000; border-radius: 6px; padding: 16px 20px;">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 14px;">
+<div style="font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1.5px; color: #FFB000;">Archie, fammi una multipla</div>
+<div style="font-size: 13px; color: #8E9892;">Usa solo giocate con valore. Se non ce ne sono abbastanza, te lo dice.</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px;">
+<div style="flex: 1 1 150px; background: #0A0C0B; border: 1px solid #2A322E; border-radius: 4px; padding: 8px 10px;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">QUANTE PARTITE</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px;">
+<button type="button" aria-label="Una partita in meno" style="width: 36px; height: 36px; font-size: 20px; font-weight: 700; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">−</button>
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 30px; color: #FFB000; text-shadow: {{ledShadow}};">4</span>
+<button type="button" aria-label="Una partita in più" style="width: 36px; height: 36px; font-size: 20px; font-weight: 700; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">+</button>
+</div>
+</div>
+<div style="flex: 1 1 150px; background: #0A0C0B; border: 1px solid #2A322E; border-radius: 4px; padding: 8px 10px;">
+<label for="ab-puntata" style="display: block; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">QUANTO PUNTI €</label>
+<input id="ab-puntata" type="text" inputmode="decimal" value="10,00" style="width: 100%; margin-top: 2px; padding: 0; font-family: 'Doto', monospace; font-weight: 900; font-size: 30px; color: #FFB000; background: transparent; border: 0; outline: none;">
+</div>
+<div style="flex: 2 1 300px; background: #0A0C0B; border: 1px solid #2A322E; border-radius: 4px; padding: 8px 10px;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">RISCHIO</div>
+<div role="group" aria-label="Livello di rischio" style="display: flex; margin-top: 6px; border: 1px solid #2A322E; border-radius: 4px; overflow: hidden;">
+<button type="button" aria-pressed="false" style="flex: 1 1 0; min-height: 38px; font-weight: 600; font-size: 14px; color: #C9D1CC; background: transparent; border: 0; border-right: 1px solid #2A322E; cursor: pointer;">Prudente</button>
+<button type="button" aria-pressed="true" style="flex: 1 1 0; min-height: 38px; font-weight: 700; font-size: 14px; color: #0A0C0B; background: #EDEDED; border: 0; border-right: 1px solid #2A322E; cursor: pointer;">Equilibrato</button>
+<button type="button" aria-pressed="false" style="flex: 1 1 0; min-height: 38px; font-weight: 600; font-size: 14px; color: #C9D1CC; background: transparent; border: 0; cursor: pointer;">Coraggioso</button>
+</div>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px;">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892; margin-right: 4px;">MERCATI</span>
+<button type="button" aria-pressed="true" style="min-height: 34px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: #0A0C0B; background: #C9D1CC; border: 1px solid #C9D1CC; border-radius: 17px; cursor: pointer;">1X2</button>
+<button type="button" aria-pressed="true" style="min-height: 34px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: #0A0C0B; background: #C9D1CC; border: 1px solid #C9D1CC; border-radius: 17px; cursor: pointer;">Doppia chance</button>
+<button type="button" aria-pressed="true" style="min-height: 34px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: #0A0C0B; background: #C9D1CC; border: 1px solid #C9D1CC; border-radius: 17px; cursor: pointer;">Under / Over</button>
+<button type="button" aria-pressed="true" style="min-height: 34px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: #0A0C0B; background: #C9D1CC; border: 1px solid #C9D1CC; border-radius: 17px; cursor: pointer;">Goal / NoGoal</button>
+<button type="button" aria-pressed="false" style="min-height: 34px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: #C9D1CC; background: transparent; border: 1px solid #2A322E; border-radius: 17px; cursor: pointer;">Gol squadra</button>
+<span aria-hidden="true" style="width: 1px; height: 22px; background: #2A322E; margin: 0 4px;"></span>
+<button type="button" style="display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Oggi e domani<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<button type="button" style="margin-left: auto; min-height: 48px; padding: 8px 24px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: #0A0C0B; background: #FFB000; border: 0; border-radius: 4px; cursor: pointer;">Genera con Archie</button>
+</div>
+</section>
+
+<section aria-label="Elenco partite" style="background: #111513; border: 1px solid #222A26; border-radius: 6px; overflow: hidden;">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #222A26;">
+<div role="tablist" aria-label="Filtra partite" style="display: flex; flex-wrap: wrap; gap: 4px;">
+<button type="button" role="tab" aria-selected="true" style="min-height: 40px; padding: 6px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1.2px; color: #0A0C0B; background: #FFB000; border: 0; border-radius: 4px; cursor: pointer;">Tutte</button>
+<button type="button" role="tab" aria-selected="false" style="min-height: 40px; padding: 6px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1.2px; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Live (3)</button>
+<button type="button" role="tab" aria-selected="false" style="min-height: 40px; padding: 6px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1.2px; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Prossime</button>
+<button type="button" role="tab" aria-selected="false" style="min-height: 40px; padding: 6px 14px; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1.2px; color: #EDEDED; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">Risultati</button>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #FFB000; border: 1px solid #FFB000; border-radius: 3px; padding: 3px 8px;">SUGGERIMENTI IN PROVA</span>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892; border: 1px solid #3A443F; border-radius: 3px; padding: 3px 8px;">DATI DI ESEMPIO</span>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: #0D100F; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; color: #FFB000;">
+<span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; background: #FFB000; animation: ab-blink 1.4s ease-in-out infinite;"></span>In diretta
+</div>
+<sc-for list="{{live}}" as="m" hint-placeholder-count="3">
+<a href="Partita.dc.html" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 20px; border-top: 1px solid #1C2320; color: inherit; text-decoration: none;">
+<div style="width: 64px; display: flex; flex-direction: column; gap: 2px;">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #FFB000; animation: ab-blink 1.4s ease-in-out infinite;">LIVE</span>
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 22px; color: #FFB000; text-shadow: {{ledShadow}};">{{m.time}}</span>
+</div>
+<div style="flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">{{m.league}}</span>
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+<span style="font-weight: 600; font-size: 16px;">{{m.home}}</span>
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 20px; color: #FFB000; text-shadow: {{ledShadow}};">{{m.sh}}</span>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+<span style="font-weight: 600; font-size: 16px;">{{m.away}}</span>
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 20px; color: #FFB000; text-shadow: {{ledShadow}};">{{m.sa}}</span>
+</div>
+</div>
+<div style="display: flex; gap: 6px;">
+<div style="width: 62px; padding: 6px 0; text-align: center; background: #0A0C0B; border: 1px solid {{m.b1}}; border-radius: 4px;">
+<div style="font-size: 11px; font-weight: 700; color: #8E9892;">1</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 18px; color: {{m.c1}}; text-shadow: {{glowSmall}};">{{m.q1}}</div>
+</div>
+<div style="width: 62px; padding: 6px 0; text-align: center; background: #0A0C0B; border: 1px solid {{m.bx}}; border-radius: 4px;">
+<div style="font-size: 11px; font-weight: 700; color: #8E9892;">X</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 18px; color: {{m.cx}}; text-shadow: {{glowSmall}};">{{m.qx}}</div>
+</div>
+<div style="width: 62px; padding: 6px 0; text-align: center; background: #0A0C0B; border: 1px solid {{m.b2}}; border-radius: 4px;">
+<div style="font-size: 11px; font-weight: 700; color: #8E9892;">2</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 18px; color: {{m.c2}}; text-shadow: {{glowSmall}};">{{m.q2}}</div>
+</div>
+</div>
+<div style="width: 150px; display: flex; justify-content: flex-end;">
+<sc-if value="{{m.hasTag}}" hint-placeholder-val="{{ true }}">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: {{m.tagColor}}; border: 1px solid {{m.tagColor}}; border-radius: 3px; padding: 4px 8px;">{{m.tag}}</span>
+</sc-if>
+</div>
+</a>
+</sc-for>
+
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 20px; background: #0D100F; border-top: 1px solid #1C2320;">
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; color: #C9D1CC;">{{g.league}}</span>
+<span style="font-size: 12px; color: #8E9892;">{{g.note}}</span>
+</div>
+<sc-for list="{{g.matches}}" as="m" hint-placeholder-count="3">
+<a href="Partita.dc.html" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 20px; border-top: 1px solid #1C2320; color: inherit; text-decoration: none;">
+<div style="width: 64px; display: flex; flex-direction: column; gap: 2px;">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #8E9892;">{{m.label}}</span>
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 20px; color: #FFB000; text-shadow: {{ledShadow}};">{{m.time}}</span>
+</div>
+<div style="flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+<span style="font-weight: 600; font-size: 16px;">{{m.home}}</span>
+<span style="font-weight: 600; font-size: 16px;">{{m.away}}</span>
+</div>
+<div style="display: flex; gap: 6px;">
+<div style="width: 62px; padding: 6px 0; text-align: center; background: #0A0C0B; border: 1px solid {{m.b1}}; border-radius: 4px;">
+<div style="font-size: 11px; font-weight: 700; color: #8E9892;">1</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 18px; color: {{m.c1}}; text-shadow: {{glowSmall}};">{{m.q1}}</div>
+</div>
+<div style="width: 62px; padding: 6px 0; text-align: center; background: #0A0C0B; border: 1px solid {{m.bx}}; border-radius: 4px;">
+<div style="font-size: 11px; font-weight: 700; color: #8E9892;">X</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 18px; color: {{m.cx}}; text-shadow: {{glowSmall}};">{{m.qx}}</div>
+</div>
+<div style="width: 62px; padding: 6px 0; text-align: center; background: #0A0C0B; border: 1px solid {{m.b2}}; border-radius: 4px;">
+<div style="font-size: 11px; font-weight: 700; color: #8E9892;">2</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 18px; color: {{m.c2}}; text-shadow: {{glowSmall}};">{{m.q2}}</div>
+</div>
+</div>
+<div style="width: 150px; display: flex; justify-content: flex-end;">
+<sc-if value="{{m.hasTag}}" hint-placeholder-val="{{ true }}">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: {{m.tagColor}}; border: 1px solid {{m.tagColor}}; border-radius: 3px; padding: 4px 8px;">{{m.tag}}</span>
+</sc-if>
+</div>
+</a>
+</sc-for>
+</sc-for>
+<p style="margin: 0; padding: 14px 20px; border-top: 1px solid #1C2320; font-size: 13px; color: #8E9892;">Clicca una partita per aprire statistiche, quote e il pronostico di Archie.</p>
+</section>
+</div>
+
+<aside aria-label="Pannello laterale" style="flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 20px;">
+
+<section aria-label="ArchieTV" style="background: #111513; border: 1px solid #222A26; border-radius: 6px; padding: 16px 20px;">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
+<div style="display: flex; align-items: baseline; gap: 6px;">
+<span style="font-family: 'Doto', monospace; font-weight: 900; font-size: 22px; color: #FFB000; text-shadow: {{glowSmall}};">ARCHIE</span>
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px;">TV</span>
+</div>
+<div role="tablist" aria-label="Vista" style="display: flex; border: 1px solid #2A322E; border-radius: 4px; overflow: hidden;">
+<button type="button" role="tab" aria-selected="true" style="min-height: 36px; padding: 4px 12px; font-weight: 700; font-size: 13px; color: #0A0C0B; background: #EDEDED; border: 0; cursor: pointer;">Video</button>
+<button type="button" role="tab" aria-selected="false" style="min-height: 36px; padding: 4px 12px; font-weight: 600; font-size: 13px; color: #C9D1CC; background: transparent; border: 0; border-left: 1px solid #2A322E; cursor: pointer;">Termometro live</button>
+</div>
+</div>
+
+<div style="position: relative; aspect-ratio: 16 / 9; background: #050605; border: 2px solid #2A322E; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+<span style="position: absolute; top: 10px; left: 12px; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #0A0C0B; background: #FFB000; border-radius: 3px; padding: 2px 6px;">HIGHLIGHTS · SERIE B</span>
+<span style="position: absolute; top: 10px; right: 12px; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #C9D1CC; border: 1px solid #3A443F; border-radius: 3px; padding: 2px 6px;">CANALE UFFICIALE</span>
+<button type="button" aria-label="Guarda il video" style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; color: #0A0C0B; background: #FFB000; border: 0; border-radius: 50%; cursor: pointer;">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+</button>
+<span style="position: absolute; bottom: 10px; left: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px;">Palermo – Bari · 2-1</span>
+</div>
+
+<ul style="list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column;">
+<sc-for list="{{videos}}" as="v" hint-placeholder-count="3">
+<li>
+<a href="#" style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid #1C2320; color: inherit; text-decoration: none;">
+<span aria-hidden="true" style="flex: 0 0 72px; height: 40px; display: flex; align-items: center; justify-content: center; background: #050605; border: 1px solid #2A322E; border-radius: 3px; color: #FFB000;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg></span>
+<span style="flex: 1 1 auto; min-width: 0;">
+<span style="display: block; font-weight: 600; font-size: 14px;">{{v.title}}</span>
+<span style="display: block; font-size: 12px; color: #8E9892;">{{v.source}}</span>
+</span>
+</a>
+</li>
+</sc-for>
+</ul>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; padding-top: 12px; border-top: 1px solid #1C2320;">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">CANALI GRATUITI IN DIRETTA</span>
+<a href="#" style="display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: #EDEDED; border: 1px solid #2A322E; border-radius: 4px; text-decoration: none;">Sportitalia<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M7 17L17 7"></path><path d="M8 7h9v9"></path></svg></a>
+<a href="#" style="display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: #EDEDED; border: 1px solid #2A322E; border-radius: 4px; text-decoration: none;">Rai Sport<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M7 17L17 7"></path><path d="M8 7h9v9"></path></svg></a>
+</div>
+</section>
+
+<section aria-label="La mia schedina" style="background: #111513; border: 1px solid #222A26; border-radius: 6px; padding: 16px 20px;">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px;">La mia schedina</span>
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #0A0C0B; background: #FFB000; border-radius: 3px; padding: 2px 6px;">GENERATA DA ARCHIE</span>
+</div>
+<button type="button" style="min-height: 40px; padding: 6px 10px; font-weight: 600; font-size: 13px; color: #C9D1CC; background: transparent; border: 0; text-decoration: underline; cursor: pointer;">Svuota</button>
+</div>
+
+<sc-for list="{{selections}}" as="s" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #1C2320;">
+<div style="flex: 1 1 auto; min-width: 0;">
+<div style="font-size: 12px; color: #8E9892;">{{s.match}}</div>
+<div style="font-weight: 600; font-size: 15px;">{{s.market}}</div>
+</div>
+<span style="font-size: 12px; font-weight: 700; color: {{s.valColor}}; border: 1px solid {{s.valColor}}; border-radius: 3px; padding: 2px 6px;">{{s.val}}</span>
+<span style="width: 52px; text-align: right; font-family: 'Doto', monospace; font-weight: 900; font-size: 18px; color: #EDEDED; text-shadow: {{glowSmall}};">{{s.q}}</span>
+<button type="button" aria-label="Togli selezione" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #8E9892; background: transparent; border: 1px solid #2A322E; border-radius: 4px; cursor: pointer;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+</button>
+</div>
+</sc-for>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding-top: 12px; border-top: 1px solid #1C2320;">
+<div style="background: #050605; border: 1px solid #2A322E; border-radius: 4px; padding: 8px 10px;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">QUOTA TOTALE</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 24px; color: #FFB000; text-shadow: {{ledShadow}};">23.39</div>
+</div>
+<div style="background: #050605; border: 1px solid #2A322E; border-radius: 4px; padding: 8px 10px;">
+<label for="ab-importo" style="display: block; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">IMPORTO €</label>
+<input id="ab-importo" type="text" inputmode="decimal" value="10,00" style="width: 100%; padding: 0; font-family: 'Doto', monospace; font-weight: 900; font-size: 24px; color: #EDEDED; background: transparent; border: 0; outline: none;">
+</div>
+<div style="background: #050605; border: 1px solid #2A322E; border-radius: 4px; padding: 8px 10px;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">VINCITA €</div>
+<div style="font-family: 'Doto', monospace; font-weight: 900; font-size: 24px; color: #EDEDED; text-shadow: {{glowSmall}};">233.88</div>
+</div>
+</div>
+
+<div style="margin-top: 12px; padding: 12px 14px; border: 1px dashed #FFB000; border-radius: 4px; background: #14120A;">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 1.5px; color: #FFB000;">Analisi di Archie</span>
+<span style="font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #FFB000; border: 1px solid #FFB000; border-radius: 3px; padding: 1px 6px;">MODELLO IN PROVA</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px;">
+<span>Probabilità reale <strong style="font-weight: 700;">5,7%</strong> (circa 1 volta su 18)</span>
+<span>Valore atteso <strong style="font-weight: 700; color: {{valore}};">+3,34 €</strong></span>
+</div>
+<p style="margin: 6px 0 0; font-size: 14px; color: #C9D1CC;">Tutte e 4 le giocate hanno valore, ma valore non vuol dire vincere spesso: questa la perdi 17 volte su 18.</p>
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #2E2A18;">
+<span style="font-size: 13px; color: #C9D1CC;">Versione prudente: 2 partite · quota <strong style="font-weight: 700;">6.02</strong> · probabilità <strong style="font-weight: 700;">18,9%</strong></span>
+<button type="button" style="min-height: 36px; padding: 4px 12px; font-weight: 600; font-size: 13px; color: #FFB000; background: transparent; border: 1px solid #FFB000; border-radius: 4px; cursor: pointer;">Usa questa</button>
+</div>
+</div>
+
+<div style="margin-top: 14px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8E9892;">DOVE CONVIENE GIOCARLA</span>
+<a href="#" style="font-size: 12px; font-weight: 600;">Tutti gli 8 bookmaker</a>
+</div>
+<div role="group" aria-label="Scegli il bookmaker" style="display: flex; flex-direction: column; gap: 4px;">
+<sc-for list="{{books}}" as="bk" hint-placeholder-count="4">
+<button type="button" aria-pressed="{{bk.pressed}}" style="display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 6px 12px; font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 600; color: #EDEDED; background: {{bk.bg}}; border: 1px solid {{bk.border}}; border-radius: 4px; cursor: pointer; text-align: left;">
+<span style="flex: 1 1 auto;">{{bk.name}}</span>
+<sc-if value="{{bk.best}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #0A0C0B; background: {{valore}}; border-radius: 3px; padding: 1px 6px;">MIGLIORE</span>
+</sc-if>
+<span style="width: 64px; text-align: right; font-family: 'Doto', monospace; font-weight: 900; font-size: 18px; color: {{bk.color}}; text-shadow: {{glowSmall}};">{{bk.q}}</span>
+</button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; gap: 8px; margin-top: 12px;">
+<a href="#" style="flex: 1 1 0; display: flex; align-items: center; justify-content: center; min-height: 48px; font-weight: 600; font-size: 14px; color: #EDEDED; border: 1px solid #2A322E; border-radius: 4px; text-decoration: none;">Apri Snai</a>
+<button type="button" style="flex: 2 1 0; min-height: 48px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: #0A0C0B; background: {{valore}}; border: 0; border-radius: 4px; cursor: pointer;">L'ho giocata</button>
+</div>
+
+<div style="margin-top: 14px;">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #8E9892; margin-bottom: 4px;"><span>Budget della settimana</span><span>15 € di 50 €</span></div>
+<div style="height: 8px; background: #1C2320; border-radius: 4px; overflow: hidden;"><div style="width: 30%; height: 100%; background: #FFB000;"></div></div>
+</div>
+</section>
+
+<section aria-label="Chiedi ad Archie" style="background: #111513; border: 1px solid #222A26; border-radius: 6px; padding: 16px 20px;">
+<div style="font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px; margin-bottom: 10px;">Chiedi ad Archie</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+<button type="button" style="min-height: 36px; padding: 6px 10px; font-size: 13px; color: #C9D1CC; background: #0A0C0B; border: 1px solid #2A322E; border-radius: 18px; cursor: pointer;">Perché il Goal in Catania – Salernitana?</button>
+<button type="button" style="min-height: 36px; padding: 6px 10px; font-size: 13px; color: #C9D1CC; background: #0A0C0B; border: 1px solid #2A322E; border-radius: 18px; cursor: pointer;">Dividi i 10 € in due schedine</button>
+<button type="button" style="min-height: 36px; padding: 6px 10px; font-size: 13px; color: #C9D1CC; background: #0A0C0B; border: 1px solid #2A322E; border-radius: 18px; cursor: pointer;">Quanto pesa la pioggia a Bologna?</button>
+</div>
+<form style="display: flex; gap: 8px;">
+<label for="ab-domanda" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">La tua domanda per Archie</label>
+<input id="ab-domanda" type="text" placeholder="Chiedi qualcosa su una partita o sulla schedina" style="flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 8px 12px; font-family: 'Barlow', sans-serif; font-size: 15px; color: #EDEDED; background: #0A0C0B; border: 1px solid #2A322E; border-radius: 4px;">
+<button type="submit" aria-label="Invia la domanda" style="width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; color: #0A0C0B; background: #FFB000; border: 0; border-radius: 4px; cursor: pointer;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+</button>
+</form>
+</section>
+
+</aside>
+</main>
+
+<footer style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 16px 24px; border-top: 1px solid #222A26; font-size: 12px; color: #8E9892;">
+<span style="font-style: italic;">Give me the odds, I'll move the world.</span>
+<span>Uso privato · Limiti di gioco attivi</span>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"glow":{"editor":"boolean","default":true},"valore":{"editor":"color","default":"#3DFF6E","options":["#3DFF6E","#00E5FF","#FFD60A"]},"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const glow = this.props.glow ?? true;
+    const V = this.props.valore ?? '#3DFF6E';
+    const AMBER = '#FFB000';
+    const RED = '#FF6B5E';
+    const LINE = '#2A322E';
+    const odd = (q, hot) => ({ q: q, c: hot ? V : '#EDEDED', b: hot ? V : LINE });
+    const row = (o) => {
+      const a = odd(o.q1, o.hot === 1);
+      const x = odd(o.qx, o.hot === 2);
+      const d = odd(o.q2, o.hot === 3);
+      return Object.assign({}, o, {
+        q1: a.q, c1: a.c, b1: a.b,
+        qx: x.q, cx: x.c, bx: x.b,
+        q2: d.q, c2: d.c, b2: d.b,
+        hasTag: !!o.tag,
+        tagColor: o.tagColor || V
+      });
+    };
+    const live = [
+      { league: 'SERIE A', time: "67'", home: 'Inter', away: 'Milan', sh: '2', sa: '1', q1: '1.35', qx: '4.80', q2: '9.00', hot: 0, tag: 'Hai 1 giocata', tagColor: AMBER },
+      { league: 'SERIE B', time: "51'", home: 'Spezia', away: 'Cesena', sh: '1', sa: '1', q1: '2.60', qx: '2.90', q2: '3.30', hot: 0, tag: 'Hai 1 giocata', tagColor: AMBER },
+      { league: 'SERIE A', time: "23'", home: 'Atalanta', away: 'Lazio', sh: '0', sa: '0', q1: '1.95', qx: '3.40', q2: '4.10', hot: 0, tag: 'Hai 1 giocata', tagColor: AMBER }
+    ].map(row);
+    const groups = [
+      { league: 'Serie A', note: 'in ordine di orario', matches: [
+        { label: 'OGGI', time: '20:45', home: 'Napoli', away: 'Roma', q1: '1.85', qx: '3.50', q2: '4.40', hot: 2, tag: 'X · valore +5%' },
+        { label: 'DOM', time: '15:00', home: 'Juventus', away: 'Torino', q1: '1.70', qx: '3.70', q2: '5.20', hot: 0, tag: '' },
+        { label: 'DOM', time: '18:00', home: 'Bologna', away: 'Udinese', q1: '1.80', qx: '3.40', q2: '4.60', hot: 0, tag: 'Under 2.5 · +8%' }
+      ].map(row) },
+      { league: 'Serie B', note: '', matches: [
+        { label: 'DOM', time: '15:00', home: 'Palermo', away: 'Bari', q1: '2.10', qx: '3.10', q2: '3.70', hot: 1, tag: '1 · valore +9%' },
+        { label: 'DOM', time: '17:15', home: 'Sampdoria', away: 'Modena', q1: '2.25', qx: '3.10', q2: '3.30', hot: 0, tag: '' },
+        { label: 'DOM', time: '17:15', home: 'Reggiana', away: 'Mantova', q1: '2.40', qx: '3.00', q2: '3.10', hot: 0, tag: '' }
+      ].map(row) },
+      { league: 'Serie C · Girone C', note: 'dati più scarsi: suggerimenti prudenti', matches: [
+        { label: 'DOM', time: '17:30', home: 'Catania', away: 'Salernitana', q1: '2.00', qx: '3.20', q2: '3.80', hot: 0, tag: 'Goal · +7%' },
+        { label: 'DOM', time: '20:30', home: 'Benevento', away: 'Crotone', q1: '2.15', qx: '3.10', q2: '3.40', hot: 0, tag: '' },
+        { label: 'LUN', time: '20:30', home: 'Cosenza', away: 'Casertana', q1: '2.30', qx: '3.00', q2: '3.20', hot: 0, tag: '' }
+      ].map(row) }
+    ];
+    const videos = [
+      { title: 'Napoli – Roma: la presentazione', source: 'Canale ufficiale Lega Serie A' },
+      { title: 'Serie C: i gol del girone C', source: 'Canale ufficiale Lega Pro' },
+      { title: 'Serie B: tutti i gol della giornata', source: 'Canale ufficiale Lega B' }
+    ];
+    const sel = (match, market, q, val) => ({ match: match, market: market, q: q, val: val, valColor: val.charAt(0) === '+' ? V : RED });
+    const selections = [
+      sel('Napoli – Roma · Serie A · oggi 20:45', 'Pareggio (X)', '3.50', '+5%'),
+      sel('Bologna – Udinese · Serie A · dom 18:00', 'Under 2.5', '1.72', '+8%'),
+      sel('Palermo – Bari · Serie B · dom 15:00', 'Vittoria Palermo (1)', '2.10', '+9%'),
+      sel('Catania – Salernitana · Serie C · dom 17:30', 'Goal', '1.85', '+7%')
+    ];
+    const book = (name, q, best, pressed) => ({
+      name: name, q: q, best: best,
+      pressed: pressed ? 'true' : 'false',
+      bg: pressed ? '#16201A' : 'transparent',
+      border: pressed ? V : LINE,
+      color: best ? V : '#EDEDED'
+    });
+    const books = [
+      book('Snai', '24.12', true, true),
+      book('Eurobet', '23.39', false, false),
+      book('Sisal', '22.85', false, false),
+      book('bet365', '22.60', false, false)
+    ];
+    return {
+      ledShadow: glow ? '0 0 8px currentColor' : 'none',
+      glowSmall: glow ? '0 0 4px currentColor' : 'none',
+      valore: V,
+      live: live,
+      groups: groups,
+      videos: videos,
+      selections: selections,
+      books: books
+    };
+  }
+}
+</script>
+</body>
+</html>
