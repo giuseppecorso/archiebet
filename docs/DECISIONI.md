@@ -16,6 +16,8 @@ Ogni decisione importante con data, scelta e motivo. Le decisioni di prodotto so
 | D8 | Utenti creati da riga di comando (`python -m app.cli create-user`) | Nessuna pagina di registrazione aperta: per ora l'utente è uno solo. |
 | D9 | Font caricati da Google Fonts (Doto, Bebas Neue, Barlow) come nei mockup | Nessuna libreria in più; si potranno ospitare in locale quando si va online. |
 | D10 | Per i test del backend `httpx2` invece di `httpx` | Lo chiede Starlette stessa (avviso di deprecazione nella versione installata). |
-| D11 | Email dei commit di questo repo: indirizzo anonimo GitHub `…+giuseppecorso@users.noreply.github.com` | L'account GitHub blocca i push che espongono l'email personale; così resta privata. Impostato solo per questo progetto. |
+| D11 | Email dei commit: la Gmail di Giuse (`giuseppecorso91@gmail.com`) | Scelta di Giuse. Ha tolto su GitHub il blocco dei push che espongono l'email; i commit fatti con l'indirizzo anonimo sono stati riportati alla Gmail prima del primo push. |
 | D12 | Frontend Angular 22 zoneless, componenti standalone, test con Vitest | Sono i valori predefiniti attuali di Angular CLI: meno codice e meno dipendenze. |
 | D13 | Il frontend chiama il backend tramite proxy (`/api` → porta 8000) | Stessa origine per il browser: il cookie di login funziona senza configurare CORS. |
+| D14 | Porta fissa del frontend: 4280 (in `angular.json`) | Gli altri progetti Angular di Giuse usano la 4200: così non si scontrano. |
+| D15 | Comando `set-password` per cambiare la password da terminale | Recupero semplice se la password si dimentica; chiude anche le sessioni aperte. |

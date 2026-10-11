@@ -26,7 +26,7 @@ cd frontend
 npm start
 ```
 
-Poi apri http://localhost:4200
+Poi apri http://localhost:4280 (porta fissa di ArchieBet, per non scontrarsi con altri progetti Angular sulla 4200).
 
 ### Solo la prima volta: crea il tuo utente
 
