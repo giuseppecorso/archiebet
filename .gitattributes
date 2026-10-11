@@ -1,0 +1,3 @@
+# A capo normalizzati (LF nel repository, nativi sul PC)
+* text=auto
+*.sh text eol=lf
