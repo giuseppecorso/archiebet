@@ -1,0 +1,29 @@
+[project]
+name = "archiebet-backend"
+version = "0.1.0"
+description = "ArchieBet - backend (FastAPI)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.143.0",
+    "uvicorn[standard]==0.54.0",
+    "sqlalchemy==2.1.4",
+    "alembic==1.20.0",
+    "pydantic-settings==2.15.0",
+    "pwdlib[argon2]==0.3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "httpx2==2.13.1",
+]
+
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

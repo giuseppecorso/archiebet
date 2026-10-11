@@ -1,0 +1,51 @@
+from datetime import UTC, datetime, timedelta
+
+from app.adapters.base import DataSourceAdapter
+from app.adapters.cache import MISSING, FileCache
+
+
+class Clock:
+    def __init__(self):
+        self.now = datetime(2026, 10, 11, 12, 0, tzinfo=UTC)
+
+    def __call__(self) -> datetime:
+        return self.now
+
+
+class FakeSource(DataSourceAdapter):
+    source = "fake"
+
+
+def test_cache_respects_max_age(tmp_path):
+    clock = Clock()
+    cache = FileCache(tmp_path, "fake", now=clock)
+    assert cache.get("k", timedelta(hours=1)) is MISSING
+
+    cache.set("k", {"partite": ["Napoli – Roma"]})
+    assert cache.get("k", timedelta(hours=1)) == {"partite": ["Napoli – Roma"]}
+
+    clock.now += timedelta(hours=2)
+    assert cache.get("k", timedelta(hours=1)) is MISSING
+
+
+def test_adapter_calls_source_once_and_logs_it(tmp_path):
+    calls: list[str] = []
+    adapter = FakeSource(FileCache(tmp_path, "fake"), on_call=calls.append)
+    fetches = []
+
+    def fetch():
+        fetches.append(1)
+        return [1, 2, 3]
+
+    assert adapter.cached("fixtures", timedelta(hours=1), fetch) == [1, 2, 3]
+    assert adapter.cached("fixtures", timedelta(hours=1), fetch) == [1, 2, 3]
+    assert len(fetches) == 1
+    assert calls == ["fake"]
+
+
+def test_cached_none_is_not_refetched(tmp_path):
+    adapter = FakeSource(FileCache(tmp_path, "fake"))
+    fetches = []
+    adapter.cached("k", timedelta(hours=1), lambda: fetches.append(1))
+    adapter.cached("k", timedelta(hours=1), lambda: fetches.append(1))
+    assert len(fetches) == 1
