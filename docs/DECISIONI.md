@@ -62,6 +62,18 @@ Ogni decisione importante con data, scelta e motivo. Le decisioni di prodotto so
 | D40 | Caratteri ridotti del 10-20% in tutta l'app (testo base 14 px); testi piccoli (11-13 px) invariati per leggibilità | Richiesta di Giuse: l'app sembrava "enorme". |
 | D41 | "Mostra tutte / Mostra meno" (componente ShowMore) per tutte le liste lunghe, stato tenuto in un signal del componente | I riferimenti nel template dichiarati dopo l'uso rompevano il primo disegno della pagina. |
 
+
+## 2026-10-12 — Fase 2 Giocate
+
+| # | Decisione | Perché |
+|---|-----------|--------|
+| D42 | Giocate registrabili solo PRIMA del calcio d'inizio; una selezione per partita | Niente dati dal futuro (principio 3); la correlazione tra mercati della stessa partita non è ancora calcolata. |
+| D43 | CLV = quota presa / quota giusta di chiusura − 1; quota giusta = media di mercato di chiusura senza margine (metodo proporzionale); doppia chance ricavata dall'1X2 | Metodo standard; Goal/NoGoal senza CLV finché non avremo quelle quote. |
+| D44 | Fotografia = il dettaglio partita completo (statistiche, classifica, quote) salvato in JSON al momento della giocata | Base dell'autopsia "sfortuna o errore?" (Fase 6) senza rischio di guardare dati successivi. |
+| D45 | Cancellazione di una schedina solo se aperta e prima del primo calcio d'inizio | Serve a correggere errori di inserimento, non a cancellare le perdite. |
+| D46 | Anteprima di quota e vincita nel frontend con lo stesso arrotondamento del backend (per eccesso dal 5), con test identici sui due lati | Trovato un caso (49,445 €) in cui la virgola mobile dava 49,44 invece di 49,45. |
+| D47 | Avvio con file .bat e icone sul Desktop | Richiesta di Giuse: un "pulsante di accensione" senza aprire terminali. |
+
 **Scoperte sui dati (da usare in Fase 3-4):**
 - football-data aggiorna i risultati della stagione in corso con settimane di ritardo (ultimo aggiornamento al 21/09/2026). Il calendario delle prossime partite invece è fresco. Serve API-Football per risultati recenti e Serie C.
 - Pinnacle sparisce a metà 2025/26 (200 partite su 380 in A, 90 in B) e manca nel 2026/27. Betfair Exchange copre ~95% delle partite dal 2024/25. **Da decidere in Fase 3:** riferimento di mercato e CLV per la cassaforte 2025/26 (proposta: Pinnacle dove c'è, altrimenti Betfair Exchange di chiusura).

@@ -6,11 +6,15 @@ import { Login } from './pages/login/login';
 import { MatchPage } from './pages/match/match';
 import { LabLeagues } from './pages/lab/lab-leagues';
 import { LabTeams } from './pages/lab/lab-teams';
+import { Bets } from './pages/bets/bets';
+import { NewBet } from './pages/bets/new-bet';
 import { Matches } from './pages/matches/matches';
+import { SettingsPage } from './pages/settings/settings';
+import { Stats } from './pages/stats/stats';
 import { SectionPlaceholder } from './pages/section-placeholder/section-placeholder';
 
 /** Sezioni già costruite; le altre mostrano la pagina provvisoria */
-const BUILT: Record<string, Routes[number]['component']> = { partite: Matches };
+const BUILT: Record<string, Routes[number]['component']> = { partite: Matches, schedine: Bets, statistiche: Stats, impostazioni: SettingsPage };
 
 export const routes: Routes = [
   { path: 'login', component: Login, title: 'Accedi · ArchieBet' },
@@ -21,6 +25,8 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'partite' },
       { path: 'partite/:id', component: MatchPage, title: 'Partita · ArchieBet' },
+      { path: 'schedine/nuova', component: NewBet, title: 'Registra una giocata · ArchieBet' },
+      { path: 'schedine/:id', component: Bets, title: 'Le mie schedine · ArchieBet' },
       { path: 'laboratorio', pathMatch: 'full', redirectTo: 'laboratorio/campionati' },
       { path: 'laboratorio/campionati', component: LabLeagues, title: 'Laboratorio · Campionati · ArchieBet' },
       { path: 'laboratorio/squadre', component: LabTeams, title: 'Laboratorio · Squadre · ArchieBet' },

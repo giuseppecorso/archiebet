@@ -10,9 +10,21 @@ Ultimo aggiornamento: 2026-10-12
 - [x] Stagioni "in corso" solo se hanno partite ancora da giocare; le annullate (es. Taranto e Turris 2024/25) sono segnalate a parte
 - Test: 78 backend + 6 frontend, tutti verdi.
 
-## Prossima sessione: Fase 2 – Giocate
+## Fase 2 – Giocate (in corso, parte principale fatta il 2026-10-12)
 
-Registrazione giocate reali e simulate, chiusura automatica, statistiche di gioco, limiti di budget, fotografia al momento della giocata.
+- [x] Tabelle per utente: schedine, selezioni, fotografia al momento della giocata, impostazioni
+- [x] Registra una giocata (reale o simulata): partite in programma, mercati 1X2 / doppia chance / Under-Over 2.5 / Goal-NoGoal, quote precompilate dalla media di mercato, anteprima di quota e vincita
+- [x] Pulsante "Gioca questa partita" nella pagina partita
+- [x] Chiusura automatica dopo ogni aggiornamento dati (e all'apertura delle schedine); partite annullate = rimborso
+- [x] CLV per selezione rispetto alla quota giusta di chiusura (Serie A e B)
+- [x] Le mie schedine (elenco + dettaglio), Le mie statistiche (prima versione), Impostazioni
+- [x] Limiti: solo avvisi sulle giocate reali (D39)
+- [ ] "Dove vinci e dove perdi" (per mercato, campionato, numero di partite, bookmaker) e "Le tue abitudini"
+- [ ] Altre "Tu contro Archie", stile di gioco, regolamento personale: dipendono dal modello (Fasi 3-4) e dall'AI (Fase 6)
+
+Test: 121 backend + 11 frontend, tutti verdi.
+
+Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia-archiebet.bat` / `spegni-archiebet.bat`).
 
 ## Da fare al PC (Giuse)
 

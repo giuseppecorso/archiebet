@@ -1,0 +1,122 @@
+@if (budget.value(); as b) {
+  @for (w of b.warnings; track w) {
+    <p class="warning" role="status">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l10 18H2z"></path><path d="M12 10v5"></path><path d="M12 18h.01"></path></svg>
+      <span><strong>Limite superato:</strong> {{ w }}</span>
+    </p>
+  }
+}
+
+<div class="layout">
+  <section class="detail" aria-label="Dettaglio schedina">
+    @if (selected(); as bet) {
+      <div class="panel box">
+        <div class="head">
+          <div>
+            <h1 class="title bet-title">{{ title(bet) }}{{ bet.bookmaker ? ' · ' + bet.bookmaker : '' }}</h1>
+            <p class="muted small">
+              {{ labels.KIND_LABEL[bet.kind] }} · giocata {{ fmt.dayLabel(bet.placed_at).toLowerCase() }} alle {{ fmt.kickoffTime(bet.placed_at) }}
+            </p>
+          </div>
+          <span class="status" [attr.data-status]="bet.status">{{ labels.STATUS_LABEL[bet.status] }}</span>
+        </div>
+
+        <div class="tiles">
+          <div class="tile"><span class="label">Importo</span><span class="led">{{ fmt.euro(bet.stake) }}</span></div>
+          <div class="tile"><span class="label">Quota</span><span class="led">{{ fmt.odds(+bet.total_odds) }}</span></div>
+          @if (bet.status === 'open') {
+            <div class="tile"><span class="label">Vincita possibile</span><span class="led">{{ fmt.euro(bet.potential_payout) }}</span></div>
+          } @else {
+            <div class="tile"><span class="label">Tornato</span><span class="led" [attr.data-status]="bet.status">{{ fmt.euro(bet.payout) }}</span></div>
+          }
+        </div>
+
+        <ul class="selections">
+          @for (s of bet.selections; track s.id) {
+            <li>
+              <span class="sel-status" [attr.data-status]="s.status" [attr.aria-label]="labels.STATUS_LABEL[s.status]">
+                {{ s.status === 'won' ? 'V' : s.status === 'lost' ? 'P' : s.status === 'void' ? 'R' : '…' }}
+              </span>
+              <div class="sel-main">
+                <a class="sel-match" [routerLink]="['/partite', s.match.id]">{{ s.match.home.name }} – {{ s.match.away.name }}</a>
+                <span class="muted small">
+                  {{ s.match.competition.name }} · {{ fmt.dayLabel(s.match.kickoff_at) }} {{ fmt.kickoffTime(s.match.kickoff_at) }}
+                  @if (s.match.status === 'finished') {
+                    · finita {{ s.match.home_goals }}-{{ s.match.away_goals }}
+                  }
+                </span>
+                <span class="sel-pick">{{ labels.MARKET_LABEL[s.market] }}: <strong>{{ fmt.pickLabel(s.market, s.pick, s.match) }}</strong></span>
+              </div>
+              <div class="sel-numbers">
+                <span class="led sel-odds">{{ fmt.odds(+s.odds) }}</span>
+                @if (s.status !== 'open') {
+                  <span [class]="'small clv ' + clvClass(s.clv)" [attr.title]="s.fair_closing_odds ? 'Quota giusta di chiusura ' + s.fair_closing_odds : 'Quota di chiusura non disponibile'">
+                    CLV {{ clvText(s.clv) }}
+                  </span>
+                }
+              </div>
+            </li>
+          }
+        </ul>
+
+        @if (bet.note) {
+          <p class="note">{{ bet.note }}</p>
+        }
+        <p class="note">
+          CLV: quanto la tua quota batte la quota "giusta" di chiusura (media del mercato senza il margine del bookmaker).
+          Positivo = hai preso un prezzo migliore del mercato, anche se poi hai perso.
+        </p>
+
+        @if (canDelete(bet)) {
+          <button type="button" class="link-btn" (click)="remove(bet)">Cancella (errore di inserimento)</button>
+        }
+        @if (error(); as e) {
+          <p class="error" role="alert">{{ e }}</p>
+        }
+      </div>
+    } @else if (bets.hasValue()) {
+      <div class="panel box empty">
+        <h1 class="title bet-title">Nessuna schedina</h1>
+        <p class="muted">Registra la prima giocata, reale o simulata: Archie la segue e la chiude da solo quando arrivano i risultati.</p>
+        <a routerLink="/schedine/nuova" class="btn-primary">Registra una giocata</a>
+      </div>
+    } @else {
+      <p class="muted">Carico le schedine…</p>
+    }
+  </section>
+
+  <aside class="list panel" aria-label="Elenco schedine">
+    <div class="list-head">
+      <a routerLink="/schedine/nuova" class="btn-primary new">Registra una giocata</a>
+      <div role="tablist" aria-label="Stato" class="seg">
+        <button type="button" role="tab" [attr.aria-selected]="statusFilter() === 'open'" (click)="statusFilter.set('open')">Aperte ({{ counts().open }})</button>
+        <button type="button" role="tab" [attr.aria-selected]="statusFilter() === 'closed'" (click)="statusFilter.set('closed')">Chiuse ({{ counts().closed }})</button>
+        <button type="button" role="tab" [attr.aria-selected]="statusFilter() === 'all'" (click)="statusFilter.set('all')">Tutte</button>
+      </div>
+      <div role="group" aria-label="Tipo" class="chips">
+        @for (k of ['all', 'real', 'simulated']; track k) {
+          <button type="button" class="chip" [class.on]="kindFilter() === k" [attr.aria-pressed]="kindFilter() === k" (click)="kindFilter.set($any(k))">
+            {{ k === 'all' ? 'Reali e simulate' : k === 'real' ? 'Reali' : 'Simulate' }}
+          </button>
+        }
+      </div>
+    </div>
+    <ul class="bet-list">
+      @for (b of filtered().slice(0, listOpen() ? undefined : 10); track b.id) {
+        <li>
+          <a [routerLink]="['/schedine', b.id]" [class.on]="b.id === selected()?.id">
+            <span class="row1">
+              <strong>{{ title(b) }}</strong>
+              <span class="kind" [attr.data-kind]="b.kind">{{ labels.KIND_LABEL[b.kind] }}</span>
+            </span>
+            <span class="row2 muted small">{{ b.bookmaker ?? '—' }} · {{ fmt.dayLabel(b.placed_at) }} · quota {{ fmt.odds(+b.total_odds) }} · {{ fmt.euro(b.stake) }}</span>
+            <span class="status small" [attr.data-status]="b.status">{{ labels.STATUS_LABEL[b.status] }}</span>
+          </a>
+        </li>
+      } @empty {
+        <li class="muted small pad">Nessuna schedina con questi filtri.</li>
+      }
+    </ul>
+    <div class="pad"><ab-show-more [total]="filtered().length" [limit]="10" [(expanded)]="listOpen" /></div>
+  </aside>
+</div>

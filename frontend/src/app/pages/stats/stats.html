@@ -1,0 +1,83 @@
+<div class="head">
+  <h1 class="title page-title">Le mie statistiche</h1>
+  <div role="tablist" aria-label="Periodo" class="seg">
+    @for (p of periods; track p[0]) {
+      <button type="button" role="tab" [attr.aria-selected]="period() === p[0]" (click)="period.set(p[0])">{{ p[1] }}</button>
+    }
+  </div>
+</div>
+
+@if (summary.value(); as s) {
+  <div class="cards">
+    @for (card of cards(s); track card[0]) {
+      @let x = card[2];
+      <section class="panel box" [attr.aria-labelledby]="'card-' + card[0]">
+        <div class="box-head">
+          <h2 class="title box-title" [id]="'card-' + card[0]">{{ card[0] }}</h2>
+          <span class="muted small">{{ card[1] }}</span>
+        </div>
+        @if (x.bets === 0) {
+          <p class="muted">Nessuna giocata {{ card[0].toLowerCase() }} in questo periodo.
+            <a routerLink="/schedine/nuova">Registrane una</a>.</p>
+        } @else {
+          <div class="tiles">
+            <div class="tile"><span class="label">Giocato</span><span class="led">{{ fmt.euro(x.staked) }}</span></div>
+            <div class="tile"><span class="label">Tornato</span><span class="led">{{ fmt.euro(x.returned) }}</span></div>
+            <div class="tile">
+              <span class="label">Saldo</span>
+              <span class="led" [class]="'led ' + sign(x.profit)">{{ fmt.euro(x.profit, true) }}</span>
+            </div>
+            <div class="tile">
+              <span class="label">Rendimento</span>
+              <span class="led" [class]="'led ' + sign(x.roi)">{{ signedPct(x.roi) }}</span>
+              <span class="muted small">su ogni 100 € giocati</span>
+            </div>
+            <div class="tile">
+              <span class="label">Vinte</span>
+              <span class="led">{{ x.won }}<span class="small muted">/{{ x.settled }}</span></span>
+              <span class="muted small">{{ fmt.pct(x.win_rate) }} delle chiuse · {{ x.open }} aperte</span>
+            </div>
+            <div class="tile clv-tile">
+              <span class="label">CLV medio</span>
+              <span class="led" [class]="'led ' + sign(x.avg_clv)">{{ signedPct(x.avg_clv) }}</span>
+              <span class="muted small">su {{ x.clv_count }} selezioni</span>
+            </div>
+          </div>
+        }
+      </section>
+    }
+  </div>
+
+  <section class="panel box explain">
+    <h2 class="title box-title">Come leggere questi numeri</h2>
+    <p>
+      <strong>Il CLV conta più del saldo.</strong> Il saldo di poche settimane dipende molto dalla fortuna; il CLV dice se prendi
+      quote migliori di quelle su cui il mercato si assesta prima del via. Un CLV positivo e costante è il segnale che giochi bene,
+      anche nei periodi in cui perdi. Per ora è disponibile per Serie A e B (1X2, doppia chance, Under/Over).
+    </p>
+  </section>
+}
+
+@if (budget.value(); as b) {
+  <section class="panel box budget" aria-labelledby="budget-title">
+    <div class="box-head">
+      <h2 id="budget-title" class="title box-title">Budget delle giocate reali</h2>
+      <a routerLink="/impostazioni" class="small">Imposta i limiti</a>
+    </div>
+    <div class="tiles">
+      <div class="tile">
+        <span class="label">Questa settimana</span>
+        <span class="led">{{ fmt.euro(b.week_staked) }}</span>
+        <span class="muted small">{{ b.week_budget ? 'limite ' + fmt.euro(b.week_budget) : 'nessun limite impostato' }}</span>
+      </div>
+      <div class="tile">
+        <span class="label">Questo mese</span>
+        <span class="led">{{ fmt.euro(b.month_staked) }}</span>
+        <span class="muted small">{{ b.month_budget ? 'limite ' + fmt.euro(b.month_budget) : 'nessun limite impostato' }}</span>
+      </div>
+    </div>
+    @for (w of b.warnings; track w) {
+      <p class="warn" role="status">⚠ {{ w }}</p>
+    }
+  </section>
+}

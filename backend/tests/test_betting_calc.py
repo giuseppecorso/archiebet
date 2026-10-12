@@ -54,6 +54,9 @@ def test_invalid_pick():
 def test_total_odds_and_payout():
     assert total_odds([D("1.85"), D("2.10"), D("1.50")]) == D("5.8275")  # 1,85 × 2,10 × 1,50
     assert potential_payout(D("10"), D("5.8275")) == D("58.28")  # arrotondato al centesimo
+    # Stesso caso del test frontend: 1,55 × 3,19 = 4,9445 → 49,445 € → 49,45 (per eccesso dal 5)
+    assert total_odds([D("1.55"), D("3.19")]) == D("4.9445")
+    assert potential_payout(D("10"), D("4.9445")) == D("49.45")
     with pytest.raises(ValueError):
         total_odds([D("1.00")])
 

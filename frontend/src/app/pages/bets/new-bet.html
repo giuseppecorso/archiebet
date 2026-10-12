@@ -1,0 +1,110 @@
+<div class="top">
+  <a routerLink="/schedine" class="back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    Le mie schedine
+  </a>
+</div>
+
+<h1 class="title page-title">Registra una giocata</h1>
+
+<div class="layout">
+  <section class="panel box main" aria-label="Partite della schedina">
+    <div role="group" aria-label="Tipo di giocata" class="seg kind">
+      <button type="button" [attr.aria-pressed]="kind() === 'simulated'" (click)="kind.set('simulated')">Simulata <small>crediti finti</small></button>
+      <button type="button" [attr.aria-pressed]="kind() === 'real'" (click)="kind.set('real')">Reale <small>l'ho giocata davvero</small></button>
+    </div>
+
+    @for (row of rows(); track row.match.id; let i = $index) {
+      <div class="row">
+        <div class="row-head">
+          <div>
+            <strong>{{ row.match.home.name }} – {{ row.match.away.name }}</strong>
+            <span class="muted small"> · {{ row.match.competition.name }} · {{ fmt.dayLabel(row.match.kickoff_at) }} {{ fmt.kickoffTime(row.match.kickoff_at) }}</span>
+          </div>
+          <button type="button" class="icon" (click)="remove(i)" [attr.aria-label]="'Togli ' + row.match.home.name + ' – ' + row.match.away.name">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+          </button>
+        </div>
+        <div class="row-fields">
+          <label>
+            <span class="label">Mercato</span>
+            <select (change)="setMarket(i, $any($event.target).value)">
+              @for (mk of marketList; track mk) {
+                <option [value]="mk" [selected]="mk === row.market">{{ fmt.MARKET_LABEL[mk] }}</option>
+              }
+            </select>
+          </label>
+          <div class="picks" role="group" [attr.aria-label]="'Esito per ' + row.match.home.name + ' – ' + row.match.away.name">
+            @for (p of markets[row.market]; track p) {
+              <button type="button" class="pick" [attr.aria-pressed]="p === row.pick" (click)="setPick(i, p)">{{ fmt.pickLabel(row.market, p, row.match) }}</button>
+            }
+          </div>
+          <label class="odds-field">
+            <span class="label">Quota</span>
+            <input inputmode="decimal" [value]="row.odds" (input)="setOdds(i, $any($event.target).value)" placeholder="es. 1,85" />
+            @if (row.prefill[row.market]?.[row.pick]) {
+              <span class="muted small">media mercato</span>
+            } @else {
+              <span class="muted small">scrivila tu</span>
+            }
+          </label>
+        </div>
+      </div>
+    }
+
+    <div class="adder">
+      <label class="search">
+        <span class="label">{{ rows().length ? 'Aggiungi un\'altra partita' : 'Scegli la partita' }}</span>
+        <input type="search" placeholder="Cerca squadra o campionato" [value]="search()" (input)="search.set($any($event.target).value)" />
+      </label>
+      @if (search().trim() || rows().length === 0) {
+        <ul class="candidates">
+          @for (c of candidates().slice(0, 8); track c.id) {
+            <li>
+              <button type="button" (click)="add(c)">
+                <span><strong>{{ c.home.name }} – {{ c.away.name }}</strong></span>
+                <span class="muted small">{{ c.competition.name }} · {{ fmt.dayLabel(c.kickoff_at) }} {{ fmt.kickoffTime(c.kickoff_at) }}</span>
+              </button>
+            </li>
+          } @empty {
+            <li class="muted small">Nessuna partita in programma trovata.</li>
+          }
+        </ul>
+      }
+    </div>
+  </section>
+
+  <aside class="panel box side" aria-label="Riepilogo">
+    <h2 class="title box-title">La schedina</h2>
+    <div class="tiles">
+      <div class="tile"><span class="label">Partite</span><span class="led">{{ rows().length }}</span></div>
+      <div class="tile"><span class="label">Quota</span><span class="led">{{ summary().valid ? fmt.odds(summary().total) : '–' }}</span></div>
+    </div>
+    <label class="field">
+      <span class="label">Importo €</span>
+      <input class="led stake" inputmode="decimal" [value]="stake()" (input)="stake.set($any($event.target).value)" />
+    </label>
+    <div class="tile wide"><span class="label">Vincita possibile</span><span class="led">{{ summary().valid ? fmt.euro(summary().payout) : '–' }}</span></div>
+    <label class="field">
+      <span class="label">Bookmaker</span>
+      <select (change)="bookmaker.set($any($event.target).value)">
+        <option value="" [selected]="!bookmaker()">— nessuno —</option>
+        @for (b of bookmakers(); track b) {
+          <option [value]="b" [selected]="b === bookmaker()">{{ b }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      <span class="label">Nota (facoltativa)</span>
+      <input maxlength="300" [value]="note()" (input)="note.set($any($event.target).value)" placeholder="es. presa in pausa pranzo" />
+    </label>
+
+    @if (error(); as e) {
+      <p class="error" role="alert">{{ e }}</p>
+    }
+    <button type="button" class="btn-primary submit" [disabled]="busy() || !summary().valid" (click)="submit()">
+      {{ kind() === 'real' ? "L'ho giocata" : 'Gioca simulata' }}
+    </button>
+    <p class="muted small">Archie salva anche una "fotografia" di quote e statistiche di adesso, e chiude la schedina da solo quando arrivano i risultati.</p>
+  </aside>
+</div>

@@ -29,6 +29,8 @@
         <div class="when">{{ fmt.dayLabel(m.kickoff_at) }} · {{ fmt.longDate(m.kickoff_at) }}</div>
         @if (m.status === 'awaiting_result') {
           <span class="badge awaiting">Risultato in arrivo</span>
+        } @else if (isUpcoming()) {
+          <a class="play" [routerLink]="['/schedine/nuova']" [queryParams]="{ m: m.id }">Gioca questa partita</a>
         }
       }
     </div>

@@ -394,3 +394,23 @@
     font-size: 12px;
   }
 }
+
+.play {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  margin-top: 6px;
+  padding: 4px 14px;
+  font-family: var(--font-title);
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  color: var(--bg);
+  background: var(--amber);
+  border-radius: 4px;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--bg);
+    background: var(--amber-hover);
+  }
+}

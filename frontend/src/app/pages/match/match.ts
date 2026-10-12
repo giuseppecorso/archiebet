@@ -116,6 +116,12 @@ export class MatchPage {
     return this.tableOpen() ? rows : rows.filter((row) => row.rank <= 10 || this.isPlaying(row.team.id));
   });
 
+  /** Si può ancora giocare: in programma e non iniziata */
+  protected isUpcoming(): boolean {
+    const m = this.detail.value()?.match;
+    return !!m && m.status === 'scheduled' && new Date(m.kickoff_at).getTime() > Date.now();
+  }
+
   protected isPlaying(teamId: number): boolean {
     const m = this.detail.value()?.match;
     return !!m && (m.home.id === teamId || m.away.id === teamId);
