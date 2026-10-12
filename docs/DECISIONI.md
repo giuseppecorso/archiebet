@@ -74,6 +74,8 @@ Ogni decisione importante con data, scelta e motivo. Le decisioni di prodotto so
 | D46 | Anteprima di quota e vincita nel frontend con lo stesso arrotondamento del backend (per eccesso dal 5), con test identici sui due lati | Trovato un caso (49,445 €) in cui la virgola mobile dava 49,44 invece di 49,45. |
 | D47 | Avvio con file .bat e icone sul Desktop | Richiesta di Giuse: un "pulsante di accensione" senza aprire terminali. |
 
+| D48 | Riferimento di mercato per CLV e verdetto: chiusura **Pinnacle** dove c'è, altrimenti **Betfair Exchange** di chiusura (opzione A) | Scelta di Giuse: Pinnacle copre solo metà della cassaforte 2025/26, Betfair Exchange ~95% ed è un mercato "intelligente". |
+
 **Scoperte sui dati (da usare in Fase 3-4):**
 - football-data aggiorna i risultati della stagione in corso con settimane di ritardo (ultimo aggiornamento al 21/09/2026). Il calendario delle prossime partite invece è fresco. Serve API-Football per risultati recenti e Serie C.
 - Pinnacle sparisce a metà 2025/26 (200 partite su 380 in A, 90 in B) e manca nel 2026/27. Betfair Exchange copre ~95% delle partite dal 2024/25. **Da decidere in Fase 3:** riferimento di mercato e CLV per la cassaforte 2025/26 (proposta: Pinnacle dove c'è, altrimenti Betfair Exchange di chiusura).

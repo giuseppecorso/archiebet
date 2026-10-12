@@ -25,5 +25,13 @@ Sei un senior software engineer: progetti e costruisci tu ArchieBet, io guido le
 7. Limiti di gioco impostabili; nessuna funzione premia quanto si gioca, solo quanto si prevede bene.
 8. Basi di scalabilità da subito (sezione 14 delle specifiche): dati legati a user_id, calcoli per partita salvati una volta, un solo modulo per l'AI e uno per ogni fonte dati.
 
-## Stato attuale
-Progetto definito, schermate approvate, nessun codice scritto. Prossimo passo: Fase 0. Da lì in poi lo stato aggiornato è in `docs/STATO.md`.
+## Stato attuale (2026-10-12)
+Fasi 0, 1 (piano gratuito), 1.5 Laboratorio e 2 Giocate concluse. **Prossimo passo: Fase 3 – Modello**, piano già approvato (Dixon-Coles + rating Elo anche Serie C, mercati dalla matrice dei risultati, backtest walk-forward su calibrazione/log loss/Brier/CLV, prova del nove dei fattori, cassaforte 2025/26 bloccata nel codice fino al comando "apri cassaforte", numpy+scipy). Decisione presa: **opzione A** = CLV e verdetto contro Pinnacle di chiusura dove c'è, altrimenti Betfair Exchange di chiusura (D48). Dettagli in `docs/STATO.md` e `docs/DECISIONI.md`.
+
+## Come lavorare (risparmio token: Giuse ha un piano Pro)
+- Leggi solo le parti di file che servono; niente esplorazioni larghe, niente rilettura di file appena scritti.
+- Messaggi brevi: cosa ho fatto, cosa provare. Commit e push li fai tu (piccoli e frequenti).
+- Screenshot con Edge headless solo per schermate nuove o cambi di layout importanti, non per ogni ritocco.
+- Mai ridurre funzioni, test o qualità del modello per risparmiare: si risparmia sul processo, non sul prodotto.
+- Ambiente: Windows; backend `backend/.venv` (test: `.venv/Scripts/python -m pytest -q`), frontend Angular 22 (`npx ng test --watch=false`, `npx ng build`). Avvio app: icone Desktop "Avvia/Spegni ArchieBet" (porte 8000 e 4280). Per le prove usa una copia del DB e le porte 8001/4290, e alla fine verifica che siano libere (il processo node sopravvive allo stop).
+- Chiave API-Football in `backend/.env` (piano Free: stagioni 2022-2024, 100 richieste/giorno).

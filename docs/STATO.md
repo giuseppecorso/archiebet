@@ -27,7 +27,7 @@ Test: 129 backend + 11 frontend, tutti verdi.
 
 ## Prossima sessione: Fase 3 – Modello
 
-Piano da presentare a Giuse prima di partire (modifica grossa). Decisione aperta: riferimento di mercato per CLV e verdetto sulla cassaforte 2025/26 (Pinnacle solo su metà stagione).
+Piano approvato da Giuse (vedi CLAUDE.md, "Stato attuale"). Riferimento di mercato deciso: D48 (Pinnacle, altrimenti Betfair Exchange). Si parte dal modello Dixon-Coles con test, poi backtest walk-forward.
 
 Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia-archiebet.bat` / `spegni-archiebet.bat`).
 
