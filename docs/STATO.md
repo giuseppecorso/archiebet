@@ -25,7 +25,14 @@ Ultimo aggiornamento: 2026-10-12
 
 Test: 129 backend + 11 frontend, tutti verdi.
 
-## Fase 3 – Modello: CONCLUSA tranne il verdetto (2026-10-12)
+## Prossima sessione: Fase 4 – Quote e valore
+
+1. Piccolo seguito del verdetto (D59): togliere l'etichetta "in prova" dalle probabilità del modello (`PredictionOut.trial` e pagina partita), lasciando la nota sul mercato più preciso; il radar resta "in prova".
+2. Confronto dei piani OddsPapi (quote dei bookmaker italiani + Pinnacle/Betfair): proposta a Giuse con costi verificati sul sito ufficiale, poi integrazione come adapter (sezione 14.4).
+3. Radar sulle partite in programma (probabilità giusta Pinnacle/Betfair senza margine contro la quota migliore italiana), Multipla del giorno, "dove giocarla", Io contro Archie.
+4. Simulazione dal vivo: il radar si giudica a 300 giocate con valore ≥ 2% (D59).
+
+## Fase 3 – Modello: CONCLUSA (2026-10-12)
 
 - [x] Dixon-Coles (risultati esatti) con correzione dei punteggi bassi, pesi nel tempo, ridge; gradiente esatto verificato
 - [x] Mercati dalla matrice dei risultati: 1X2, doppia chance, Under/Over 0.5-4.5, Goal/NoGoal; quota giusta e valore
@@ -40,7 +47,7 @@ Test: 129 backend + 11 frontend, tutti verdi.
 - [x] Prova del nove contro il mercato (`python -m app.cli factor-test`): riposo, motivazione e modello non battono l'apertura Pinnacle (D56)
 - [x] **Radar confermato** come motore in A e B: CLV +3,2% (bet365) e +4,1% (quota migliore), positivo quasi in ogni stagione (D57)
 - [x] Comando del verdetto con criteri fissati in anticipo (D58): `python -m app.cli verdict`, funziona solo a cassaforte aperta
-- [ ] **Verdetto sulla cassaforte 2025/26: lo lancia Giuse** (vedi "Da fare al PC")
+- [x] **Verdetto sulla cassaforte 2025/26** (aperta da Giuse il 2026-10-12): modello SUPERATO (calibrazione 2,9%, distanza dal mercato +0,026), radar NON superato per campione troppo piccolo (45 giocate, CLV +2,4% ± 3,1%) → resta in prova fino alla verifica dal vivo in Fase 4 (D59)
 
 **Dove siamo:** il modello è ben calibrato (errore 1-2%) ma in A e B non batte il mercato; il valore misurato sta nel radar (quote dei bookmaker contro la quota giusta di Pinnacle). Fattori "da esperto" (formazioni, assenze, notizie) da provare quando avremo lo storico di API-Football a pagamento.
 
@@ -52,10 +59,7 @@ Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia
 
 Le attività manuali sono raccolte qui, da fare tutte insieme quando sei al computer.
 
-1. **Verdetto sulla cassaforte 2025/26 (chiude la Fase 3).** È irreversibile: va fatto una volta sola, a modello fermo. Dalla cartella `backend`, in PowerShell:
-   - `.venv\Scripts\python -m app.cli open-vault` → scrivi `apri cassaforte` e premi Invio
-   - `.venv\Scripts\python -m app.cli verdict` → mostra i tre criteri di D58, superati o no
-   Se preferisci, dimmelo e lo lancio io in una sessione dopo il tuo "apri cassaforte". La Serie C 2025/26 si valuta più avanti (serve il piano a pagamento di API-Football).
+Nessuna attività in sospeso. (Verdetto fatto il 2026-10-12; la Serie C 2025/26 si valuterà con il piano a pagamento di API-Football.)
 
 (Account API-Football creato il 2026-10-11, chiave salvata in `backend/.env`.)
 
