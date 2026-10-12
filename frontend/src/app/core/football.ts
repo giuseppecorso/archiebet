@@ -95,9 +95,8 @@ export interface MarketReference {
   probabilities: Record<string, number>;
 }
 
-/** Previsione di Archie fatta prima del calcio d'inizio ("in prova" fino al verdetto) */
+/** Previsione di Archie fatta prima del calcio d'inizio */
 export interface Prediction {
-  trial: boolean;
   model_version: string;
   computed_at: string;
   /** Calcio d'inizio dell'ultimo risultato usato dal modello */

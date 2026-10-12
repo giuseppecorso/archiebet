@@ -56,7 +56,7 @@ def test_match_detail_shows_prediction_and_market(logged_client, seeded, db):  #
     assert logged_client.get(f"/api/matches/{target}").json()["prediction"] is None  # non ancora calcolata
     refresh_predictions(db, datetime.now(UTC))
     pred = logged_client.get(f"/api/matches/{target}").json()["prediction"]
-    assert pred["trial"] is True
+    assert "trial" not in pred  # modello uscito dalla prova (D59)
     assert pred["model_version"] == MODEL_VERSION
     assert set(pred["markets"]) >= {"1X2", "DC", "OU2.5", "GG"}
     # Mercato: quote medie di apertura 3,1 / 3,4 / 2,3 senza margine

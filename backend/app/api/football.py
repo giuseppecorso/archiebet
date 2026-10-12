@@ -104,7 +104,6 @@ class MarketReference(BaseModel):
 
 
 class PredictionOut(BaseModel):
-    trial: bool = True  # "in prova" fino al verdetto sulla cassaforte (principio 3)
     model_version: str
     computed_at: datetime
     data_until: datetime  # ultimo risultato usato dal modello

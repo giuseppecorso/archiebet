@@ -52,7 +52,6 @@
     <section class="archie" aria-labelledby="archie-title">
       <div class="archie-head">
         <h2 id="archie-title" class="title archie-title">Probabilità di Archie</h2>
-        <span class="trial">in prova</span>
         <span class="muted small">
           gol attesi {{ fmt.num(p.expected_goals[0], 1) }} – {{ fmt.num(p.expected_goals[1], 1) }}
           · Elo {{ fmt.num(p.ratings[0], 0) }} – {{ fmt.num(p.ratings[1], 0) }}
@@ -74,7 +73,7 @@
         }
       </div>
       <p class="muted small archie-note">
-        In prova fino al verdetto sulla stagione 2025/26. Nel backtest su Serie A e B il mercato è stato più preciso di Archie:
+        Modello verificato sulla stagione 2025/26 (ben calibrato). In Serie A e B però il mercato è più preciso di Archie:
         dove non sono d'accordo, di solito ha ragione il mercato.
         @if (p.market['1X2']; as ref) {
           Mercato: {{ ref.source }}, senza margine.
@@ -120,7 +119,7 @@
         <section class="panel box" aria-labelledby="mk-title">
           <div class="box-head">
             <h2 id="mk-title" class="title box-title">Tutti i mercati</h2>
-            <span class="muted small">Archie · in prova</span>
+            <span class="muted small">Archie</span>
           </div>
           <div class="table-wrap">
             <table class="markets">
