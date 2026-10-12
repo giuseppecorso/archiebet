@@ -8,7 +8,13 @@ Esperto personale di pronostici sul calcio: stima le probabilità, le confronta 
 - Stato del lavoro: [docs/STATO.md](docs/STATO.md)
 - Decisioni: [docs/DECISIONI.md](docs/DECISIONI.md)
 
-## Avviare l'app (PowerShell)
+## Avviare l'app
+
+**Il modo semplice:** doppio clic sull'icona **Avvia ArchieBet** sul Desktop (o su `avvia-archiebet.bat`).
+Si aprono due finestre ridotte a icona (backend e frontend: non chiuderle) e il browser su http://localhost:4280.
+Per spegnere: **Spegni ArchieBet** (o `spegni-archiebet.bat`).
+
+### A mano (PowerShell)
 
 Servono due terminali aperti nella cartella del progetto.
 
