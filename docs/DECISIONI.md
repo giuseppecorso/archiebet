@@ -58,6 +58,10 @@ Ogni decisione importante con data, scelta e motivo. Le decisioni di prodotto so
 | D37 | Stagione "in corso" = ha partite in programma o rinviate; le annullate si contano a parte | Le esclusioni (Taranto, Turris 2024/25) facevano sembrare in corso stagioni finite. |
 | D38 | Funzioni condivise tra API rese pubbliche (`match_cards`, `competition_out`, `to_result`) | Non importare funzioni "private" (con `_`) da altri moduli. |
 
+| D39 | Limiti di gioco: **nessun blocco**, solo avvisi quando le giocate REALI superano il budget settimanale/mensile impostato a mano; le simulate non contano | Decisione di Giuse (2026-10-12): l'uso è soprattutto virtuale. Principio 7 rispettato nella forma "limiti impostabili + avviso". |
+| D40 | Caratteri ridotti del 10-20% in tutta l'app (testo base 14 px); testi piccoli (11-13 px) invariati per leggibilità | Richiesta di Giuse: l'app sembrava "enorme". |
+| D41 | "Mostra tutte / Mostra meno" (componente ShowMore) per tutte le liste lunghe, stato tenuto in un signal del componente | I riferimenti nel template dichiarati dopo l'uso rompevano il primo disegno della pagina. |
+
 **Scoperte sui dati (da usare in Fase 3-4):**
 - football-data aggiorna i risultati della stagione in corso con settimane di ritardo (ultimo aggiornamento al 21/09/2026). Il calendario delle prossime partite invece è fresco. Serve API-Football per risultati recenti e Serie C.
 - Pinnacle sparisce a metà 2025/26 (200 partite su 380 in A, 90 in B) e manca nel 2026/27. Betfair Exchange copre ~95% delle partite dal 2024/25. **Da decidere in Fase 3:** riferimento di mercato e CLV per la cassaforte 2025/26 (proposta: Pinnacle dove c'è, altrimenti Betfair Exchange di chiusura).

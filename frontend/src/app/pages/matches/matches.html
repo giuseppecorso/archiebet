@@ -39,9 +39,13 @@
           <div class="group-head">
             <span class="title">{{ group.competition.name }}</span>
           </div>
-          @for (m of group.matches; track m.id) {
+          @let key = 'prossime-' + group.competition.code;
+          @for (m of group.matches.slice(0, isGroupOpen(key) ? undefined : groupLimit()); track m.id) {
             <ab-match-row [match]="m" />
           }
+          <div class="more-row">
+            <ab-show-more [total]="group.matches.length" [limit]="groupLimit()" [expanded]="isGroupOpen(key)" (expandedChange)="setGroupOpen(key, $event)" />
+          </div>
         } @empty {
           <p class="empty">Nessuna partita in programma nei campionati scelti.</p>
         }
@@ -64,9 +68,13 @@
               <span class="stale">{{ note }}</span>
             }
           </div>
-          @for (m of group.matches; track m.id) {
+          @let key = 'risultati-' + group.competition.code;
+          @for (m of group.matches.slice(0, isGroupOpen(key) ? undefined : groupLimit()); track m.id) {
             <ab-match-row [match]="m" />
           }
+          <div class="more-row">
+            <ab-show-more [total]="group.matches.length" [limit]="groupLimit()" [expanded]="isGroupOpen(key)" (expandedChange)="setGroupOpen(key, $event)" />
+          </div>
         } @empty {
           <p class="empty">Nessun risultato nei campionati scelti.</p>
         }

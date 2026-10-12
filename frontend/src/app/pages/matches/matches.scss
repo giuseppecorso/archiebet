@@ -6,7 +6,7 @@
   margin-bottom: 20px;
 }
 .filters-title {
-  font-size: 18px;
+  font-size: 16px;
   color: var(--muted);
   margin-right: 4px;
 }
@@ -65,7 +65,7 @@
 .tab {
   min-height: 40px;
   padding: 6px 14px;
-  font-size: 18px;
+  font-size: 16px;
   color: var(--text);
   background: transparent;
   border: 1px solid var(--line-strong);
@@ -92,7 +92,7 @@
 .block-title {
   margin: 0;
   padding: 14px 20px 8px;
-  font-size: 22px;
+  font-size: 19px;
   color: var(--amber);
   border-top: 1px solid var(--line);
 }
@@ -108,7 +108,7 @@
   border-top: 1px solid var(--line-row);
 
   .title {
-    font-size: 16px;
+    font-size: 15px;
     letter-spacing: 2px;
     color: var(--text-2);
   }
@@ -151,17 +151,25 @@
 
   p {
     margin: 6px 0 10px;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--text-2);
   }
 }
 .soon-title {
-  font-size: 22px;
+  font-size: 19px;
 }
 .archie-tv {
-  font-size: 22px;
+  font-size: 19px;
 }
 .phase {
   color: var(--muted);
   border-color: var(--line-muted);
+}
+
+.more-row {
+  padding: 0 16px 10px;
+
+  &:empty {
+    display: none;
+  }
 }

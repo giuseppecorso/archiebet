@@ -12,7 +12,7 @@
   gap: 6px;
   min-height: 40px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   text-decoration: none;
 }
 .info {
@@ -49,7 +49,7 @@
 }
 .team-name {
   margin: 0;
-  font-size: 38px;
+  font-size: 30px;
   letter-spacing: 3px;
   text-align: center;
 }
@@ -63,14 +63,14 @@
 }
 .big-time,
 .big-score {
-  font-size: 56px;
+  font-size: 44px;
   line-height: 1;
 }
 .big-score {
   letter-spacing: 4px;
 }
 .when {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-2);
   &::first-letter {
     text-transform: uppercase;
@@ -87,7 +87,7 @@
   gap: 10px;
   margin: 20px 0 0;
   padding: 12px 16px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text);
   background: #14120a;
   border: 1px dashed var(--amber);
@@ -110,11 +110,11 @@
   margin: 20px 0;
   padding: 14px 20px;
   border-style: dashed;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-2);
 
   .title {
-    font-size: 20px;
+    font-size: 17px;
     color: var(--amber);
   }
 }
@@ -153,7 +153,7 @@
 }
 .box-title {
   margin: 0 0 10px;
-  font-size: 22px;
+  font-size: 19px;
 }
 .box-head .box-title {
   margin: 0;
@@ -190,7 +190,7 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font-size: 16px;
+  font-size: 15px;
   letter-spacing: 2px;
   margin-bottom: 8px;
   color: var(--text-2);
@@ -218,7 +218,7 @@
   gap: 10px;
 }
 .v {
-  font-size: 17px;
+  font-size: 15px;
   &.home {
     text-align: right;
   }
@@ -260,7 +260,7 @@
 
 .simple {
   td.num {
-    font-size: 18px;
+    font-size: 16px;
     width: 30%;
     &:last-child {
       text-align: right;
@@ -288,7 +288,7 @@
     white-space: nowrap;
   }
   .price {
-    font-size: 16px;
+    font-size: 15px;
     color: var(--text);
     text-shadow: var(--led-glow-small);
   }
@@ -314,7 +314,7 @@
     text-align: right;
   }
   .pts {
-    font-size: 15px;
+    font-size: 14px;
   }
   tr.playing {
     background: #1a1608;
@@ -348,7 +348,7 @@
 }
 .form-team {
   margin-top: 8px;
-  font-size: 16px;
+  font-size: 15px;
   letter-spacing: 1.5px;
   color: var(--text-2);
 }
@@ -384,7 +384,7 @@
     padding: 20px 16px;
   }
   .team-name {
-    font-size: 30px;
+    font-size: 26px;
   }
   .bar-row {
     grid-template-columns: 44px minmax(0, 1fr) 110px minmax(0, 1fr) 44px;

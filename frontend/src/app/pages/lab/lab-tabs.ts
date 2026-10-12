@@ -18,12 +18,12 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   `,
   styles: `
     .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-bottom: 12px; }
-    h1 { margin: 0; font-size: 34px; color: var(--amber); }
-    p { margin: 0; font-size: 14px; }
+    h1 { margin: 0; font-size: 28px; color: var(--amber); }
+    p { margin: 0; font-size: 13px; }
     .tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 20px; }
     .tab {
       display: inline-flex; align-items: center; min-height: 40px; padding: 6px 14px;
-      font-size: 18px; color: var(--text); text-decoration: none;
+      font-size: 16px; color: var(--text); text-decoration: none;
       border: 1px solid var(--line-strong); border-radius: 4px;
     }
     .tab.on { color: var(--bg); background: var(--amber); border-color: var(--amber); }

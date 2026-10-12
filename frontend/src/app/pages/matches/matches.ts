@@ -2,6 +2,7 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed, effect, signal } from '@angular/core';
 import { Competition, CompetitionGroup } from '../../core/football';
 import { MatchRow } from '../../shared/match-row';
+import { ShowMore } from '../../shared/show-more';
 
 type Tab = 'tutte' | 'prossime' | 'risultati';
 const STORAGE_KEY = 'archiebet.matches.filters';
@@ -9,7 +10,7 @@ const STORAGE_KEY = 'archiebet.matches.filters';
 /** Dashboard "Partite": elenco per campionato con filtri. Multipla, schedina e ArchieTV arrivano nelle fasi successive. */
 @Component({
   selector: 'ab-matches',
-  imports: [MatchRow],
+  imports: [MatchRow, ShowMore],
   templateUrl: './matches.html',
   styleUrl: './matches.scss',
 })
@@ -48,6 +49,19 @@ export class Matches {
         // memoria del browser non disponibile: i filtri valgono solo per questa visita
       }
     });
+  }
+
+  /** Gruppi aperti con "Mostra tutte", chiave "prossime-ITA-A" / "risultati-ITA-A" */
+  protected readonly openGroups = signal<string[]>([]);
+  /** Partite mostrate per campionato quando il gruppo è chiuso */
+  protected readonly groupLimit = computed(() => (this.tab() === 'tutte' ? 5 : 10));
+
+  protected isGroupOpen(key: string): boolean {
+    return this.openGroups().includes(key);
+  }
+
+  protected setGroupOpen(key: string, open: boolean): void {
+    this.openGroups.update((keys) => (open ? [...keys, key] : keys.filter((k) => k !== key)));
   }
 
   protected toggle(code: string): void {
