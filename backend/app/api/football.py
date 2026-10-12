@@ -10,7 +10,8 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.auth.deps import CurrentUser, DbSession
-from app.models import Competition, Match, MatchOdds, MatchStatus
+from app.forecast.data import fair_probabilities
+from app.models import Competition, Match, MatchOdds, MatchPrediction, MatchStatus
 from app.stats.team_stats import Result, TeamSummary, form, head_to_head, standings, summary
 
 router = APIRouter(prefix="/api", tags=["football"])
@@ -97,6 +98,22 @@ class SideStats(BaseModel):
     venue: TeamSummary  # stagione in corso, solo in casa (o solo in trasferta)
 
 
+class MarketReference(BaseModel):
+    source: str  # es. "Pinnacle · chiusura"
+    probabilities: dict[str, float]  # senza margine
+
+
+class PredictionOut(BaseModel):
+    trial: bool = True  # "in prova" fino al verdetto sulla cassaforte (principio 3)
+    model_version: str
+    computed_at: datetime
+    data_until: datetime  # ultimo risultato usato dal modello
+    ratings: list[float]  # Elo [casa, trasferta]
+    expected_goals: list[float]  # [casa, trasferta]
+    markets: dict[str, dict[str, float]]  # mercato → esito → probabilità di Archie
+    market: dict[str, MarketReference]  # stessa cosa secondo il mercato, per confronto
+
+
 class MatchDetail(BaseModel):
     match: MatchCard
     stats_as_of: datetime  # tutte le statistiche usano solo partite giocate prima di questo istante
@@ -107,6 +124,7 @@ class MatchDetail(BaseModel):
     standings: list[StandingOut]
     odds: list[OddsRow]
     match_stats: dict[str, list[int | float | None]] | None  # [casa, trasferta], solo a partita giocata
+    prediction: PredictionOut | None = None  # previsione di Archie fatta prima del calcio d'inizio
 
 
 # ---------- Conversioni ----------
@@ -318,6 +336,7 @@ def match_detail(match_id: int, _: CurrentUser, db: DbSession) -> MatchDetail:
         }
         match_stats["xg"] = [float(v) if v is not None else None for v in match_stats["xg"]]
 
+    odds = _odds_table(db, match.id)
     return MatchDetail(
         match=match_cards(db, [match], now)[0],
         stats_as_of=before,
@@ -326,8 +345,41 @@ def match_detail(match_id: int, _: CurrentUser, db: DbSession) -> MatchDetail:
         away=side(match.away_team_id, "away"),
         head_to_head=h2h,
         standings=table,
-        odds=_odds_table(db, match.id),
+        odds=odds,
         match_stats=match_stats,
+        prediction=_prediction(db, match.id, odds),
+    )
+
+
+# Per il confronto: il mercato più preciso disponibile (D48), poi la media dei bookmaker
+REFERENCE_ORDER = [("pinnacle", True), ("pinnacle", False), ("betfair_ex", True), ("betfair_ex", False), ("market_avg", True), ("market_avg", False)]
+
+
+def _market_reference(odds: list[OddsRow]) -> dict[str, MarketReference]:
+    out: dict[str, MarketReference] = {}
+    for bookmaker, closing in REFERENCE_ORDER:
+        for row in odds:
+            prices = row.closing if closing else row.opening
+            if row.bookmaker != bookmaker or row.market in out or len(prices) != {"1X2": 3, "OU2.5": 2}.get(row.market):
+                continue
+            fair = fair_probabilities(*prices.values())
+            source = f"{row.label} · {'chiusura' if closing else 'apertura'}"
+            out[row.market] = MarketReference(source=source, probabilities=dict(zip(prices, fair)))
+    return out
+
+
+def _prediction(db: Session, match_id: int, odds: list[OddsRow]) -> PredictionOut | None:
+    p = db.scalar(select(MatchPrediction).where(MatchPrediction.match_id == match_id))
+    if p is None:
+        return None
+    return PredictionOut(
+        model_version=p.model_version,
+        computed_at=p.computed_at,
+        data_until=p.data_until,
+        ratings=[p.home_rating, p.away_rating],
+        expected_goals=[p.expected_home_goals, p.expected_away_goals],
+        markets=p.markets,
+        market=_market_reference(odds),
     )
 
 

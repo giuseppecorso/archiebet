@@ -6,7 +6,8 @@ from datetime import UTC, datetime, timedelta
 import numpy as np
 import pytest
 
-from app.forecast.backtest import ModelConfig, Prediction, compare, score, walk_forward
+from app.forecast.backtest import Prediction, compare, score, walk_forward
+from app.forecast.model import ModelConfig
 from app.forecast.data import Game
 from app.forecast.vault import VaultLockedError
 

@@ -11,6 +11,7 @@ from app.adapters.football_data import FootballDataAdapter
 from app.betting.service import settle_open_bets
 from app.config import Settings, get_settings
 from app.db import SessionLocal
+from app.forecast.service import refresh_predictions
 from app.ingest.api_football import sync_api_football
 from app.ingest.football_data import sync_football_data
 from app.usage import record_usage
@@ -68,10 +69,21 @@ def settle_bets_job() -> None:
         logger.exception("Chiusura automatica delle schedine non riuscita")
 
 
+def refresh_predictions_job() -> None:
+    try:
+        with SessionLocal() as db:
+            updated = refresh_predictions(db, datetime.now(UTC))
+        if updated:
+            logger.info("Previsioni di Archie aggiornate: %s partite", updated)
+    except Exception:
+        logger.exception("Aggiornamento delle previsioni non riuscito")
+
+
 def sync_all_job() -> None:
     sync_football_data_job()
     sync_api_football_job()
     settle_bets_job()  # dopo i risultati nuovi
+    refresh_predictions_job()  # si ricalcola solo se sono arrivati dati nuovi
 
 
 def start_scheduler(settings: Settings) -> BackgroundScheduler | None:

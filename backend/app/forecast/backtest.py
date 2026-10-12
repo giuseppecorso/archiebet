@@ -6,7 +6,6 @@ e prevede tutte le partite del blocco. Un unico modello per A, B e C insieme: le
 retrocesse collegano le categorie.
 """
 
-from bisect import bisect_left
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
@@ -16,22 +15,11 @@ from pathlib import Path
 import numpy as np
 
 from app.forecast.data import Game
-from app.forecast.dixon_coles import fit_dixon_coles, time_decay_weights
-from app.forecast.elo import EloParams, EloTimeline, run_elo
+from app.forecast.elo import EloTimeline, run_elo
 from app.forecast.markets import markets
 from app.forecast.metrics import brier, calibration, expected_calibration_error, log_loss, outcome_index, rps
+from app.forecast.model import ModelConfig, fit_at
 from app.forecast.vault import VAULT_MARKER, ensure_can_evaluate
-
-
-@dataclass(frozen=True)
-class ModelConfig:
-    # Valori tarati sul 2016/17-2021/22 e confermati sul 2022/23-2024/25 (D50-D51)
-    xi_per_day: float = 0.002  # peso dimezzato in circa 1 anno (ln 2 / 0,002 ≈ 347 giorni)
-    ridge: float = 8.0  # in "partite equivalenti" verso il punto di partenza
-    window_days: int = 3 * 365
-    refit_every_days: int = 7
-    elo_prior: bool = True  # punto di partenza del ridge = forza Elo invece della media (prova del nove superata)
-    elo: EloParams = EloParams()
 
 
 @dataclass(frozen=True)
@@ -81,26 +69,18 @@ def walk_forward(
             block.append(targets[i])
             i += 1
 
-        # Allenamento: solo partite iniziate prima di `start` (bisect_left esclude quelle alla stessa ora)
-        train = games[bisect_left(kickoffs, start - timedelta(days=config.window_days)) : bisect_left(kickoffs, start)]
-        if not train:
+        # Allenamento: solo partite iniziate prima di `start`
+        fit = fit_at(
+            games,
+            kickoffs,
+            start,
+            config,
+            extra_teams={t for g in block for t in (g.home_id, g.away_id)},
+            rating_at=(lambda t: timeline.rating_at(t, start)) if timeline else None,
+        )
+        if fit is None:
             skipped += len(block)
             continue
-        strength, extra = None, ()
-        if timeline:
-            extra = {t for g in block for t in (g.home_id, g.away_id)}
-            teams = extra | {t for g in train for t in (g.home_id, g.away_id)}
-            strength = {t: timeline.rating_at(t, start) / 100 for t in teams}
-        fit = fit_dixon_coles(
-            [g.home_id for g in train],
-            [g.away_id for g in train],
-            [g.home_goals for g in train],
-            [g.away_goals for g in train],
-            weights=time_decay_weights([g.kickoff_at for g in train], start, config.xi_per_day),
-            ridge=config.ridge,
-            strength=strength,
-            extra_teams=extra,
-        )
         fits += 1
         for g in block:
             if not (fit.has_team(g.home_id) and fit.has_team(g.away_id)):

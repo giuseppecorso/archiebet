@@ -8,6 +8,7 @@ Regola di scalabilità (sezione 14.2), da rispettare in ogni nuova tabella:
 
 from app.models.base import Base
 from app.models.betting import Bet, BetKind, BetSelection, BetSnapshot, UserSettings
+from app.models.forecast import MatchPrediction
 from app.models.football import Competition, Match, MatchOdds, MatchSource, MatchStatus, Team, TeamAlias
 from app.models.usage import UsageEvent
 from app.models.user import User, UserSession
@@ -21,6 +22,7 @@ __all__ = [
     "Competition",
     "Match",
     "MatchOdds",
+    "MatchPrediction",
     "MatchSource",
     "MatchStatus",
     "Team",

@@ -1,4 +1,4 @@
-"""Comandi da terminale. Uso: python -m app.cli create-user <nome> | set-password <nome> | sync | backtest | open-vault"""
+"""Comandi da terminale. Uso: python -m app.cli create-user <nome> | set-password <nome> | sync | predict | backtest | open-vault"""
 
 import argparse
 import getpass
@@ -10,9 +10,11 @@ from app.adapters.football_data import FIRST_SEASON, FootballDataAdapter
 from app.auth.service import create_user, set_password
 from app.config import get_settings
 from app.db import SessionLocal
-from app.forecast.backtest import ModelConfig, Scores, score, score_by, walk_forward
+from app.forecast.backtest import Scores, score, score_by, walk_forward
 from app.forecast.clv import SUSPICIOUS_VALUE, summarize, value_bets
 from app.forecast.data import REFERENCE_BOOKMAKERS, fair_odds_probabilities, load_games, load_odds, reference_1x2
+from app.forecast.model import ModelConfig
+from app.forecast.service import refresh_predictions
 from app.forecast.vault import VAULT_FIRST_SEASON, open_vault, vault_is_open
 from app.ingest.api_football import sync_api_football
 from app.ingest.football_data import sync_football_data
@@ -143,6 +145,8 @@ def main() -> int:
     bt.add_argument("--ridge", type=float, default=ModelConfig.ridge, help="spinta verso la media (partite equivalenti)")
     bt.add_argument("--window", type=int, default=ModelConfig.window_days, help="giorni di storia usati")
     bt.add_argument("--no-elo", dest="elo", action="store_false", help="senza Elo come punto di partenza delle squadre")
+    pr = commands.add_parser("predict", help="calcola le previsioni di Archie per le partite in programma")
+    pr.add_argument("--force", action="store_true", help="ricalcola anche se non ci sono dati nuovi")
     commands.add_parser("open-vault", help="apre la cassaforte 2025/26 per il verdetto (irreversibile)")
     args = parser.parse_args()
     if args.command == "create-user":
@@ -155,6 +159,10 @@ def main() -> int:
         return 0
     if args.command == "backtest":
         return _backtest(args.first, args.last, ModelConfig(xi_per_day=args.xi, ridge=args.ridge, window_days=args.window, elo_prior=args.elo))
+    if args.command == "predict":
+        with SessionLocal() as db:
+            print(f"Previsioni aggiornate: {refresh_predictions(db, datetime.now(UTC), force=args.force)}")
+        return 0
     if args.command == "open-vault":
         return _open_vault()
     if args.command == "sync":
