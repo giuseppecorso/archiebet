@@ -19,6 +19,7 @@ SOURCES = [
     ("football-data", "Serie A e B: risultati e quote"),
     ("api-football", "Serie C: risultati e calendario"),
     ("predictions", "Previsioni di Archie"),
+    ("radar", "Radar delle quote"),
 ]
 
 
@@ -51,7 +52,7 @@ class StatusOut(BaseModel):
 @router.get("")
 def data_status(_: CurrentUser, db: DbSession) -> StatusOut:
     now = datetime.now(UTC)
-    configured = {"football-data": True, "api-football": bool(get_settings().api_football_key), "predictions": True}
+    configured = {"football-data": True, "api-football": bool(get_settings().api_football_key), "predictions": True, "radar": True}
     sources = []
     for source, label in SOURCES:
         last = db.scalar(select(SyncRun).where(SyncRun.source == source).order_by(SyncRun.finished_at.desc()).limit(1))

@@ -13,6 +13,7 @@ from app.adapters.football_data import FootballDataAdapter
 from app.betting.service import settle_open_bets
 from app.config import Settings, get_settings
 from app.db import SessionLocal
+from app.forecast.radar_service import refresh_radar, settle_radar
 from app.forecast.service import refresh_predictions
 from app.ingest.api_football import sync_api_football
 from app.ingest.football_data import sync_football_data
@@ -106,6 +107,18 @@ def refresh_predictions_job() -> None:
     _tracked("predictions", work)
 
 
+def refresh_radar_job() -> None:
+    def work() -> str:
+        with SessionLocal() as db:
+            settled = settle_radar(db)  # prima si misurano i segnali delle partite finite
+            found = refresh_radar(db, datetime.now(UTC))
+        if found or settled:
+            logger.info("Radar: %s segnali nuovi, %s misurati con la chiusura", found, settled)
+        return f"{found} segnali nuovi, {settled} misurati con la chiusura"
+
+    _tracked("radar", work)
+
+
 def sync_all_job() -> bool:
     """Aggiorna tutto. Se un aggiornamento è già in corso non ne parte un secondo (restituisce False)."""
     if not _sync_lock.acquire(blocking=False):
@@ -116,6 +129,7 @@ def sync_all_job() -> bool:
         sync_api_football_job()
         settle_bets_job()  # dopo i risultati nuovi
         refresh_predictions_job()  # si ricalcola solo se sono arrivati dati nuovi
+        refresh_radar_job()  # dopo le quote nuove
         return True
     finally:
         _sync_lock.release()

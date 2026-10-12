@@ -37,6 +37,7 @@ def test_status_reports_freshness(logged_client, seeded, jobs_db):  # noqa: F811
         "football-data": None,
         "api-football": None,
         "predictions": None,
+        "radar": None,
     }
     serie_a = next(c for c in status["competitions"] if c["competition"]["code"] == "ITA-A")
     assert serie_a["awaiting_results"] == 1  # Lazio-Milan giocata da 3 giorni, risultato non arrivato
