@@ -71,7 +71,7 @@
               <tr><th scope="col">Stagione</th><th scope="col">1</th><th scope="col">X</th><th scope="col">2</th><th scope="col">Gol</th><th scope="col">Over 2.5</th><th scope="col">Goal</th><th scope="col"><abbr title="Partite finite">Part.</abbr></th></tr>
             </thead>
             <tbody>
-              @for (t of trendNewestFirst(); track t.season) {
+              @for (t of trendNewestFirst().slice(0, trendOpen() ? undefined : 6); track t.season) {
                 <tr [class.on]="t.season === d.season">
                   <th scope="row"><a [routerLink]="[]" [queryParams]="{ c: d.competition.code, s: t.season.replace('/', '-') }">{{ t.season }}</a></th>
                   <td>{{ fmt.pct(t.summary.home_win) }}</td>
@@ -86,6 +86,7 @@
             </tbody>
           </table>
         </div>
+        <ab-show-more [total]="trendNewestFirst().length" [limit]="6" [(expanded)]="trendOpen" />
       </section>
     </div>
 
@@ -97,7 +98,7 @@
             <tr><th scope="col">#</th><th scope="col">Squadra</th><th scope="col"><abbr title="Partite giocate">G</abbr></th><th scope="col"><abbr title="Differenza reti">DR</abbr></th><th scope="col"><abbr title="Punti">Pt</abbr></th></tr>
           </thead>
           <tbody>
-            @for (row of d.standings; track row.team.id) {
+            @for (row of d.standings.slice(0, tableOpen() ? undefined : 10); track row.team.id) {
               <tr>
                 <td>{{ row.rank }}</td>
                 <th scope="row"><a [routerLink]="['/laboratorio/squadre', row.team.id]">{{ row.team.name }}</a></th>
@@ -108,6 +109,7 @@
             }
           </tbody>
         </table>
+        <ab-show-more [total]="d.standings.length" [limit]="10" [(expanded)]="tableOpen" />
         <p class="note">Calcolata dai risultati: non tiene conto di penalizzazioni, ripescaggi o esclusioni decise a tavolino.</p>
       </section>
     </aside>

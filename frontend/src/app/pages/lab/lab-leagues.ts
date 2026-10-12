@@ -1,14 +1,15 @@
 import { httpResource } from '@angular/common/http';
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { num, pct } from '../../core/format';
 import { CompetitionSeasons, SeasonDetail, SeasonTrend, seasonParam } from '../../core/lab';
+import { ShowMore } from '../../shared/show-more';
 import { LabTabs } from './lab-tabs';
 
 /** Laboratorio · Campionati: numeri e classifica di un campionato in una stagione, e andamento negli anni. */
 @Component({
   selector: 'ab-lab-leagues',
-  imports: [LabTabs, RouterLink],
+  imports: [LabTabs, RouterLink, ShowMore],
   templateUrl: './lab-leagues.html',
   styleUrl: './lab.scss',
 })
@@ -20,6 +21,8 @@ export class LabLeagues {
   readonly s = input<string>();
 
   protected readonly fmt = { num, pct };
+  protected readonly trendOpen = signal(false);
+  protected readonly tableOpen = signal(false);
   protected readonly catalog = httpResource<CompetitionSeasons[]>(() => '/api/lab/competitions', { defaultValue: [] });
 
   protected readonly current = computed(() => {

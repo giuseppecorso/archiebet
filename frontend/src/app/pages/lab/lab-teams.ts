@@ -1,17 +1,19 @@
 import { httpResource } from '@angular/common/http';
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, ElementRef, afterNextRender, computed, inject, Injector, input, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatchCard } from '../../core/football';
 import { TeamHistory, TeamListItem, seasonParam } from '../../core/lab';
 import { MatchRow } from '../../shared/match-row';
+import { ShowMore } from '../../shared/show-more';
 import { LabTabs } from './lab-tabs';
 
 /** Laboratorio · Squadre: ricerca, storia stagione per stagione, partite di una stagione. */
 @Component({
   selector: 'ab-lab-teams',
-  imports: [LabTabs, RouterLink, MatchRow],
+  imports: [LabTabs, RouterLink, MatchRow, ShowMore],
   templateUrl: './lab-teams.html',
   styleUrl: './lab.scss',
+  host: { '(document:click)': 'closeIfOutside($event)' },
 })
 export class LabTeams {
   /** Dalla rotta /laboratorio/squadre/:id */
@@ -19,6 +21,14 @@ export class LabTeams {
   /** Stagione aperta, dall'indirizzo: ?s=2024-25 */
   readonly s = input<string>();
 
+  private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly injector = inject(Injector);
+  private readonly searchBox = viewChild<ElementRef<HTMLInputElement>>('searchBox');
+
+  /** Tendina di scelta della squadra (si chiude con Esc, cliccando fuori o scegliendo) */
+  protected readonly pickerOpen = signal(false);
+  protected readonly historyOpen = signal(false);
+  protected readonly gamesOpen = signal(false);
   protected readonly search = signal('');
   protected readonly teams = httpResource<TeamListItem[]>(() => '/api/lab/teams', { defaultValue: [] });
   protected readonly filtered = computed(() => {
@@ -34,6 +44,20 @@ export class LabTeams {
   });
 
   protected readonly seasonParam = seasonParam;
+
+  protected togglePicker(): void {
+    this.pickerOpen.update((open) => !open);
+    if (this.pickerOpen()) {
+      afterNextRender(() => this.searchBox()?.nativeElement.focus(), { injector: this.injector });
+    }
+  }
+
+  protected closeIfOutside(event: Event): void {
+    const picker = (this.host.nativeElement as HTMLElement).querySelector('.picker');
+    if (this.pickerOpen() && picker && !picker.contains(event.target as Node)) {
+      this.pickerOpen.set(false);
+    }
+  }
 
   /** Risultato della squadra in una partita, dal suo punto di vista (per riassumere la stagione) */
   protected readonly record = computed(() => {

@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { MatchDetail, OddsRow, TeamSummary } from '../../core/football';
 import { dayLabel, kickoffTime, longDate, num, odds, pct } from '../../core/format';
 import { FormBadges } from '../../shared/form-badges';
+import { ShowMore } from '../../shared/show-more';
 
 interface StatLine {
   label: string;
@@ -50,7 +51,7 @@ const ODDS_COLUMNS: [string, string][] = [
 
 @Component({
   selector: 'ab-match',
-  imports: [RouterLink, FormBadges],
+  imports: [RouterLink, FormBadges, ShowMore],
   templateUrl: './match.html',
   styleUrl: './match.scss',
 })
@@ -60,6 +61,7 @@ export class MatchPage {
 
   protected readonly detail = httpResource<MatchDetail>(() => `/api/matches/${this.id()}`);
   protected readonly scope = signal<'season' | 'venue'>('season');
+  protected readonly tableOpen = signal(false);
 
   protected readonly fmt = { odds, num, pct, dayLabel, kickoffTime, longDate };
 
@@ -107,6 +109,12 @@ export class MatchPage {
   protected outcomes(side: 'home' | 'away') {
     return this.detail.value()?.[side].form.map((f) => f.outcome) ?? [];
   }
+
+  /** Classifica ridotta: prime 10 righe più le due squadre in campo, ovunque siano */
+  protected readonly standingsRows = computed(() => {
+    const rows = this.detail.value()?.standings ?? [];
+    return this.tableOpen() ? rows : rows.filter((row) => row.rank <= 10 || this.isPlaying(row.team.id));
+  });
 
   protected isPlaying(teamId: number): boolean {
     const m = this.detail.value()?.match;

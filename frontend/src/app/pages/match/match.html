@@ -140,7 +140,7 @@
               <tr><th scope="col">#</th><th scope="col">Squadra</th><th scope="col"><abbr title="Partite giocate">G</abbr></th><th scope="col"><abbr title="Differenza reti">DR</abbr></th><th scope="col"><abbr title="Punti">Pt</abbr></th></tr>
             </thead>
             <tbody>
-              @for (row of d.standings; track row.team.id) {
+              @for (row of standingsRows(); track row.team.id) {
                 <tr [class.playing]="isPlaying(row.team.id)">
                   <td>{{ row.rank }}</td>
                   <th scope="row">{{ row.team.name }}</th>
@@ -151,6 +151,7 @@
               }
             </tbody>
           </table>
+          <ab-show-more [total]="d.standings.length" [limit]="10" [(expanded)]="tableOpen" />
           <p class="note">Prima di questa partita. Senza eventuali penalizzazioni.</p>
         } @else {
           <p class="muted">Prima giornata: classifica non ancora disponibile.</p>
