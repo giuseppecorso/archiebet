@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 from app.api.football import MatchCard, match_cards, match_detail
 from app.auth.deps import CurrentUser, DbSession
+from app.betting.analysis import Breakdown, breakdown
 from app.betting.calc import MARKETS, potential_payout
 from app.betting.service import BetError, BudgetStatus, BetSummary, SelectionInput, budget_status, create_bet, settle_open_bets, summarize
 from app.models import Bet, BetSnapshot, Match, MatchOdds, Team, UserSettings
@@ -196,6 +197,22 @@ def bets_summary(user: CurrentUser, db: DbSession, period: Literal["week", "30d"
         real=summarize([b for b in bets if b.kind == "real"]),
         simulated=summarize([b for b in bets if b.kind == "simulated"]),
     )
+
+
+@router.get("/bets/breakdown")
+def bets_breakdown(
+    user: CurrentUser,
+    db: DbSession,
+    kind: Literal["real", "simulated"] = "real",
+    period: Literal["week", "30d", "season", "all"] = "all",
+) -> Breakdown:
+    """Dove vinci e dove perdi + abitudini, per un tipo di giocata e un periodo."""
+    settle_open_bets(db)
+    query = select(Bet).where(Bet.user_id == user.id, Bet.kind == kind)
+    since = _period_start(period, datetime.now(UTC))
+    if since:
+        query = query.where(Bet.placed_at >= since)
+    return breakdown(db.scalars(query).all())
 
 
 @router.get("/bets/{bet_id}")

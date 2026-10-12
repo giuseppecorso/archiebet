@@ -100,3 +100,17 @@ def test_prefill(logged_client, matches):
     assert p["odds"]["1X2"] == {"1": 1.9, "X": 3.5, "2": 4.2}
     assert p["odds"]["OU2.5"] == {"over": 1.8, "under": 2.0}
     assert p["markets"]["DC"] == ["1X", "X2", "12"]
+
+
+def test_breakdown_endpoint(logged_client, db, matches):
+    logged_client.post("/api/bets", json=bet_body(matches["Inter"], odds="2.00"))
+    logged_client.post("/api/bets", json=bet_body(matches["Milan"], kind="simulated"))
+    inter = db.get(Match, matches["Inter"])
+    inter.status, inter.home_goals, inter.away_goals = MatchStatus.FINISHED, 2, 1
+    db.commit()
+    real = logged_client.get("/api/bets/breakdown?kind=real").json()
+    assert [(g["label"], g["bets"], g["profit"]) for g in real["by_size"]] == [("Singole", 1, "10.00")]
+    assert real["by_competition"][0]["label"] == "Serie A" and real["by_competition"][0]["hit_rate"] == 1.0
+    assert real["habits"]["bets"] == 1 and real["habits"]["top_bookmaker"] == "Snai"
+    simulated = logged_client.get("/api/bets/breakdown?kind=simulated").json()
+    assert simulated["by_size"] == [] and simulated["habits"]["bets"] == 1  # aperta: solo abitudini
