@@ -46,9 +46,9 @@ Colori con significato fisso: verde = valore/vinta, rosso = persa/valore negativ
 7. Impostazioni: limiti di gioco (budget settimanale/mensile), campionati seguiti, bookmaker (Sisal, Eurobet, bet365, Snai, Lottomatica, Goldbet, Betsson, Planetwin365), soglie di valore, squadra del cuore.
 
 ## 4. Regole di decisione di Archie
-1. Il modello (Dixon-Coles all'inizio) stima la probabilità di ogni risultato esatto; da lì tutti i mercati, coerenti tra loro.
-2. Quota giusta = 1 / probabilità. Valore = probabilità × quota − 1. Suggerimento solo sopra soglia (default 5%, configurabile).
-3. Secondo radar: confronto con la quota giusta di mercato (consenso dei bookmaker più precisi, Pinnacle in testa, senza margine). Massima fiducia quando modello e mercato concordano.
+1. Probabilità di partenza (aggiornato con D53/D57, misurato nel backtest della Fase 3): dove c'è un mercato preciso (Serie A e B) la base è la probabilità di Pinnacle (o Betfair Exchange) senza margine; il modello Dixon-Coles + Elo stima la probabilità di ogni risultato esatto, da cui tutti i mercati coerenti, e serve dove il mercato manca o è debole (Serie C, mercati senza quote) e come confronto.
+2. Quota giusta = 1 / probabilità. Valore = probabilità × quota − 1. Suggerimento solo sopra soglia (default 5%, configurabile; nel backtest già dal 2% il CLV è positivo).
+3. Radar (motore principale in A e B, D57): il valore nasce quando un bookmaker paga più della quota giusta del mercato preciso. Il modello e i fattori correggono la probabilità solo se hanno superato la prova del nove CONTRO il mercato (D56).
 4. Valore sopra il 15% = sospetto: invito a controllare notizie e formazioni. Quota palesemente fuori linea = rischio annullamento da parte del bookmaker (regole ADM sugli errori palesi).
 5. Prova del nove: un fattore entra nel modello solo se il test walk-forward sul passato dimostra che migliora log loss / Brier.
 6. Ricalcolo all'uscita delle formazioni e ai movimenti forti delle quote.

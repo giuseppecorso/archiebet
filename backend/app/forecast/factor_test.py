@@ -65,7 +65,7 @@ def model_disagreement(rows: Sequence[MarketRow], model: Sequence[Prediction]) -
     return out
 
 
-def _clv(probs: Mapping[int, np.ndarray], offered: Odds, closing_fair: Odds, threshold: float) -> Clv | None:
+def clv_of_value_bets(probs: Mapping[int, np.ndarray], offered: Odds, closing_fair: Odds, threshold: float) -> Clv | None:
     values = []
     for match_id, p in probs.items():
         prices, fair = offered.get(match_id, {}).get("1X2"), closing_fair.get(match_id, {}).get("1X2")
@@ -116,8 +116,8 @@ def run(
                 n=len(ll),
                 log_loss=float(np.mean(list(ll.values()))),
                 vs_baseline=comparison,
-                clv_pinnacle=_clv(probs, offered_pinnacle, closing_fair, threshold),
-                clv_bet365=_clv(probs, offered_bet365, closing_fair, threshold),
+                clv_pinnacle=clv_of_value_bets(probs, offered_pinnacle, closing_fair, threshold),
+                clv_bet365=clv_of_value_bets(probs, offered_bet365, closing_fair, threshold),
             )
         )
     return results

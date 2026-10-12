@@ -26,7 +26,7 @@ Sei un senior software engineer: progetti e costruisci tu ArchieBet, io guido le
 8. Basi di scalabilità da subito (sezione 14 delle specifiche): dati legati a user_id, calcoli per partita salvati una volta, un solo modulo per l'AI e uno per ogni fonte dati.
 
 ## Stato attuale (2026-10-12)
-Fasi 0, 1 (piano gratuito), 1.5 Laboratorio e 2 Giocate concluse. **Prossimo passo: Fase 3 – Modello**, piano già approvato (Dixon-Coles + rating Elo anche Serie C, mercati dalla matrice dei risultati, backtest walk-forward su calibrazione/log loss/Brier/CLV, prova del nove dei fattori, cassaforte 2025/26 bloccata nel codice fino al comando "apri cassaforte", numpy+scipy). Decisione presa: **opzione A** = CLV e verdetto contro Pinnacle di chiusura dove c'è, altrimenti Betfair Exchange di chiusura (D48). Dettagli in `docs/STATO.md` e `docs/DECISIONI.md`.
+Fasi 0, 1 (piano gratuito), 1.5 Laboratorio, 2 Giocate e 3 Modello concluse, **tranne il verdetto sulla cassaforte 2025/26, che lancia Giuse** (`open-vault` poi `verdict`, criteri D58). Codice del modello in `backend/app/forecast/`. Risultato chiave: in A e B il modello non batte il mercato, il valore sta nel **radar** (quote dei bookmaker contro la quota giusta Pinnacle, D53/D57); tutto resta sul PC di Giuse (D55). **Prossimo passo: Fase 4 – Quote e valore** (OddsPapi per i bookmaker italiani, radar, Multipla del giorno). Dettagli in `docs/STATO.md` e `docs/DECISIONI.md`.
 
 ## Come lavorare (risparmio token: Giuse ha un piano Pro)
 - Leggi solo le parti di file che servono; niente esplorazioni larghe, niente rilettura di file appena scritti.

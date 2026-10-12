@@ -110,7 +110,7 @@ def test_safe_and_out_of_reach_flag():
 
 
 def test_factor_test_clv_by_hand():
-    from app.forecast.factor_test import _clv
+    from app.forecast.factor_test import clv_of_value_bets as _clv
 
     probs = {1: np.array([0.5, 0.3, 0.2])}
     offered = {1: {"1X2": {"1": 2.1, "X": 3.2, "2": 4.5}}}  # valore: 1 → +5%, X → −4%, 2 → −10%

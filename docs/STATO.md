@@ -25,7 +25,7 @@ Ultimo aggiornamento: 2026-10-12
 
 Test: 129 backend + 11 frontend, tutti verdi.
 
-## Fase 3 – Modello: IN CORSO
+## Fase 3 – Modello: CONCLUSA tranne il verdetto (2026-10-12)
 
 - [x] Dixon-Coles (risultati esatti) con correzione dei punteggi bassi, pesi nel tempo, ridge; gradiente esatto verificato
 - [x] Mercati dalla matrice dei risultati: 1X2, doppia chance, Under/Over 0.5-4.5, Goal/NoGoal; quota giusta e valore
@@ -36,11 +36,15 @@ Test: 129 backend + 11 frontend, tutti verdi.
 - [x] CLV delle giocate di valore (bet365 apertura contro chiusura Pinnacle/Betfair, D52)
 - [x] Previsioni salvate per ogni partita in programma (tabella `match_predictions`), ricalcolate solo con dati nuovi dopo ogni aggiornamento automatico (anche a mano: `python -m app.cli predict`)
 - [x] Pagina partita: "Probabilità di Archie · in prova" (1/X/2 con quota giusta e mercato a confronto) e "Tutti i mercati"
-- [ ] Altri fattori alla prova del nove (fattore campo per categoria, stagioni anomale, ecc.)
+- [x] Stato dei dati nella dashboard: aggiornamento di ogni fonte, risultati fino al…, previsioni; pulsante **Aggiorna ora**
+- [x] Prova del nove contro il mercato (`python -m app.cli factor-test`): riposo, motivazione e modello non battono l'apertura Pinnacle (D56)
+- [x] **Radar confermato** come motore in A e B: CLV +3,2% (bet365) e +4,1% (quota migliore), positivo quasi in ogni stagione (D57)
+- [x] Comando del verdetto con criteri fissati in anticipo (D58): `python -m app.cli verdict`, funziona solo a cassaforte aperta
+- [ ] **Verdetto sulla cassaforte 2025/26: lo lancia Giuse** (vedi "Da fare al PC")
 
-**Dove siamo:** il modello è ben calibrato (errore 1-2%) ma in A e B non batte il mercato (log loss 1,030 contro 1,008; CLV come giocare a caso). Dettagli in DECISIONI.md dopo D52.
+**Dove siamo:** il modello è ben calibrato (errore 1-2%) ma in A e B non batte il mercato; il valore misurato sta nel radar (quote dei bookmaker contro la quota giusta di Pinnacle). Fattori "da esperto" (formazioni, assenze, notizie) da provare quando avremo lo storico di API-Football a pagamento.
 
-Test: 185 backend + 12 frontend.
+Test: 202 backend + 13 frontend.
 
 Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia-archiebet.bat` / `spegni-archiebet.bat`). Icone LED e collegamenti su Desktop e menu Start si ricreano con `powershell -ExecutionPolicy Bypass -File tools\crea-icone.ps1`.
 
@@ -48,7 +52,12 @@ Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia
 
 Le attività manuali sono raccolte qui, da fare tutte insieme quando sei al computer.
 
-Nessuna attività in sospeso. (Account API-Football creato il 2026-10-11, chiave salvata in `backend/.env`.)
+1. **Verdetto sulla cassaforte 2025/26 (chiude la Fase 3).** È irreversibile: va fatto una volta sola, a modello fermo. Dalla cartella `backend`, in PowerShell:
+   - `.venv\Scripts\python -m app.cli open-vault` → scrivi `apri cassaforte` e premi Invio
+   - `.venv\Scripts\python -m app.cli verdict` → mostra i tre criteri di D58, superati o no
+   Se preferisci, dimmelo e lo lancio io in una sessione dopo il tuo "apri cassaforte". La Serie C 2025/26 si valuta più avanti (serve il piano a pagamento di API-Football).
+
+(Account API-Football creato il 2026-10-11, chiave salvata in `backend/.env`.)
 
 ## Fase 1 – Partite: CONCLUSA per il piano gratuito (2026-10-11)
 

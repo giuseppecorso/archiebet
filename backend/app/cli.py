@@ -18,6 +18,8 @@ from app.forecast.factors import nothing_to_play_for, rest_difference
 from app.forecast.model import ModelConfig
 from app.forecast.service import refresh_predictions
 from app.forecast.vault import VAULT_FIRST_SEASON, open_vault, vault_is_open
+from app.forecast.verdict import compute as compute_verdict
+from app.forecast.verdict import sharp_opening
 from app.ingest.api_football import sync_api_football
 from app.ingest.football_data import sync_football_data
 from app.ingest.teams import tidy_teams
@@ -143,6 +145,33 @@ def _factor_test(first: str, last: str) -> int:
     return 0
 
 
+def _verdict() -> int:
+    if not vault_is_open():
+        print("La cassaforte è chiusa: il verdetto si calcola dopo  python -m app.cli open-vault")
+        return 1
+    with SessionLocal() as db:
+        games = load_games(db)
+        closing_fair = fair_odds_probabilities(load_odds(db, REFERENCE_BOOKMAKERS, closing=True))
+        sharp = sharp_opening(
+            fair_odds_probabilities(load_odds(db, ["pinnacle"], closing=False)),
+            fair_odds_probabilities(load_odds(db, ["betfair_ex"], closing=False)),
+        )
+        offered_bet365 = load_odds(db, ["bet365"], closing=False)
+    v = compute_verdict(games, sharp, offered_bet365, closing_fair)
+    ok = lambda passed: "SUPERATO" if passed else "NON superato"  # noqa: E731
+    print(f"Verdetto sulla stagione {', '.join(v.seasons)} (criteri D58, fissati prima di aprire la cassaforte)")
+    _print_scores("Modello", v.model)
+    print(f"1. Calibrazione ≤ 3%: {v.model.ece:.1%} -> {ok(v.model_calibrated)}")
+    if v.model.market_log_loss is not None:
+        gap = v.model.model_log_loss_on_market - v.model.market_log_loss
+        print(f"2. Distanza dal mercato di chiusura ≤ 0,03: {gap:+.4f} -> {ok(v.model_close_to_market)}")
+    if v.radar:
+        print(f"3. Radar (bet365, valore ≥ 2%): CLV {v.radar.mean:+.2%} ± {v.radar.std_error:.2%} su {v.radar.n} giocate -> {ok(v.radar_passes)}")
+    else:
+        print("3. Radar: nessuna giocata misurabile -> NON superato")
+    return 0
+
+
 def _open_vault() -> int:
     if vault_is_open():
         print("La cassaforte è già aperta.")
@@ -180,6 +209,7 @@ def main() -> int:
     ft = commands.add_parser("factor-test", help="prova del nove dei fattori contro il mercato (Serie A e B)")
     ft.add_argument("--from", dest="first", default="2013/14")
     ft.add_argument("--to", dest="last", default="2024/25")
+    commands.add_parser("verdict", help="verdetto sulla stagione 2025/26 (solo a cassaforte aperta)")
     commands.add_parser("open-vault", help="apre la cassaforte 2025/26 per il verdetto (irreversibile)")
     args = parser.parse_args()
     if args.command == "create-user":
@@ -198,6 +228,8 @@ def main() -> int:
         return 0
     if args.command == "factor-test":
         return _factor_test(args.first, args.last)
+    if args.command == "verdict":
+        return _verdict()
     if args.command == "open-vault":
         return _open_vault()
     if args.command == "sync":
