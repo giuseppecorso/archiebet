@@ -10,9 +10,11 @@ from app.adapters.football_data import FIRST_SEASON, FootballDataAdapter
 from app.auth.service import create_user, set_password
 from app.config import get_settings
 from app.db import SessionLocal
+from app.forecast import factor_test
 from app.forecast.backtest import Scores, score, score_by, walk_forward
 from app.forecast.clv import SUSPICIOUS_VALUE, summarize, value_bets
 from app.forecast.data import REFERENCE_BOOKMAKERS, fair_odds_probabilities, load_games, load_odds, reference_1x2
+from app.forecast.factors import nothing_to_play_for, rest_difference
 from app.forecast.model import ModelConfig
 from app.forecast.service import refresh_predictions
 from app.forecast.vault import VAULT_FIRST_SEASON, open_vault, vault_is_open
@@ -113,6 +115,34 @@ def _backtest(first: str, last: str, config: ModelConfig) -> int:
     return 0
 
 
+def _factor_test(first: str, last: str) -> int:
+    with SessionLocal() as db:
+        games = load_games(db)
+        closing_fair = fair_odds_probabilities(load_odds(db, REFERENCE_BOOKMAKERS, closing=True))
+        opening_fair = fair_odds_probabilities(load_odds(db, ["pinnacle"], closing=False))
+        offered_pinnacle = load_odds(db, ["pinnacle"], closing=False)
+        offered_bet365 = load_odds(db, ["bet365"], closing=False)
+    rows = factor_test.market_rows(games, opening_fair, closing_fair)
+    seasons = sorted({r.season for r in rows if first <= r.season <= last})
+    print(f"Prova del nove contro il mercato: {len(rows)} partite di A e B con apertura Pinnacle, valutate {seasons[0]} - {seasons[-1]}")
+    print("Calcolo le previsioni del modello di Archie (walk-forward)...")
+    model = walk_forward(games, sorted({r.season for r in rows if r.season <= last}), ModelConfig()).predictions
+    factors = {
+        "+ riposo (giorni, casa - fuori)": factor_test.as_features(rest_difference(games)),
+        "+ motivazione (salve e senza obiettivo)": factor_test.as_features(nothing_to_play_for(games)),
+        "+ modello di Archie (Dixon-Coles + Elo)": factor_test.model_disagreement(rows, model),
+    }
+    results = factor_test.run(rows, factors, seasons, offered_pinnacle, offered_bet365, closing_fair)
+    for r in results:
+        cmp = "" if r.vs_baseline is None else f"  vs ricalibrato {r.vs_baseline.mean_diff:+.4f} ± {r.vs_baseline.std_error:.4f} {'PASSA' if r.passes else 'non passa'}"
+        clv = "  ".join(
+            f"CLV {label}: {c.mean:+.2%} ± {c.std_error:.2%} su {c.n}" if c else f"CLV {label}: nessuna giocata"
+            for label, c in (("Pinnacle", r.clv_pinnacle), ("bet365", r.clv_bet365))
+        )
+        print(f"{r.name:<42} n={r.n:<5} log loss {r.log_loss:.4f}{cmp}\n{'':<42} {clv}")
+    return 0
+
+
 def _open_vault() -> int:
     if vault_is_open():
         print("La cassaforte è già aperta.")
@@ -147,6 +177,9 @@ def main() -> int:
     bt.add_argument("--no-elo", dest="elo", action="store_false", help="senza Elo come punto di partenza delle squadre")
     pr = commands.add_parser("predict", help="calcola le previsioni di Archie per le partite in programma")
     pr.add_argument("--force", action="store_true", help="ricalcola anche se non ci sono dati nuovi")
+    ft = commands.add_parser("factor-test", help="prova del nove dei fattori contro il mercato (Serie A e B)")
+    ft.add_argument("--from", dest="first", default="2013/14")
+    ft.add_argument("--to", dest="last", default="2024/25")
     commands.add_parser("open-vault", help="apre la cassaforte 2025/26 per il verdetto (irreversibile)")
     args = parser.parse_args()
     if args.command == "create-user":
@@ -163,6 +196,8 @@ def main() -> int:
         with SessionLocal() as db:
             print(f"Previsioni aggiornate: {refresh_predictions(db, datetime.now(UTC), force=args.force)}")
         return 0
+    if args.command == "factor-test":
+        return _factor_test(args.first, args.last)
     if args.command == "open-vault":
         return _open_vault()
     if args.command == "sync":

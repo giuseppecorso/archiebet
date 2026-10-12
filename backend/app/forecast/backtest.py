@@ -169,5 +169,10 @@ def compare(a: Sequence[Prediction], b: Sequence[Prediction]) -> PairedCompariso
     if not pairs:
         raise ValueError("Nessuna partita in comune tra le due varianti")
     diff = np.array([-np.log(pb.p_1x2[pb.outcome]) + np.log(pa.p_1x2[pa.outcome]) for pa, pb in pairs])
+    return paired(diff)
+
+
+def paired(diff: np.ndarray) -> PairedComparison:
+    """Media e errore standard delle differenze partita per partita (B − A)."""
     se = float(diff.std(ddof=1) / np.sqrt(len(diff))) if len(diff) > 1 else float("inf")
     return PairedComparison(len(diff), float(diff.mean()), se)
