@@ -19,7 +19,7 @@ COMPETITIONS = {
 # Sigle e parole che non distinguono una squadra dall'altra
 _NOISE = {
     "ac", "acd", "acr", "as", "asd", "ss", "ssc", "ssd", "ssdarl", "us", "usd", "fc", "fbc", "sc", "cf", "srl",
-    "calcio", "football", "club", "sporting", "1913", "polisportiva",
+    "calcio", "football", "club", "sporting", "1913", "polisportiva", "acf", "cfc", "bc",
 }  # fmt: skip
 
 # Nomi "ripuliti" che indicano la stessa squadra pur essendo scritti in modo diverso dalle fonti
@@ -34,6 +34,13 @@ _SAME_TEAM = {
     "internazionale": "inter",
     "ac milan": "milan",
     "as roma": "roma",
+    # OddsPapi aggiunge la città al nome
+    "juventus turin": "juventus",
+    "inter milano": "inter",
+    "lazio rome": "lazio",
+    "sampdoria genoa": "sampdoria",
+    "sudtirol bolzano": "sudtirol",
+    "l r vicenza": "vicenza",
     # Stessa società dopo una rifondazione
     "vicenza virtus": "vicenza",
     "lr vicenza": "vicenza",
