@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from app.api.bets import router as bets_router
 from app.api.football import router as football_router
 from app.api.lab import router as lab_router
+from app.api.status import router as status_router
 from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.jobs import start_scheduler
@@ -26,6 +27,7 @@ app.include_router(auth_router)
 app.include_router(football_router)
 app.include_router(lab_router)
 app.include_router(bets_router)
+app.include_router(status_router)
 
 
 @app.get("/api/health", tags=["system"])

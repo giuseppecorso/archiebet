@@ -1,4 +1,4 @@
-import { dayLabel, fairOdds, kickoffTime, num, odds, pct } from './format';
+import { ago, dayLabel, fairOdds, kickoffTime, num, odds, pct } from './format';
 
 describe('formattazione', () => {
   it('mostra l\'orario in ora italiana', () => {
@@ -23,6 +23,17 @@ describe('formattazione', () => {
     expect(num(11.667)).toBe('11,67');
     expect(pct(0.375)).toBe('38%');
     expect(pct(null)).toBe('–');
+  });
+
+  it('da quanto tempo', () => {
+    const now = new Date('2026-10-12T18:00:00Z');
+    expect(ago('2026-10-12T17:59:40Z', now)).toBe('adesso');
+    expect(ago('2026-10-12T17:55:00Z', now)).toBe('5 min fa');
+    expect(ago('2026-10-12T16:30:00Z', now)).toBe("un'ora fa");
+    expect(ago('2026-10-12T15:00:00Z', now)).toBe('3 ore fa');
+    expect(ago('2026-10-11T12:00:00Z', now)).toBe('ieri');
+    expect(ago('2026-09-30T18:00:00Z', now)).toBe('12 giorni fa');
+    expect(ago(null, now)).toBe('mai');
   });
 
   it('quota giusta = 1 / probabilità', () => {

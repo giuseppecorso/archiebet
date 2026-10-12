@@ -73,7 +73,16 @@ describe('ArchieBet: navigazione', () => {
       },
     ]);
     (await nextRequest((r) => r.url.startsWith('/api/matches?view=results'))).flush([]);
+    (await nextRequest('/api/status')).flush({
+      now: '2026-10-10T12:00:00Z', syncing: false, upcoming: 5, upcoming_with_prediction: 3,
+      sources: [{ source: 'football-data', label: 'Serie A e B', configured: true, last_ok_at: '2026-10-10T11:00:00Z', last_run_at: '2026-10-10T11:00:00Z', last_run_ok: true, message: 'ok' }],
+      competitions: [{ competition: serieA, last_result_at: '2026-09-20T18:45:00Z', awaiting_results: 8, next_match_at: '2026-10-10T18:45:00Z' }],
+    });
     await harness.fixture.whenStable();
+
+    const bar = harness.routeNativeElement!.querySelector('ab-data-status')!.textContent!;
+    expect(bar).toContain('previsioni 3/5');
+    expect(bar).toContain('(8 in arrivo)');
 
     const row = harness.routeNativeElement!.querySelector('ab-match-row a') as HTMLAnchorElement;
     expect(row.textContent).toContain('Napoli');

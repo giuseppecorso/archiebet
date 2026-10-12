@@ -1,6 +1,7 @@
 import { httpResource } from '@angular/common/http';
 import { Component, computed, effect, signal } from '@angular/core';
 import { Competition, CompetitionGroup } from '../../core/football';
+import { DataStatusBar } from '../../shared/data-status';
 import { MatchRow } from '../../shared/match-row';
 import { ShowMore } from '../../shared/show-more';
 
@@ -10,7 +11,7 @@ const STORAGE_KEY = 'archiebet.matches.filters';
 /** Dashboard "Partite": elenco per campionato con filtri. Multipla, schedina e ArchieTV arrivano nelle fasi successive. */
 @Component({
   selector: 'ab-matches',
-  imports: [MatchRow, ShowMore],
+  imports: [DataStatusBar, MatchRow, ShowMore],
   templateUrl: './matches.html',
   styleUrl: './matches.scss',
 })

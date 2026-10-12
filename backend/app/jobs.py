@@ -1,6 +1,8 @@
 """Lavori programmati: girano da soli mentre il backend è acceso."""
 
 import logging
+import threading
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -14,13 +16,34 @@ from app.db import SessionLocal
 from app.forecast.service import refresh_predictions
 from app.ingest.api_football import sync_api_football
 from app.ingest.football_data import sync_football_data
+from app.models.sync import SyncRun
 from app.usage import record_usage
 
 logger = logging.getLogger("archiebet.jobs")
 
+# Un solo aggiornamento alla volta (automatico o col pulsante "Aggiorna ora")
+_sync_lock = threading.Lock()
+
+
+def is_syncing() -> bool:
+    return _sync_lock.locked()
+
+
+def _tracked(source: str, work: Callable[[], str]) -> None:
+    """Esegue un aggiornamento e lo scrive nel registro (sync_runs), riuscito o no."""
+    started = datetime.now(UTC)
+    try:
+        message, ok = work(), True
+    except Exception:
+        logger.exception("Aggiornamento %s non riuscito: riprovo al prossimo giro", source)
+        message, ok = "errore: riprovo al prossimo giro", False
+    with SessionLocal() as db:
+        db.add(SyncRun(source=source, started_at=started, finished_at=datetime.now(UTC), ok=ok, message=message[:200]))
+        db.commit()
+
 
 def sync_football_data_job() -> None:
-    try:
+    def work() -> str:
         with SessionLocal() as db:
             adapter = FootballDataAdapter(
                 FileCache(get_settings().data_cache_dir, "football-data"),
@@ -28,8 +51,9 @@ def sync_football_data_job() -> None:
             )
             report = sync_football_data(db, adapter, log=logger.debug)
         logger.info("football-data aggiornato: %s nuove, %s aggiornate", report.created, report.updated)
-    except Exception:
-        logger.exception("Aggiornamento football-data non riuscito: riprovo al prossimo giro")
+        return f"{report.created} partite nuove, {report.updated} aggiornate"
+
+    _tracked("football-data", work)
 
 
 def api_football_adapter(db, settings: Settings) -> ApiFootballAdapter:
@@ -45,7 +69,8 @@ def sync_api_football_job() -> None:
     settings = get_settings()
     if not settings.api_football_key:
         return
-    try:
+
+    def work() -> str:
         with SessionLocal() as db:
             report = sync_api_football(
                 db,
@@ -55,8 +80,9 @@ def sync_api_football_job() -> None:
                 log=logger.info,
             )
         logger.info("API-Football aggiornato: %s nuove, %s aggiornate", report.created, report.updated)
-    except Exception:
-        logger.exception("Aggiornamento API-Football non riuscito: riprovo al prossimo giro")
+        return f"{report.created} partite nuove, {report.updated} aggiornate"
+
+    _tracked("api-football", work)
 
 
 def settle_bets_job() -> None:
@@ -70,20 +96,29 @@ def settle_bets_job() -> None:
 
 
 def refresh_predictions_job() -> None:
-    try:
+    def work() -> str:
         with SessionLocal() as db:
             updated = refresh_predictions(db, datetime.now(UTC))
         if updated:
             logger.info("Previsioni di Archie aggiornate: %s partite", updated)
-    except Exception:
-        logger.exception("Aggiornamento delle previsioni non riuscito")
+        return f"{updated} partite ricalcolate" if updated else "nessun dato nuovo, previsioni già aggiornate"
+
+    _tracked("predictions", work)
 
 
-def sync_all_job() -> None:
-    sync_football_data_job()
-    sync_api_football_job()
-    settle_bets_job()  # dopo i risultati nuovi
-    refresh_predictions_job()  # si ricalcola solo se sono arrivati dati nuovi
+def sync_all_job() -> bool:
+    """Aggiorna tutto. Se un aggiornamento è già in corso non ne parte un secondo (restituisce False)."""
+    if not _sync_lock.acquire(blocking=False):
+        logger.info("Aggiornamento già in corso: salto")
+        return False
+    try:
+        sync_football_data_job()
+        sync_api_football_job()
+        settle_bets_job()  # dopo i risultati nuovi
+        refresh_predictions_job()  # si ricalcola solo se sono arrivati dati nuovi
+        return True
+    finally:
+        _sync_lock.release()
 
 
 def start_scheduler(settings: Settings) -> BackgroundScheduler | None:

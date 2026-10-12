@@ -49,6 +49,18 @@ export function num(value: number | null | undefined, digits = 2): string {
   return value == null ? '–' : value.toLocaleString('it-IT', { maximumFractionDigits: digits });
 }
 
+/** Da quanto tempo: "adesso", "5 min fa", "3 ore fa", "ieri", "12 giorni fa". */
+export function ago(iso: string | null | undefined, now: Date = new Date()): string {
+  if (!iso) return 'mai';
+  const minutes = Math.max(0, Math.floor((now.getTime() - new Date(iso).getTime()) / 60000));
+  if (minutes < 1) return 'adesso';
+  if (minutes < 60) return `${minutes} min fa`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return hours === 1 ? "un'ora fa" : `${hours} ore fa`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? 'ieri' : `${days} giorni fa`;
+}
+
 /** Quota giusta = 1 / probabilità, con due decimali: 0.4 → "2.50" (impossibile → "–"). */
 export function fairOdds(probability: number | null | undefined): string {
   return probability == null || probability <= 0 ? '–' : (1 / probability).toFixed(2);
