@@ -111,10 +111,12 @@ def _objective(params, n, hi, ai, hg, ag, w, ridge):
     grad[2 * n] = -g_lam.sum() / total_w
     grad[2 * n + 1] = -(w * dt_rho).sum() / total_w
 
-    # Ridge: tira verso la media le squadre con poche partite. Vincolo morbido: somma attacchi = 0.
-    value += ridge * (att @ att + dfc @ dfc) + att.sum() ** 2
-    grad[:n] += 2 * ridge * att + 2 * att.sum()
-    grad[n : 2 * n] += 2 * ridge * dfc
+    # Ridge: tira verso la media le squadre con poche partite. È in "partite equivalenti" (diviso per il
+    # peso totale come la verosimiglianza), così vale lo stesso con 500 o 5.000 partite.
+    # Vincolo morbido: somma attacchi = 0.
+    value += ridge * (att @ att + dfc @ dfc) / total_w + att.sum() ** 2
+    grad[:n] += 2 * ridge * att / total_w + 2 * att.sum()
+    grad[n : 2 * n] += 2 * ridge * dfc / total_w
     return value, grad
 
 

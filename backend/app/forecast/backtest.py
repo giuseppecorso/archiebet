@@ -1,0 +1,157 @@
+"""Backtest walk-forward: si prevede ogni partita usando SOLO le partite giocate prima (principio 3).
+
+Come funziona: si va avanti a blocchi di una settimana. A ogni blocco il modello si ristima sulle partite
+finite prima della mezzanotte del primo giorno del blocco (ultimi `window_days` giorni, pesate nel tempo)
+e prevede tutte le partite del blocco. Un unico modello per A, B e C insieme: le squadre promosse e
+retrocesse collegano le categorie.
+"""
+
+from bisect import bisect_left
+from collections import defaultdict
+from collections.abc import Callable, Iterable, Sequence
+from dataclasses import dataclass
+from datetime import timedelta
+from pathlib import Path
+
+import numpy as np
+
+from app.forecast.data import Game
+from app.forecast.dixon_coles import fit_dixon_coles, time_decay_weights
+from app.forecast.markets import markets
+from app.forecast.metrics import brier, calibration, expected_calibration_error, log_loss, outcome_index, rps
+from app.forecast.vault import VAULT_MARKER, ensure_can_evaluate
+
+
+@dataclass(frozen=True)
+class ModelConfig:
+    xi_per_day: float = 0.002  # peso dimezzato in circa 1 anno (ln 2 / 0,002 ≈ 347 giorni)
+    ridge: float = 2.0  # in "partite equivalenti" verso la squadra media
+    window_days: int = 3 * 365
+    refit_every_days: int = 7
+
+
+@dataclass(frozen=True)
+class Prediction:
+    match_id: int
+    competition_id: int
+    season: str
+    outcome: int  # 0 = 1, 1 = X, 2 = 2
+    total_goals: int
+    both_scored: bool
+    p_1x2: tuple[float, float, float]
+    p_over25: float
+    p_gg: float
+
+
+@dataclass
+class WalkForwardResult:
+    predictions: list[Prediction]
+    skipped: int  # partite non previste perché una squadra non ha storia nella finestra
+    fits: int
+
+
+def walk_forward(
+    games: Sequence[Game],
+    eval_seasons: Iterable[str],
+    config: ModelConfig = ModelConfig(),
+    vault_marker: Path = VAULT_MARKER,
+    progress: Callable[[int, int], None] | None = None,
+) -> WalkForwardResult:
+    eval_seasons = set(eval_seasons)
+    ensure_can_evaluate(eval_seasons, vault_marker)
+    kickoffs = [g.kickoff_at for g in games]
+    if kickoffs != sorted(kickoffs):
+        raise ValueError("Le partite devono essere in ordine di calcio d'inizio")
+    targets = [g for g in games if g.season in eval_seasons]
+
+    predictions: list[Prediction] = []
+    skipped = fits = 0
+    i = 0
+    while i < len(targets):
+        start = targets[i].kickoff_at.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=config.refit_every_days)
+        block = []
+        while i < len(targets) and targets[i].kickoff_at < end:
+            block.append(targets[i])
+            i += 1
+
+        # Allenamento: solo partite iniziate prima di `start` (bisect_left esclude quelle alla stessa ora)
+        train = games[bisect_left(kickoffs, start - timedelta(days=config.window_days)) : bisect_left(kickoffs, start)]
+        if not train:
+            skipped += len(block)
+            continue
+        fit = fit_dixon_coles(
+            [g.home_id for g in train],
+            [g.away_id for g in train],
+            [g.home_goals for g in train],
+            [g.away_goals for g in train],
+            weights=time_decay_weights([g.kickoff_at for g in train], start, config.xi_per_day),
+            ridge=config.ridge,
+        )
+        fits += 1
+        for g in block:
+            if not (fit.has_team(g.home_id) and fit.has_team(g.away_id)):
+                skipped += 1
+                continue
+            mk = markets(fit.score_matrix(g.home_id, g.away_id))
+            predictions.append(
+                Prediction(
+                    match_id=g.match_id,
+                    competition_id=g.competition_id,
+                    season=g.season,
+                    outcome=outcome_index(g.home_goals, g.away_goals),
+                    total_goals=g.home_goals + g.away_goals,
+                    both_scored=g.home_goals > 0 and g.away_goals > 0,
+                    p_1x2=(mk["1X2"]["1"], mk["1X2"]["X"], mk["1X2"]["2"]),
+                    p_over25=mk["OU2.5"]["over"],
+                    p_gg=mk["GG"]["yes"],
+                )
+            )
+        if progress:
+            progress(i, len(targets))
+    return WalkForwardResult(predictions, skipped, fits)
+
+
+@dataclass(frozen=True)
+class Scores:
+    n: int
+    log_loss: float
+    brier: float
+    rps: float
+    ece: float  # errore di calibrazione medio sulle tre probabilità 1/X/2
+    # Stesse misure per il mercato di chiusura (D48) sulle partite dove c'è, e per il modello sulle stesse
+    n_market: int
+    model_log_loss_on_market: float | None
+    market_log_loss: float | None
+
+
+def score(preds: Sequence[Prediction], market: dict[int, tuple[float, float, float]]) -> Scores:
+    probs = np.array([p.p_1x2 for p in preds])
+    outcomes = np.array([p.outcome for p in preds])
+    hits = np.eye(3)[outcomes]
+    ece = float(np.mean([expected_calibration_error(calibration(probs[:, k], hits[:, k])) for k in range(3)]))
+    with_market = [i for i, p in enumerate(preds) if p.match_id in market]
+    if with_market:
+        mprobs = np.array([market[preds[i].match_id] for i in with_market])
+        model_ll, market_ll = log_loss(probs[with_market], outcomes[with_market]), log_loss(mprobs, outcomes[with_market])
+    else:
+        model_ll = market_ll = None
+    return Scores(
+        n=len(preds),
+        log_loss=log_loss(probs, outcomes),
+        brier=brier(probs, outcomes),
+        rps=rps(probs, outcomes),
+        ece=ece,
+        n_market=len(with_market),
+        model_log_loss_on_market=model_ll,
+        market_log_loss=market_ll,
+    )
+
+
+def score_by(
+    preds: Sequence[Prediction], market: dict[int, tuple[float, float, float]], key: Callable[[Prediction], object]
+) -> dict[object, Scores]:
+    groups: dict[object, list[Prediction]] = defaultdict(list)
+    for p in preds:
+        groups[key(p)].append(p)
+    return {k: score(v, market) for k, v in sorted(groups.items(), key=lambda kv: str(kv[0]))}
