@@ -8,6 +8,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from app.adapters.api_football import ApiFootballAdapter
 from app.adapters.cache import FileCache
 from app.adapters.football_data import FootballDataAdapter
+from app.betting.service import settle_open_bets
 from app.config import Settings, get_settings
 from app.db import SessionLocal
 from app.ingest.api_football import sync_api_football
@@ -57,9 +58,20 @@ def sync_api_football_job() -> None:
         logger.exception("Aggiornamento API-Football non riuscito: riprovo al prossimo giro")
 
 
+def settle_bets_job() -> None:
+    try:
+        with SessionLocal() as db:
+            closed = settle_open_bets(db)
+        if closed:
+            logger.info("Schedine chiuse automaticamente: %s", closed)
+    except Exception:
+        logger.exception("Chiusura automatica delle schedine non riuscita")
+
+
 def sync_all_job() -> None:
     sync_football_data_job()
     sync_api_football_job()
+    settle_bets_job()  # dopo i risultati nuovi
 
 
 def start_scheduler(settings: Settings) -> BackgroundScheduler | None:
