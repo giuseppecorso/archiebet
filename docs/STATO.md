@@ -25,12 +25,18 @@ Ultimo aggiornamento: 2026-10-12
 
 Test: 129 backend + 11 frontend, tutti verdi.
 
-## Prossima sessione: Fase 4 – Quote e valore
+## Fase 4 – Quote e valore: IN CORSO
 
-1. Piccolo seguito del verdetto (D59): togliere l'etichetta "in prova" dalle probabilità del modello (`PredictionOut.trial` e pagina partita), lasciando la nota sul mercato più preciso; il radar resta "in prova".
-2. Confronto dei piani OddsPapi (quote dei bookmaker italiani + Pinnacle/Betfair): proposta a Giuse con costi verificati sul sito ufficiale, poi integrazione come adapter (sezione 14.4).
-3. Radar sulle partite in programma (probabilità giusta Pinnacle/Betfair senza margine contro la quota migliore italiana), Multipla del giorno, "dove giocarla", Io contro Archie.
-4. Simulazione dal vivo: il radar si giudica a 300 giocate con valore ≥ 2% (D59).
+- [x] Modello uscito dalla prova (D59): tolta l'etichetta "in prova" dalla pagina partita, resta la nota sul mercato più preciso
+- [x] Motore del radar (`app/forecast/radar.py`): probabilità giusta Pinnacle/Betfair contro la quota migliore giocabile, segnali ≥ 2%, "sospetto" sopra il 15%
+- [x] **Simulazione dal vivo partita** (D60): tabella `radar_signals`, segnali rilevati prima del calcio d'inizio a ogni aggiornamento, CLV con la chiusura; per ora bookmaker giocabile = bet365 (quote football-data)
+- [x] Piani quote verificati (D61): OddsPapi gratuito come primo passo
+- [ ] Giuse: account gratuito OddsPapi (vedi "Da fare al PC")
+- [ ] Adapter OddsPapi (sezione 14.4): bookmaker italiani + Pinnacle, chiusura dallo storico gratuito
+- [ ] Pagina/scheda Radar e riepilogo della simulazione (n giocate su 300, CLV medio ± errore)
+- [ ] Multipla del giorno, generatore, "dove giocarla", Io contro Archie
+
+Test: 211 backend + 13 frontend.
 
 ## Fase 3 – Modello: CONCLUSA (2026-10-12)
 
@@ -59,7 +65,9 @@ Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia
 
 Le attività manuali sono raccolte qui, da fare tutte insieme quando sei al computer.
 
-Nessuna attività in sospeso. (Verdetto fatto il 2026-10-12; la Serie C 2025/26 si valuterà con il piano a pagamento di API-Football.)
+1. **Account gratuito OddsPapi** (nessuna carta): registrarsi su oddspapi.io, copiare la chiave API e incollarla in `backend/.env` come `ODDSPAPI_KEY=...` (Claude ti guida passo per passo).
+
+(La Serie C 2025/26 si valuterà con il piano a pagamento di API-Football.)
 
 (Account API-Football creato il 2026-10-11, chiave salvata in `backend/.env`.)
 

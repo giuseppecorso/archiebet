@@ -111,3 +111,11 @@ Ogni decisione importante con data, scelta e motivo. Le decisioni di prodotto so
 | # | Decisione | Perché |
 |---|-----------|--------|
 | D59 | Esito del verdetto applicato senza ritocchi: il **modello esce dalla prova** (le sue probabilità restano accompagnate dalla nota "il mercato è più preciso in A e B"); il **radar resta in prova**. Nuova verifica del radar fissata ora, prima di vedere i dati: simulazione dal vivo in Fase 4 sui bookmaker italiani, si giudica quando ha **almeno 300 giocate** con valore ≥ 2%, stesso criterio (CLV medio positivo oltre 2 errori standard) | Non si spostano i criteri dopo aver visto i risultati (principi 2-3). 45 giocate non bastano per giudicare in nessun senso: l'errore standard (3,1%) è più grande del CLV atteso (~3%). La cassaforte ora è aperta: il 2025/26 non va più usato per tarare. |
+
+
+## 2026-10-12 — Fase 4 Quote e valore
+
+| # | Decisione | Perché |
+|---|-----------|--------|
+| D60 | Radar dal vivo già attivo con le quote di football-data (bet365 come bookmaker giocabile, Pinnacle/Betfair Exchange come probabilità giusta). Tabella `radar_signals` per partita: la **prima** rilevazione con valore ≥ 2% prima del calcio d'inizio è la giocata simulata (quota bloccata), poi CLV con la chiusura D48. Bookmaker giocabili in `PLAYABLE_BOOKMAKERS` (`app/forecast/radar.py`): la "quota migliore di mercato" di football-data non conta perché include bookmaker non italiani | La simulazione di D59 parte subito invece di aspettare OddsPapi; prendere la prima quota (e non la migliore vista) evita di scegliere col senno di poi. |
+| D61 | Fonte quote italiane: **OddsPapi piano gratuito** come primo passo (250 richieste/mese, storico gratis e non conteggiato, nessuna carta). Prima verifica tramite API: quali bookmaker italiani ci sono davvero (sul sito non sono elencati). Piani a pagamento: prezzo non pubblico (su misura). Piano B: odds-api.io (15 bookmaker IT confermati, ma niente Pinnacle, chiavi gratuite sospese, da 59 €/mese per 2 bookmaker) | Verificato sui siti ufficiali il 2026-10-12. Con 250 richieste: ~1 lettura al giorno di A e B per bookmaker; la chiusura per il CLV si prende dallo storico gratuito. |
