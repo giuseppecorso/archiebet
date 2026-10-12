@@ -131,7 +131,7 @@ def main() -> int:
     bt.add_argument("--xi", type=float, default=ModelConfig.xi_per_day, help="peso nel tempo (per giorno)")
     bt.add_argument("--ridge", type=float, default=ModelConfig.ridge, help="spinta verso la media (partite equivalenti)")
     bt.add_argument("--window", type=int, default=ModelConfig.window_days, help="giorni di storia usati")
-    bt.add_argument("--elo", action="store_true", help="usa l'Elo come punto di partenza delle squadre")
+    bt.add_argument("--no-elo", dest="elo", action="store_false", help="senza Elo come punto di partenza delle squadre")
     commands.add_parser("open-vault", help="apre la cassaforte 2025/26 per il verdetto (irreversibile)")
     args = parser.parse_args()
     if args.command == "create-user":

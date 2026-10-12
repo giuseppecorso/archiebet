@@ -30,7 +30,7 @@ def _league(seasons, teams=6, seed=0):
     return games
 
 
-FAST = ModelConfig(refit_every_days=28)
+FAST = ModelConfig(refit_every_days=28, elo_prior=False)
 
 
 def test_predicts_only_the_requested_seasons(tmp_path):

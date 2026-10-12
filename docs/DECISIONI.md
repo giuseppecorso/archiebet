@@ -84,3 +84,12 @@ Ogni decisione importante con data, scelta e motivo. Le decisioni di prodotto so
 - Fattore campo in Serie A crollato nel 2020/21 (stadi vuoti): vittorie fuori al 34%. Da considerare nel modello (stagioni anomale).
 - Serie C girone C: pareggi ~29% stabili nelle 3 stagioni; Serie A 2026/27 finora solo 18% (campione piccolo).
 - La stagione 2025/26 della Serie C (cassaforte) non è nel piano gratuito: servirà il piano a pagamento almeno per un mese prima del verdetto.
+
+
+## 2026-10-12 — Fase 3 Modello
+
+| # | Decisione | Perché |
+|---|-----------|--------|
+| D49 | Un solo Dixon-Coles per A, B e C insieme, ristimato ogni 7 giorni sulle partite degli ultimi 3 anni pesate nel tempo; ridge in "partite equivalenti"; codice in `app/forecast/` (funzioni pure, niente DB) | Promosse e retrocesse collegano le categorie; la ristima settimanale è il walk-forward realistico. |
+| D50 | Taratura sul 2016/17-2021/22 (A e B), conferma sul 2022/23-2024/25 mai visto (A, B, C); cassaforte dal 2025/26 bloccata nel codice (`open-vault`); un fattore passa la prova del nove se migliora la log loss a coppie di oltre 2 errori standard | Evita di "imparare a memoria" il periodo su cui ci si giudica (principi 3 e 5). |
+| D51 | Elo come punto di partenza del ridge (pendenza stimata dal modello), ξ = 0,002/giorno, ridge = 8 | Prova del nove superata: taratura −0,0026 ± 0,0010, conferma −0,0107 ± 0,0016 (Serie C −0,015/−0,018, Serie B −0,007, Serie A neutro); prevede anche le neopromosse senza storia. |

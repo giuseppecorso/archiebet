@@ -25,11 +25,12 @@ from app.forecast.vault import VAULT_MARKER, ensure_can_evaluate
 
 @dataclass(frozen=True)
 class ModelConfig:
+    # Valori tarati sul 2016/17-2021/22 e confermati sul 2022/23-2024/25 (D50-D51)
     xi_per_day: float = 0.002  # peso dimezzato in circa 1 anno (ln 2 / 0,002 ≈ 347 giorni)
-    ridge: float = 2.0  # in "partite equivalenti" verso la squadra media
+    ridge: float = 8.0  # in "partite equivalenti" verso il punto di partenza
     window_days: int = 3 * 365
     refit_every_days: int = 7
-    elo_prior: bool = False  # punto di partenza del ridge = forza Elo invece della media (prova del nove)
+    elo_prior: bool = True  # punto di partenza del ridge = forza Elo invece della media (prova del nove superata)
     elo: EloParams = EloParams()
 
 
