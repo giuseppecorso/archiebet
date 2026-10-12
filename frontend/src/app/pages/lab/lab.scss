@@ -1,0 +1,265 @@
+/* Stili comuni delle schede del Laboratorio */
+
+.pickers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 18px;
+  cursor: pointer;
+
+  &.on {
+    color: var(--amber);
+    background: var(--chip);
+    border-color: var(--amber);
+  }
+}
+.season-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  select {
+    min-height: 40px;
+    padding: 6px 10px;
+    font: inherit;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+  }
+}
+
+.state {
+  color: var(--muted);
+  &.error {
+    color: var(--loss);
+  }
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+}
+.main-col {
+  flex: 999 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.side-col {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.box {
+  padding: 16px 20px;
+}
+.list-box {
+  overflow: hidden;
+}
+.pad {
+  padding: 16px 20px 10px;
+}
+.box-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+}
+.box-title {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+.box-head .box-title {
+  margin: 0;
+}
+.team-title {
+  margin: 0;
+  font-size: 32px;
+  color: var(--amber);
+}
+.note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Barra 1 / X / 2: i tre pezzi sommano al 100%, ognuno con la sua etichetta */
+.split {
+  display: flex;
+  height: 34px;
+  margin: 6px 0 18px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--bg);
+  white-space: nowrap;
+
+  span {
+    overflow: hidden;
+    padding: 0 6px;
+  }
+  &.home {
+    background: var(--amber);
+  }
+  &.draw {
+    background: var(--text-2);
+  }
+  &.away {
+    background: var(--muted);
+  }
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+}
+.big {
+  font-size: 28px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+.trend,
+.history {
+  min-width: 460px;
+  td {
+    font-variant-numeric: tabular-nums;
+  }
+  tr.on {
+    background: #1a1608;
+    th,
+    td {
+      color: var(--amber);
+    }
+  }
+  a {
+    font-weight: 600;
+    text-decoration: none;
+  }
+}
+.tier[data-tier='3'] {
+  color: var(--text-2);
+}
+
+.standings {
+  td,
+  th {
+    padding: 5px 6px;
+  }
+  th[scope='row'] {
+    font-weight: 500;
+    a {
+      color: var(--text);
+      text-decoration: none;
+      &:hover {
+        color: var(--amber);
+      }
+    }
+  }
+  td:not(:first-child),
+  thead th:nth-child(n + 3) {
+    text-align: right;
+  }
+  .pts {
+    font-size: 15px;
+  }
+}
+
+/* Elenco squadre con ricerca */
+.narrow {
+  flex: 1 1 280px;
+  max-width: 360px;
+}
+.search input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+
+  &:focus {
+    border-color: var(--amber);
+    outline: none;
+  }
+}
+.team-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+
+  a {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 6px;
+    border-top: 1px solid var(--line-row);
+    color: var(--text);
+    text-decoration: none;
+
+    &:hover {
+      background: var(--panel-head);
+    }
+    &.on {
+      color: var(--amber);
+      font-weight: 700;
+    }
+  }
+}
+
+@media (max-width: 700px) {
+  .narrow {
+    max-width: none;
+  }
+  .team-list {
+    max-height: 40vh;
+  }
+}

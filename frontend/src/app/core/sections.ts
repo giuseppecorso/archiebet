@@ -51,6 +51,14 @@ export const SECTIONS: Section[] = [
     ],
   },
   {
+    path: 'laboratorio',
+    label: 'Laboratorio',
+    inMenu: true,
+    phase: 1.5,
+    summary: 'Studia il passato di campionati e squadre.',
+    features: ['Numeri e classifica di ogni campionato e stagione', 'Storia di ogni squadra', 'Strategie provate sul passato (Fase 7)'],
+  },
+  {
     path: 'gioca',
     label: 'Gioca',
     inMenu: true,

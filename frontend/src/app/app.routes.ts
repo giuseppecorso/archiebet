@@ -4,6 +4,8 @@ import { SECTIONS } from './core/sections';
 import { Shell } from './layout/shell';
 import { Login } from './pages/login/login';
 import { MatchPage } from './pages/match/match';
+import { LabLeagues } from './pages/lab/lab-leagues';
+import { LabTeams } from './pages/lab/lab-teams';
 import { Matches } from './pages/matches/matches';
 import { SectionPlaceholder } from './pages/section-placeholder/section-placeholder';
 
@@ -19,7 +21,11 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'partite' },
       { path: 'partite/:id', component: MatchPage, title: 'Partita · ArchieBet' },
-      ...SECTIONS.map((section) => ({
+      { path: 'laboratorio', pathMatch: 'full', redirectTo: 'laboratorio/campionati' },
+      { path: 'laboratorio/campionati', component: LabLeagues, title: 'Laboratorio · Campionati · ArchieBet' },
+      { path: 'laboratorio/squadre', component: LabTeams, title: 'Laboratorio · Squadre · ArchieBet' },
+      { path: 'laboratorio/squadre/:id', component: LabTeams, title: 'Laboratorio · Squadra · ArchieBet' },
+      ...SECTIONS.filter((section) => section.path !== 'laboratorio').map((section) => ({
         path: section.path,
         component: BUILT[section.path] ?? SectionPlaceholder,
         title: `${section.label} · ArchieBet`,

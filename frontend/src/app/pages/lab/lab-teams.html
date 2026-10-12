@@ -1,0 +1,89 @@
+<ab-lab-tabs />
+
+<div class="grid">
+  <aside class="side-col narrow">
+    <section class="panel box" aria-labelledby="teams-title">
+      <h2 id="teams-title" class="title box-title">Squadre</h2>
+      <label class="search">
+        <span class="visually-hidden">Cerca una squadra</span>
+        <input type="search" placeholder="Cerca una squadra" [value]="search()" (input)="search.set($any($event.target).value)" />
+      </label>
+      <ul class="team-list">
+        @for (t of filtered(); track t.id) {
+          <li>
+            <a [routerLink]="['/laboratorio/squadre', t.id]" [class.on]="t.id === +(id() ?? 0)">
+              <span>{{ t.name }}</span>
+              <span class="muted small">{{ t.last_competition }} {{ t.last_season }}</span>
+            </a>
+          </li>
+        } @empty {
+          <li class="muted">Nessuna squadra trovata.</li>
+        }
+      </ul>
+    </section>
+  </aside>
+
+  <div class="main-col">
+    @if (!id()) {
+      <section class="panel box">
+        <p class="muted">Scegli una squadra dall'elenco per vedere la sua storia: categoria, posizione e punti stagione per stagione, e tutte le partite.</p>
+      </section>
+    } @else if (history.error()) {
+      <p class="state error" role="alert">Squadra non trovata.</p>
+    } @else if (history.value(); as h) {
+      <section class="panel box" aria-labelledby="history-title">
+        <div class="box-head">
+          <h2 id="history-title" class="title team-title">{{ h.team.name }}</h2>
+          <span class="muted small">{{ h.seasons.length }} stagioni nei nostri dati</span>
+        </div>
+        <div class="table-wrap">
+          <table class="history">
+            <thead>
+              <tr>
+                <th scope="col">Stagione</th><th scope="col">Campionato</th><th scope="col">Pos.</th>
+                <th scope="col"><abbr title="Punti">Pt</abbr></th><th scope="col"><abbr title="Vinte">V</abbr></th>
+                <th scope="col"><abbr title="Pareggiate">N</abbr></th><th scope="col"><abbr title="Perse">P</abbr></th>
+                <th scope="col"><abbr title="Gol fatti - gol subiti">Gol</abbr></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of h.seasons; track row.season + row.competition.code) {
+                <tr [class.on]="row.season === openSeason()">
+                  <th scope="row"><a [routerLink]="[]" [queryParams]="{ s: seasonParam(row.season) }">{{ row.season }}</a></th>
+                  <td>
+                    <span class="tier" [attr.data-tier]="row.competition.tier">{{ row.competition.name }}</span>
+                    @if (!row.complete) {
+                      <span class="muted small"> · in corso</span>
+                    }
+                  </td>
+                  <td class="led">{{ row.rank }}°<span class="muted small">/{{ row.teams }}</span></td>
+                  <td class="led pts">{{ row.points }}</td>
+                  <td>{{ row.won }}</td>
+                  <td>{{ row.drawn }}</td>
+                  <td>{{ row.lost }}</td>
+                  <td>{{ row.goals_for }}-{{ row.goals_against }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="note">Posizioni calcolate dai risultati, senza penalizzazioni. I nostri dati: Serie A e B dal 2005/06, Serie C dal 2022/23.</p>
+      </section>
+
+      @if (openSeason(); as season) {
+        <section class="panel list-box" aria-labelledby="games-title">
+          <div class="box-head pad">
+            <h2 id="games-title" class="title box-title">Partite {{ season }}</h2>
+            @let r = record();
+            <span class="muted small">in casa {{ r.homePoints }} punti in {{ r.home }} {{ r.home === 1 ? 'partita' : 'partite' }} · fuori {{ r.awayPoints }} in {{ r.away }}</span>
+          </div>
+          @for (m of matches.value() ?? []; track m.id) {
+            <ab-match-row [match]="m" />
+          }
+        </section>
+      }
+    } @else {
+      <p class="state">Carico la storia…</p>
+    }
+  </div>
+</div>

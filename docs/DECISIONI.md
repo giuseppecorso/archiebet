@@ -48,9 +48,21 @@ Ogni decisione importante con data, scelta e motivo. Le decisioni di prodotto so
 | D33 | Nuova sezione **Laboratorio** (idea di Giuse): schede Campionati e Squadre subito (Fase 1.5), Strategie in Fase 7 | Serve a studiare i campionati (soprattutto la Serie C) prima di modellarli; perimetro piccolo per non rallentare modello e valore. |
 | D34 | Fase 1 chiusa "per il piano gratuito": la stagione in corso arriva con il piano a pagamento di API-Football | Decisione di Giuse: si paga quando tutto è pronto. |
 
+
+## 2026-10-12 — Fase 1.5 Laboratorio
+
+| # | Decisione | Perché |
+|---|-----------|--------|
+| D35 | In ArchieBet commit e push li fa Claude (vale la regola del progetto, non quella personale "solo se chiedo") | Scelta di Giuse. |
+| D36 | API del Laboratorio sotto `/api/lab/...`; stagioni negli indirizzi come "2024-25" | La barra di "2024/25" non va bene in un URL. |
+| D37 | Stagione "in corso" = ha partite in programma o rinviate; le annullate si contano a parte | Le esclusioni (Taranto, Turris 2024/25) facevano sembrare in corso stagioni finite. |
+| D38 | Funzioni condivise tra API rese pubbliche (`match_cards`, `competition_out`, `to_result`) | Non importare funzioni "private" (con `_`) da altri moduli. |
+
 **Scoperte sui dati (da usare in Fase 3-4):**
 - football-data aggiorna i risultati della stagione in corso con settimane di ritardo (ultimo aggiornamento al 21/09/2026). Il calendario delle prossime partite invece è fresco. Serve API-Football per risultati recenti e Serie C.
 - Pinnacle sparisce a metà 2025/26 (200 partite su 380 in A, 90 in B) e manca nel 2026/27. Betfair Exchange copre ~95% delle partite dal 2024/25. **Da decidere in Fase 3:** riferimento di mercato e CLV per la cassaforte 2025/26 (proposta: Pinnacle dove c'è, altrimenti Betfair Exchange di chiusura).
 - Gli xG di football-data esistono solo dal 2026/27.
 - API-Football, Serie C: risultati, stadi, giornate, formazioni e classifiche sì; statistiche delle partite (tiri, corner) no. Codici: Serie A 135, Serie B 136, Serie C gironi A/B/C 138/942/943.
+- Fattore campo in Serie A crollato nel 2020/21 (stadi vuoti): vittorie fuori al 34%. Da considerare nel modello (stagioni anomale).
+- Serie C girone C: pareggi ~29% stabili nelle 3 stagioni; Serie A 2026/27 finora solo 18% (campione piccolo).
 - La stagione 2025/26 della Serie C (cassaforte) non è nel piano gratuito: servirà il piano a pagamento almeno per un mese prima del verdetto.

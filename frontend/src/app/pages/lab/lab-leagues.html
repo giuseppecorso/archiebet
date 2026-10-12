@@ -1,0 +1,117 @@
+<ab-lab-tabs />
+
+<div class="pickers">
+  <div class="chips" role="group" aria-label="Campionato">
+    @for (item of catalog.value(); track item.competition.code) {
+      <button
+        type="button"
+        class="chip"
+        [class.on]="item.competition.code === current()?.competition?.code"
+        [attr.aria-pressed]="item.competition.code === current()?.competition?.code"
+        (click)="select(item.competition.code)"
+      >
+        {{ item.competition.name }}
+      </button>
+    }
+  </div>
+  @if (current(); as cur) {
+    <label class="season-pick">
+      <span class="label">Stagione</span>
+      <select (change)="select(cur.competition.code, $any($event.target).value)">
+        @for (s of cur.seasons; track s.season) {
+          <option [value]="s.season" [selected]="s.season === season()">{{ s.season }}{{ s.pending > 0 ? ' (in corso)' : '' }}</option>
+        }
+      </select>
+    </label>
+  }
+</div>
+
+@if (detail.error()) {
+  <p class="state error" role="alert">Non riesco a caricare i dati del campionato.</p>
+} @else if (detail.value(); as d) {
+  <div class="grid">
+    <div class="main-col">
+      <section class="panel box" aria-labelledby="numbers-title">
+        <div class="box-head">
+          <h2 id="numbers-title" class="title box-title">{{ d.competition.name }} {{ d.season }}</h2>
+          <span class="muted small">
+            {{ d.finished }} partite giocate su {{ d.matches }}
+            @if (d.cancelled > 0) {
+              · {{ d.cancelled }} annullate (squadre escluse o ritirate)
+            }
+          </span>
+        </div>
+
+        <div class="label">Come finiscono le partite</div>
+        <div class="split" role="img"
+          [attr.aria-label]="'Vittorie in casa ' + fmt.pct(d.summary.home_win) + ', pareggi ' + fmt.pct(d.summary.draw) + ', vittorie in trasferta ' + fmt.pct(d.summary.away_win)">
+          <div class="seg home" [style.flex-grow]="percent(d.summary.home_win)"><span>1 · {{ fmt.pct(d.summary.home_win) }}</span></div>
+          <div class="seg draw" [style.flex-grow]="percent(d.summary.draw)"><span>X · {{ fmt.pct(d.summary.draw) }}</span></div>
+          <div class="seg away" [style.flex-grow]="percent(d.summary.away_win)"><span>2 · {{ fmt.pct(d.summary.away_win) }}</span></div>
+        </div>
+
+        <div class="tiles">
+          <div class="tile"><span class="label">Gol a partita</span><span class="led big">{{ fmt.num(d.summary.goals_per_match) }}</span><span class="muted small">casa {{ fmt.num(d.summary.home_goals) }} · fuori {{ fmt.num(d.summary.away_goals) }}</span></div>
+          <div class="tile"><span class="label">Over 2.5</span><span class="led big">{{ fmt.pct(d.summary.over_2_5) }}</span></div>
+          <div class="tile"><span class="label">Goal (segnano entrambe)</span><span class="led big">{{ fmt.pct(d.summary.both_scored) }}</span></div>
+          <div class="tile"><span class="label">Finite 0-0</span><span class="led big">{{ fmt.pct(d.summary.nil_nil) }}</span></div>
+          <div class="tile"><span class="label">Punti a partita in casa</span><span class="led big">{{ fmt.num(d.summary.home_points_per_game) }}</span></div>
+          <div class="tile"><span class="label">Punti a partita fuori</span><span class="led big">{{ fmt.num(d.summary.away_points_per_game) }}</span></div>
+        </div>
+      </section>
+
+      <section class="panel box" aria-labelledby="trend-title">
+        <div class="box-head">
+          <h2 id="trend-title" class="title box-title">Andamento negli anni</h2>
+          <span class="muted small">clicca una stagione per aprirla</span>
+        </div>
+        <div class="table-wrap">
+          <table class="trend">
+            <thead>
+              <tr><th scope="col">Stagione</th><th scope="col">1</th><th scope="col">X</th><th scope="col">2</th><th scope="col">Gol</th><th scope="col">Over 2.5</th><th scope="col">Goal</th><th scope="col"><abbr title="Partite finite">Part.</abbr></th></tr>
+            </thead>
+            <tbody>
+              @for (t of trendNewestFirst(); track t.season) {
+                <tr [class.on]="t.season === d.season">
+                  <th scope="row"><a [routerLink]="[]" [queryParams]="{ c: d.competition.code, s: t.season.replace('/', '-') }">{{ t.season }}</a></th>
+                  <td>{{ fmt.pct(t.summary.home_win) }}</td>
+                  <td>{{ fmt.pct(t.summary.draw) }}</td>
+                  <td>{{ fmt.pct(t.summary.away_win) }}</td>
+                  <td>{{ fmt.num(t.summary.goals_per_match) }}</td>
+                  <td>{{ fmt.pct(t.summary.over_2_5) }}</td>
+                  <td>{{ fmt.pct(t.summary.both_scored) }}</td>
+                  <td class="muted">{{ t.summary.matches }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <aside class="side-col">
+      <section class="panel box" aria-labelledby="table-title">
+        <h2 id="table-title" class="title box-title">Classifica{{ d.pending > 0 ? ' (in corso)' : ' finale' }}</h2>
+        <table class="standings">
+          <thead>
+            <tr><th scope="col">#</th><th scope="col">Squadra</th><th scope="col"><abbr title="Partite giocate">G</abbr></th><th scope="col"><abbr title="Differenza reti">DR</abbr></th><th scope="col"><abbr title="Punti">Pt</abbr></th></tr>
+          </thead>
+          <tbody>
+            @for (row of d.standings; track row.team.id) {
+              <tr>
+                <td>{{ row.rank }}</td>
+                <th scope="row"><a [routerLink]="['/laboratorio/squadre', row.team.id]">{{ row.team.name }}</a></th>
+                <td>{{ row.played }}</td>
+                <td>{{ row.goals_for - row.goals_against > 0 ? '+' : '' }}{{ row.goals_for - row.goals_against }}</td>
+                <td class="led pts">{{ row.points }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <p class="note">Calcolata dai risultati: non tiene conto di penalizzazioni, ripescaggi o esclusioni decise a tavolino.</p>
+      </section>
+    </aside>
+  </div>
+} @else {
+  <p class="state">Carico i dati…</p>
+}

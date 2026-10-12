@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.football import router as football_router
+from app.api.lab import router as lab_router
 from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.jobs import start_scheduler
@@ -22,6 +23,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="ArchieBet", version="0.1.0", lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(football_router)
+app.include_router(lab_router)
 
 
 @app.get("/api/health", tags=["system"])

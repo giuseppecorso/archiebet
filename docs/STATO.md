@@ -1,14 +1,18 @@
 # ArchieBet — Stato del progetto
 
-Ultimo aggiornamento: 2026-10-11
+Ultimo aggiornamento: 2026-10-12
 
-## Prossima sessione: Fase 1.5 – Laboratorio (base)
+## Fase 1.5 – Laboratorio (base): CONCLUSA (2026-10-12)
 
-Approvata da Giuse il 2026-10-11. Schede:
-1. **Campionati**: scegli campionato e stagione → classifica finale e numeri del campionato (1/X/2, media gol, Over 2.5, Goal, fattore campo), confronto tra stagioni e gironi.
-2. **Squadre**: storia stagione per stagione, tutte le partite, casa/trasferta, scontri diretti.
+- [x] Numeri di campionato calcolati e testati: 1/X/2, gol (casa/fuori), Over 2.5, Goal, 0-0, punti a partita in casa e fuori
+- [x] Scheda **Campionati**: campionato + stagione → numeri sul tabellone, classifica finale, andamento in tutte le stagioni
+- [x] Scheda **Squadre**: ricerca, storia stagione per stagione tra A, B e C, partite di ogni stagione
+- [x] Stagioni "in corso" solo se hanno partite ancora da giocare; le annullate (es. Taranto e Turris 2024/25) sono segnalate a parte
+- Test: 78 backend + 6 frontend, tutti verdi.
 
-Poi: Fase 2 – Giocate (registrazione giocate reali e simulate, statistiche di gioco, limiti, fotografia al momento della giocata).
+## Prossima sessione: Fase 2 – Giocate
+
+Registrazione giocate reali e simulate, chiusura automatica, statistiche di gioco, limiti di budget, fotografia al momento della giocata.
 
 ## Da fare al PC (Giuse)
 

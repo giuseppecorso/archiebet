@@ -112,7 +112,7 @@ class MatchDetail(BaseModel):
 # ---------- Conversioni ----------
 
 
-def _competition(c: Competition) -> CompetitionOut:
+def competition_out(c: Competition) -> CompetitionOut:
     return CompetitionOut(code=c.code, name=c.name, country=c.country, tier=c.tier)
 
 
@@ -146,12 +146,12 @@ def _odds_1x2(db: Session, matches: list[Match]) -> dict[int, dict[str, float]]:
     return result
 
 
-def _cards(db: Session, matches: list[Match], now: datetime) -> list[MatchCard]:
+def match_cards(db: Session, matches: list[Match], now: datetime) -> list[MatchCard]:
     odds = _odds_1x2(db, matches)
     return [
         MatchCard(
             id=m.id,
-            competition=_competition(m.competition),
+            competition=competition_out(m.competition),
             season=m.season,
             kickoff_at=m.kickoff_at,
             kickoff_has_time=m.kickoff_has_time,
@@ -166,7 +166,7 @@ def _cards(db: Session, matches: list[Match], now: datetime) -> list[MatchCard]:
     ]
 
 
-def _result(m: Match) -> Result:
+def to_result(m: Match) -> Result:
     return Result(
         match_id=m.id,
         kickoff_at=m.kickoff_at,
@@ -190,7 +190,7 @@ def _result(m: Match) -> Result:
 
 @router.get("/competitions")
 def list_competitions(_: CurrentUser, db: DbSession) -> list[CompetitionOut]:
-    return [_competition(c) for c in db.scalars(select(Competition).order_by(Competition.tier, Competition.name))]
+    return [competition_out(c) for c in db.scalars(select(Competition).order_by(Competition.tier, Competition.name))]
 
 
 @router.get("/matches")
@@ -223,7 +223,7 @@ def list_matches(
             groups[m.competition_id].append(m)
 
     ordered = sorted(groups.values(), key=lambda ms: (ms[0].competition.tier, ms[0].competition.name))
-    return [CompetitionGroup(competition=_competition(ms[0].competition), matches=_cards(db, ms, now)) for ms in ordered]
+    return [CompetitionGroup(competition=competition_out(ms[0].competition), matches=match_cards(db, ms, now)) for ms in ordered]
 
 
 @router.get("/matches/{match_id}")
@@ -263,8 +263,8 @@ def match_detail(match_id: int, _: CurrentUser, db: DbSession) -> MatchDetail:
             )
         ).all()
     )
-    team_results = [_result(m) for m in team_games]
-    season_results = [_result(m) for m in season_games]
+    team_results = [to_result(m) for m in team_games]
+    season_results = [to_result(m) for m in season_games]
     by_id = {m.id: m for m in team_games}
 
     def side(team_id: int, venue: str) -> SideStats:
@@ -308,7 +308,7 @@ def match_detail(match_id: int, _: CurrentUser, db: DbSession) -> MatchDetail:
     ]
 
     h2h_ids = [r.match_id for r in head_to_head(team_results, *teams, before)]
-    h2h = _cards(db, [by_id[i] for i in h2h_ids], now)
+    h2h = match_cards(db, [by_id[i] for i in h2h_ids], now)
 
     match_stats = None
     if match.status == MatchStatus.FINISHED:
@@ -319,7 +319,7 @@ def match_detail(match_id: int, _: CurrentUser, db: DbSession) -> MatchDetail:
         match_stats["xg"] = [float(v) if v is not None else None for v in match_stats["xg"]]
 
     return MatchDetail(
-        match=_cards(db, [match], now)[0],
+        match=match_cards(db, [match], now)[0],
         stats_as_of=before,
         missing_results=missing_results,
         home=side(match.home_team_id, "home"),
