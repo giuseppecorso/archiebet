@@ -25,9 +25,21 @@ Ultimo aggiornamento: 2026-10-12
 
 Test: 129 backend + 11 frontend, tutti verdi.
 
-## Prossima sessione: Fase 3 – Modello
+## Fase 3 – Modello: IN CORSO
 
-Piano approvato da Giuse (vedi CLAUDE.md, "Stato attuale"). Riferimento di mercato deciso: D48 (Pinnacle, altrimenti Betfair Exchange). Si parte dal modello Dixon-Coles con test, poi backtest walk-forward.
+- [x] Dixon-Coles (risultati esatti) con correzione dei punteggi bassi, pesi nel tempo, ridge; gradiente esatto verificato
+- [x] Mercati dalla matrice dei risultati: 1X2, doppia chance, Under/Over 0.5-4.5, Goal/NoGoal; quota giusta e valore
+- [x] Rating Elo su A, B e C collegate da promozioni/retrocessioni (anche le matricole hanno un rating)
+- [x] Backtest walk-forward (ristima settimanale, solo partite precedenti) con log loss, Brier, RPS, calibrazione e confronto col mercato di chiusura: `python -m app.cli backtest` (dalla cartella `backend`)
+- [x] Cassaforte 2025/26 (e successive) bloccata nel codice; si apre solo con `python -m app.cli open-vault`
+- [x] Prova del nove con confronto a coppie: **Elo come punto di partenza superata** (D51), ora nel modello
+- [x] CLV delle giocate di valore (bet365 apertura contro chiusura Pinnacle/Betfair, D52)
+- [ ] Previsioni salvate per ogni partita in programma e mostrate nell'app "in prova"
+- [ ] Altri fattori alla prova del nove (fattore campo per categoria, stagioni anomale, ecc.)
+
+**Dove siamo:** il modello è ben calibrato (errore 1-2%) ma in A e B non batte il mercato (log loss 1,030 contro 1,008; CLV come giocare a caso). Dettagli in DECISIONI.md dopo D52.
+
+Test: 180 backend + 11 frontend.
 
 Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia-archiebet.bat` / `spegni-archiebet.bat`).
 
@@ -69,4 +81,4 @@ App con login e menu delle sezioni; repository GitHub privato `giuseppecorso/arc
 
 ## Da decidere più avanti
 
-- **Fase 3:** riferimento di mercato per CLV e verdetto sulla cassaforte 2025/26, visto che Pinnacle copre solo metà di quella stagione (dettagli in DECISIONI.md).
+Niente in sospeso (riferimento di mercato deciso: D48).
