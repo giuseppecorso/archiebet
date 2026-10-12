@@ -36,6 +36,7 @@ def test_status_reports_freshness(logged_client, seeded, jobs_db):  # noqa: F811
     assert {s["source"]: s["last_ok_at"] for s in status["sources"]} == {
         "football-data": None,
         "api-football": None,
+        "oddspapi": None,
         "predictions": None,
         "radar": None,
     }

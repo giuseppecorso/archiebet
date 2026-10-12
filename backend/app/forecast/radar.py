@@ -18,8 +18,10 @@ from app.forecast.markets import value
 RADAR_THRESHOLD = 0.02  # valore minimo di un segnale (D57, D59)
 LIVE_TARGET = 300  # giocate necessarie per il giudizio dal vivo (D59)
 
-# Bookmaker con concessione italiana di cui abbiamo le quote. OddsPapi aggiungerà Sisal, Snai, Eurobet...
-PLAYABLE_BOOKMAKERS = ("bet365",)
+# Bookmaker con concessione italiana (quote da OddsPapi, D61). Se una partita non ne ha, si ripiega su
+# bet365 di football-data (sito internazionale, quote simili a bet365.it), come nel backtest (D52).
+PLAYABLE_BOOKMAKERS = ("sisal", "snai", "eurobet", "goldbet", "lottomatica", "betflag", "bet365_it", "planetwin365", "betsson")
+FALLBACK_BOOKMAKERS = ("bet365",)
 
 BookOdds = dict[str, dict[str, dict[str, float]]]  # bookmaker → mercato → esito → quota (una partita)
 

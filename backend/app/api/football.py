@@ -24,6 +24,15 @@ BOOKMAKER_LABELS = {
     "pinnacle": "Pinnacle",
     "bet365": "bet365",
     "betfair_ex": "Betfair Exchange",
+    "sisal": "Sisal",
+    "snai": "Snai",
+    "eurobet": "Eurobet",
+    "goldbet": "Goldbet",
+    "lottomatica": "Lottomatica",
+    "betflag": "BetFlag",
+    "bet365_it": "bet365.it",
+    "planetwin365": "Planetwin365",
+    "betsson": "Betsson",
 }
 
 

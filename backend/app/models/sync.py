@@ -12,7 +12,7 @@ class SyncRun(Base):
     __tablename__ = "sync_runs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    source: Mapped[str] = mapped_column(String(30), index=True)  # "football-data", "api-football", "predictions", "radar"
+    source: Mapped[str] = mapped_column(String(30), index=True)  # "football-data", "api-football", "oddspapi", "predictions", "radar"
     started_at: Mapped[datetime] = mapped_column(UTCDateTime)
     finished_at: Mapped[datetime] = mapped_column(UTCDateTime, index=True)
     ok: Mapped[bool] = mapped_column(Boolean)

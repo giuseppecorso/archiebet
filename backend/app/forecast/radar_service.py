@@ -13,26 +13,50 @@ from sqlalchemy.orm import Session
 
 from app.forecast.clv import ClvSummary
 from app.forecast.data import ODDS_MARKETS
-from app.forecast.radar import RADAR_THRESHOLD, BookOdds, closing_value, fair_reference, scan, summarize_live
+from app.forecast.radar import (
+    FALLBACK_BOOKMAKERS,
+    PLAYABLE_BOOKMAKERS,
+    RADAR_THRESHOLD,
+    BookOdds,
+    closing_value,
+    fair_reference,
+    scan,
+    summarize_live,
+)
 from app.models.football import Match, MatchOdds, MatchStatus
 from app.models.forecast import RadarSignal
 
 
+PREFERRED_SOURCE = "oddspapi"  # quote più fresche: se lo stesso bookmaker arriva da due fonti, vince questa
+
+
 def load_book_odds(db: Session, match_ids: Iterable[int], closing: bool) -> dict[int, BookOdds]:
-    """Quote di tutti i bookmaker, partita per partita, solo per i mercati del radar."""
+    """Quote di tutti i bookmaker, partita per partita, solo per i mercati del radar.
+
+    Un mercato si prende tutto da una fonte sola: OddsPapi se c'è, altrimenti l'altra (es. Pinnacle di football-data).
+    """
     ids = list(match_ids)
-    out: dict[int, BookOdds] = {}
+    found: dict[tuple[int, str, str], dict[str, dict[str, float]]] = {}  # (partita, bookmaker, mercato) → fonte → quote
     for start in range(0, len(ids), 500):
         rows = db.execute(
-            select(MatchOdds.match_id, MatchOdds.bookmaker, MatchOdds.market, MatchOdds.selection, MatchOdds.price).where(
+            select(MatchOdds.match_id, MatchOdds.source, MatchOdds.bookmaker, MatchOdds.market, MatchOdds.selection, MatchOdds.price).where(
                 MatchOdds.match_id.in_(ids[start : start + 500]),
                 MatchOdds.market.in_(ODDS_MARKETS),
                 MatchOdds.is_closing.is_(closing),
             )
         ).all()
-        for match_id, bookmaker, market, selection, price in rows:
-            out.setdefault(match_id, {}).setdefault(bookmaker, {}).setdefault(market, {})[selection] = float(price)
+        for match_id, source, bookmaker, market, selection, price in rows:
+            found.setdefault((match_id, bookmaker, market), {}).setdefault(source, {})[selection] = float(price)
+    out: dict[int, BookOdds] = {}
+    for (match_id, bookmaker, market), by_source in found.items():
+        prices = by_source.get(PREFERRED_SOURCE) or next(iter(by_source.values()))
+        out.setdefault(match_id, {}).setdefault(bookmaker, {})[market] = prices
     return out
+
+
+def playable_for(book: BookOdds) -> tuple[str, ...]:
+    """Bookmaker italiani se la partita ne ha le quote, altrimenti il ripiego di football-data."""
+    return PLAYABLE_BOOKMAKERS if any(bm in book for bm in PLAYABLE_BOOKMAKERS) else FALLBACK_BOOKMAKERS
 
 
 def refresh_radar(db: Session, now: datetime) -> int:
@@ -48,7 +72,8 @@ def refresh_radar(db: Session, now: datetime) -> int:
     created = 0
     for match_id in upcoming:
         # Tutti gli esiti, anche senza valore: servono a seguire i segnali già visti
-        current = {(c.market, c.selection): c for c in scan(books.get(match_id, {}), threshold=float("-inf"))}
+        book = books.get(match_id, {})
+        current = {(c.market, c.selection): c for c in scan(book, threshold=float("-inf"), playable=playable_for(book))}
         for (m, market, selection), row in existing.items():
             if m == match_id and (market, selection) not in current:  # quota sparita
                 row.latest_bookmaker = row.latest_price = row.latest_value = None

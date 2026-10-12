@@ -10,6 +10,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from app.adapters.api_football import ApiFootballAdapter
 from app.adapters.cache import FileCache
 from app.adapters.football_data import FootballDataAdapter
+from app.adapters.oddspapi import OddsPapiAdapter
 from app.betting.service import settle_open_bets
 from app.config import Settings, get_settings
 from app.db import SessionLocal
@@ -17,6 +18,7 @@ from app.forecast.radar_service import refresh_radar, settle_radar
 from app.forecast.service import refresh_predictions
 from app.ingest.api_football import sync_api_football
 from app.ingest.football_data import sync_football_data
+from app.ingest.oddspapi import sync_oddspapi
 from app.models.sync import SyncRun
 from app.usage import record_usage
 
@@ -86,6 +88,31 @@ def sync_api_football_job() -> None:
     _tracked("api-football", work)
 
 
+def sync_oddspapi_job() -> None:
+    settings = get_settings()
+    if not settings.oddspapi_key:
+        return
+
+    def work() -> str:
+        with SessionLocal() as db:
+            adapter = OddsPapiAdapter(
+                FileCache(settings.data_cache_dir, "oddspapi"),
+                settings.oddspapi_key,
+                on_call=lambda source: record_usage(db, source),
+                monthly_reserve=settings.oddspapi_monthly_reserve,
+            )
+            report = sync_oddspapi(db, adapter, datetime.now(UTC), log=logger.warning)
+        message = f"quote di {report.current} partite, {report.closing} chiusure"
+        if report.not_in_calendar:
+            message += f", {report.not_in_calendar} partite non ancora in calendario"
+        if adapter.remaining_month is not None:
+            message += f" · restano {adapter.remaining_month} richieste nel mese"
+        logger.info("OddsPapi: %s", message)
+        return message
+
+    _tracked("oddspapi", work)
+
+
 def settle_bets_job() -> None:
     try:
         with SessionLocal() as db:
@@ -127,6 +154,7 @@ def sync_all_job() -> bool:
     try:
         sync_football_data_job()
         sync_api_football_job()
+        sync_oddspapi_job()  # dopo il calendario: le quote si agganciano alle partite che abbiamo
         settle_bets_job()  # dopo i risultati nuovi
         refresh_predictions_job()  # si ricalcola solo se sono arrivati dati nuovi
         refresh_radar_job()  # dopo le quote nuove

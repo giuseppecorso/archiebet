@@ -41,7 +41,7 @@ def test_scan_threshold_ties_and_suspicious():
     # 0,2432 × 4,2 − 1 = +2,2%: sopra la soglia del 2%, sotto quella del 3%
     assert [s.bookmaker for s in scan(book, playable=("snai", "bet365"))] == ["snai"]  # a parità vince il primo
     assert scan(book, threshold=0.03, playable=("snai", "bet365")) == []
-    huge = scan({"pinnacle": PINNACLE, "bet365": {"1X2": {"2": 5.0}}})[0]  # +21,6%
+    huge = scan({"pinnacle": PINNACLE, "bet365": {"1X2": {"2": 5.0}}}, playable=("bet365",))[0]  # +21,6%
     assert huge.suspicious
 
 
@@ -50,7 +50,7 @@ def test_scan_sorts_by_value_and_ignores_sharp_books_as_offers():
         "pinnacle": PINNACLE | {"OU2.5": {"over": 1.9, "under": 1.9}},  # giuste 0,5 / 0,5
         "bet365": {"1X2": {"2": 4.3}, "OU2.5": {"over": 2.1, "under": 1.7}},  # 2: +4,6%, over: +5%
     }
-    signals = scan(book)
+    signals = scan(book, playable=("bet365",))
     assert [(s.market, s.selection) for s in signals] == [("OU2.5", "over"), ("1X2", "2")]
     assert signals[0].value == pytest.approx(0.05)
     assert scan({"pinnacle": PINNACLE}) == []  # Pinnacle non è giocabile in Italia

@@ -33,6 +33,7 @@ class Settings(BaseSettings):
 
     # OddsPapi: quote dei bookmaker italiani e di Pinnacle/Betfair (D61)
     oddspapi_key: str | None = None
+    oddspapi_monthly_reserve: int = 20  # richieste del mese da non usare mai in automatico
 
     # Aggiornamento automatico dei dati mentre il backend è acceso
     sync_enabled: bool = True

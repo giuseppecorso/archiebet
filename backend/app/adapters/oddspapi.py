@@ -11,6 +11,7 @@ Verificato sulle risposte reali (ottobre 2026):
 - le squadre arrivano solo come id: i nomi si prendono da /participants (una richiesta, poi in cache)
 """
 
+import logging
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -19,6 +20,9 @@ from typing import Any
 
 from app.adapters.base import DataSourceAdapter
 from app.adapters.cache import FileCache
+
+# La chiave viaggia nell'indirizzo: la libreria HTTP lo scriverebbe nel log a ogni richiesta
+logging.getLogger("httpx2").setLevel(logging.WARNING)
 
 SOURCE = "oddspapi"
 BASE_URL = "https://api.oddspapi.io/v4"
