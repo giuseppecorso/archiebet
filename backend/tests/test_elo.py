@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import pytest
 
 from app.forecast.data import Game
-from app.forecast.elo import EloParams, expected_home, goal_multiplier, run_elo
+from app.forecast.elo import EloParams, EloTimeline, expected_home, goal_multiplier, run_elo
 
 T0 = datetime(2023, 8, 20)
 E_EVEN = 1 / (1 + 10 ** (-60 / 400))  # 0,585499: rating pari, 60 punti di fattore campo
@@ -77,3 +77,13 @@ def test_season_regression_towards_tier_average():
 def test_unsorted_games_are_rejected():
     with pytest.raises(ValueError, match="ordine"):
         run_elo([game(5, "2023/24", 1, 1, 2, 0, 0), game(0, "2023/24", 1, 2, 1, 0, 0)])
+
+
+def test_timeline_uses_only_earlier_matches():
+    games = [game(0, "2023/24", 1, 1, 2, 3, 0), game(7, "2023/24", 1, 1, 3, 0, 2)]
+    res = run_elo(games)
+    tl = EloTimeline(games, res)
+    assert tl.rating_at(1, T0) == 1500  # prima della prima partita
+    assert tl.rating_at(1, T0 + timedelta(days=7)) == pytest.approx(res.post_match[0][0])  # dopo la prima, non la seconda
+    assert tl.rating_at(1, T0 + timedelta(days=30)) == pytest.approx(res.ratings[1])  # dopo l'ultima
+    assert tl.rating_at(42, T0) is None

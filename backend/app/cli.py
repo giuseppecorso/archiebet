@@ -131,6 +131,7 @@ def main() -> int:
     bt.add_argument("--xi", type=float, default=ModelConfig.xi_per_day, help="peso nel tempo (per giorno)")
     bt.add_argument("--ridge", type=float, default=ModelConfig.ridge, help="spinta verso la media (partite equivalenti)")
     bt.add_argument("--window", type=int, default=ModelConfig.window_days, help="giorni di storia usati")
+    bt.add_argument("--elo", action="store_true", help="usa l'Elo come punto di partenza delle squadre")
     commands.add_parser("open-vault", help="apre la cassaforte 2025/26 per il verdetto (irreversibile)")
     args = parser.parse_args()
     if args.command == "create-user":
@@ -142,7 +143,7 @@ def main() -> int:
             print(f"Modifiche: {tidy_teams(db)}")
         return 0
     if args.command == "backtest":
-        return _backtest(args.first, args.last, ModelConfig(xi_per_day=args.xi, ridge=args.ridge, window_days=args.window))
+        return _backtest(args.first, args.last, ModelConfig(xi_per_day=args.xi, ridge=args.ridge, window_days=args.window, elo_prior=args.elo))
     if args.command == "open-vault":
         return _open_vault()
     if args.command == "sync":

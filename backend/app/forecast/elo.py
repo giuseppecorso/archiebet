@@ -11,9 +11,11 @@ Regole:
 - a inizio stagione ogni rating si avvicina di una frazione alla media della categoria in cui gioca
 """
 
+from bisect import bisect_left
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from app.forecast.data import Game
 
@@ -44,6 +46,7 @@ def goal_multiplier(goal_diff: int) -> float:
 @dataclass
 class EloResult:
     pre_match: list[tuple[float, float]]  # (rating casa, rating fuori) prima di ogni partita, stesso ordine dell'input
+    post_match: list[tuple[float, float]]  # gli stessi rating dopo la partita
     ratings: dict[int, float]  # rating attuale dopo l'ultima partita
 
 
@@ -57,6 +60,7 @@ def run_elo(games: Sequence[Game], params: EloParams = EloParams()) -> EloResult
     tier_seasons: dict[int, list[str]] = defaultdict(list)  # stagioni viste per categoria, in ordine
     season_table: dict[tuple[int, str], dict[int, float]] = defaultdict(dict)  # ultimo rating di ogni squadra
     pre_match: list[tuple[float, float]] = []
+    post_match: list[tuple[float, float]] = []
 
     def last_season_mean(tier: int, season: str) -> float | None:
         """Media dei rating di fine stagione precedente della categoria (None se non esiste)."""
@@ -88,7 +92,28 @@ def run_elo(games: Sequence[Game], params: EloParams = EloParams()) -> EloResult
         score = 1.0 if g.home_goals > g.away_goals else 0.5 if g.home_goals == g.away_goals else 0.0
         delta = params.k * goal_multiplier(g.home_goals - g.away_goals) * (score - expected_home(rh, ra, params.home_advantage))
         ratings[g.home_id], ratings[g.away_id] = rh + delta, ra - delta
+        post_match.append((rh + delta, ra - delta))
         table = season_table[(g.tier, g.season)]
         table[g.home_id], table[g.away_id] = ratings[g.home_id], ratings[g.away_id]
 
-    return EloResult(pre_match=pre_match, ratings=ratings)
+    return EloResult(pre_match=pre_match, post_match=post_match, ratings=ratings)
+
+
+class EloTimeline:
+    """Rating di ogni squadra in un istante qualsiasi, usando solo le partite iniziate prima di quell'istante."""
+
+    def __init__(self, games: Sequence[Game], result: EloResult) -> None:
+        self._kickoffs: dict[int, list[datetime]] = defaultdict(list)
+        self._ratings: dict[int, list[tuple[float, float]]] = defaultdict(list)  # (prima, dopo) di ogni partita
+        for g, pre, post in zip(games, result.pre_match, result.post_match):
+            for side, team in enumerate((g.home_id, g.away_id)):
+                self._kickoffs[team].append(g.kickoff_at)
+                self._ratings[team].append((pre[side], post[side]))
+
+    def rating_at(self, team: int, when: datetime) -> float | None:
+        """Il rating "prima" della prima partita da `when` in poi; se non ce ne sono, quello dopo l'ultima."""
+        kickoffs = self._kickoffs.get(team)
+        if not kickoffs:
+            return None
+        i = bisect_left(kickoffs, when)
+        return self._ratings[team][i][0] if i < len(kickoffs) else self._ratings[team][-1][1]

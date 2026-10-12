@@ -5,12 +5,14 @@ Idea in breve:
 - i gol fuori seguono una Poisson di media    μ = exp(attacco_ospite − difesa_casa)
 - la correzione τ (rho) aggiusta i risultati bassi (0-0, 1-0, 0-1, 1-1), che la Poisson pura sbaglia
 - ogni partita pesa di più se è recente (pesi esponenziali nel tempo, vedi `time_decay_weights`)
+- con poche partite una squadra viene tirata verso un valore "di partenza" (ridge): la media, oppure
+  pendenza × forza esterna (es. rating Elo), con la pendenza stimata insieme agli altri parametri
 
 Convenzione: difesa ALTA = difesa forte (subisce meno). Attacchi e difese sono centrati
 (la somma degli attacchi è 0), quindi una squadra "media" ha attacco 0 e difesa 0.
 """
 
-from collections.abc import Hashable, Sequence
+from collections.abc import Hashable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -62,6 +64,7 @@ class DixonColesFit:
     defence: np.ndarray
     home_advantage: float
     rho: float
+    prior_slope: float  # quanto conta la forza esterna (0 se non usata)
     n_matches: int
     converged: bool
 
@@ -82,10 +85,10 @@ class DixonColesFit:
         return score_matrix(lam, mu, self.rho, max_goals)
 
 
-def _objective(params, n, hi, ai, hg, ag, w, ridge):
+def _objective(params, n, hi, ai, hg, ag, w, ridge, z):
     """Log-verosimiglianza negativa (media pesata) + penalità, con il suo gradiente esatto."""
     att, dfc = params[:n], params[n : 2 * n]
-    gamma, rho = params[2 * n], params[2 * n + 1]
+    gamma, rho, slope = params[2 * n], params[2 * n + 1], params[2 * n + 2]
     log_lam = gamma + att[hi] - dfc[ai]
     log_mu = att[ai] - dfc[hi]
     lam, mu = np.exp(log_lam), np.exp(log_mu)
@@ -111,12 +114,15 @@ def _objective(params, n, hi, ai, hg, ag, w, ridge):
     grad[2 * n] = -g_lam.sum() / total_w
     grad[2 * n + 1] = -(w * dt_rho).sum() / total_w
 
-    # Ridge: tira verso la media le squadre con poche partite. È in "partite equivalenti" (diviso per il
-    # peso totale come la verosimiglianza), così vale lo stesso con 500 o 5.000 partite.
-    # Vincolo morbido: somma attacchi = 0.
-    value += ridge * (att @ att + dfc @ dfc) / total_w + att.sum() ** 2
-    grad[:n] += 2 * ridge * att / total_w + 2 * att.sum()
-    grad[n : 2 * n] += 2 * ridge * dfc / total_w
+    # Ridge: tira ogni squadra verso il suo valore di partenza (pendenza × forza esterna z, oppure 0).
+    # È in "partite equivalenti" (diviso per il peso totale come la verosimiglianza), così vale lo stesso
+    # con 500 o 5.000 partite. Spostare tutti gli attacchi e le difese della stessa costante non cambia
+    # λ e μ: lì il gradiente è zero e l'ottimizzatore non si muove; la centratura si fa alla fine.
+    ra, rd = att - slope * z, dfc - slope * z
+    value += ridge * (ra @ ra + rd @ rd) / total_w
+    grad[:n] += 2 * ridge * ra / total_w
+    grad[n : 2 * n] += 2 * ridge * rd / total_w
+    grad[2 * n + 2] = -2 * ridge * (z @ (ra + rd)) / total_w
     return value, grad
 
 
@@ -127,9 +133,15 @@ def fit_dixon_coles(
     away_goals: Sequence[int],
     weights: Sequence[float] | None = None,
     ridge: float = 0.0,
+    strength: Mapping[Hashable, float] | None = None,
+    extra_teams: Iterable[Hashable] = (),
 ) -> DixonColesFit:
-    """Stima attacchi, difese, fattore campo e rho per massima verosimiglianza pesata."""
-    teams = tuple(sorted(set(home_teams) | set(away_teams)))
+    """Stima attacchi, difese, fattore campo e rho per massima verosimiglianza pesata.
+
+    `strength`: forza esterna di ogni squadra (es. Elo / 100), usata come valore di partenza del ridge.
+    `extra_teams`: squadre senza partite da includere lo stesso (le stima solo il valore di partenza).
+    """
+    teams = tuple(sorted(set(home_teams) | set(away_teams) | set(extra_teams)))
     index = {t: i for i, t in enumerate(teams)}
     n = len(teams)
     hi = np.array([index[t] for t in home_teams])
@@ -139,11 +151,13 @@ def fit_dixon_coles(
     w = np.ones(len(hg)) if weights is None else np.asarray(weights, dtype=float)
     if len(hg) == 0 or w.sum() <= 0:
         raise ValueError("Servono partite con peso positivo per stimare il modello")
+    z = np.zeros(n) if strength is None else np.array([strength[t] for t in teams], dtype=float)
+    z -= z.mean()
 
-    start = np.zeros(2 * n + 2)
+    start = np.zeros(2 * n + 3)
     start[2 * n] = np.log(max(np.average(hg, weights=w), 0.1) / max(np.average(ag, weights=w), 0.1))
-    bounds = [(None, None)] * (2 * n + 1) + [RHO_BOUNDS]
-    res = minimize(_objective, start, args=(n, hi, ai, hg, ag, w, ridge), jac=True, method="L-BFGS-B", bounds=bounds)
+    bounds = [(None, None)] * (2 * n + 1) + [RHO_BOUNDS, (None, None)]
+    res = minimize(_objective, start, args=(n, hi, ai, hg, ag, w, ridge, z), jac=True, method="L-BFGS-B", bounds=bounds)
 
     att, dfc = res.x[:n].copy(), res.x[n : 2 * n].copy()
     shift = att.mean()  # centratura esatta: λ e μ non cambiano spostando attacchi e difese insieme
@@ -153,6 +167,7 @@ def fit_dixon_coles(
         defence=dfc - shift,
         home_advantage=float(res.x[2 * n]),
         rho=float(res.x[2 * n + 1]),
+        prior_slope=float(res.x[2 * n + 2]),
         n_matches=int((w > 0).sum()),
         converged=bool(res.success),
     )

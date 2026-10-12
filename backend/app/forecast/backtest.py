@@ -17,6 +17,7 @@ import numpy as np
 
 from app.forecast.data import Game
 from app.forecast.dixon_coles import fit_dixon_coles, time_decay_weights
+from app.forecast.elo import EloParams, EloTimeline, run_elo
 from app.forecast.markets import markets
 from app.forecast.metrics import brier, calibration, expected_calibration_error, log_loss, outcome_index, rps
 from app.forecast.vault import VAULT_MARKER, ensure_can_evaluate
@@ -28,6 +29,8 @@ class ModelConfig:
     ridge: float = 2.0  # in "partite equivalenti" verso la squadra media
     window_days: int = 3 * 365
     refit_every_days: int = 7
+    elo_prior: bool = False  # punto di partenza del ridge = forza Elo invece della media (prova del nove)
+    elo: EloParams = EloParams()
 
 
 @dataclass(frozen=True)
@@ -63,6 +66,8 @@ def walk_forward(
     if kickoffs != sorted(kickoffs):
         raise ValueError("Le partite devono essere in ordine di calcio d'inizio")
     targets = [g for g in games if g.season in eval_seasons]
+    # L'Elo scorre tutte le partite, ma a ogni blocco si leggono solo i rating precedenti all'inizio del blocco
+    timeline = EloTimeline(games, run_elo(games, config.elo)) if config.elo_prior else None
 
     predictions: list[Prediction] = []
     skipped = fits = 0
@@ -80,6 +85,11 @@ def walk_forward(
         if not train:
             skipped += len(block)
             continue
+        strength, extra = None, ()
+        if timeline:
+            extra = {t for g in block for t in (g.home_id, g.away_id)}
+            teams = extra | {t for g in train for t in (g.home_id, g.away_id)}
+            strength = {t: timeline.rating_at(t, start) / 100 for t in teams}
         fit = fit_dixon_coles(
             [g.home_id for g in train],
             [g.away_id for g in train],
@@ -87,6 +97,8 @@ def walk_forward(
             [g.away_goals for g in train],
             weights=time_decay_weights([g.kickoff_at for g in train], start, config.xi_per_day),
             ridge=config.ridge,
+            strength=strength,
+            extra_teams=extra,
         )
         fits += 1
         for g in block:
@@ -155,3 +167,26 @@ def score_by(
     for p in preds:
         groups[key(p)].append(p)
     return {k: score(v, market) for k, v in sorted(groups.items(), key=lambda kv: str(kv[0]))}
+
+
+@dataclass(frozen=True)
+class PairedComparison:
+    n: int  # partite previste da entrambe le varianti
+    mean_diff: float  # log loss di B − log loss di A, in media: negativo = B prevede meglio
+    std_error: float
+
+    @property
+    def b_is_better(self) -> bool:
+        """Prova del nove (principio 5): B migliora A oltre il rumore (2 errori standard)."""
+        return self.mean_diff < -2 * self.std_error
+
+
+def compare(a: Sequence[Prediction], b: Sequence[Prediction]) -> PairedComparison:
+    """Confronto partita per partita sulle sole partite previste da entrambe le varianti."""
+    a_by_id = {p.match_id: p for p in a}
+    pairs = [(a_by_id[p.match_id], p) for p in b if p.match_id in a_by_id]
+    if not pairs:
+        raise ValueError("Nessuna partita in comune tra le due varianti")
+    diff = np.array([-np.log(pb.p_1x2[pb.outcome]) + np.log(pa.p_1x2[pa.outcome]) for pa, pb in pairs])
+    se = float(diff.std(ddof=1) / np.sqrt(len(diff))) if len(diff) > 1 else float("inf")
+    return PairedComparison(len(diff), float(diff.mean()), se)

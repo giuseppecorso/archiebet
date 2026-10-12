@@ -49,10 +49,11 @@ def test_gradient_matches_numerical_derivative():
     hi, ai = rng.integers(0, n, k), rng.integers(0, n, k)
     hg, ag = rng.poisson(1.4, k).astype(float), rng.poisson(1.1, k).astype(float)
     w = rng.uniform(0.2, 1.0, k)
-    x0 = np.concatenate([rng.normal(0, 0.2, 2 * n), [0.3, -0.08]])
+    z = rng.normal(0, 1, n)
+    x0 = np.concatenate([rng.normal(0, 0.2, 2 * n), [0.3, -0.08, 0.1]])
     err = check_grad(
-        lambda p: _objective(p, n, hi, ai, hg, ag, w, 0.01)[0],
-        lambda p: _objective(p, n, hi, ai, hg, ag, w, 0.01)[1],
+        lambda p: _objective(p, n, hi, ai, hg, ag, w, 2.0, z)[0],
+        lambda p: _objective(p, n, hi, ai, hg, ag, w, 2.0, z)[1],
         x0,
     )
     assert err < 1e-5
@@ -119,3 +120,19 @@ def test_ridge_shrinks_ratings_towards_average():
 def test_no_matches_is_an_error():
     with pytest.raises(ValueError):
         fit_dixon_coles([], [], [], [])
+
+
+def test_external_strength_sets_the_starting_point():
+    """Con la forza esterna, una squadra senza partite riceve pendenza × forza (non più la media)."""
+    rng = np.random.default_rng(11)
+    att = np.array([0.4, 0.2, 0.0, -0.2, -0.4])
+    home, away, hg, ag = _simulate(att, att, 0.25, 10, rng)
+    strength = {i: float(att[i]) * 5 for i in range(5)} | {99: -3.0}  # la nuova squadra è debole
+    fit = fit_dixon_coles(home, away, hg, ag, ridge=5.0, strength=strength, extra_teams=[99])
+    assert fit.prior_slope > 0
+    lam_vs_new, _ = fit.expected_goals(0, 99)
+    lam_vs_mid, _ = fit.expected_goals(0, 2)
+    assert lam_vs_new > lam_vs_mid  # contro la squadra debole si segna di più
+    plain = fit_dixon_coles(home, away, hg, ag, ridge=5.0, extra_teams=[99])
+    i = plain.teams.index(99)
+    assert plain.attack[i] == pytest.approx(plain.defence[i], abs=1e-3)  # senza forza: squadra "neutra"
