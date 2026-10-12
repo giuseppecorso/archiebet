@@ -11,7 +11,8 @@ from app.auth.service import create_user, set_password
 from app.config import get_settings
 from app.db import SessionLocal
 from app.forecast.backtest import ModelConfig, Scores, score, score_by, walk_forward
-from app.forecast.data import load_games, load_reference_closing_1x2
+from app.forecast.clv import SUSPICIOUS_VALUE, summarize, value_bets
+from app.forecast.data import REFERENCE_BOOKMAKERS, fair_odds_probabilities, load_games, load_odds, reference_1x2
 from app.forecast.vault import VAULT_FIRST_SEASON, open_vault, vault_is_open
 from app.ingest.api_football import sync_api_football
 from app.ingest.football_data import sync_football_data
@@ -86,7 +87,9 @@ def _print_scores(label: str, s: Scores) -> None:
 def _backtest(first: str, last: str, config: ModelConfig) -> int:
     with SessionLocal() as db:
         games = load_games(db)
-        market = load_reference_closing_1x2(db)
+        closing_fair = fair_odds_probabilities(load_odds(db, REFERENCE_BOOKMAKERS, closing=True))
+        offered = load_odds(db, ["bet365"], closing=False)
+        market = reference_1x2(closing_fair)
         names = {c.id: c.name for c in db.query(Competition).all()}
     seasons = sorted({g.season for g in games if first <= g.season <= last})
     print(f"Backtest {seasons[0]} - {seasons[-1]} con {config}")
@@ -97,6 +100,14 @@ def _backtest(first: str, last: str, config: ModelConfig) -> int:
         _print_scores(names[comp], s)
     for season, s in score_by(res.predictions, market, lambda p: p.season).items():
         _print_scores(season, s)
+    print("\nGiocate di valore (quota bet365 di apertura) e CLV contro la chiusura Pinnacle/Betfair:")
+    bets = value_bets(res.predictions, offered, closing_fair, threshold=0.05)
+    groups = [("valore 5-15%", [b for b in bets if b.value < SUSPICIOUS_VALUE]), ("valore >15% (sospetto)", [b for b in bets if b.value >= SUSPICIOUS_VALUE])]
+    groups += [(f"{names[c]}", [b for b in bets if b.competition_id == c]) for c in sorted({b.competition_id for b in bets})]
+    groups += [(m, [b for b in bets if b.market == m]) for m in ("1X2", "OU2.5")]
+    for label, group in [("TUTTE", bets), *groups]:
+        if s := summarize(group):
+            print(f"{label:<24} {s.n:>5} giocate  CLV medio {s.mean_clv:+.2%} ± {s.clv_std_error:.2%}  CLV>0 nel {s.share_positive:.0%}  (ROI {s.roi:+.1%})")
     return 0
 
 
