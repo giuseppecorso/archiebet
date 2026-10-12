@@ -42,7 +42,7 @@ Test: 129 backend + 11 frontend, tutti verdi.
 
 Test: 185 backend + 12 frontend.
 
-Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia-archiebet.bat` / `spegni-archiebet.bat`).
+Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia-archiebet.bat` / `spegni-archiebet.bat`). Icone LED e collegamenti su Desktop e menu Start si ricreano con `powershell -ExecutionPolicy Bypass -File tools\crea-icone.ps1`.
 
 ## Da fare al PC (Giuse)
 
