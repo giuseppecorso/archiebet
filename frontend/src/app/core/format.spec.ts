@@ -1,4 +1,4 @@
-import { dayLabel, kickoffTime, num, odds, pct } from './format';
+import { dayLabel, fairOdds, kickoffTime, num, odds, pct } from './format';
 
 describe('formattazione', () => {
   it('mostra l\'orario in ora italiana', () => {
@@ -23,5 +23,12 @@ describe('formattazione', () => {
     expect(num(11.667)).toBe('11,67');
     expect(pct(0.375)).toBe('38%');
     expect(pct(null)).toBe('–');
+  });
+
+  it('quota giusta = 1 / probabilità', () => {
+    expect(fairOdds(0.4)).toBe('2.50');
+    expect(fairOdds(0.3)).toBe('3.33');
+    expect(fairOdds(0)).toBe('–');
+    expect(fairOdds(null)).toBe('–');
   });
 });

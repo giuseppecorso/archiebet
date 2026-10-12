@@ -48,10 +48,45 @@
     </p>
   }
 
-  <section class="panel archie-soon" aria-label="Probabilità di Archie">
-    <span class="title">Probabilità di Archie</span>
-    <span>Le stime 1 / X / 2 e il valore arrivano con il modello (Fase 3) e le quote dei bookmaker italiani (Fase 4).</span>
-  </section>
+  @if (d.prediction; as p) {
+    <section class="archie" aria-labelledby="archie-title">
+      <div class="archie-head">
+        <h2 id="archie-title" class="title archie-title">Probabilità di Archie</h2>
+        <span class="trial">in prova</span>
+        <span class="muted small">
+          gol attesi {{ fmt.num(p.expected_goals[0], 1) }} – {{ fmt.num(p.expected_goals[1], 1) }}
+          · Elo {{ fmt.num(p.ratings[0], 0) }} – {{ fmt.num(p.ratings[1], 0) }}
+          · risultati fino al {{ fmt.longDate(p.data_until) }}
+        </span>
+      </div>
+      <div class="archie-cards">
+        @for (c of archieCards(); track c.sel) {
+          <div class="panel archie-card">
+            <span class="title card-label">{{ c.sel }} · {{ c.name }}</span>
+            <span class="led card-pct">{{ c.pct }}</span>
+            <span class="muted card-sub">
+              quota giusta {{ c.fair }}
+              @if (c.market) {
+                · mercato {{ c.market }}
+              }
+            </span>
+          </div>
+        }
+      </div>
+      <p class="muted small archie-note">
+        In prova fino al verdetto sulla stagione 2025/26. Nel backtest su Serie A e B il mercato è stato più preciso di Archie:
+        dove non sono d'accordo, di solito ha ragione il mercato.
+        @if (p.market['1X2']; as ref) {
+          Mercato: {{ ref.source }}, senza margine.
+        }
+      </p>
+    </section>
+  } @else {
+    <section class="panel archie-soon" aria-label="Probabilità di Archie">
+      <span class="title">Probabilità di Archie</span>
+      <span>Nessuna previsione per questa partita: Archie calcola solo le partite in programma, prima del calcio d'inizio.</span>
+    </section>
+  }
 
   <div class="grid">
     <div class="main-col">
@@ -80,6 +115,32 @@
         </div>
         <p class="note">Solo partite di {{ m.competition.name }} {{ m.season }} giocate prima del calcio d'inizio. Gli xG sono disponibili dalla stagione 2026/27.</p>
       </section>
+
+      @if (archieMarkets().length) {
+        <section class="panel box" aria-labelledby="mk-title">
+          <div class="box-head">
+            <h2 id="mk-title" class="title box-title">Tutti i mercati</h2>
+            <span class="muted small">Archie · in prova</span>
+          </div>
+          <div class="table-wrap">
+            <table class="markets">
+              <thead>
+                <tr><th scope="col">Mercato</th><th scope="col">Archie</th><th scope="col">Quota giusta</th><th scope="col">Mercato</th></tr>
+              </thead>
+              <tbody>
+                @for (row of archieMarkets(); track row.label) {
+                  <tr>
+                    <th scope="row">{{ row.label }}</th>
+                    <td><span class="led price">{{ row.pct }}</span></td>
+                    <td><span class="led fair">{{ row.fair }}</span></td>
+                    <td>{{ row.market ?? '–' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
 
       @if (matchStats().length) {
         <section class="panel box" aria-labelledby="ms-title">

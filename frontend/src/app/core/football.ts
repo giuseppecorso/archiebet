@@ -88,6 +88,28 @@ export interface OddsRow {
   closing: Record<string, number>;
 }
 
+export interface MarketReference {
+  /** Es. "Pinnacle · chiusura" */
+  source: string;
+  /** Probabilità senza margine */
+  probabilities: Record<string, number>;
+}
+
+/** Previsione di Archie fatta prima del calcio d'inizio ("in prova" fino al verdetto) */
+export interface Prediction {
+  trial: boolean;
+  model_version: string;
+  computed_at: string;
+  /** Calcio d'inizio dell'ultimo risultato usato dal modello */
+  data_until: string;
+  /** Elo [casa, trasferta] */
+  ratings: [number, number];
+  expected_goals: [number, number];
+  /** Mercato → esito → probabilità */
+  markets: Record<string, Record<string, number>>;
+  market: Record<string, MarketReference>;
+}
+
 export interface MatchDetail {
   match: MatchCard;
   stats_as_of: string;
@@ -99,6 +121,7 @@ export interface MatchDetail {
   standings: StandingRow[];
   odds: OddsRow[];
   match_stats: Record<string, [number | null, number | null]> | null;
+  prediction: Prediction | null;
 }
 
 export const OUTCOME_LABEL: Record<Outcome, string> = { V: 'vinta', N: 'pareggio', P: 'persa' };

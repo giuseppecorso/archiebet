@@ -2,7 +2,7 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatchDetail, OddsRow, TeamSummary } from '../../core/football';
-import { dayLabel, kickoffTime, longDate, num, odds, pct } from '../../core/format';
+import { dayLabel, fairOdds, kickoffTime, longDate, num, odds, pct } from '../../core/format';
 import { FormBadges } from '../../shared/form-badges';
 import { ShowMore } from '../../shared/show-more';
 
@@ -49,6 +49,19 @@ const ODDS_COLUMNS: [string, string][] = [
   ['OU2.5', 'under'],
 ];
 
+/** Righe della tabella "Tutti i mercati": [nome, mercato, esito] */
+const ARCHIE_MARKETS: [string, string, string][] = [
+  ['1X (doppia chance)', 'DC', '1X'],
+  ['X2 (doppia chance)', 'DC', 'X2'],
+  ['12 (doppia chance)', 'DC', '12'],
+  ...[0.5, 1.5, 2.5, 3.5, 4.5].flatMap((line): [string, string, string][] => [
+    [`Over ${line}`, `OU${line}`, 'over'],
+    [`Under ${line}`, `OU${line}`, 'under'],
+  ]),
+  ['Goal (segnano entrambe)', 'GG', 'yes'],
+  ['NoGoal', 'GG', 'no'],
+];
+
 @Component({
   selector: 'ab-match',
   imports: [RouterLink, FormBadges, ShowMore],
@@ -63,7 +76,35 @@ export class MatchPage {
   protected readonly scope = signal<'season' | 'venue'>('season');
   protected readonly tableOpen = signal(false);
 
-  protected readonly fmt = { odds, num, pct, dayLabel, kickoffTime, longDate };
+  protected readonly fmt = { odds, num, pct, fairOdds, dayLabel, kickoffTime, longDate };
+
+  /** Le tre schede 1 / X / 2 di Archie, con la probabilità del mercato accanto */
+  protected readonly archieCards = computed(() => {
+    const d = this.detail.value();
+    const p = d?.prediction;
+    if (!d || !p) return [];
+    const market = p.market['1X2']?.probabilities;
+    const names: [string, string][] = [['1', d.match.home.name], ['X', 'Pareggio'], ['2', d.match.away.name]];
+    return names.map(([sel, name]) => ({
+      sel,
+      name,
+      pct: pct(p.markets['1X2'][sel]),
+      fair: fairOdds(p.markets['1X2'][sel]),
+      market: market ? pct(market[sel]) : null,
+    }));
+  });
+
+  /** Tutti gli altri mercati: probabilità e quota giusta di Archie, mercato dove c'è */
+  protected readonly archieMarkets = computed(() => {
+    const p = this.detail.value()?.prediction;
+    if (!p) return [];
+    return ARCHIE_MARKETS.filter(([, market, sel]) => p.markets[market]?.[sel] != null).map(([label, market, sel]) => ({
+      label,
+      pct: pct(p.markets[market][sel]),
+      fair: fairOdds(p.markets[market][sel]),
+      market: p.market[market] ? pct(p.market[market].probabilities[sel]) : null,
+    }));
+  });
 
   protected readonly stats = computed<StatLine[]>(() => {
     const d = this.detail.value();

@@ -49,6 +49,11 @@ export function num(value: number | null | undefined, digits = 2): string {
   return value == null ? '–' : value.toLocaleString('it-IT', { maximumFractionDigits: digits });
 }
 
+/** Quota giusta = 1 / probabilità, con due decimali: 0.4 → "2.50" (impossibile → "–"). */
+export function fairOdds(probability: number | null | undefined): string {
+  return probability == null || probability <= 0 ? '–' : (1 / probability).toFixed(2);
+}
+
 /** Quota 0-1 → percentuale intera, es. 0.375 → "38%". */
 export function pct(value: number | null | undefined): string {
   return value == null ? '–' : `${Math.round(value * 100)}%`;

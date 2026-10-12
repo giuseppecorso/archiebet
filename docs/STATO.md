@@ -34,12 +34,13 @@ Test: 129 backend + 11 frontend, tutti verdi.
 - [x] Cassaforte 2025/26 (e successive) bloccata nel codice; si apre solo con `python -m app.cli open-vault`
 - [x] Prova del nove con confronto a coppie: **Elo come punto di partenza superata** (D51), ora nel modello
 - [x] CLV delle giocate di valore (bet365 apertura contro chiusura Pinnacle/Betfair, D52)
-- [ ] Previsioni salvate per ogni partita in programma e mostrate nell'app "in prova"
+- [x] Previsioni salvate per ogni partita in programma (tabella `match_predictions`), ricalcolate solo con dati nuovi dopo ogni aggiornamento automatico (anche a mano: `python -m app.cli predict`)
+- [x] Pagina partita: "Probabilità di Archie · in prova" (1/X/2 con quota giusta e mercato a confronto) e "Tutti i mercati"
 - [ ] Altri fattori alla prova del nove (fattore campo per categoria, stagioni anomale, ecc.)
 
 **Dove siamo:** il modello è ben calibrato (errore 1-2%) ma in A e B non batte il mercato (log loss 1,030 contro 1,008; CLV come giocare a caso). Dettagli in DECISIONI.md dopo D52.
 
-Test: 180 backend + 11 frontend.
+Test: 185 backend + 12 frontend.
 
 Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia-archiebet.bat` / `spegni-archiebet.bat`).
 
