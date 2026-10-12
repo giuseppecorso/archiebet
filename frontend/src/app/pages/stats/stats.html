@@ -58,6 +58,108 @@
   </section>
 }
 
+<section class="panel box block" aria-labelledby="where-title">
+  <div class="box-head">
+    <h2 id="where-title" class="title box-title">Dove vinci e dove perdi</h2>
+    <div role="group" aria-label="Tipo di giocate" class="chips">
+      <button type="button" class="chip" [class.on]="kind() === 'real'" [attr.aria-pressed]="kind() === 'real'" (click)="kind.set('real')">Reali</button>
+      <button type="button" class="chip" [class.on]="kind() === 'simulated'" [attr.aria-pressed]="kind() === 'simulated'" (click)="kind.set('simulated')">Simulate</button>
+    </div>
+  </div>
+  <div role="tablist" aria-label="Raggruppa per" class="seg dims">
+    @for (d of dims; track d[0]) {
+      <button type="button" role="tab" [attr.aria-selected]="dim() === d[0]" (click)="setDim(d[0])">{{ d[1] }}</button>
+    }
+  </div>
+
+  @if (betRows(); as rows) {
+    @if (rows.length) {
+      <div class="table-wrap">
+        <table class="groups">
+          <thead><tr><th scope="col">Gruppo</th><th scope="col">Schedine</th><th scope="col">Vinte</th><th scope="col">Giocato</th><th scope="col">Saldo</th><th scope="col">Rendimento</th></tr></thead>
+          <tbody>
+            @for (g of rows.slice(0, groupsOpen() ? undefined : 6); track g.label) {
+              <tr>
+                <th scope="row">{{ g.label }}</th>
+                <td>{{ g.bets }}</td>
+                <td>{{ g.won }}</td>
+                <td>{{ fmt.euro(g.staked) }}</td>
+                <td [class]="sign(g.profit)">{{ fmt.euro(g.profit, true) }}</td>
+                <td [class]="sign(g.roi)">{{ signedPct(g.roi) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <ab-show-more [total]="rows.length" [limit]="6" [(expanded)]="groupsOpen" />
+      <p class="note">Rendimento della schedina intera: quanto torna ogni 100 € giocati, in più o in meno. Solo schedine chiuse.</p>
+    } @else {
+      <p class="muted">Ancora nessuna schedina {{ kind() === 'real' ? 'reale' : 'simulata' }} chiusa in questo periodo.</p>
+    }
+  }
+
+  @if (selectionRows(); as rows) {
+    @if (rows.length) {
+      <div class="table-wrap">
+        <table class="groups">
+          <thead>
+            <tr>
+              <th scope="col">Gruppo</th><th scope="col">Selezioni</th><th scope="col">Azzeccate</th><th scope="col">Quota media</th>
+              <th scope="col"><abbr title="Come se ogni selezione fosse una singola a puntata fissa">Rend. come singole</abbr></th>
+              <th scope="col">CLV medio</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (g of rows.slice(0, groupsOpen() ? undefined : 6); track g.label) {
+              <tr>
+                <th scope="row">{{ g.label }}</th>
+                <td>{{ g.selections }}</td>
+                <td>{{ g.won }} <span class="muted small">({{ fmt.pct(g.hit_rate) }})</span></td>
+                <td>{{ fmt.num(g.avg_odds) }}</td>
+                <td [class]="sign(g.flat_roi)">{{ signedPct(g.flat_roi) }}</td>
+                <td [class]="sign(g.avg_clv)">{{ signedPct(g.avg_clv) }}<span class="muted small"> · {{ g.clv_count }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <ab-show-more [total]="rows.length" [limit]="6" [(expanded)]="groupsOpen" />
+      <p class="note">Ogni selezione conta da sola, anche dentro le multiple: una multipla persa per un pareggio non "sporca" le selezioni azzeccate.</p>
+    } @else {
+      <p class="muted">Ancora nessuna selezione {{ kind() === 'real' ? 'reale' : 'simulata' }} chiusa in questo periodo.</p>
+    }
+  }
+</section>
+
+@if (breakdown.value()?.habits; as h) {
+  <section class="panel box block" aria-labelledby="habits-title">
+    <h2 id="habits-title" class="title box-title">Le tue abitudini <span class="muted small">· {{ kind() === 'real' ? 'reali' : 'simulate' }}</span></h2>
+    @if (h.bets === 0) {
+      <p class="muted">Nessuna giocata in questo periodo.</p>
+    } @else {
+      <div class="habits">
+        <dl class="prefs">
+          <div><dt>Schedine</dt><dd>{{ h.bets }}</dd></div>
+          <div><dt>Puntata media</dt><dd>{{ fmt.euro(h.avg_stake) }}</dd></div>
+          <div><dt>Quota media</dt><dd>{{ fmt.num(h.avg_odds) }}</dd></div>
+          <div><dt>Multiple</dt><dd>{{ fmt.pct(h.multiple_share) }}</dd></div>
+          <div><dt>Partite per schedina</dt><dd>{{ fmt.num(h.avg_selections) }}</dd></div>
+          <div><dt>Mercato preferito</dt><dd>{{ h.top_market ?? '–' }}</dd></div>
+          <div><dt>Bookmaker preferito</dt><dd>{{ h.top_bookmaker ?? '–' }}</dd></div>
+        </dl>
+        <div class="teams-box">
+          <div class="label">Squadre che giochi di più</div>
+          <ol class="teams">
+            @for (t of h.top_teams; track t[0]) {
+              <li><span>{{ t[0] }}</span><span class="led">{{ t[1] }}</span></li>
+            }
+          </ol>
+        </div>
+      </div>
+    }
+  </section>
+}
+
 @if (budget.value(); as b) {
   <section class="panel box budget" aria-labelledby="budget-title">
     <div class="box-head">

@@ -56,6 +56,47 @@ export interface SummaryOut {
   simulated: BetSummary;
 }
 
+/** Rendimento di un gruppo di schedine chiuse (per numero di partite o bookmaker) */
+export interface BetGroup {
+  label: string;
+  bets: number;
+  won: number;
+  staked: string;
+  profit: string;
+  roi: number | null;
+}
+
+/** Rendimento di un gruppo di selezioni chiuse (per mercato o campionato) */
+export interface SelectionGroup {
+  label: string;
+  selections: number;
+  won: number;
+  hit_rate: number | null;
+  avg_odds: number | null;
+  flat_roi: number | null;
+  avg_clv: number | null;
+  clv_count: number;
+}
+
+export interface Habits {
+  bets: number;
+  avg_stake: string | null;
+  avg_odds: number | null;
+  multiple_share: number | null;
+  avg_selections: number | null;
+  top_market: string | null;
+  top_bookmaker: string | null;
+  top_teams: [string, number][];
+}
+
+export interface Breakdown {
+  by_size: BetGroup[];
+  by_bookmaker: BetGroup[];
+  by_market: SelectionGroup[];
+  by_competition: SelectionGroup[];
+  habits: Habits;
+}
+
 export interface BudgetStatus {
   week_staked: string;
   week_budget: string | null;

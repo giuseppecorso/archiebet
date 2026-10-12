@@ -1,15 +1,17 @@
 import { httpResource } from '@angular/common/http';
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { BetSummary, BudgetStatus, SummaryOut, euro } from '../../core/bets';
-import { pct } from '../../core/format';
+import { BetGroup, BetKind, BetSummary, Breakdown, BudgetStatus, SelectionGroup, SummaryOut, euro } from '../../core/bets';
+import { num, pct } from '../../core/format';
+import { ShowMore } from '../../shared/show-more';
 
 type Period = SummaryOut['period'];
+type Dim = 'by_size' | 'by_market' | 'by_competition' | 'by_bookmaker';
 
-/** Le mie statistiche: riepilogo delle giocate, reali e simulate separate. */
+/** Le mie statistiche: riepilogo, dove vinci e dove perdi, abitudini. Reali e simulate sempre separate. */
 @Component({
   selector: 'ab-stats',
-  imports: [RouterLink],
+  imports: [RouterLink, ShowMore],
   templateUrl: './stats.html',
   styleUrl: './stats.scss',
 })
@@ -24,7 +26,36 @@ export class Stats {
   protected readonly summary = httpResource<SummaryOut>(() => `/api/bets/summary?period=${this.period()}`);
   protected readonly budget = httpResource<BudgetStatus>(() => '/api/budget');
 
-  protected readonly fmt = { euro, pct };
+  /** Dove vinci e dove perdi */
+  protected readonly dims: [Dim, string][] = [
+    ['by_size', 'Numero di partite'],
+    ['by_market', 'Mercato'],
+    ['by_competition', 'Campionato'],
+    ['by_bookmaker', 'Bookmaker'],
+  ];
+  protected readonly dim = signal<Dim>('by_size');
+  protected readonly kind = signal<BetKind>('real');
+  protected readonly groupsOpen = signal(false);
+  protected readonly breakdown = httpResource<Breakdown>(() => `/api/bets/breakdown?kind=${this.kind()}&period=${this.period()}`);
+
+  /** Numero di partite e bookmaker guardano la schedina intera; mercato e campionato le singole selezioni */
+  protected readonly betRows = computed<BetGroup[] | null>(() => {
+    const bd = this.breakdown.value();
+    const d = this.dim();
+    return bd && (d === 'by_size' || d === 'by_bookmaker') ? bd[d] : null;
+  });
+  protected readonly selectionRows = computed<SelectionGroup[] | null>(() => {
+    const bd = this.breakdown.value();
+    const d = this.dim();
+    return bd && (d === 'by_market' || d === 'by_competition') ? bd[d] : null;
+  });
+
+  protected readonly fmt = { euro, pct, num };
+
+  protected setDim(d: Dim): void {
+    this.dim.set(d);
+    this.groupsOpen.set(false);
+  }
 
   protected sign(value: string | number | null): 'pos' | 'neg' | '' {
     const n = Number(value ?? 0);

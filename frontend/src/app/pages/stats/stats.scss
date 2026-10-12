@@ -95,8 +95,109 @@
   color: var(--text-2);
 }
 .explain,
-.budget {
+.budget,
+.block {
   margin-bottom: 20px;
+}
+
+/* Dove vinci e dove perdi */
+.chips {
+  display: flex;
+  gap: 6px;
+}
+.chip {
+  min-height: 32px;
+  padding: 2px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  cursor: pointer;
+
+  &.on {
+    color: var(--amber);
+    background: var(--chip);
+    border-color: var(--amber);
+  }
+}
+.dims {
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 12px;
+}
+.table-wrap {
+  overflow-x: auto;
+}
+.groups {
+  min-width: 560px;
+
+  td {
+    font-variant-numeric: tabular-nums;
+  }
+  td.pos {
+    color: var(--value);
+    font-weight: 700;
+  }
+  td.neg {
+    color: var(--loss);
+    font-weight: 700;
+  }
+}
+.note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Le tue abitudini */
+.habits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  margin-top: 10px;
+}
+.prefs {
+  flex: 2 1 420px;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+
+  div {
+    padding: 8px 10px;
+    background: var(--bg-deep);
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+  }
+  dt {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  dd {
+    margin: 2px 0 0;
+    font-weight: 700;
+  }
+}
+.teams-box {
+  flex: 1 1 220px;
+}
+.teams {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-top: 1px solid var(--line-row);
+  }
 }
 .warn {
   margin: 10px 0 0;

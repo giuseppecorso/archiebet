@@ -10,7 +10,7 @@ Ultimo aggiornamento: 2026-10-12
 - [x] Stagioni "in corso" solo se hanno partite ancora da giocare; le annullate (es. Taranto e Turris 2024/25) sono segnalate a parte
 - Test: 78 backend + 6 frontend, tutti verdi.
 
-## Fase 2 – Giocate (in corso, parte principale fatta il 2026-10-12)
+## Fase 2 – Giocate: CONCLUSA (2026-10-12)
 
 - [x] Tabelle per utente: schedine, selezioni, fotografia al momento della giocata, impostazioni
 - [x] Registra una giocata (reale o simulata): partite in programma, mercati 1X2 / doppia chance / Under-Over 2.5 / Goal-NoGoal, quote precompilate dalla media di mercato, anteprima di quota e vincita
@@ -19,10 +19,15 @@ Ultimo aggiornamento: 2026-10-12
 - [x] CLV per selezione rispetto alla quota giusta di chiusura (Serie A e B)
 - [x] Le mie schedine (elenco + dettaglio), Le mie statistiche (prima versione), Impostazioni
 - [x] Limiti: solo avvisi sulle giocate reali (D39)
-- [ ] "Dove vinci e dove perdi" (per mercato, campionato, numero di partite, bookmaker) e "Le tue abitudini"
-- [ ] Altre "Tu contro Archie", stile di gioco, regolamento personale: dipendono dal modello (Fasi 3-4) e dall'AI (Fase 6)
+- [x] "Dove vinci e dove perdi": per schedina (numero di partite, bookmaker) e per selezione (mercato, campionato, con rendimento "come singole" e CLV)
+- [x] "Le tue abitudini": puntata e quota medie, % multiple, mercato e bookmaker preferiti, squadre più giocate
+- Rimandati alle fasi giuste: "Tu contro Archie" (serve il modello, Fasi 3-4); stile di gioco e regolamento personale scritti da Archie (AI, Fase 6)
 
-Test: 121 backend + 11 frontend, tutti verdi.
+Test: 129 backend + 11 frontend, tutti verdi.
+
+## Prossima sessione: Fase 3 – Modello
+
+Piano da presentare a Giuse prima di partire (modifica grossa). Decisione aperta: riferimento di mercato per CLV e verdetto sulla cassaforte 2025/26 (Pinnacle solo su metà stagione).
 
 Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia-archiebet.bat` / `spegni-archiebet.bat`).
 
