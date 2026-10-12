@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     api_football_seasons: str = "2022,2023,2024"  # quelle del piano gratuito
     api_football_daily_reserve: int = 10  # richieste del giorno da non usare mai in automatico
 
+    # OddsPapi: quote dei bookmaker italiani e di Pinnacle/Betfair (D61)
+    oddspapi_key: str | None = None
+
     # Aggiornamento automatico dei dati mentre il backend è acceso
     sync_enabled: bool = True
     sync_interval_hours: int = 6

@@ -31,7 +31,7 @@ Test: 129 backend + 11 frontend, tutti verdi.
 - [x] Motore del radar (`app/forecast/radar.py`): probabilità giusta Pinnacle/Betfair contro la quota migliore giocabile, segnali ≥ 2%, "sospetto" sopra il 15%
 - [x] **Simulazione dal vivo partita** (D60): tabella `radar_signals`, segnali rilevati prima del calcio d'inizio a ogni aggiornamento, CLV con la chiusura; per ora bookmaker giocabile = bet365 (quote football-data)
 - [x] Piani quote verificati (D61): OddsPapi gratuito come primo passo
-- [ ] Giuse: account gratuito OddsPapi (vedi "Da fare al PC")
+- [x] Account gratuito OddsPapi creato da Giuse, chiave in `backend/.env` (`ODDSPAPI_KEY`): piano free, 250 richieste/mese, **348 bookmaker inclusi**, tra cui Pinnacle, Betfair Exchange e i principali italiani (sisal.it, snai.it, eurobet.it, goldbet.it, lottomatica.it, bet365.it, betflag.it, planetwin365.it, ...)
 - [ ] Adapter OddsPapi (sezione 14.4): bookmaker italiani + Pinnacle, chiusura dallo storico gratuito
 - [ ] Pagina/scheda Radar e riepilogo della simulazione (n giocate su 300, CLV medio ± errore)
 - [ ] Multipla del giorno, generatore, "dove giocarla", Io contro Archie
@@ -65,7 +65,7 @@ Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia
 
 Le attività manuali sono raccolte qui, da fare tutte insieme quando sei al computer.
 
-1. **Account gratuito OddsPapi** (nessuna carta): registrarsi su oddspapi.io, copiare la chiave API e incollarla in `backend/.env` come `ODDSPAPI_KEY=...` (Claude ti guida passo per passo).
+Nessuna attività in sospeso.
 
 (La Serie C 2025/26 si valuterà con il piano a pagamento di API-Football.)
 
