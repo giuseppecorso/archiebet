@@ -1,5 +1,5 @@
 import { httpResource } from '@angular/common/http';
-import { Component, computed } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Market, pickLabel } from '../../core/bets';
 import { dayLabel, fairOdds, kickoffTime, odds, pct, signedPct } from '../../core/format';
@@ -13,6 +13,8 @@ import { RadarOut, RadarSignal } from '../../core/radar';
   styleUrl: './radar.scss',
 })
 export class Radar {
+  /** true = scheda dentro la pagina Pronostici (senza titolo proprio) */
+  readonly embedded = input(false);
   protected readonly radar = httpResource<RadarOut>(() => '/api/radar');
   protected readonly fmt = { dayLabel, kickoffTime, odds, fairOdds, pct, signedPct };
 

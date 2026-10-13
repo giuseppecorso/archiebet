@@ -54,7 +54,7 @@ describe('ArchieBet: navigazione', () => {
     expect(TestBed.inject(Router).url).toBe('/partite');
 
     const links = [...harness.routeNativeElement!.querySelectorAll('nav a')].map((a) => a.textContent?.trim());
-    expect(links).toEqual(['Partite', 'Radar', 'Le mie schedine', 'Le mie statistiche', 'Laboratorio', 'Gioca']);
+    expect(links).toEqual(['Partite', 'Pronostici', 'Le mie schedine', 'Le mie statistiche', 'Laboratorio', 'Gioca']);
 
     const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
     const premier = { code: 'ENG-1', name: 'Premier League', country: 'Inghilterra', tier: 1 };
@@ -115,5 +115,39 @@ describe('ArchieBet: navigazione', () => {
     expect(page.querySelector('h1')?.textContent).toContain('Gioca');
     expect(page.querySelector('.phase')?.textContent?.trim()).toBe('6');
     expect(page.querySelector('nav a[aria-current="page"]')?.textContent?.trim()).toBe('Gioca');
+  });
+
+  it("i pronostici mostrano la stima migliore e le quote di Sisal ed Eurobet con l'etichetta", async () => {
+    const harness = await navigateAs('/pronostici', true);
+    const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
+    const offer = (bookmaker: string, price: number, value: number, verdict: string) => ({ bookmaker, price, value, verdict });
+    (await nextRequest('/api/picks')).flush({
+      bookmakers: ['Sisal', 'Eurobet'],
+      picks: [
+        {
+          match: {
+            id: 7, competition: serieA, season: '2026/27', kickoff_at: '2026-10-17T16:00:00Z', kickoff_has_time: true,
+            status: 'scheduled', home: { id: 1, name: 'Milan' }, away: { id: 2, name: 'Inter' },
+            home_goals: null, away_goals: null, odds_1x2: null,
+          },
+          favorite: '2', favorite_probability: 0.4, signals: 1,
+          markets: [
+            {
+              market: '1X2', source: 'Pinnacle', from_model: false,
+              probabilities: { '1': 0.32, X: 0.28, '2': 0.4 },
+              offers: { '1': [offer('Sisal', 3.4, 0.088, 'valore')], '2': [offer('Eurobet', 2.3, -0.08, 'paga poco')] },
+            },
+          ],
+        },
+      ],
+    });
+    await harness.fixture.whenStable();
+    const page = harness.routeNativeElement!;
+    expect(page.querySelector('.fav')?.textContent).toContain('2 · Inter');
+    expect(page.querySelector('.fav')?.textContent).toContain('40%');
+    expect(page.querySelector('.cells .v.valore')?.textContent?.trim()).toBe('Sisal 3.40');
+    expect(page.querySelector('.cells .v.poco')?.textContent?.trim()).toBe('Eurobet 2.30');
+    expect(page.querySelector('.occ')?.textContent?.trim()).toBe('1 occasione');
+    expect(page.querySelector('.source')?.textContent).toContain('Pinnacle');
   });
 });

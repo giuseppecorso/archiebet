@@ -25,13 +25,14 @@ export const SECTIONS: Section[] = [
     ],
   },
   {
-    path: 'radar',
-    label: 'Radar',
+    path: 'pronostici',
+    label: 'Pronostici',
     inMenu: true,
     phase: 4,
-    summary: 'Dove un bookmaker italiano paga più della quota giusta.',
+    summary: 'La stima migliore per ogni partita, con le quote di Sisal ed Eurobet.',
     features: [
-      'Segnali di valore sulle prossime partite e dove giocarli',
+      'Probabilità di ogni esito dalla fonte più precisa disponibile',
+      'Occasioni: quando il tuo bookmaker paga più del giusto',
       'Simulazione dal vivo misurata con il CLV',
     ],
   },

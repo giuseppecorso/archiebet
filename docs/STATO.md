@@ -25,7 +25,7 @@ Ultimo aggiornamento: 2026-10-12
 
 Test: 129 backend + 11 frontend, tutti verdi.
 
-## Fase 4 – Quote e valore: IN CORSO
+## Fase 4 – Pronostici e valore: IN CORSO (rimessa a fuoco con D67)
 
 - [x] Modello uscito dalla prova (D59): tolta l'etichetta "in prova" dalla pagina partita, resta la nota sul mercato più preciso
 - [x] Motore del radar (`app/forecast/radar.py`): probabilità giusta Pinnacle/Betfair contro la quota migliore giocabile, segnali ≥ 2%, "sospetto" sopra il 15%
@@ -35,9 +35,11 @@ Test: 129 backend + 11 frontend, tutti verdi.
 - [x] Adapter OddsPapi (`app/adapters/oddspapi.py`) e import (`app/ingest/oddspapi.py`) nell'aggiornamento automatico (D62): Pinnacle + 9 bookmaker italiani, chiusura Pinnacle dallo storico gratuito, riserva mensile; radar solo su Sisal ed Eurobet, dove Giuse ha un conto (D66). Provato dal vivo su una copia del DB: 2 richieste, 30 partite trovate, nessuna ancora nel nostro calendario (football-data arriva fino al 12/10)
 - [x] Pagina **Radar** nel menu (`/radar`, API `/api/radar`): segnali sulle prossime partite con dove giocarla, quota giusta, valore, "sospetto" sopra il 15%, quota di adesso; ultimi segnali con CLV; riepilogo della simulazione verso le 300 giocate
 - [x] **Campionati maggiori europei** (D64-D65): Premier League, LaLiga, Bundesliga, Ligue 1 con storico dal 2005/06 (football-data, ~30.000 partite, prima importazione ~1 minuto), quote OddsPapi, tendina dei paesi in dashboard. Modello solo italiano; modelli esteri e coppe in Fase 8
-- [ ] Multipla del giorno, generatore, "dove giocarla", Io contro Archie
+- [x] **Pronostici** (D67, menu "Pronostici", API `/api/picks`): per ogni partita dei prossimi 7 giorni la stima migliore (Pinnacle → Betfair → media mercato → modello di Archie), pronostico secco, quote di Sisal ed Eurobet con etichetta valore / nella norma / paga poco, altri mercati (doppia chance, Under/Over 2.5). Il radar è diventato la scheda **Occasioni** della stessa pagina (/radar porta lì)
+- [ ] Multipla del giorno (sui pronostici, scartando le quote che pagano poco), generatore, Io contro Archie
+- Tolto: "Dove conviene giocarla" (D67)
 
-Test: 222 backend + 14 frontend.
+Test: 227 backend + 15 frontend.
 
 **Idea da valutare a fine fase:** far creare a OddsPapi le partite di A e B fino a 10 giorni prima (oggi aspettiamo il calendario di football-data, che arriva pochi giorni prima): più segnali e quote più vicine all'apertura.
 

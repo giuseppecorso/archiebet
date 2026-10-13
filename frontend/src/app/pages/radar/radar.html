@@ -1,8 +1,10 @@
-<div class="head">
-  <h1 class="title page-title">Radar</h1>
-  <span class="trial">in prova</span>
-  <span class="muted small">Quote dei bookmaker italiani sopra la quota giusta di Pinnacle</span>
-</div>
+@if (!embedded()) {
+  <div class="head">
+    <h1 class="title page-title">Occasioni</h1>
+    <span class="trial">in prova</span>
+    <span class="muted small">Quando Sisal o Eurobet pagano più della quota giusta di Pinnacle</span>
+  </div>
+}
 
 @if (radar.error()) {
   <p class="warn">Il radar non risponde: controlla che il backend sia acceso.</p>
@@ -44,14 +46,14 @@
       </div>
     </div>
     <p class="note">
-      Ogni segnale conta come una giocata simulata alla prima quota vista. Il radar esce dalla prova con almeno
+      Ogni occasione conta come una giocata simulata alla prima quota vista. Il radar esce dalla prova con almeno
       {{ r.live.target }} giocate e un CLV medio positivo oltre due errori standard (D59).
     </p>
   </section>
 
   <section class="panel box block" aria-labelledby="up-title">
     <div class="box-head">
-      <h2 id="up-title" class="title box-title">Segnali sulle prossime partite</h2>
+      <h2 id="up-title" class="title box-title">Occasioni sulle prossime partite</h2>
       <span class="muted small">valore ≥ {{ fmt.signedPct(r.threshold) }} · aggiornati ogni 6 ore</span>
     </div>
     @if (r.upcoming.length) {
@@ -62,7 +64,7 @@
               <th scope="col">Quando</th>
               <th scope="col">Partita</th>
               <th scope="col">Esito</th>
-              <th scope="col">Dove giocarla</th>
+              <th scope="col">Quota</th>
               <th scope="col">Quota giusta</th>
               <th scope="col">Valore</th>
               <th scope="col">Adesso</th>
@@ -101,8 +103,8 @@
       </div>
     } @else {
       <p class="muted">
-        Nessun segnale per ora. Il radar controlla le quote a ogni aggiornamento: le partite compaiono quando sono nel
-        calendario (di solito pochi giorni prima) e un bookmaker italiano paga almeno il {{ unsigned(r.threshold) }}
+        Nessuna occasione per ora. Archie controlla le quote a ogni aggiornamento: le partite compaiono quando sono nel
+        calendario (di solito pochi giorni prima) e Sisal o Eurobet pagano almeno il {{ unsigned(r.threshold) }}
         più della quota giusta.
       </p>
     }
@@ -111,7 +113,7 @@
   @if (r.recent.length) {
     <section class="panel box block" aria-labelledby="rec-title">
       <div class="box-head">
-        <h2 id="rec-title" class="title box-title">Ultimi segnali</h2>
+        <h2 id="rec-title" class="title box-title">Ultime occasioni</h2>
         <span class="muted small">il CLV arriva con la quota di chiusura di Pinnacle</span>
       </div>
       <div class="table-wrap">
@@ -149,8 +151,8 @@
     <h2 class="title box-title">Come funziona</h2>
     <p>
       Pinnacle è il bookmaker più preciso: le sue quote, tolto il margine, danno la <strong>probabilità giusta</strong>.
-      Quando {{ r.playable.join(', ') }} pagano di più, c'è <strong>valore</strong> (probabilità × quota − 1).
-      Il radar non dice chi vince: dice dove la quota è troppo alta. Si giudica sul CLV, cioè se la quota presa batte
+      Quando {{ r.playable.join(' o ') }} pagano di più, c'è <strong>valore</strong> (probabilità × quota − 1).
+      Un'occasione non dice chi vince: dice dove la quota è più alta del giusto. Si giudica sul CLV, cioè se la quota presa batte
       quella di chiusura, non sui soldi vinti in poche settimane.
     </p>
   </section>

@@ -1,0 +1,33 @@
+import { MatchCard } from './football';
+
+/** Tipi dell'API /api/picks (vedi backend/app/api/picks.py, D67). */
+export type Verdict = 'valore' | 'nella norma' | 'paga poco';
+
+export interface Offer {
+  bookmaker: string;
+  price: number;
+  value: number;
+  verdict: Verdict;
+}
+
+export interface MarketPick {
+  market: '1X2' | 'DC' | 'OU2.5';
+  /** Da dove viene la probabilità: Pinnacle, Betfair Exchange, Media mercato o Modello di Archie */
+  source: string;
+  from_model: boolean;
+  probabilities: Record<string, number>;
+  offers: Record<string, Offer[]>;
+}
+
+export interface Pick {
+  match: MatchCard;
+  favorite: string | null;
+  favorite_probability: number | null;
+  markets: MarketPick[];
+  signals: number;
+}
+
+export interface PicksOut {
+  bookmakers: string[];
+  picks: Pick[];
+}
