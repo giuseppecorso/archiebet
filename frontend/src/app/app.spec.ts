@@ -57,9 +57,11 @@ describe('ArchieBet: navigazione', () => {
     expect(links).toEqual(['Partite', 'Radar', 'Le mie schedine', 'Le mie statistiche', 'Laboratorio', 'Gioca']);
 
     const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
-    (await nextRequest('/api/competitions')).flush([serieA]);
+    const premier = { code: 'ENG-1', name: 'Premier League', country: 'Inghilterra', tier: 1 };
+    (await nextRequest('/api/competitions')).flush([serieA, premier]);
     const upcoming = await nextRequest((r) => r.url.startsWith('/api/matches?view=upcoming'));
-    expect(upcoming.request.url).toContain('competitions=ITA-A');
+    expect(upcoming.request.url).toContain('competitions=ITA-A'); // tendina sull'Italia: niente Premier
+    expect(upcoming.request.url).not.toContain('ENG-1');
     upcoming.flush([
       {
         competition: serieA,
@@ -89,6 +91,22 @@ describe('ArchieBet: navigazione', () => {
     expect(row.textContent).toContain('20:45'); // 18:45 UTC in ora italiana
     expect(row.textContent).toContain('1.44');
     expect(row.getAttribute('href')).toBe('/partite/7');
+
+    // Tendina dei paesi: Inghilterra → solo la Premier League
+    const select = harness.routeNativeElement!.querySelector('.country select') as HTMLSelectElement;
+    expect([...select.options].map((o) => o.textContent?.trim())).toEqual(['Italia', 'Inghilterra', 'Tutti i paesi']);
+    select.value = 'Inghilterra';
+    select.dispatchEvent(new Event('change'));
+    harness.fixture.detectChanges();
+    const english = await nextRequest((r) => r.url.startsWith('/api/matches?view=upcoming'));
+    expect(english.request.url).toContain('competitions=ENG-1');
+    expect(english.request.url).not.toContain('ITA-A');
+    english.flush([]);
+    (await nextRequest((r) => r.url.startsWith('/api/matches?view=results'))).flush([]);
+    await harness.fixture.whenStable();
+    const chips = [...harness.routeNativeElement!.querySelectorAll('.filters .chip')].map((b) => b.textContent?.trim());
+    expect(chips).toEqual(['Premier League']);
+    localStorage.removeItem('archiebet.matches.filters');
   });
 
   it('ogni sezione mostra la sua pagina con la fase in cui arriva', async () => {

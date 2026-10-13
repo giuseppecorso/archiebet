@@ -6,6 +6,8 @@ import { MatchRow } from '../../shared/match-row';
 import { ShowMore } from '../../shared/show-more';
 
 type Tab = 'tutte' | 'prossime' | 'risultati';
+/** Paese scelto nella tendina; '' = tutti i paesi */
+const ALL_COUNTRIES = '';
 const STORAGE_KEY = 'archiebet.matches.filters';
 
 /** Dashboard "Partite": elenco per campionato con filtri. Multipla, schedina e ArchieTV arrivano nelle fasi successive. */
@@ -22,10 +24,16 @@ export class Matches {
   /** Campionati esclusi dal filtro (così quelli nuovi compaiono da soli) */
   protected readonly hidden = signal<string[]>(this.saved.hidden ?? []);
 
+  protected readonly country = signal<string>(this.saved.country ?? 'Italia');
+
   protected readonly competitions = httpResource<Competition[]>(() => '/api/competitions', { defaultValue: [] });
-  protected readonly selected = computed(() =>
-    this.competitions.value().filter((c) => !this.hidden().includes(c.code)),
+  /** Paesi nell'ordine dato dal backend (Italia in testa) */
+  protected readonly countries = computed(() => [...new Set(this.competitions.value().map((c) => c.country))]);
+  /** Campionati del paese scelto: sono i chip del filtro */
+  protected readonly shown = computed(() =>
+    this.competitions.value().filter((c) => this.country() === ALL_COUNTRIES || c.country === this.country()),
   );
+  protected readonly selected = computed(() => this.shown().filter((c) => !this.hidden().includes(c.code)));
 
   private readonly query = computed(() => {
     const codes = this.selected().map((c) => c.code);
@@ -45,7 +53,7 @@ export class Matches {
   constructor() {
     effect(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ tab: this.tab(), hidden: this.hidden() }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ tab: this.tab(), hidden: this.hidden(), country: this.country() }));
       } catch {
         // memoria del browser non disponibile: i filtri valgono solo per questa visita
       }
@@ -82,7 +90,7 @@ export class Matches {
   }
 }
 
-function readSaved(): { tab?: Tab; hidden?: string[] } {
+function readSaved(): { tab?: Tab; hidden?: string[]; country?: string } {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
   } catch {
