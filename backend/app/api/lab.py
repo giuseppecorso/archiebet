@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.api.football import CompetitionOut, MatchCard, StandingOut, TeamRef, competition_out, match_cards, to_result
 from app.auth.deps import CurrentUser, DbSession
+from app.ingest.teams import competition_sort_key
 from app.models import Competition, Match, MatchStatus, Team
 from app.stats.league_stats import LeagueSummary, league_summary
 from app.stats.team_stats import StandingRow, standings
@@ -149,7 +150,7 @@ def lab_competitions(_: CurrentUser, db: DbSession) -> list[CompetitionSeasons]:
             SeasonInfo(season=season, matches=total, finished=finished, pending=pending, cancelled=cancelled)
         )
     out = []
-    for c in db.scalars(select(Competition).order_by(Competition.tier, Competition.name)):
+    for c in sorted(db.scalars(select(Competition)), key=competition_sort_key):
         seasons = sorted(by_competition.get(c.id, []), key=lambda s: s.season, reverse=True)
         if seasons:
             out.append(CompetitionSeasons(competition=competition_out(c), seasons=seasons))

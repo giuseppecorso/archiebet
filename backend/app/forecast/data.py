@@ -23,12 +23,22 @@ class Game:
     away_goals: int
 
 
-def load_games(db: Session) -> list[Game]:
-    """Tutte le partite finite con risultato, in ordine di calcio d'inizio (a parità, per id)."""
+# Il modello di Archie (Dixon-Coles + Elo collegati da promozioni e retrocessioni) è solo italiano:
+# i campionati esteri servono per radar, statistiche e laboratorio; i loro modelli arrivano in Fase 8.
+MODEL_COUNTRY = "Italia"
+
+
+def load_games(db: Session, country: str = MODEL_COUNTRY) -> list[Game]:
+    """Tutte le partite finite con risultato di un paese, in ordine di calcio d'inizio (a parità, per id)."""
     rows = db.execute(
         select(Match, Competition.tier)
         .join(Competition, Match.competition_id == Competition.id)
-        .where(Match.status == MatchStatus.FINISHED, Match.home_goals.is_not(None), Match.away_goals.is_not(None))
+        .where(
+            Competition.country == country,
+            Match.status == MatchStatus.FINISHED,
+            Match.home_goals.is_not(None),
+            Match.away_goals.is_not(None),
+        )
         .order_by(Match.kickoff_at, Match.id)
     ).all()
     return [

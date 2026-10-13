@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.deps import CurrentUser, DbSession
 from app.forecast.data import fair_probabilities
+from app.ingest.teams import competition_sort_key
 from app.models import Competition, Match, MatchOdds, MatchPrediction, MatchStatus
 from app.stats.team_stats import Result, TeamSummary, form, head_to_head, standings, summary
 
@@ -216,7 +217,7 @@ def to_result(m: Match) -> Result:
 
 @router.get("/competitions")
 def list_competitions(_: CurrentUser, db: DbSession) -> list[CompetitionOut]:
-    return [competition_out(c) for c in db.scalars(select(Competition).order_by(Competition.tier, Competition.name))]
+    return [competition_out(c) for c in sorted(db.scalars(select(Competition)), key=competition_sort_key)]
 
 
 @router.get("/matches")
@@ -248,7 +249,7 @@ def list_matches(
         if len(groups[m.competition_id]) < limit:
             groups[m.competition_id].append(m)
 
-    ordered = sorted(groups.values(), key=lambda ms: (ms[0].competition.tier, ms[0].competition.name))
+    ordered = sorted(groups.values(), key=lambda ms: competition_sort_key(ms[0].competition))
     return [CompetitionGroup(competition=competition_out(ms[0].competition), matches=match_cards(db, ms, now)) for ms in ordered]
 
 

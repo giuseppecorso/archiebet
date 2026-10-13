@@ -1,4 +1,4 @@
-"""Fonte dati football-data.co.uk: storico risultati, statistiche e quote (Serie A e B).
+"""Fonte dati football-data.co.uk: storico risultati, statistiche e quote (Serie A e B, Premier League, LaLiga, Bundesliga, Ligue 1).
 
 Formato verificato sui file reali (ottobre 2026):
 - URL: https://football-data.co.uk/mmz4281/<stagione>/<lega>.csv, es. 2526/I1.csv; prossime partite in /fixtures.csv
@@ -20,7 +20,7 @@ BASE_URL = "https://football-data.co.uk"
 UK_TZ = ZoneInfo("Europe/London")
 
 # Codice della lega su football-data → codice del campionato in ArchieBet
-LEAGUES = {"I1": "ITA-A", "I2": "ITA-B"}
+LEAGUES = {"I1": "ITA-A", "I2": "ITA-B", "E0": "ENG-1", "SP1": "ESP-1", "D1": "GER-1", "F1": "FRA-1"}
 FIRST_SEASON = 2005  # 2005/06: abbastanza storia per modello e backtest
 
 # (bookmaker, chiusura?, prefissi colonne 1X2, prefissi colonne Over/Under 2.5), in ordine di preferenza

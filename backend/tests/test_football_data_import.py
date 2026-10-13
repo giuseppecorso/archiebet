@@ -35,7 +35,7 @@ def test_reimport_updates_without_duplicates(db):
     assert (report.created, report.updated) == (0, 2)
     assert count(db, Match) == 2
     assert count(db, MatchOdds) == 6
-    assert count(db, Competition) == 5  # Serie A, B e i tre gironi di C, creati una volta sola
+    assert count(db, Competition) == 9  # Serie A, B, tre gironi di C e 4 campionati esteri, creati una volta sola
 
 
 def test_fixture_becomes_result(db):
@@ -82,12 +82,13 @@ def test_sync_downloads_each_season_and_logs_calls(db, tmp_path):
     sync_football_data(db, adapter, first_season=2025, now=now, log=lambda _: None)
 
     assert sorted(u.rsplit("/", 2)[-2] + "/" + u.rsplit("/", 1)[-1] for u in urls if "mmz4281" in u) == [
-        "2526/I1.csv", "2526/I2.csv", "2627/I1.csv", "2627/I2.csv",
+        "2526/D1.csv", "2526/E0.csv", "2526/F1.csv", "2526/I1.csv", "2526/I2.csv", "2526/SP1.csv",
+        "2627/D1.csv", "2627/E0.csv", "2627/F1.csv", "2627/I1.csv", "2627/I2.csv", "2627/SP1.csv",
     ]  # fmt: skip
-    assert len(calls) == 5
+    assert len(calls) == 13  # 6 campionati × 2 stagioni + prossime partite
     assert count(db, Match) == 3
     assert db.scalar(select(Competition.code).join(Match).join(Match.home_team).where(Team.name == "Benevento")) == "ITA-B"
 
     # Seconda volta: tutto dalla cache, nessuna chiamata in più
     sync_football_data(db, adapter, first_season=2025, now=now, log=lambda _: None)
-    assert len(calls) == 5
+    assert len(calls) == 13

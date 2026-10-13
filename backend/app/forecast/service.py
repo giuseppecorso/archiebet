@@ -9,11 +9,11 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.forecast.data import Game, load_games
+from app.forecast.data import MODEL_COUNTRY, Game, load_games
 from app.forecast.elo import EloTimeline, run_elo
 from app.forecast.markets import markets
 from app.forecast.model import MODEL_VERSION, ModelConfig, fit_at
-from app.models.football import Match, MatchStatus
+from app.models.football import Competition, Match, MatchStatus
 from app.models.forecast import MatchPrediction
 
 
@@ -24,7 +24,13 @@ def data_version(games: list[Game]) -> str:
 
 def refresh_predictions(db: Session, now: datetime, config: ModelConfig = ModelConfig(), force: bool = False) -> int:
     """Calcola e salva le previsioni delle partite non ancora iniziate. Restituisce quante ne ha aggiornate."""
-    upcoming = list(db.scalars(select(Match).where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now)))
+    upcoming = list(
+        db.scalars(
+            select(Match)
+            .join(Competition, Match.competition_id == Competition.id)
+            .where(Competition.country == MODEL_COUNTRY, Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now)
+        )
+    )
     games = load_games(db)
     if not upcoming or not games:
         return 0

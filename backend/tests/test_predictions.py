@@ -5,10 +5,13 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy import select
 
+from app.adapters.football_data import parse_csv
+from app.forecast.data import load_games
 from app.forecast.model import MODEL_VERSION
 from app.forecast.service import refresh_predictions
-from app.models import Match, MatchPrediction
-from tests.test_football_api import match_id, seeded  # noqa: F401 (fixture condivisa)
+from app.ingest.football_data import import_matches
+from app.models import Match, MatchPrediction, Team
+from tests.test_football_api import HEADER, day, match_id, seeded  # noqa: F401 (fixture condivisa)
 
 
 def test_predicts_only_matches_not_yet_started(seeded, db):  # noqa: F811
@@ -64,3 +67,14 @@ def test_match_detail_shows_prediction_and_market(logged_client, seeded, db):  #
     ref = pred["market"]["1X2"]
     assert ref["source"] == "Media mercato · apertura"
     assert ref["probabilities"]["1"] == pytest.approx(implied[0] / sum(implied))
+
+
+def test_foreign_leagues_stay_out_of_the_italian_model(seeded, db):  # noqa: F811
+    italian = len(load_games(db))
+    rows = HEADER + f"E0,{day(-7)},15:00,Arsenal,Chelsea,2,1,12,9,2.0,3.4,3.8,2.1,3.4,3.6\n"
+    import_matches(db, parse_csv(rows), season="2026/27")
+    import_matches(db, parse_csv(f"Div,Date,Time,HomeTeam,AwayTeam,AvgH,AvgD,AvgA\nE0,{day(3)},15:00,Chelsea,Arsenal,2.5,3.3,2.9\n"), season="2026/27")
+    assert db.scalar(select(Team.country).where(Team.name == "Arsenal")) == "Inghilterra"
+    assert len(load_games(db)) == italian  # Arsenal-Chelsea non entra nel modello italiano
+    assert len(load_games(db, "Inghilterra")) == 1
+    assert refresh_predictions(db, datetime.now(UTC)) == 2  # solo Milan-Inter e Palermo-Bari, non Chelsea-Arsenal

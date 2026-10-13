@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from app.api.football import CompetitionOut, competition_out
 from app.auth.deps import CurrentUser, DbSession
 from app.config import get_settings
+from app.ingest.teams import competition_sort_key
 from app.jobs import is_syncing, sync_all_job
 from app.models import Competition, Match, MatchPrediction, MatchStatus, SyncRun
 
@@ -71,7 +72,7 @@ def data_status(_: CurrentUser, db: DbSession) -> StatusOut:
         )
 
     competitions = []
-    for c in db.scalars(select(Competition).order_by(Competition.tier, Competition.code)):
+    for c in sorted(db.scalars(select(Competition)), key=competition_sort_key):
         in_comp = Match.competition_id == c.id
         competitions.append(
             CompetitionFreshness(

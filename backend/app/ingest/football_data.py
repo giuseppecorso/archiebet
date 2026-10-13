@@ -30,7 +30,7 @@ def import_matches(db: Session, rows: Iterable[FDMatch], season: str | None = No
     season: stagione del file. Se manca (file delle prossime partite) si ricava dalla data.
     """
     competitions = ensure_competitions(db)
-    teams = TeamResolver(db, SOURCE)
+    resolvers: dict[str, TeamResolver] = {}  # una anagrafica per paese
     report = ImportReport()
     existing: dict[tuple[int, str, int, int], Match] = {}
     loaded: set[tuple[int, str]] = set()
@@ -47,6 +47,7 @@ def import_matches(db: Session, rows: Iterable[FDMatch], season: str | None = No
                 existing[(m.competition_id, m.season, m.home_team_id, m.away_team_id)] = m
             loaded.add((competition.id, match_season))
 
+        teams = resolvers.setdefault(competition.country, TeamResolver(db, SOURCE, competition.country))
         home, away = teams.resolve(row.home), teams.resolve(row.away)
         key = (competition.id, match_season, home.id, away.id)
         match = existing.get(key)
@@ -100,7 +101,7 @@ def sync_football_data(
     now: datetime | None = None,
     log=print,
 ) -> ImportReport:
-    """Scarica (o legge dalla cache) tutte le stagioni di Serie A e B e le prossime partite."""
+    """Scarica (o legge dalla cache) tutte le stagioni dei campionati di football-data e le prossime partite."""
     current = season_of((now or datetime.now(UTC)).date())
     total = ImportReport()
     for league in LEAGUES:

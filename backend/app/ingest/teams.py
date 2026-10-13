@@ -14,7 +14,20 @@ COMPETITIONS = {
     "ITA-C-A": {"name": "Serie C · Girone A", "country": "Italia", "tier": 3},
     "ITA-C-B": {"name": "Serie C · Girone B", "country": "Italia", "tier": 3},
     "ITA-C-C": {"name": "Serie C · Girone C", "country": "Italia", "tier": 3},
+    "ENG-1": {"name": "Premier League", "country": "Inghilterra", "tier": 1},
+    "ESP-1": {"name": "LaLiga", "country": "Spagna", "tier": 1},
+    "GER-1": {"name": "Bundesliga", "country": "Germania", "tier": 1},
+    "FRA-1": {"name": "Ligue 1", "country": "Francia", "tier": 1},
 }
+
+# Ordine dei paesi nei menu (specifiche, sezione 3)
+COUNTRY_ORDER = ["Italia", "Inghilterra", "Spagna", "Germania", "Francia"]
+
+
+def competition_sort_key(c: Competition) -> tuple[int, int, str]:
+    """Prima il paese (Italia in testa), poi la categoria, poi il nome."""
+    country = COUNTRY_ORDER.index(c.country) if c.country in COUNTRY_ORDER else len(COUNTRY_ORDER)
+    return country, c.tier, c.name
 
 # Sigle e parole che non distinguono una squadra dall'altra
 _NOISE = {
