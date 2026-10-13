@@ -70,3 +70,11 @@ export function fairOdds(probability: number | null | undefined): string {
 export function pct(value: number | null | undefined): string {
   return value == null ? '–' : `${Math.round(value * 100)}%`;
 }
+
+/** Percentuale con segno e un decimale: 0.1 → "+10,0%", −0.025 → "−2,5%" (valore, CLV, rendimento). */
+export function signedPct(value: number | null | undefined): string {
+  if (value == null) return '–';
+  const p = value * 100;
+  const sign = p > 0.05 ? '+' : p < -0.05 ? '−' : '';
+  return `${sign}${Math.abs(p).toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+}

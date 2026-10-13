@@ -33,10 +33,10 @@ Test: 129 backend + 11 frontend, tutti verdi.
 - [x] Piani quote verificati (D61): OddsPapi gratuito come primo passo
 - [x] Account gratuito OddsPapi creato da Giuse, chiave in `backend/.env` (`ODDSPAPI_KEY`): piano free, 250 richieste/mese, **348 bookmaker inclusi**, tra cui Pinnacle, Betfair Exchange e i principali italiani (sisal.it, snai.it, eurobet.it, goldbet.it, lottomatica.it, bet365.it, betflag.it, planetwin365.it, ...)
 - [x] Adapter OddsPapi (`app/adapters/oddspapi.py`) e import (`app/ingest/oddspapi.py`) nell'aggiornamento automatico (D62): Pinnacle + 9 bookmaker italiani, chiusura Pinnacle dallo storico gratuito, riserva mensile; radar sui bookmaker italiani (D63). Provato dal vivo su una copia del DB: 2 richieste, 30 partite trovate, nessuna ancora nel nostro calendario (football-data arriva fino al 12/10)
-- [ ] Pagina/scheda Radar e riepilogo della simulazione (n giocate su 300, CLV medio ± errore)
+- [x] Pagina **Radar** nel menu (`/radar`, API `/api/radar`): segnali sulle prossime partite con dove giocarla, quota giusta, valore, "sospetto" sopra il 15%, quota di adesso; ultimi segnali con CLV; riepilogo della simulazione verso le 300 giocate
 - [ ] Multipla del giorno, generatore, "dove giocarla", Io contro Archie
 
-Test: 220 backend + 13 frontend.
+Test: 221 backend + 14 frontend.
 
 **Idea da valutare a fine fase:** far creare a OddsPapi le partite di A e B fino a 10 giorni prima (oggi aspettiamo il calendario di football-data, che arriva pochi giorni prima): più segnali e quote più vicine all'apertura.
 

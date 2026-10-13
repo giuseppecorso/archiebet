@@ -1,4 +1,4 @@
-import { ago, dayLabel, fairOdds, kickoffTime, num, odds, pct } from './format';
+import { ago, dayLabel, fairOdds, kickoffTime, num, odds, pct, signedPct } from './format';
 
 describe('formattazione', () => {
   it('mostra l\'orario in ora italiana', () => {
@@ -41,5 +41,12 @@ describe('formattazione', () => {
     expect(fairOdds(0.3)).toBe('3.33');
     expect(fairOdds(0)).toBe('–');
     expect(fairOdds(null)).toBe('–');
+  });
+
+  it('mostra le percentuali con il segno', () => {
+    expect(signedPct(0.1)).toBe('+10,0%');
+    expect(signedPct(-0.025)).toBe('−2,5%');
+    expect(signedPct(0.0001)).toBe('0,0%');
+    expect(signedPct(null)).toBe('–');
   });
 });

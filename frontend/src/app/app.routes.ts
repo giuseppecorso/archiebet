@@ -10,11 +10,12 @@ import { Bets } from './pages/bets/bets';
 import { NewBet } from './pages/bets/new-bet';
 import { Matches } from './pages/matches/matches';
 import { SettingsPage } from './pages/settings/settings';
+import { Radar } from './pages/radar/radar';
 import { Stats } from './pages/stats/stats';
 import { SectionPlaceholder } from './pages/section-placeholder/section-placeholder';
 
 /** Sezioni già costruite; le altre mostrano la pagina provvisoria */
-const BUILT: Record<string, Routes[number]['component']> = { partite: Matches, schedine: Bets, statistiche: Stats, impostazioni: SettingsPage };
+const BUILT: Record<string, Routes[number]['component']> = { partite: Matches, radar: Radar, schedine: Bets, statistiche: Stats, impostazioni: SettingsPage };
 
 export const routes: Routes = [
   { path: 'login', component: Login, title: 'Accedi · ArchieBet' },

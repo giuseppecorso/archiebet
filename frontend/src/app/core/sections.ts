@@ -25,6 +25,17 @@ export const SECTIONS: Section[] = [
     ],
   },
   {
+    path: 'radar',
+    label: 'Radar',
+    inMenu: true,
+    phase: 4,
+    summary: 'Dove un bookmaker italiano paga più della quota giusta.',
+    features: [
+      'Segnali di valore sulle prossime partite e dove giocarli',
+      'Simulazione dal vivo misurata con il CLV',
+    ],
+  },
+  {
     path: 'schedine',
     label: 'Le mie schedine',
     inMenu: true,

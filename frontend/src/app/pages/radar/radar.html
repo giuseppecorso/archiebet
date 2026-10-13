@@ -1,0 +1,157 @@
+<div class="head">
+  <h1 class="title page-title">Radar</h1>
+  <span class="trial">in prova</span>
+  <span class="muted small">Quote dei bookmaker italiani sopra la quota giusta di Pinnacle</span>
+</div>
+
+@if (radar.error()) {
+  <p class="warn">Il radar non risponde: controlla che il backend sia acceso.</p>
+}
+
+@if (radar.value(); as r) {
+  <section class="panel box block" aria-labelledby="live-title">
+    <div class="box-head">
+      <h2 id="live-title" class="title box-title">Simulazione dal vivo</h2>
+      <span class="verdict" [class]="'verdict ' + (r.live.verdict === 'superato' ? 'pos' : r.live.verdict === 'non superato' ? 'neg' : '')">
+        {{ r.live.verdict }}
+      </span>
+    </div>
+    <div class="tiles">
+      <div class="tile wide">
+        <span class="label">Giocate misurate</span>
+        <span class="led">{{ r.live.n }}<span class="small muted">/{{ r.live.target }}</span></span>
+        <div class="bar" role="progressbar" [attr.aria-valuenow]="r.live.n" aria-valuemin="0" [attr.aria-valuemax]="r.live.target"
+             aria-label="Giocate verso il giudizio">
+          <span [style.width.%]="progress()"></span>
+        </div>
+      </div>
+      <div class="tile">
+        <span class="label">CLV medio</span>
+        <span [class]="'led ' + sign(r.live.mean_clv)">{{ fmt.signedPct(r.live.mean_clv) }}</span>
+        <span class="muted small">
+          @if (r.live.clv_std_error != null) { ± {{ unsigned(r.live.clv_std_error) }} di errore } @else { servono più giocate }
+        </span>
+      </div>
+      <div class="tile">
+        <span class="label">CLV positivo</span>
+        <span class="led">{{ fmt.pct(r.live.share_positive) }}</span>
+        <span class="muted small">delle giocate</span>
+      </div>
+      <div class="tile">
+        <span class="label">Rendimento</span>
+        <span [class]="'led ' + sign(r.live.roi)">{{ fmt.signedPct(r.live.roi) }}</span>
+        <span class="muted small">puntata fissa · non è il giudice</span>
+      </div>
+    </div>
+    <p class="note">
+      Ogni segnale conta come una giocata simulata alla prima quota vista. Il radar esce dalla prova con almeno
+      {{ r.live.target }} giocate e un CLV medio positivo oltre due errori standard (D59).
+    </p>
+  </section>
+
+  <section class="panel box block" aria-labelledby="up-title">
+    <div class="box-head">
+      <h2 id="up-title" class="title box-title">Segnali sulle prossime partite</h2>
+      <span class="muted small">valore ≥ {{ fmt.signedPct(r.threshold) }} · aggiornati ogni 6 ore</span>
+    </div>
+    @if (r.upcoming.length) {
+      <div class="table-wrap">
+        <table class="signals">
+          <thead>
+            <tr>
+              <th scope="col">Quando</th>
+              <th scope="col">Partita</th>
+              <th scope="col">Esito</th>
+              <th scope="col">Dove giocarla</th>
+              <th scope="col">Quota giusta</th>
+              <th scope="col">Valore</th>
+              <th scope="col">Adesso</th>
+              <th scope="col"><span class="sr-only">Azioni</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of r.upcoming; track s.match_id + s.market + s.selection) {
+              <tr>
+                <td class="when">{{ fmt.dayLabel(s.kickoff_at) }} <span class="muted">{{ fmt.kickoffTime(s.kickoff_at) }}</span></td>
+                <td>
+                  <a [routerLink]="['/partite', s.match_id]">{{ s.home.name }} – {{ s.away.name }}</a>
+                  <span class="muted small comp">{{ s.competition.name }}</span>
+                </td>
+                <td><strong>{{ pick(s) }}</strong></td>
+                <td><span class="led price">{{ fmt.odds(s.price) }}</span><span class="small book">{{ s.bookmaker }}</span></td>
+                <td>{{ fmt.fairOdds(s.fair_probability) }} <span class="muted small">{{ fmt.pct(s.fair_probability) }} · {{ s.fair_source }}</span></td>
+                <td>
+                  <span [class]="'value ' + sign(s.value)">{{ fmt.signedPct(s.value) }}</span>
+                  @if (s.suspicious) {
+                    <span class="suspicious" title="Valore sopra il 15%: controlla notizie e formazioni, la quota potrebbe essere un errore">sospetto</span>
+                  }
+                </td>
+                <td class="small">
+                  @if (s.latest_price != null) {
+                    {{ fmt.odds(s.latest_price) }} {{ s.latest_bookmaker }} ·
+                    <span [class]="sign(s.latest_value)">{{ fmt.signedPct(s.latest_value) }}</span>
+                  }
+                  <span class="muted"> {{ now(s, r.threshold) }}</span>
+                </td>
+                <td><a class="play" [routerLink]="['/schedine/nuova']" [queryParams]="{ m: s.match_id }">Gioca</a></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="muted">
+        Nessun segnale per ora. Il radar controlla le quote a ogni aggiornamento: le partite compaiono quando sono nel
+        calendario (di solito pochi giorni prima) e un bookmaker italiano paga almeno il {{ unsigned(r.threshold) }}
+        più della quota giusta.
+      </p>
+    }
+  </section>
+
+  @if (r.recent.length) {
+    <section class="panel box block" aria-labelledby="rec-title">
+      <div class="box-head">
+        <h2 id="rec-title" class="title box-title">Ultimi segnali</h2>
+        <span class="muted small">il CLV arriva con la quota di chiusura di Pinnacle</span>
+      </div>
+      <div class="table-wrap">
+        <table class="signals">
+          <thead>
+            <tr>
+              <th scope="col">Data</th>
+              <th scope="col">Partita</th>
+              <th scope="col">Esito</th>
+              <th scope="col">Quota presa</th>
+              <th scope="col">Valore</th>
+              <th scope="col">CLV</th>
+              <th scope="col">Risultato</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of r.recent; track s.match_id + s.market + s.selection) {
+              <tr>
+                <td class="when">{{ fmt.dayLabel(s.kickoff_at) }}</td>
+                <td><a [routerLink]="['/partite', s.match_id]">{{ s.home.name }} – {{ s.away.name }}</a></td>
+                <td>{{ pick(s) }}</td>
+                <td>{{ fmt.odds(s.price) }} <span class="muted small">{{ s.bookmaker }}</span></td>
+                <td>{{ fmt.signedPct(s.value) }}</td>
+                <td><span [class]="'value ' + sign(s.clv)">{{ s.clv == null ? 'in arrivo' : fmt.signedPct(s.clv) }}</span></td>
+                <td>{{ s.won == null ? '–' : s.won ? 'vinta' : 'persa' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <section class="panel box explain">
+    <h2 class="title box-title">Come funziona</h2>
+    <p>
+      Pinnacle è il bookmaker più preciso: le sue quote, tolto il margine, danno la <strong>probabilità giusta</strong>.
+      Quando {{ r.playable.join(', ') }} pagano di più, c'è <strong>valore</strong> (probabilità × quota − 1).
+      Il radar non dice chi vince: dice dove la quota è troppo alta. Si giudica sul CLV, cioè se la quota presa batte
+      quella di chiusura, non sui soldi vinti in poche settimane.
+    </p>
+  </section>
+}

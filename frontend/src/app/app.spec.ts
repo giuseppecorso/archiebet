@@ -54,7 +54,7 @@ describe('ArchieBet: navigazione', () => {
     expect(TestBed.inject(Router).url).toBe('/partite');
 
     const links = [...harness.routeNativeElement!.querySelectorAll('nav a')].map((a) => a.textContent?.trim());
-    expect(links).toEqual(['Partite', 'Le mie schedine', 'Le mie statistiche', 'Laboratorio', 'Gioca']);
+    expect(links).toEqual(['Partite', 'Radar', 'Le mie schedine', 'Le mie statistiche', 'Laboratorio', 'Gioca']);
 
     const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
     (await nextRequest('/api/competitions')).flush([serieA]);
