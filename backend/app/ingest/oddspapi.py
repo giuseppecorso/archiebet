@@ -1,7 +1,8 @@
 """Quote di OddsPapi nel database: si agganciano alle partite che abbiamo già (il calendario lo danno le altre fonti).
 
-- Partite in programma (prossimi 7 giorni): quote attuali dei bookmaker italiani (storico gratuito) e di Pinnacle
-  (una richiesta per tutte le partite di A e B), salvate come quote "non di chiusura".
+- Elenco delle partite in programma: una volta al giorno (2 richieste: massimo 5 campionati per richiesta).
+- Partite dei prossimi 4 giorni: quote attuali di Pinnacle e dei bookmaker italiani dallo storico gratuito
+  (4 chiamate per partita, 5,5 secondi l'una), salvate come quote "non di chiusura".
 - Partite iniziate da almeno 2 ore: quota di chiusura di Pinnacle = ultimo prezzo prima del calcio d'inizio,
   il riferimento per il CLV (D48).
 """
@@ -14,14 +15,15 @@ from decimal import Decimal
 from sqlalchemy import delete, insert, select
 from sqlalchemy.orm import Session
 
-from app.adapters.oddspapi import ITALIAN, SOURCE, TOURNAMENTS, OddsPapiAdapter, OPFixture, Prices, prices_at
+from app.adapters.oddspapi import ITALIAN, SHARP, SOURCE, TOURNAMENTS, OddsPapiAdapter, OPFixture, Prices, prices_at
 from app.ingest.teams import normalize_team_name
 from app.models import Competition, Match, MatchOdds, MatchSource, MatchStatus, Team, TeamAlias
 
 LINK_WINDOW = timedelta(hours=48)  # stessa partita se il calcio d'inizio differisce al massimo di tanto
-HORIZON = timedelta(days=7)  # quote attuali solo per le partite dei prossimi giorni
-UPCOMING_MAX_AGE = timedelta(hours=5)  # una richiesta a pagamento ogni giro di aggiornamento (6 ore)
-HISTORY_MAX_AGE = timedelta(hours=2)
+HORIZON = timedelta(days=4)  # quote attuali solo per le partite dei prossimi giorni (tiene corto il giro)
+UPCOMING_MAX_AGE = timedelta(hours=23)  # elenco partite una volta al giorno: ~62 richieste al mese
+HISTORY_MAX_AGE = timedelta(hours=5)  # "Aggiorna ora" subito dopo un giro automatico non riscarica
+CURRENT_SLUGS = list(SHARP) + list(ITALIAN)
 CLOSING_DELAY = timedelta(hours=2)  # la chiusura si chiede a partita iniziata da un po'
 CLOSING_LOOKBACK = timedelta(days=14)  # oltre, se manca la chiusura, si rinuncia
 CLOSING_SLUGS = ["pinnacle"]
@@ -36,20 +38,20 @@ class OddsPapiReport:
     closing: int = 0  # partite con chiusura salvata
 
 
-def _team_index(db: Session) -> tuple[dict[str, int], dict[str, int]]:
-    """(id OddsPapi → squadra, nome ripulito → squadra) con i nomi di tutte le fonti."""
+def _team_index(db: Session) -> tuple[dict[str, int], dict[tuple[str, str], int]]:
+    """(id OddsPapi → squadra, (paese, nome ripulito) → squadra) con i nomi di tutte le fonti."""
     by_alias = {a.alias: a.team_id for a in db.scalars(select(TeamAlias).where(TeamAlias.source == SOURCE))}
-    by_name: dict[str, int] = {}
+    by_name: dict[tuple[str, str], int] = {}
     for team in db.scalars(select(Team)):
-        by_name.setdefault(normalize_team_name(team.name), team.id)
-    for alias in db.scalars(select(TeamAlias)):
-        by_name.setdefault(normalize_team_name(alias.alias), alias.team_id)
+        by_name.setdefault((team.country, normalize_team_name(team.name)), team.id)
+    for alias, country, team_id in db.execute(select(TeamAlias.alias, Team.country, Team.id).join(Team, TeamAlias.team_id == Team.id)):
+        by_name.setdefault((country, normalize_team_name(alias)), team_id)
     return by_alias, by_name
 
 
 def link_fixtures(db: Session, fixtures: Iterable[OPFixture], names: dict[str, str], report: OddsPapiReport) -> dict[str, Match]:
     """Collega le partite di OddsPapi alle nostre (stesso campionato, stesse squadre, data vicina)."""
-    competitions = {c.code: c.id for c in db.scalars(select(Competition))}
+    competitions = {c.code: c for c in db.scalars(select(Competition))}
     links = {s.external_id: s.match_id for s in db.scalars(select(MatchSource).where(MatchSource.source == SOURCE))}
     by_alias, by_name = _team_index(db)
     out: dict[str, Match] = {}
@@ -59,12 +61,15 @@ def link_fixtures(db: Session, fixtures: Iterable[OPFixture], names: dict[str, s
         if fx.id in links:
             out[fx.id] = db.get(Match, links[fx.id])
             continue
+        competition = competitions.get(TOURNAMENTS[fx.tournament_id])
+        if competition is None:
+            continue
         teams = []
         for pid in (fx.home_id, fx.away_id):
             name = names.get(str(pid), "")
             team = by_alias.get(str(pid))
             if team is None and name:
-                team = by_name.get(normalize_team_name(name))
+                team = by_name.get((competition.country, normalize_team_name(name)))
             if team is None:
                 report.unknown_teams.append(name or f"id {pid}")
             teams.append(team)
@@ -72,7 +77,7 @@ def link_fixtures(db: Session, fixtures: Iterable[OPFixture], names: dict[str, s
             continue
         match = db.scalar(
             select(Match).where(
-                Match.competition_id == competitions.get(TOURNAMENTS[fx.tournament_id]),
+                Match.competition_id == competition.id,
                 Match.home_team_id == teams[0],
                 Match.away_team_id == teams[1],
                 Match.kickoff_at.between(fx.start_time - LINK_WINDOW, fx.start_time + LINK_WINDOW),
@@ -122,8 +127,10 @@ def sync_oddspapi(db: Session, adapter: OddsPapiAdapter, now: datetime, log: Cal
     for fixture_id, match in links.items():
         if match.status != MatchStatus.SCHEDULED or not (now < match.kickoff_at <= now + HORIZON):
             continue
-        prices = prices_at(adapter.history(fixture_id, list(ITALIAN), HISTORY_MAX_AGE), now)
-        prices |= current.get(fixture_id, {})  # Pinnacle: quota attuale dalla richiesta per campionato
+        prices = prices_at(adapter.history(fixture_id, CURRENT_SLUGS, HISTORY_MAX_AGE), now)
+        for bookmaker, markets in current.get(fixture_id, {}).items():  # elenco del giorno: solo se lo storico non li ha
+            for market, selections in markets.items():
+                prices.setdefault(bookmaker, {}).setdefault(market, selections)
         if replace_odds(db, match.id, prices, closing=False):
             report.current += 1
         db.commit()

@@ -4,9 +4,11 @@ Verificato sulle risposte reali (ottobre 2026):
 - chiave nel parametro "apiKey"; /account non consuma richieste e dice quante ne restano nel mese
 - piano free: 250 richieste al mese; contano anche le risposte di errore (4xx)
 - /odds-by-tournaments accetta UN solo bookmaker per chiamata (parametro "bookmaker", la documentazione dice 3)
+  e al massimo 5 campionati (non documentato)
 - /historical-odds è gratuito (non conta nel mese): fino a 3 bookmaker per chiamata, 5 secondi di pausa,
   funziona anche per le partite future; betfair-ex solo da solo e con un esito, quindi non lo usiamo
-- id: Serie A 23, Serie B 53 (Serie C gironi 26554/26556/26558); mercati 101 = 1X2 (esiti 101/102/103),
+- id: Serie A 23, Serie B 53, Premier League 17, LaLiga 8, Bundesliga 35, Ligue 1 34
+  (Serie C gironi 26554/26556/26558); mercati 101 = 1X2 (esiti 101/102/103),
   1010 = Under/Over 2.5 (esiti 1010 over / 1011 under)
 - le squadre arrivano solo come id: i nomi si prendono da /participants (una richiesta, poi in cache)
 """
@@ -28,7 +30,7 @@ SOURCE = "oddspapi"
 BASE_URL = "https://api.oddspapi.io/v4"
 SOCCER = 10
 
-TOURNAMENTS = {23: "ITA-A", 53: "ITA-B"}
+TOURNAMENTS = {23: "ITA-A", 53: "ITA-B", 17: "ENG-1", 8: "ESP-1", 35: "GER-1", 34: "FRA-1"}
 
 # slug OddsPapi → nome del bookmaker in ArchieBet
 SHARP = {"pinnacle": "pinnacle"}
@@ -55,6 +57,7 @@ MARKETS = {
 COOLDOWN = {"odds-by-tournaments": 1.5, "historical-odds": 5.5, "participants": 1.5, "account": 1.5}
 FREE_ENDPOINTS = {"historical-odds", "account"}
 MAX_BOOKMAKERS_PER_HISTORY_CALL = 3
+MAX_TOURNAMENTS_PER_CALL = 5
 
 Prices = dict[str, dict[str, dict[str, float]]]  # bookmaker → mercato → esito → quota
 History = dict[str, dict[str, dict[str, list[tuple[datetime, float]]]]]  # bookmaker → mercato → esito → [(ora, quota)]
@@ -199,11 +202,14 @@ class OddsPapiAdapter(DataSourceAdapter):
         return self.cached("participants?sportId=10", max_age, lambda: self._request("participants", {"sportId": SOCCER}))
 
     def upcoming(self, max_age: timedelta) -> tuple[list[OPFixture], dict[str, Prices]]:
-        """Partite in programma di Serie A e B con le quote attuali di Pinnacle (una richiesta)."""
-        ids = ",".join(str(t) for t in TOURNAMENTS)
-        params = {"tournamentIds": ids, "bookmaker": "pinnacle"}
-        body = self.cached(f"odds-by-tournaments?tournamentIds={ids}&bookmaker=pinnacle", max_age,
-                           lambda: self._request("odds-by-tournaments", params))
+        """Partite in programma di tutti i campionati seguiti con le quote di Pinnacle (una richiesta ogni 5 campionati)."""
+        tournaments = list(TOURNAMENTS)
+        body: list[dict[str, Any]] = []
+        for start in range(0, len(tournaments), MAX_TOURNAMENTS_PER_CALL):
+            ids = ",".join(str(t) for t in tournaments[start : start + MAX_TOURNAMENTS_PER_CALL])
+            params = {"tournamentIds": ids, "bookmaker": "pinnacle"}
+            body += self.cached(f"odds-by-tournaments?tournamentIds={ids}&bookmaker=pinnacle", max_age,
+                                lambda params=params: self._request("odds-by-tournaments", params))
         return parse_fixtures(body), parse_current(body)
 
     def history(self, fixture_id: str, slugs: Sequence[str], max_age: timedelta) -> History:

@@ -42,7 +42,8 @@ def setup(db):
         OPFixture("fx-pb", 53, kickoff + timedelta(days=1), 3, 4, 0),  # Palermo-Bari: in Serie B
         OPFixture("fx-x", 23, kickoff, 5, 2, 0),  # squadra sconosciuta
     ]
-    current = {"fx-mi": {"pinnacle": {"1X2": {"1": 3.0, "X": 3.5, "2": 2.4}}}}  # giuste: 0,3204 / 0,2747 / 0,4005
+    # elenco del giorno (più vecchio): Pinnacle 1X2 a 2,95 e Under/Over che lo storico non ha
+    current = {"fx-mi": {"pinnacle": {"1X2": {"1": 2.95, "X": 3.5, "2": 2.45}, "OU2.5": {"over": 1.9, "under": 1.95}}}}
     history = {
         "fx-mi": {
             "sisal": {"1X2": {"1": [(t0, 3.4)], "X": [(t0, 3.3)], "2": [(t0, 2.3), (kickoff + timedelta(hours=5), 9.0)]}},
@@ -68,9 +69,11 @@ def test_links_matches_and_stores_current_odds(seeded, db):  # noqa: F811
     assert "Squadra Misteriosa" in logged[0]
     current = odds(db, match.id, closing=False)
     # Sisal dallo storico (prezzo valido adesso), Pinnacle dalla richiesta per campionato
-    assert current[("sisal", "2")] == 2.3 and current[("pinnacle", "1")] == 3.0
+    assert current[("sisal", "2")] == 2.3
+    assert current[("pinnacle", "1")] == 3.0  # lo storico (fresco) vince sull'elenco del giorno
+    assert current[("pinnacle", "over")] == 1.9  # ma l'elenco riempie i mercati che mancano
     assert report.current == 1  # Palermo-Bari non ha quote
-    assert adapter.history_calls[0][1][:3] == ("sisal.it", "snai.it", "eurobet.it")
+    assert adapter.history_calls[0][1][:3] == ("pinnacle", "sisal.it", "snai.it")
     # Secondo giro: nessun collegamento nuovo, quote sostituite e non duplicate
     again = sync_oddspapi(db, adapter, now)
     assert again.linked == 0 and odds(db, match.id, closing=False) == current

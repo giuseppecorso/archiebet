@@ -96,12 +96,14 @@ def test_upcoming_uses_one_request_and_cache(tmp_path):
     http = FakeHttp()
     a = adapter(tmp_path, http)
     fixtures, current = a.upcoming(max_age=timedelta(hours=5))
-    assert [f.id for f in fixtures] == ["id1"] and "pinnacle" in current["id1"]
-    assert [c[0] for c in http.calls] == ["account", "odds-by-tournaments"]  # prima controlla il budget (gratis)
-    assert http.calls[1][1] == {"tournamentIds": "23,53", "bookmaker": "pinnacle", "apiKey": "KEY"}
-    assert a.remaining_month == 249
+    assert [f.id for f in fixtures] == ["id1", "id1"] and "pinnacle" in current["id1"]  # la finta risponde uguale
+    # prima controlla il budget (gratis), poi una richiesta ogni 5 campionati
+    assert [c[0] for c in http.calls] == ["account", "odds-by-tournaments", "odds-by-tournaments"]
+    assert http.calls[1][1] == {"tournamentIds": "23,53,17,8,35", "bookmaker": "pinnacle", "apiKey": "KEY"}
+    assert http.calls[2][1]["tournamentIds"] == "34"
+    assert a.remaining_month == 248
     a.upcoming(max_age=timedelta(hours=5))
-    assert len(http.calls) == 2  # dalla cache
+    assert len(http.calls) == 3  # dalla cache
 
 
 def test_monthly_reserve_blocks_paid_calls_but_not_free_ones(tmp_path):
