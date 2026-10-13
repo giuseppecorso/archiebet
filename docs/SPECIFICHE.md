@@ -20,7 +20,7 @@ Colori con significato fisso: verde = valore/vinta, rosso = persa/valore negativ
    - Elenco partite: schede Tutte / Live / Prossime / Risultati, raggruppate per campionato, quote 1X2, etichette di valore e "Hai 1 giocata".
    - Riquadro "Quote fuori linea oggi".
    - ArchieTV: solo contenuti legali e gratuiti (highlights dai canali YouTube ufficiali delle leghe, link ai lettori ufficiali di canali gratuiti come Sportitalia e Rai Sport). Seconda scheda: termometro live.
-   - La mia schedina: selezioni, quota, importo, vincita, analisi di Archie, confronto tra bookmaker ("Dove conviene giocarla"), tasti "L'ho giocata" e "Gioca simulata", barra budget.
+   - La mia schedina: selezioni, quota, importo, vincita, analisi di Archie, tasti "L'ho giocata" e "Gioca simulata", barra budget.
    - Chiedi ad Archie.
 2. Pagina partita
    - Intestazione: loghi, ultimi 5 risultati, stadio di casa sullo sfondo, orario, meteo.
@@ -53,7 +53,7 @@ Colori con significato fisso: verde = valore/vinta, rosso = persa/valore negativ
 5. Prova del nove: un fattore entra nel modello solo se il test walk-forward sul passato dimostra che migliora log loss / Brier.
 6. Ricalcolo all'uscita delle formazioni e ai movimenti forti delle quote.
 7. Multiple: solo selezioni con valore ≥ 0 (o sopra soglia secondo il livello), max una per partita o correlazione calcolata dalla tabella dei risultati; obiettivo secondo il rischio (prudente = massima probabilità con valore ≥ 0; equilibrato; coraggioso = massimo valore atteso). Mostra sempre "vinci circa 1 volta su N" e la variante prudente. Se non c'è valore: "non giocare" o singole.
-8. Dove giocare: la stessa schedina sul bookmaker che paga di più.
+8. (Tolta con D67: niente confronto tra bookmaker; si gioca sul proprio bookmaker di riferimento.)
 9. Quanto puntare: puntata fissa; Kelly frazionato (es. 1/4) solo dopo il verdetto del modello, sempre dentro i limiti.
 10. Campionati con pochi dati: soglia di valore più alta e quote massime.
 11. Giudizio su Archie: calibrazione e CLV, mai solo profitto. Stagione 2025/26 in cassaforte per il verdetto. Fino ad allora suggerimenti "in prova".
@@ -126,7 +126,7 @@ Forma squadra (xG, Elo, punti), forma e importanza dei giocatori, infortuni e sq
 - Fase 1.5 – Laboratorio (base): schede Campionati e Squadre sui dati già presenti. Fatto: si studiano classifica e numeri di ogni campionato/stagione e la storia di ogni squadra.
 - Fase 2 – Giocate: registrazione giocate reali e simulate, chiusura automatica, statistiche di gioco, limiti, fotografia al momento della giocata.
 - Fase 3 – Modello: Dixon-Coles + rating di forza (anche per la Serie C), mercati, backtest walk-forward, prova del nove dei fattori, verdetto sulla cassaforte. Suggerimenti "in prova" fino al verdetto.
-- Fase 4 – Quote e valore: test OddsPapi, quote automatiche, valore, radar mercato, quote fuori linea, Multipla del giorno, generatore, dove conviene giocarla, Io contro Archie. Parte il mese di simulazione (giudicato su CLV e calibrazione).
+- Fase 4 – Pronostici e valore (rivista con D67): test OddsPapi, quote automatiche, **Pronostici** (la stima migliore per ogni partita, con le quote di Sisal ed Eurobet ed etichetta di valore), Occasioni sul tuo bookmaker (radar), quote fuori linea, Multipla del giorno, generatore, Io contro Archie. Parte il mese di simulazione (giudicato su CLV e calibrazione).
 - Fase 5 – Live: risultati in diretta, termometro della speranza, segui live.
 - Fase 6 – AI e Gioca: Chiedi ad Archie, autopsie "sfortuna o errore", notizie (anche locali Serie C), regolamento personale, simulatore, sfida contro Archie.
 - Fase 7 – Apprendimento: fiuto misurato, autocorrezione, quando giocare, partite gemelle, laboratorio strategie, mappa del valore.
