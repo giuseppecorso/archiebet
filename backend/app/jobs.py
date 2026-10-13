@@ -101,7 +101,7 @@ def sync_oddspapi_job() -> None:
                 on_call=lambda source: record_usage(db, source),
                 monthly_reserve=settings.oddspapi_monthly_reserve,
             )
-            report = sync_oddspapi(db, adapter, datetime.now(UTC), log=logger.warning)
+            report = sync_oddspapi(db, adapter, datetime.now(UTC), log=logger.warning, bookmakers=settings.radar_bookmaker_list)
         message = f"quote di {report.current} partite, {report.closing} chiusure"
         if report.not_in_calendar:
             message += f", {report.not_in_calendar} partite non ancora in calendario"
@@ -138,7 +138,7 @@ def refresh_radar_job() -> None:
     def work() -> str:
         with SessionLocal() as db:
             settled = settle_radar(db)  # prima si misurano i segnali delle partite finite
-            found = refresh_radar(db, datetime.now(UTC))
+            found = refresh_radar(db, datetime.now(UTC), get_settings().radar_bookmaker_list)
         if found or settled:
             logger.info("Radar: %s segnali nuovi, %s misurati con la chiusura", found, settled)
         return f"{found} segnali nuovi, {settled} misurati con la chiusura"

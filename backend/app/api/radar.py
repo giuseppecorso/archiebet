@@ -8,8 +8,9 @@ from sqlalchemy import select
 
 from app.api.football import BOOKMAKER_LABELS, CompetitionOut, TeamRef, competition_out
 from app.auth.deps import CurrentUser, DbSession
+from app.config import get_settings
 from app.forecast.clv import SUSPICIOUS_VALUE
-from app.forecast.radar import LIVE_TARGET, PLAYABLE_BOOKMAKERS, RADAR_THRESHOLD, live_verdict
+from app.forecast.radar import LIVE_TARGET, RADAR_THRESHOLD, live_verdict
 from app.forecast.radar_service import live_summary
 from app.models import Match, RadarSignal
 
@@ -100,7 +101,7 @@ def radar(_: CurrentUser, db: DbSession) -> RadarOut:
     summary = live_summary(db)
     return RadarOut(
         threshold=RADAR_THRESHOLD,
-        playable=[BOOKMAKER_LABELS.get(b, b) for b in PLAYABLE_BOOKMAKERS],
+        playable=[BOOKMAKER_LABELS.get(b, b) for b in get_settings().radar_bookmaker_list],
         upcoming=[_signal_out(s, m) for s, m in upcoming],
         recent=[_signal_out(s, m) for s, m in recent],
         live=LiveOut(

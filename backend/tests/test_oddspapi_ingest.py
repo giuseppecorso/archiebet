@@ -73,7 +73,7 @@ def test_links_matches_and_stores_current_odds(seeded, db):  # noqa: F811
     assert current[("pinnacle", "1")] == 3.0  # lo storico (fresco) vince sull'elenco del giorno
     assert current[("pinnacle", "over")] == 1.9  # ma l'elenco riempie i mercati che mancano
     assert report.current == 1  # Palermo-Bari non ha quote
-    assert adapter.history_calls[0][1][:3] == ("pinnacle", "sisal.it", "snai.it")
+    assert adapter.history_calls[0][1] == ("pinnacle", "sisal.it", "eurobet.it")  # una sola chiamata per partita
     # Secondo giro: nessun collegamento nuovo, quote sostituite e non duplicate
     again = sync_oddspapi(db, adapter, now)
     assert again.linked == 0 and odds(db, match.id, closing=False) == current

@@ -1,13 +1,13 @@
 """Quote di OddsPapi nel database: si agganciano alle partite che abbiamo già (il calendario lo danno le altre fonti).
 
 - Elenco delle partite in programma: una volta al giorno (2 richieste: massimo 5 campionati per richiesta).
-- Partite dei prossimi 4 giorni: quote attuali di Pinnacle e dei bookmaker italiani dallo storico gratuito
-  (4 chiamate per partita, 5,5 secondi l'una), salvate come quote "non di chiusura".
+- Partite dei prossimi 7 giorni: quote attuali di Pinnacle e dei bookmaker dove Giuse gioca (Sisal, Eurobet)
+  dallo storico gratuito (1 chiamata per partita fino a 3 bookmaker, 5,5 secondi), salvate come "non di chiusura".
 - Partite iniziate da almeno 2 ore: quota di chiusura di Pinnacle = ultimo prezzo prima del calcio d'inizio,
   il riferimento per il CLV (D48).
 """
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -20,10 +20,16 @@ from app.ingest.teams import normalize_team_name
 from app.models import Competition, Match, MatchOdds, MatchSource, MatchStatus, Team, TeamAlias
 
 LINK_WINDOW = timedelta(hours=48)  # stessa partita se il calcio d'inizio differisce al massimo di tanto
-HORIZON = timedelta(days=4)  # quote attuali solo per le partite dei prossimi giorni (tiene corto il giro)
+HORIZON = timedelta(days=7)  # quote attuali solo per le partite dei prossimi giorni
 UPCOMING_MAX_AGE = timedelta(hours=23)  # elenco partite una volta al giorno: ~62 richieste al mese
 HISTORY_MAX_AGE = timedelta(hours=5)  # "Aggiorna ora" subito dopo un giro automatico non riscarica
-CURRENT_SLUGS = list(SHARP) + list(ITALIAN)
+DEFAULT_BOOKMAKERS = ("sisal", "eurobet")  # D66
+
+
+def current_slugs(bookmakers: Sequence[str]) -> list[str]:
+    """Slug OddsPapi da chiedere allo storico: Pinnacle (riferimento) + i bookmaker dove si gioca."""
+    slug_of = {name: slug for slug, name in ITALIAN.items()}
+    return list(SHARP) + [slug_of[b] for b in bookmakers if b in slug_of]
 CLOSING_DELAY = timedelta(hours=2)  # la chiusura si chiede a partita iniziata da un po'
 CLOSING_LOOKBACK = timedelta(days=14)  # oltre, se manca la chiusura, si rinuncia
 CLOSING_SLUGS = ["pinnacle"]
@@ -114,8 +120,15 @@ def replace_odds(db: Session, match_id: int, prices: Prices, closing: bool) -> i
     return len(rows)
 
 
-def sync_oddspapi(db: Session, adapter: OddsPapiAdapter, now: datetime, log: Callable[[str], None] = print) -> OddsPapiReport:
+def sync_oddspapi(
+    db: Session,
+    adapter: OddsPapiAdapter,
+    now: datetime,
+    log: Callable[[str], None] = print,
+    bookmakers: Sequence[str] = DEFAULT_BOOKMAKERS,
+) -> OddsPapiReport:
     report = OddsPapiReport()
+    slugs = current_slugs(bookmakers)
     fixtures, current = adapter.upcoming(UPCOMING_MAX_AGE)
     names = adapter.participants()
     if any(str(p) not in names for fx in fixtures for p in (fx.home_id, fx.away_id)):
@@ -127,7 +140,7 @@ def sync_oddspapi(db: Session, adapter: OddsPapiAdapter, now: datetime, log: Cal
     for fixture_id, match in links.items():
         if match.status != MatchStatus.SCHEDULED or not (now < match.kickoff_at <= now + HORIZON):
             continue
-        prices = prices_at(adapter.history(fixture_id, CURRENT_SLUGS, HISTORY_MAX_AGE), now)
+        prices = prices_at(adapter.history(fixture_id, slugs, HISTORY_MAX_AGE), now)
         for bookmaker, markets in current.get(fixture_id, {}).items():  # elenco del giorno: solo se lo storico non li ha
             for market, selections in markets.items():
                 prices.setdefault(bookmaker, {}).setdefault(market, selections)

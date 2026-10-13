@@ -28,11 +28,11 @@ def test_detects_signal_only_before_kickoff(seeded, db):  # noqa: F811
     upcoming, started = match_id(db, "Milan", "Inter"), match_id(db, "Lazio", "Milan")
     for m in (upcoming, started):
         set_odds(db, m, "pinnacle", {"1": 2.0, "X": 3.6, "2": 4.0})  # giusta sul 2: 0,2432
-        set_odds(db, m, "bet365", {"1": 1.9, "X": 3.4, "2": 4.4})  # +7,0%
+        set_odds(db, m, "sisal", {"1": 1.9, "X": 3.4, "2": 4.4})  # +7,0%
     now = datetime.now(UTC)
     assert refresh_radar(db, now) == 1  # Lazio-Milan è già iniziata
     [s] = signals(db)
-    assert (s.match_id, s.market, s.selection, s.bookmaker, s.price, s.fair_source) == (upcoming, "1X2", "2", "bet365", 4.4, "pinnacle")
+    assert (s.match_id, s.market, s.selection, s.bookmaker, s.price, s.fair_source) == (upcoming, "1X2", "2", "sisal", 4.4, "pinnacle")
     assert s.value == pytest.approx(0.25 / (0.5 + 1 / 3.6 + 0.25) * 4.4 - 1, abs=1e-5)
     assert s.latest_price == 4.4 and s.clv is None
 
@@ -40,15 +40,15 @@ def test_detects_signal_only_before_kickoff(seeded, db):  # noqa: F811
 def test_first_detection_is_locked_latest_follows_odds(seeded, db):  # noqa: F811
     m = match_id(db, "Milan", "Inter")
     set_odds(db, m, "pinnacle", {"1": 2.0, "X": 3.6, "2": 4.0})
-    set_odds(db, m, "bet365", {"1": 1.9, "X": 3.4, "2": 4.4})
+    set_odds(db, m, "sisal", {"1": 1.9, "X": 3.4, "2": 4.4})
     now = datetime.now(UTC)
     refresh_radar(db, now)
-    set_odds(db, m, "bet365", {"1": 1.9, "X": 3.4, "2": 3.9})  # la quota scende: niente più valore
+    set_odds(db, m, "sisal", {"1": 1.9, "X": 3.4, "2": 3.9})  # la quota scende: niente più valore
     assert refresh_radar(db, now + timedelta(hours=6)) == 0
     [s] = signals(db)
     assert s.price == 4.4  # la giocata simulata resta quella
     assert s.latest_price == 3.9 and s.latest_value < 0
-    set_odds(db, m, "bet365", {"1": 1.9, "X": 3.4})  # quota del 2 sparita
+    set_odds(db, m, "sisal", {"1": 1.9, "X": 3.4})  # quota del 2 sparita
     refresh_radar(db, now + timedelta(hours=12))
     assert signals(db)[0].latest_price is None
 
@@ -56,7 +56,7 @@ def test_first_detection_is_locked_latest_follows_odds(seeded, db):  # noqa: F81
 def test_settle_with_closing_reference_and_summary(seeded, db):  # noqa: F811
     m = match_id(db, "Milan", "Inter")
     set_odds(db, m, "pinnacle", {"1": 2.0, "X": 3.6, "2": 4.0})
-    set_odds(db, m, "bet365", {"1": 1.9, "X": 3.4, "2": 4.4})
+    set_odds(db, m, "sisal", {"1": 1.9, "X": 3.4, "2": 4.4})
     refresh_radar(db, datetime.now(UTC))
     assert settle_radar(db) == 0  # partita non ancora giocata
 

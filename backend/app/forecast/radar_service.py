@@ -5,7 +5,7 @@
 - settle_radar: quando arrivano le quote di chiusura calcola il CLV di ogni segnale (il giudice, principio 2).
 """
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from datetime import datetime
 
 from sqlalchemy import select
@@ -14,7 +14,6 @@ from sqlalchemy.orm import Session
 from app.forecast.clv import ClvSummary
 from app.forecast.data import ODDS_MARKETS
 from app.forecast.radar import (
-    FALLBACK_BOOKMAKERS,
     PLAYABLE_BOOKMAKERS,
     RADAR_THRESHOLD,
     BookOdds,
@@ -54,13 +53,8 @@ def load_book_odds(db: Session, match_ids: Iterable[int], closing: bool) -> dict
     return out
 
 
-def playable_for(book: BookOdds) -> tuple[str, ...]:
-    """Bookmaker italiani se la partita ne ha le quote, altrimenti il ripiego di football-data."""
-    return PLAYABLE_BOOKMAKERS if any(bm in book for bm in PLAYABLE_BOOKMAKERS) else FALLBACK_BOOKMAKERS
-
-
-def refresh_radar(db: Session, now: datetime) -> int:
-    """Aggiorna i segnali delle partite non ancora iniziate. Restituisce quanti segnali nuovi ha trovato."""
+def refresh_radar(db: Session, now: datetime, playable: Sequence[str] = PLAYABLE_BOOKMAKERS) -> int:
+    """Aggiorna i segnali delle partite non ancora iniziate (solo sui bookmaker giocabili). Restituisce quanti segnali nuovi."""
     upcoming = list(db.scalars(select(Match.id).where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now)))
     if not upcoming:
         return 0
@@ -73,7 +67,7 @@ def refresh_radar(db: Session, now: datetime) -> int:
     for match_id in upcoming:
         # Tutti gli esiti, anche senza valore: servono a seguire i segnali già visti
         book = books.get(match_id, {})
-        current = {(c.market, c.selection): c for c in scan(book, threshold=float("-inf"), playable=playable_for(book))}
+        current = {(c.market, c.selection): c for c in scan(book, threshold=float("-inf"), playable=playable)}
         for (m, market, selection), row in existing.items():
             if m == match_id and (market, selection) not in current:  # quota sparita
                 row.latest_bookmaker = row.latest_price = row.latest_value = None

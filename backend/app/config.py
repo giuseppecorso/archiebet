@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     # OddsPapi: quote dei bookmaker italiani e di Pinnacle/Betfair (D61)
     oddspapi_key: str | None = None
     oddspapi_monthly_reserve: int = 20  # richieste del mese da non usare mai in automatico
+    # Bookmaker su cui Giuse ha un conto: il radar gioca solo lì (D66). Nomi: sisal, snai, eurobet, goldbet, ...
+    radar_bookmakers: str = "sisal,eurobet"
 
     # Aggiornamento automatico dei dati mentre il backend è acceso
     sync_enabled: bool = True
@@ -42,6 +44,10 @@ class Settings(BaseSettings):
     ai_monthly_budget_eur: float = 15.0
     ai_user_monthly_quota_eur: float = 10.0
     ai_budget_warning_ratio: float = 0.8
+
+    @property
+    def radar_bookmaker_list(self) -> list[str]:
+        return [x.strip() for x in self.radar_bookmakers.split(",") if x.strip()]
 
     @property
     def api_football_league_ids(self) -> list[int]:
