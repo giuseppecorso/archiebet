@@ -1,4 +1,7 @@
-"""Quote di OddsPapi nel database: si agganciano alle partite che abbiamo già (il calendario lo danno le altre fonti).
+"""Quote e calendario di OddsPapi nel database.
+
+- Calendario (D71): le partite di A, B e top 5 che non abbiamo ancora vengono create da OddsPapi (fino a ~10 giorni
+  prima); football-data, quando arriva, aggiorna le stesse partite (stesso campionato, stagione e squadre).
 
 - Elenco delle partite in programma: una volta al giorno (2 richieste: massimo 5 campionati per richiesta).
 - Partite dei prossimi 7 giorni: quote attuali di Pinnacle e dei bookmaker dove Giuse gioca (Sisal, Eurobet)
@@ -11,14 +14,17 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import delete, insert, select
 from sqlalchemy.orm import Session
 
+from app.adapters.football_data import season_label, season_of
 from app.adapters.oddspapi import ITALIAN, SHARP, SOURCE, TOURNAMENTS, OddsPapiAdapter, OPFixture, Prices, prices_at
 from app.ingest.teams import normalize_team_name
 from app.models import Competition, Match, MatchOdds, MatchSource, MatchStatus, Team, TeamAlias
 
+ROME = ZoneInfo("Europe/Rome")
 LINK_WINDOW = timedelta(hours=48)  # stessa partita se il calcio d'inizio differisce al massimo di tanto
 HORIZON = timedelta(days=7)  # quote attuali solo per le partite dei prossimi giorni
 UPCOMING_MAX_AGE = timedelta(hours=23)  # elenco partite una volta al giorno: ~62 richieste al mese
@@ -38,7 +44,8 @@ CLOSING_SLUGS = ["pinnacle"]
 @dataclass
 class OddsPapiReport:
     linked: int = 0  # partite collegate in questo giro
-    not_in_calendar: int = 0  # partite di OddsPapi che non abbiamo (ancora) in calendario
+    created: int = 0  # partite messe in calendario da OddsPapi (D71)
+    not_in_calendar: int = 0  # partite di OddsPapi che non si possono aggiungere (già iniziate)
     unknown_teams: list[str] = field(default_factory=list)
     current: int = 0  # partite con quote attuali aggiornate
     closing: int = 0  # partite con chiusura salvata
@@ -55,8 +62,14 @@ def _team_index(db: Session) -> tuple[dict[str, int], dict[tuple[str, str], int]
     return by_alias, by_name
 
 
-def link_fixtures(db: Session, fixtures: Iterable[OPFixture], names: dict[str, str], report: OddsPapiReport) -> dict[str, Match]:
-    """Collega le partite di OddsPapi alle nostre (stesso campionato, stesse squadre, data vicina)."""
+def link_fixtures(
+    db: Session, fixtures: Iterable[OPFixture], names: dict[str, str], report: OddsPapiReport, now: datetime
+) -> dict[str, Match]:
+    """Collega le partite di OddsPapi alle nostre (stesso campionato, stesse squadre, data vicina).
+
+    Se la partita non c'è e deve ancora giocarsi, la mette in calendario (D71). Squadre sconosciute: mai create,
+    per non duplicare l'anagrafica (si aggiunge la regola del nome in teams.py).
+    """
     competitions = {c.code: c for c in db.scalars(select(Competition))}
     links = {s.external_id: s.match_id for s in db.scalars(select(MatchSource).where(MatchSource.source == SOURCE))}
     by_alias, by_name = _team_index(db)
@@ -65,7 +78,10 @@ def link_fixtures(db: Session, fixtures: Iterable[OPFixture], names: dict[str, s
         if fx.tournament_id not in TOURNAMENTS:
             continue
         if fx.id in links:
-            out[fx.id] = db.get(Match, links[fx.id])
+            match = db.get(Match, links[fx.id])
+            if match.status == MatchStatus.SCHEDULED and match.kickoff_at > now and fx.start_time > now:
+                match.kickoff_at = fx.start_time  # orario aggiornato (anticipi e posticipi)
+            out[fx.id] = match
             continue
         competition = competitions.get(TOURNAMENTS[fx.tournament_id])
         if competition is None:
@@ -89,9 +105,33 @@ def link_fixtures(db: Session, fixtures: Iterable[OPFixture], names: dict[str, s
                 Match.kickoff_at.between(fx.start_time - LINK_WINDOW, fx.start_time + LINK_WINDOW),
             )
         )
+        season = season_label(season_of(fx.start_time.astimezone(ROME).date()))
         if match is None:
-            report.not_in_calendar += 1
-            continue
+            # Stessa accoppiata nella stessa stagione con data lontana (rinvio): è la stessa partita
+            match = db.scalar(
+                select(Match).where(
+                    Match.competition_id == competition.id,
+                    Match.season == season,
+                    Match.home_team_id == teams[0],
+                    Match.away_team_id == teams[1],
+                )
+            )
+        if match is None:
+            if fx.start_time <= now:
+                report.not_in_calendar += 1
+                continue
+            match = Match(
+                competition_id=competition.id,
+                season=season,
+                kickoff_at=fx.start_time,
+                kickoff_has_time=True,
+                status=MatchStatus.SCHEDULED,
+                home_team_id=teams[0],
+                away_team_id=teams[1],
+            )
+            db.add(match)
+            db.flush()
+            report.created += 1
         db.add(MatchSource(match_id=match.id, source=SOURCE, external_id=fx.id))
         for pid, team in zip((fx.home_id, fx.away_id), teams):
             if str(pid) not in by_alias:
@@ -133,7 +173,7 @@ def sync_oddspapi(
     names = adapter.participants()
     if any(str(p) not in names for fx in fixtures for p in (fx.home_id, fx.away_id)):
         names = adapter.participants(max_age=timedelta(0))  # squadra nuova: rinfresco i nomi
-    links = link_fixtures(db, fixtures, names, report)
+    links = link_fixtures(db, fixtures, names, report, now)
     db.commit()
 
     # Quote attuali delle partite in programma

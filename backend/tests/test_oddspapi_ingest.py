@@ -3,15 +3,17 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 
+from app.adapters.football_data import parse_csv
 from app.adapters.oddspapi import BOOKMAKERS, OPFixture
 from app.forecast.radar_service import refresh_radar
+from app.ingest.football_data import import_matches
 from app.ingest.oddspapi import sync_oddspapi
 from app.models import Match, MatchOdds, MatchSource, RadarSignal, TeamAlias
-from tests.test_football_api import match_id, seeded  # noqa: F401 (fixture condivisa)
+from tests.test_football_api import day, match_id, seeded  # noqa: F401 (fixture condivisa)
 
-NAMES = {"1": "AC Milan", "2": "Inter Milano", "3": "Palermo FC", "4": "SSC Bari", "5": "Squadra Misteriosa"}
+NAMES = {"1": "AC Milan", "2": "Inter Milano", "3": "Palermo FC", "4": "SSC Bari", "5": "Squadra Misteriosa", "6": "AS Roma"}
 
 
 class FakeAdapter:
@@ -102,3 +104,35 @@ def test_closing_from_price_history(seeded, db):  # noqa: F811
     assert odds(db, match.id, closing=True) == {("pinnacle", "1"): 2.9, ("pinnacle", "X"): 3.5, ("pinnacle", "2"): 2.4}
     assert adapter.history_calls[-1] == ("fx-mi", ("pinnacle",))
     assert sync_oddspapi(db, adapter, later).closing == 0  # già salvata
+
+
+def test_creates_missing_matches_and_football_data_reuses_them(seeded, db):  # noqa: F811
+    now = datetime.now(UTC)
+    kickoff = (now + timedelta(days=9)).replace(hour=16, minute=0, second=0, microsecond=0)
+    adapter = FakeAdapter([OPFixture("fx-new", 23, kickoff, 6, 1, 0)], {}, {})  # Roma-Milan, non ancora in calendario
+    before = db.scalar(select(func.count()).select_from(Match))
+    report = sync_oddspapi(db, adapter, now)
+    assert report.created == 1
+    new = db.scalar(select(Match).join(MatchSource).where(MatchSource.external_id == "fx-new"))
+    assert (new.home_team.name, new.away_team.name, new.status, new.season) == ("Roma", "Milan", "scheduled", "2026/27")
+    assert new.kickoff_at == kickoff
+
+    # Anticipo: OddsPapi sposta l'orario di un'ora
+    adapter.fixtures = [OPFixture("fx-new", 23, kickoff - timedelta(hours=1), 6, 1, 0)]
+    assert sync_oddspapi(db, adapter, now).created == 0
+    assert db.get(Match, new.id).kickoff_at == kickoff - timedelta(hours=1)
+
+    # Arriva il calendario di football-data: stessa partita, nessun doppione
+    import_matches(db, parse_csv(f"Div,Date,Time,HomeTeam,AwayTeam,AvgH,AvgD,AvgA\nI1,{day(9)},15:00,Roma,Milan,1.9,3.4,4.0\n"))
+    assert db.scalar(select(func.count()).select_from(Match)) == before + 1
+
+    # Rinvio: Milan-Inter è in calendario tra 3 giorni, OddsPapi la dà tra 10 → stessa partita, niente doppioni
+    milan_inter = match_id(db, "Milan", "Inter")
+    adapter.fixtures = [OPFixture("fx-moved", 23, now + timedelta(days=10), 1, 2, 0)]
+    report = sync_oddspapi(db, adapter, now)
+    assert (report.created, report.linked) == (0, 1)
+    assert db.scalar(select(MatchSource.match_id).where(MatchSource.external_id == "fx-moved")) == milan_inter
+
+    # Partita già iniziata e mai vista: non si inventa
+    adapter.fixtures = [OPFixture("fx-old", 53, now - timedelta(hours=2), 4, 3, 0)]  # Bari-Palermo
+    assert sync_oddspapi(db, adapter, now).not_in_calendar == 1

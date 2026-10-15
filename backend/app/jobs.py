@@ -102,9 +102,9 @@ def sync_oddspapi_job() -> None:
                 monthly_reserve=settings.oddspapi_monthly_reserve,
             )
             report = sync_oddspapi(db, adapter, datetime.now(UTC), log=logger.warning, bookmakers=settings.radar_bookmaker_list)
-        message = f"quote di {report.current} partite, {report.closing} chiusure"
+        message = f"{report.created} partite in calendario, quote di {report.current} partite, {report.closing} chiusure"
         if report.not_in_calendar:
-            message += f", {report.not_in_calendar} partite non ancora in calendario"
+            message += f", {report.not_in_calendar} partite già iniziate non aggiunte"
         if adapter.remaining_month is not None:
             message += f" · restano {adapter.remaining_month} richieste nel mese"
         logger.info("OddsPapi: %s", message)

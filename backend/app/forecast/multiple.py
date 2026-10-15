@@ -122,7 +122,7 @@ def _search(legs: Sequence[Leg], min_value: float, n: int, profile: Profile) -> 
                 continue
             p = math.prod(leg.probability for leg in choice)
             ev = p * price - 1.0
-            key = (round(ev, 6), p) if profile.by_value else (round(p, 6), ev)
+            key = (round(ev, 6), p) if profile.by_value else (round(p, 2), ev)  # probabilità entro 1 punto = pari: decide il valore
             if best is None or key > best[:2]:
                 best = (key[0], key[1], choice)
     if best is None:

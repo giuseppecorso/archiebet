@@ -101,6 +101,7 @@ _SAME_TEAM = {
     "stade brest 29": "brest",
     "stade rennais": "rennes",
     "strasbourg alsace": "strasbourg",
+    "1 cologne": "koln",
     # Stessa società dopo una rifondazione
     "vicenza virtus": "vicenza",
     "lr vicenza": "vicenza",

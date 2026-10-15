@@ -28,7 +28,7 @@ Test: 129 backend + 11 frontend, tutti verdi.
 ## Prossima sessione: Fase 5 – Live
 
 1. **Decisione di Giuse (costa soldi):** la fonte per risultati in diretta e risultati aggiornati. football-data pubblica i risultati con settimane di ritardo (schedine e statistiche restano "in attesa"); OddsPapi `/scores` è a partita e a pagamento sul piano free (non sostenibile). La strada già prevista è il **piano a pagamento di API-Football** (risultati live, Serie C in corso, formazioni): Claude prepara il confronto dei piani con prezzi verificati sul sito.
-2. Primo passo tecnico proposto (IDEE, valutata a fine Fase 4): calendario di A, B e top 5 anche da OddsPapi (già nella richiesta giornaliera, costo zero) → pronostici, multipla e radar vedono le partite fino a 10 giorni prima.
+2. ~~Calendario da OddsPapi~~ fatto il 2026-10-15 (D71): pronostici, multipla e radar vedono le partite fino a ~10 giorni prima.
 3. Poi: risultati in diretta, termometro della speranza, "Segui live" nelle schedine.
 
 La simulazione dal vivo del radar (D59, 300 giocate) continua da sola a ogni aggiornamento.
@@ -53,7 +53,7 @@ La simulazione dal vivo del radar (D59, 300 giocate) continua da sola a ogni agg
 - In prova (continua da solo): radar / Occasioni fino a 300 giocate misurate (D59)
 - Tolto: "Dove conviene giocarla" (D67)
 
-Test: 246 backend + 17 frontend.
+Test: 247 backend + 17 frontend.
 
 ## Fase 3 – Modello: CONCLUSA (2026-10-12)
 
