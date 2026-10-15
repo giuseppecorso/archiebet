@@ -11,8 +11,8 @@ from sqlalchemy import select
 from app.api.football import BOOKMAKER_LABELS, MatchCard, match_cards
 from app.auth.deps import CurrentUser, DbSession
 from app.config import get_settings
-from app.forecast.multiple import multiple_of_the_day
-from app.forecast.picks import MODEL_SOURCE, favorite
+from app.forecast.multiple import LEGS, PROFILES, build_multiple
+from app.forecast.picks import MODEL_SOURCE, PICK_MARKETS, favorite
 from app.forecast.picks_service import legs_for, upcoming_picks
 from app.ingest.teams import competition_sort_key
 from app.models import RadarSignal
@@ -116,6 +116,8 @@ class MultipleOut(BaseModel):
 
 class MultiplesOut(BaseModel):
     horizon: Literal["today", "week"]
+    profile: str
+    legs: int
     multiples: list[MultipleOut]  # una per bookmaker di Giuse
     missing: list[str]  # bookmaker per cui oggi non c'è una multipla sensata
 
@@ -129,15 +131,30 @@ def horizon_end(now: datetime, horizon: str) -> datetime:
 
 
 @router.get("/multiple")
-def multiple(_: CurrentUser, db: DbSession, horizon: Literal["today", "week"] = "today") -> MultiplesOut:
+def multiple(
+    _: CurrentUser,
+    db: DbSession,
+    horizon: Literal["today", "week"] = "today",
+    profile: Literal["tranquilla", "equilibrata", "coraggiosa"] = "equilibrata",
+    legs: int = Query(LEGS, ge=2, le=6),
+    markets: str | None = Query(None, description="Mercati separati da virgola, es. 1X2,DC"),
+    competitions: str | None = Query(None, description="Codici dei campionati separati da virgola, es. ITA-A,ENG-1"),
+) -> MultiplesOut:
+    """Multipla del giorno (senza parametri) o generatore "Archie, fammi una multipla"."""
     now = datetime.now(UTC)
     bookmakers = get_settings().radar_bookmaker_list
     upcoming = upcoming_picks(db, now, horizon_end(now, horizon), bookmakers)
+    if competitions:
+        wanted = set(competitions.split(","))
+        upcoming = [(m, mp) for m, mp in upcoming if m.competition.code in wanted]
+    if markets:
+        allowed = set(markets.split(",")) & set(PICK_MARKETS)
+        upcoming = [(m, [p for p in mp if p.market in allowed]) for m, mp in upcoming]
     cards = {c.id: c for c in match_cards(db, [m for m, _ in upcoming], now)}
     multiples, missing = [], []
     for bm in bookmakers:
         label = BOOKMAKER_LABELS.get(bm, bm)
-        best = multiple_of_the_day(legs_for(upcoming, bm))
+        best = build_multiple(legs_for(upcoming, bm), legs, PROFILES[profile])
         if best is None:
             missing.append(label)
             continue
@@ -157,4 +174,4 @@ def multiple(_: CurrentUser, db: DbSession, horizon: Literal["today", "week"] = 
                 expected_value=best.expected_value,
             )
         )
-    return MultiplesOut(horizon=horizon, multiples=multiples, missing=missing)
+    return MultiplesOut(horizon=horizon, profile=profile, legs=legs, multiples=multiples, missing=missing)

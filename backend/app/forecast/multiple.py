@@ -66,6 +66,24 @@ class Multiple:
         return 1.0 / self.win_probability
 
 
+@dataclass(frozen=True)
+class Profile:
+    """Come costruire la multipla (regola 7: prudente, equilibrata, coraggiosa)."""
+
+    min_probability: float
+    min_total: float
+    max_total: float
+    by_value: bool  # True = vince il valore atteso più alto; False = la probabilità di vincere più alta
+
+
+PROFILES = {
+    "tranquilla": Profile(0.70, 2.0, 3.5, by_value=False),
+    "equilibrata": Profile(MIN_PROBABILITY, MIN_TOTAL, MAX_TOTAL, by_value=False),  # la multipla del giorno
+    "coraggiosa": Profile(0.45, 5.0, 15.0, by_value=True),
+}
+MAX_COMBINATIONS = 400_000  # tiene la ricerca sotto il secondo anche con 6 partite
+
+
 def eligible(leg: Leg, min_value: float, min_probability: float = MIN_PROBABILITY) -> bool:
     return leg.probability >= min_probability and min_value <= leg.value <= SUSPICIOUS_VALUE
 
@@ -77,24 +95,34 @@ def _options(legs: Sequence[Leg]) -> list[Leg]:
     return [best_p] if best_p == best_v else [best_p, best_v]
 
 
-def _search(legs: Sequence[Leg], min_value: float, n: int, min_total: float, max_total: float) -> Multiple | None:
+def _max_matches(n: int) -> int:
+    """Quante partite considerare perché combinazioni × scelte per partita restino sotto il limite."""
+    k = n
+    while k < MAX_MATCHES and math.comb(k + 1, n) * 2**n <= MAX_COMBINATIONS:
+        k += 1
+    return k
+
+
+def _search(legs: Sequence[Leg], min_value: float, n: int, profile: Profile) -> Multiple | None:
     by_match: dict[int, list[Leg]] = {}
     for leg in legs:
-        if eligible(leg, min_value):
+        if eligible(leg, min_value, profile.min_probability):
             by_match.setdefault(leg.match_id, []).append(leg)
     if len(by_match) < n:
         return None
     options = {m: _options(ls) for m, ls in by_match.items()}
-    top = sorted(options, key=lambda m: max(leg.probability for leg in options[m]), reverse=True)[:MAX_MATCHES]
+    rank = (lambda m: max(leg.value for leg in options[m])) if profile.by_value else (lambda m: max(leg.probability for leg in options[m]))
+    top = sorted(options, key=rank, reverse=True)[: _max_matches(n)]
 
     best: tuple[float, float, tuple[Leg, ...]] | None = None
     for matches in combinations(top, n):
         for choice in product(*(options[m] for m in matches)):
             price = math.prod(leg.price for leg in choice)
-            if not (min_total <= price <= max_total):
+            if not (profile.min_total <= price <= profile.max_total):
                 continue
             p = math.prod(leg.probability for leg in choice)
-            key = (round(p, 6), p * price - 1.0)
+            ev = p * price - 1.0
+            key = (round(ev, 6), p) if profile.by_value else (round(p, 6), ev)
             if best is None or key > best[:2]:
                 best = (key[0], key[1], choice)
     if best is None:
@@ -103,8 +131,11 @@ def _search(legs: Sequence[Leg], min_value: float, n: int, min_total: float, max
     return Multiple(ordered, with_value=min_value >= 0)
 
 
-def multiple_of_the_day(
-    legs: Sequence[Leg], n: int = LEGS, min_total: float = MIN_TOTAL, max_total: float = MAX_TOTAL
-) -> Multiple | None:
-    """La multipla più facile e sensata: prima con valore, altrimenti con quote nella norma."""
-    return _search(legs, 0.0, n, min_total, max_total) or _search(legs, LOW_PRICE, n, min_total, max_total)
+def build_multiple(legs: Sequence[Leg], n: int = LEGS, profile: Profile = PROFILES["equilibrata"]) -> Multiple | None:
+    """La multipla migliore per il profilo: prima con valore, altrimenti con quote nella norma."""
+    return _search(legs, 0.0, n, profile) or _search(legs, LOW_PRICE, n, profile)
+
+
+def multiple_of_the_day(legs: Sequence[Leg]) -> Multiple | None:
+    """La più facile e sensata (specifiche, sezione 5): profilo equilibrato, 4 partite."""
+    return build_multiple(legs)

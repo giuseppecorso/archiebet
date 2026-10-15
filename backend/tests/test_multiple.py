@@ -6,7 +6,7 @@ import pytest
 
 from app.adapters.football_data import parse_csv
 from app.api.picks import horizon_end
-from app.forecast.multiple import Leg, Multiple, eligible, multiple_of_the_day
+from app.forecast.multiple import PROFILES, Leg, Multiple, build_multiple, eligible, multiple_of_the_day
 from app.ingest.football_data import import_matches
 from tests.test_football_api import day, match_id, seeded  # noqa: F401 (fixture condivisa)
 from tests.test_radar_service import set_odds
@@ -91,3 +91,48 @@ def test_multiple_api_per_bookmaker(logged_client, seeded, db):  # noqa: F811
     assert sisal["alive_before_last"] == pytest.approx(p**3)
     assert sisal["expected_value"] == pytest.approx(p**4 * 1.45**4 - 1)
     assert logged_client.get("/api/picks/multiple?horizon=today").json()["multiples"] == []  # oggi non si gioca
+
+
+
+def test_profiles_change_the_choice():
+    legs = [
+        leg(1, 0.85, 1.24, hours=1), leg(2, 0.82, 1.28, hours=2), leg(3, 0.80, 1.30, hours=3),  # sicure, +4/+5%
+        leg(4, 0.50, 2.10, hours=4), leg(5, 0.48, 2.25, hours=5),  # rischiose, +5% e +8%
+    ]  # fmt: skip
+    calm = build_multiple(legs, n=3, profile=PROFILES["tranquilla"])
+    assert [l.match_id for l in calm.legs] == [1, 2, 3] and calm.price == pytest.approx(1.24 * 1.28 * 1.30)  # 2,06
+    assert build_multiple(legs, n=3, profile=PROFILES["equilibrata"]) is None  # al 65% la quota non arriva a 3
+    bold = build_multiple(legs, n=3, profile=PROFILES["coraggiosa"])
+    assert [l.match_id for l in bold.legs] == [1, 4, 5]  # valore atteso più alto con quota tra 5 e 15
+    assert bold.expected_value == pytest.approx(0.85 * 0.5 * 0.48 * 1.24 * 2.10 * 2.25 - 1)  # +19,5%
+
+
+def test_search_stays_fast_with_six_legs():
+    import random
+    import time
+
+    random.seed(3)
+    legs = [leg(m, p, (1 / p) * random.uniform(0.96, 1.04), hours=m, selection=str(k))
+            for m in range(60) for k, p in enumerate(random.uniform(0.45, 0.9) for _ in range(6))]  # fmt: skip
+    start = time.perf_counter()
+    for name in PROFILES:
+        build_multiple(legs, n=6, profile=PROFILES[name])
+    assert time.perf_counter() - start < 5  # tre profili, 6 partite, 60 partite candidate
+
+
+def test_generator_filters(logged_client, seeded, db):  # noqa: F811
+    rows = "Div,Date,Time,HomeTeam,AwayTeam,AvgH,AvgD,AvgA\n" + "".join(
+        f"I1,{day(2)},{h}:00,{a},{b},1.5,4,6\n" for h, a, b in [(12, "Roma", "Lazio"), (15, "Napoli", "Genoa"), (18, "Juventus", "Lecce")]
+    )
+    import_matches(db, parse_csv(rows), season="2026/27")
+    for home, away in [("Roma", "Lazio"), ("Napoli", "Genoa"), ("Juventus", "Lecce")]:
+        m = match_id(db, home, away)
+        set_odds(db, m, "pinnacle", {"1": 1.35, "X": 5.0, "2": 9.0})  # 1 giusto ≈ 0,704
+        set_odds(db, m, "sisal", {"1": 1.45, "X": 4.5, "2": 8.0})
+    base = "/api/picks/multiple?horizon=week&profile=tranquilla&legs=3"
+    [sisal] = logged_client.get(base).json()["multiples"]
+    assert len(sisal["legs"]) == 3 and 2.0 <= sisal["price"] <= 3.5
+    assert logged_client.get(base + "&markets=OU2.5").json()["multiples"] == []  # nessuna quota Under/Over
+    assert logged_client.get(base + "&competitions=ITA-B").json()["multiples"] == []  # partite tutte di Serie A
+    assert logged_client.get(base + "&competitions=ITA-A&markets=1X2").json()["multiples"][0]["legs"]
+    assert logged_client.get("/api/picks/multiple?legs=9").status_code == 422  # massimo 6 partite
