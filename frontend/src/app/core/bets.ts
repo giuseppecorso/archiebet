@@ -171,3 +171,22 @@ export function euro(value: string | number | null | undefined, signed = false):
   const sign = signed ? (n > 0 ? '+' : n < 0 ? '−' : '') : n < 0 ? '−' : '';
   return `${sign}${text} €`;
 }
+
+/** Io contro Archie (vedi backend/app/betting/versus.py) */
+export interface VersusGroup {
+  n: number;
+  won: number;
+  expected_wins: number;
+  roi: number;
+  avg_value: number;
+}
+
+export interface Versus {
+  judged: number;
+  without_archie: number;
+  /** Vinte − attese da Archie */
+  skill: number | null;
+  skill_std_error: number | null;
+  agreed: VersusGroup | null;
+  disagreed: VersusGroup | null;
+}

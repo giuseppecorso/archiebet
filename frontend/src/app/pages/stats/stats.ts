@@ -1,7 +1,7 @@
 import { httpResource } from '@angular/common/http';
 import { Component, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { BetGroup, BetKind, BetSummary, Breakdown, BudgetStatus, SelectionGroup, SummaryOut, euro } from '../../core/bets';
+import { BetGroup, BetKind, BetSummary, Breakdown, BudgetStatus, SelectionGroup, SummaryOut, Versus, VersusGroup, euro } from '../../core/bets';
 import { num, pct } from '../../core/format';
 import { ShowMore } from '../../shared/show-more';
 
@@ -37,6 +37,7 @@ export class Stats {
   protected readonly kind = signal<BetKind>('real');
   protected readonly groupsOpen = signal(false);
   protected readonly breakdown = httpResource<Breakdown>(() => `/api/bets/breakdown?kind=${this.kind()}&period=${this.period()}`);
+  protected readonly versus = httpResource<Versus>(() => `/api/bets/versus?kind=${this.kind()}&period=${this.period()}`);
 
   /** Numero di partite e bookmaker guardano la schedina intera; mercato e campionato le singole selezioni */
   protected readonly betRows = computed<BetGroup[] | null>(() => {
@@ -67,6 +68,22 @@ export class Stats {
     if (value == null) return '–';
     const p = value * 100;
     return `${p > 0 ? '+' : p < 0 ? '−' : ''}${Math.abs(p).toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+  }
+
+  /** Verdetto sul fiuto: conta solo se la differenza supera due errori standard (come per il radar) */
+  protected skillVerdict(v: Versus): string {
+    if (v.skill == null || v.skill_std_error == null) return '';
+    if (v.judged < 30) return 'Servono almeno 30 selezioni chiuse per dire qualcosa.';
+    if (v.skill > 2 * v.skill_std_error) return 'Vinci più spesso di quanto Archie si aspettava: il tuo fiuto aggiunge qualcosa.';
+    if (v.skill < -2 * v.skill_std_error) return 'Vinci meno spesso di quanto Archie si aspettava: fidati di più delle probabilità.';
+    return 'In linea con Archie: la differenza è dentro il caso.';
+  }
+
+  protected versusRows(v: Versus): [string, string, VersusGroup | null][] {
+    return [
+      ["Archie d'accordo", 'aveva valore alla tua quota', v.agreed],
+      ['Archie contrario', "non l'avrebbe giocata", v.disagreed],
+    ];
   }
 
   protected cards(s: SummaryOut): [string, string, BetSummary][] {

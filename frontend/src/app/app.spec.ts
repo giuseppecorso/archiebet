@@ -198,4 +198,29 @@ describe('ArchieBet: navigazione', () => {
     second.flush({ horizon: 'week', profile: 'coraggiosa', legs: 4, missing: [], multiples: [] });
     await harness.fixture.whenStable();
   });
+
+  it("tu contro Archie: fiuto e giocate d'accordo o contrarie", async () => {
+    const harness = await navigateAs('/statistiche', true);
+    const empty = { bets: 0, open: 0, settled: 0, won: 0, staked: '0', returned: '0', profit: '0', roi: null, win_rate: null, avg_clv: null, clv_count: 0 };
+    (await nextRequest((r) => r.url.startsWith('/api/bets/summary'))).flush({ period: 'all', real: empty, simulated: empty });
+    (await nextRequest('/api/budget')).flush({ week_staked: '0', week_budget: null, month_staked: '0', month_budget: null, warnings: [] });
+    (await nextRequest((r) => r.url.startsWith('/api/bets/breakdown'))).flush({
+      by_size: [], by_bookmaker: [], by_market: [], by_competition: [],
+      habits: { bets: 0, avg_stake: null, avg_odds: null, multiple_share: null, avg_selections: null, top_market: null, top_bookmaker: null, top_teams: [] },
+    });
+    const versus = await nextRequest((r) => r.url.startsWith('/api/bets/versus'));
+    expect(versus.request.url).toBe('/api/bets/versus?kind=real&period=all');
+    versus.flush({
+      judged: 40, without_archie: 2, skill: 3.2, skill_std_error: 2.9,
+      agreed: { n: 25, won: 14, expected_wins: 12.1, roi: 0.08, avg_value: 0.04 },
+      disagreed: { n: 15, won: 6, expected_wins: 6.7, roi: -0.12, avg_value: -0.07 },
+    });
+    await harness.fixture.whenStable();
+    const section = harness.routeNativeElement!.querySelector('[aria-labelledby="versus-title"]')!.textContent!;
+    expect(section).toContain('+3,2');
+    expect(section).toContain('dentro il caso'); // 3,2 < 2 × 2,9
+    expect(section).toContain("Archie d'accordo");
+    expect(section).toContain('+8,0%');
+    expect(section).toContain('2 selezioni chiuse non hanno una previsione');
+  });
 });

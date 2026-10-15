@@ -131,6 +131,58 @@
   }
 </section>
 
+<section class="panel box block" aria-labelledby="versus-title">
+  <div class="box-head">
+    <h2 id="versus-title" class="title box-title">Tu contro Archie <span class="muted small">· {{ kind() === 'real' ? 'reali' : 'simulate' }}</span></h2>
+    <span class="muted small">con le probabilità che Archie aveva al momento della giocata</span>
+  </div>
+  @if (versus.value(); as v) {
+    @if (v.judged === 0) {
+      <p class="muted">
+        Ancora nessuna selezione chiusa con una previsione di Archie in questo periodo.
+        @if (v.without_archie) { ({{ v.without_archie }} chiuse senza previsione: partite senza quote né modello al momento della giocata.) }
+      </p>
+    } @else {
+      <div class="tiles">
+        <div class="tile">
+          <span class="label">Il tuo fiuto</span>
+          <span [class]="'led ' + sign(v.skill)">{{ (v.skill ?? 0) > 0 ? '+' : '' }}{{ fmt.num(v.skill, 1) }}</span>
+          <span class="muted small">vinte in più delle attese (± {{ fmt.num(v.skill_std_error, 1) }})</span>
+        </div>
+      </div>
+      <p class="note">{{ skillVerdict(v) }}</p>
+      <div class="table-wrap">
+        <table class="groups">
+          <thead>
+            <tr><th scope="col"></th><th scope="col">Selezioni</th><th scope="col">Vinte</th><th scope="col">Attese da Archie</th><th scope="col">Valore medio</th><th scope="col">Rendimento</th></tr>
+          </thead>
+          <tbody>
+            @for (r of versusRows(v); track r[0]) {
+              <tr>
+                <th scope="row">{{ r[0] }} <span class="muted small">{{ r[1] }}</span></th>
+                @if (r[2]; as g) {
+                  <td>{{ g.n }}</td>
+                  <td>{{ g.won }}</td>
+                  <td>{{ fmt.num(g.expected_wins, 1) }}</td>
+                  <td [class]="sign(g.avg_value)">{{ signedPct(g.avg_value) }}</td>
+                  <td [class]="sign(g.roi)">{{ signedPct(g.roi) }}</td>
+                } @else {
+                  <td colspan="5" class="muted">nessuna</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="note">
+        Rendimento "come singole" a puntata fissa. Nel lungo periodo le giocate con Archie d'accordo dovrebbero rendere di più:
+        se succede il contrario per molte settimane, il segnale è da prendere sul serio.
+        @if (v.without_archie) { {{ v.without_archie }} selezioni chiuse non hanno una previsione di Archie e non sono contate. }
+      </p>
+    }
+  }
+</section>
+
 @if (breakdown.value()?.habits; as h) {
   <section class="panel box block" aria-labelledby="habits-title">
     <h2 id="habits-title" class="title box-title">Le tue abitudini <span class="muted small">· {{ kind() === 'real' ? 'reali' : 'simulate' }}</span></h2>
