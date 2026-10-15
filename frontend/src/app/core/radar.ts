@@ -7,7 +7,7 @@ export interface RadarSignal {
   kickoff_at: string;
   home: TeamRef;
   away: TeamRef;
-  market: '1X2' | 'OU2.5';
+  market: '1X2' | 'OU2.5' | 'GG';
   selection: string;
   /** Prima rilevazione = giocata simulata: quota e valore restano questi */
   detected_at: string;

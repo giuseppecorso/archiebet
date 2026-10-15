@@ -9,7 +9,7 @@ Verificato sulle risposte reali (ottobre 2026):
   funziona anche per le partite future; betfair-ex solo da solo e con un esito, quindi non lo usiamo
 - id: Serie A 23, Serie B 53, Premier League 17, LaLiga 8, Bundesliga 35, Ligue 1 34
   (Serie C gironi 26554/26556/26558); mercati 101 = 1X2 (esiti 101/102/103),
-  1010 = Under/Over 2.5 (esiti 1010 over / 1011 under)
+  1010 = Under/Over 2.5 (esiti 1010 over / 1011 under), 101902 = doppia chance (1X / 12 / 2X), 104 = Goal/NoGoal
 - le squadre arrivano solo come id: i nomi si prendono da /participants (una richiesta, poi in cache)
 """
 
@@ -51,6 +51,8 @@ BOOKMAKERS = SHARP | ITALIAN
 MARKETS = {
     "101": ("1X2", {"101": "1", "102": "X", "103": "2"}),
     "1010": ("OU2.5", {"1010": "over", "1011": "under"}),
+    "101902": ("DC", {"101902": "1X", "101903": "12", "101904": "X2"}),  # Pinnacle non la quota
+    "104": ("GG", {"104": "yes", "105": "no"}),
 }
 
 # Pausa minima tra due chiamate allo stesso endpoint (secondi), con un po' di margine

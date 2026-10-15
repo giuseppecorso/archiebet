@@ -80,7 +80,28 @@ describe('ArchieBet: navigazione', () => {
       sources: [{ source: 'football-data', label: 'Serie A e B', configured: true, last_ok_at: '2026-10-10T11:00:00Z', last_run_at: '2026-10-10T11:00:00Z', last_run_ok: true, message: 'ok' }],
       competitions: [{ competition: serieA, last_result_at: '2026-09-20T18:45:00Z', awaiting_results: 8, next_match_at: '2026-10-10T18:45:00Z' }],
     });
+    const legMatch = (id: number, home: string, away: string) => ({
+      id, competition: serieA, season: '2026/27', kickoff_at: '2026-10-10T18:45:00Z', kickoff_has_time: true,
+      status: 'scheduled', home: { id, name: home }, away: { id: id + 100, name: away }, home_goals: null, away_goals: null, odds_1x2: null,
+    });
+    (await nextRequest('/api/picks/multiple?horizon=today')).flush({
+      horizon: 'today', missing: ['Eurobet'],
+      multiples: [{
+        bookmaker: 'Sisal', with_value: false, price: 3.4, win_probability: 0.28, one_in: 3.57, alive_before_last: 0.4, expected_value: -0.048,
+        legs: [
+          { match: legMatch(7, 'Napoli', 'Frosinone'), market: '1X2', selection: '1', probability: 0.7, price: 1.38, value: -0.034 },
+          { match: legMatch(8, 'Roma', 'Lecce'), market: 'DC', selection: '1X', probability: 0.8, price: 1.2, value: -0.04 },
+        ],
+      }],
+    });
     await harness.fixture.whenStable();
+    const card = harness.routeNativeElement!.querySelector('ab-multiple-card')!.textContent!;
+    expect(card).toContain('1 · Napoli');
+    expect(card).toContain('3.40'); // quota totale
+    expect(card).toContain('34,00 €'); // vincita con 10 €
+    expect(card).toContain('1 volta su 3,6');
+    expect(card).toContain('Nessuna multipla con valore'); // onestà: senza valore lo dice
+    expect(card).toContain('Su Eurobet non c');
 
     const bar = harness.routeNativeElement!.querySelector('ab-data-status')!.textContent!;
     expect(bar).toContain('previsioni 3/5');

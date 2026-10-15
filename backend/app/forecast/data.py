@@ -49,7 +49,10 @@ def load_games(db: Session, country: str = MODEL_COUNTRY) -> list[Game]:
 
 # Riferimento di mercato per il confronto e il CLV (D48): Pinnacle di chiusura, altrimenti Betfair Exchange
 REFERENCE_BOOKMAKERS = ("pinnacle", "betfair_ex")
-ODDS_MARKETS = {"1X2": ("1", "X", "2"), "OU2.5": ("over", "under")}
+# Mercati a esiti che si escludono (le probabilità senza margine sommano a 1)
+ODDS_MARKETS = {"1X2": ("1", "X", "2"), "OU2.5": ("over", "under"), "GG": ("yes", "no")}
+# La doppia chance ha esiti che si sovrappongono: la sua probabilità giusta si ricava dall'1X2, mai dalle sue quote
+OVERLAPPING_MARKETS = {"DC": ("1X", "12", "X2")}
 
 Odds = dict[int, dict[str, dict[str, float]]]  # partita → mercato → esito → quota
 

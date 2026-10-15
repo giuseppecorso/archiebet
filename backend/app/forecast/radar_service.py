@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.forecast.clv import ClvSummary
-from app.forecast.data import ODDS_MARKETS
+from app.forecast.data import ODDS_MARKETS, OVERLAPPING_MARKETS
 from app.forecast.radar import (
     PLAYABLE_BOOKMAKERS,
     RADAR_THRESHOLD,
@@ -40,7 +40,7 @@ def load_book_odds(db: Session, match_ids: Iterable[int], closing: bool) -> dict
         rows = db.execute(
             select(MatchOdds.match_id, MatchOdds.source, MatchOdds.bookmaker, MatchOdds.market, MatchOdds.selection, MatchOdds.price).where(
                 MatchOdds.match_id.in_(ids[start : start + 500]),
-                MatchOdds.market.in_(ODDS_MARKETS),
+                MatchOdds.market.in_([*ODDS_MARKETS, *OVERLAPPING_MARKETS]),
                 MatchOdds.is_closing.is_(closing),
             )
         ).all()
@@ -90,11 +90,18 @@ def refresh_radar(db: Session, now: datetime, playable: Sequence[str] = PLAYABLE
     return created
 
 
-def _won(match: Match, market: str, selection: str) -> bool:
+def won(home_goals: int, away_goals: int, market: str, selection: str) -> bool:
+    """L'esito si è verificato? (1X2, doppia chance, Under/Over 2.5, Goal/NoGoal)"""
+    outcome = "1" if home_goals > away_goals else "X" if home_goals == away_goals else "2"
     if market == "1X2":
-        h, a = match.home_goals, match.away_goals
-        return selection == ("1" if h > a else "X" if h == a else "2")
-    return (match.home_goals + match.away_goals >= 3) == (selection == "over")
+        return selection == outcome
+    if market == "DC":
+        return outcome in selection
+    if market == "GG":
+        return (home_goals > 0 and away_goals > 0) == (selection == "yes")
+    if market == "OU2.5":
+        return (home_goals + away_goals >= 3) == (selection == "over")
+    raise ValueError(f"Mercato sconosciuto: {market}")
 
 
 def settle_radar(db: Session) -> int:
@@ -110,7 +117,7 @@ def settle_radar(db: Session) -> int:
     settled = 0
     for signal, match in rows:
         if match.home_goals is not None and match.away_goals is not None:
-            signal.won = _won(match, signal.market, signal.selection)
+            signal.won = won(match.home_goals, match.away_goals, signal.market, signal.selection)
         ref = fair_reference(closing.get(signal.match_id, {}), signal.market)
         if ref is None:  # chiusura non ancora disponibile: si riprova al prossimo aggiornamento
             continue

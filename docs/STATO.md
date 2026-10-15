@@ -36,10 +36,13 @@ Test: 129 backend + 11 frontend, tutti verdi.
 - [x] Pagina **Radar** nel menu (`/radar`, API `/api/radar`): segnali sulle prossime partite con dove giocarla, quota giusta, valore, "sospetto" sopra il 15%, quota di adesso; ultimi segnali con CLV; riepilogo della simulazione verso le 300 giocate
 - [x] **Campionati maggiori europei** (D64-D65): Premier League, LaLiga, Bundesliga, Ligue 1 con storico dal 2005/06 (football-data, ~30.000 partite, prima importazione ~1 minuto), quote OddsPapi, tendina dei paesi in dashboard. Modello solo italiano; modelli esteri e coppe in Fase 8
 - [x] **Pronostici** (D67, menu "Pronostici", API `/api/picks`): per ogni partita dei prossimi 7 giorni la stima migliore (Pinnacle → Betfair → media mercato → modello di Archie), pronostico secco, quote di Sisal ed Eurobet con etichetta valore / nella norma / paga poco, altri mercati (doppia chance, Under/Over 2.5). Il radar è diventato la scheda **Occasioni** della stessa pagina (/radar porta lì)
-- [ ] Multipla del giorno (sui pronostici, scartando le quote che pagano poco), generatore, Io contro Archie
+- [x] **Multipla del giorno** in dashboard (D68, API `/api/picks/multiple`): una per Sisal e una per Eurobet, Oggi / Settimana, prima con valore, altrimenti nella norma dichiarata; quota, vincita, 1 volta su N, vivo all'ultima, valore atteso
+- [x] Mercati doppia chance e Goal/NoGoal da OddsPapi (pronostici, multipla, radar per il Goal/NoGoal)
+- [ ] Generatore "Archie, fammi una multipla" (più tranquilla / più coraggiosa, numero di partite, mercati, campionati)
+- [ ] Io contro Archie
 - Tolto: "Dove conviene giocarla" (D67)
 
-Test: 227 backend + 15 frontend.
+Test: 236 backend + 15 frontend.
 
 **Idea da valutare a fine fase:** far creare a OddsPapi le partite di A e B fino a 10 giorni prima (oggi aspettiamo il calendario di football-data, che arriva pochi giorni prima): più segnali e quote più vicine all'apertura.
 

@@ -6,7 +6,7 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import delete, select
 
-from app.forecast.radar_service import live_summary, refresh_radar, settle_radar
+from app.forecast.radar_service import live_summary, refresh_radar, settle_radar, won
 from app.models import Match, MatchOdds, RadarSignal
 from tests.test_football_api import match_id, seeded  # noqa: F401 (fixture condivisa)
 
@@ -91,3 +91,11 @@ def test_radar_api_lists_signals_and_live_progress(logged_client, seeded, db):  
     assert body["live"] == {"n": 0, "target": 300, "mean_clv": None, "clv_std_error": None,
                             "share_positive": None, "roi": None, "verdict": "in prova"}
     assert "Sisal" in body["playable"] and body["threshold"] == 0.02
+
+
+def test_won_for_every_market():
+    assert won(2, 1, "1X2", "1") and not won(2, 1, "1X2", "X")
+    assert won(1, 1, "DC", "1X") and won(1, 1, "DC", "X2") and not won(1, 1, "DC", "12")
+    assert won(0, 2, "DC", "12") and not won(0, 2, "DC", "1X")
+    assert won(1, 1, "GG", "yes") and won(3, 0, "GG", "no") and not won(3, 0, "GG", "yes")
+    assert won(2, 1, "OU2.5", "over") and won(1, 1, "OU2.5", "under")

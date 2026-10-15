@@ -18,7 +18,7 @@ from app.forecast.radar import RADAR_THRESHOLD, BookOdds, fair_reference
 MARKET_SOURCES = ("pinnacle", "betfair_ex", "market_avg")  # dal più preciso al meno preciso
 MODEL_SOURCE = "archie"
 LOW_PRICE = -0.05  # sotto questo valore il bookmaker "paga poco" (margine più alto del solito)
-PICK_MARKETS = ("1X2", "DC", "OU2.5")
+PICK_MARKETS = ("1X2", "DC", "OU2.5", "GG")
 
 
 @dataclass(frozen=True)
@@ -51,7 +51,7 @@ def double_chance(p1x2: dict[str, float]) -> dict[str, float]:
 def best_probabilities(book: BookOdds, model: dict[str, Any] | None) -> dict[str, tuple[str, dict[str, float]]]:
     """Mercato → (fonte, probabilità). La doppia chance segue la fonte dell'1X2."""
     out: dict[str, tuple[str, dict[str, float]]] = {}
-    for market in ("1X2", "OU2.5"):
+    for market in ("1X2", "OU2.5", "GG"):
         ref = fair_reference(book, market, MARKET_SOURCES)
         if ref is not None:
             out[market] = ref

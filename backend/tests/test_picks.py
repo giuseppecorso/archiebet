@@ -75,3 +75,19 @@ def test_picks_api(logged_client, seeded, db):  # noqa: F811
     pb = by_match[palermo_bari]
     assert next(m for m in pb["markets"] if m["market"] == "1X2")["source"] == "Media mercato"
     assert pb["favorite"] == "1" and pb["signals"] == 0
+
+
+def test_double_chance_and_goal_offers():
+    book = {
+        "pinnacle": PIN | {"GG": {"yes": 1.8, "no": 2.0}},  # giuste 0,5263 / 0,4737
+        "sisal": {"DC": {"1X": 1.35, "X2": 2.0}, "GG": {"yes": 1.95, "no": 1.8}},
+    }
+    picks = {p.market: p for p in match_picks(book, None, ("sisal",))}
+    p1x = (0.5 + 1 / 3.6) / (0.5 + 1 / 3.6 + 0.25)  # 1X dall'1X2 di Pinnacle: 0,7568
+    [dc] = picks["DC"].offers["1X"]
+    assert picks["DC"].probabilities["1X"] == pytest.approx(p1x)
+    assert dc.value == pytest.approx(p1x * 1.35 - 1)  # +2,2%: valore
+    assert dc.verdict == "valore"
+    gg = picks["GG"]
+    assert gg.source == "pinnacle" and gg.probabilities["yes"] == pytest.approx((1 / 1.8) / (1 / 1.8 + 1 / 2.0))
+    assert gg.offers["yes"][0].value == pytest.approx(gg.probabilities["yes"] * 1.95 - 1)
