@@ -11,8 +11,9 @@ from sqlalchemy import select
 from app.api.football import MatchCard, match_cards, match_detail
 from app.auth.deps import CurrentUser, DbSession
 from app.betting.analysis import Breakdown, breakdown
-from app.betting.calc import MARKETS, potential_payout
+from app.betting.calc import LOST, MARKETS, WON, potential_payout
 from app.betting.service import BetError, BudgetStatus, BetSummary, SelectionInput, budget_status, create_bet, settle_open_bets, summarize
+from app.betting.versus import JudgedPick, Versus, archie_probability, versus
 from app.models import Bet, BetSnapshot, Match, MatchOdds, Team, UserSettings
 from app.adapters.football_data import season_of
 
@@ -213,6 +214,34 @@ def bets_breakdown(
     if since:
         query = query.where(Bet.placed_at >= since)
     return breakdown(db.scalars(query).all())
+
+
+@router.get("/bets/versus")
+def bets_versus(
+    user: CurrentUser,
+    db: DbSession,
+    kind: Literal["real", "simulated"] = "real",
+    period: Literal["week", "30d", "season", "all"] = "all",
+) -> Versus:
+    """Io contro Archie: selezioni chiuse giudicate con le probabilità di Archie al momento della giocata."""
+    settle_open_bets(db)
+    query = select(Bet).where(Bet.user_id == user.id, Bet.kind == kind)
+    since = _period_start(period, datetime.now(UTC))
+    if since:
+        query = query.where(Bet.placed_at >= since)
+    bets = db.scalars(query).all()
+    snapshots = {s.bet_id: s.data for s in db.scalars(select(BetSnapshot).where(BetSnapshot.bet_id.in_([b.id for b in bets])))}
+    judged, without = [], 0
+    for bet in bets:
+        for sel in bet.selections:
+            if sel.status not in (WON, LOST):
+                continue
+            p = archie_probability(snapshots.get(bet.id, {}).get(str(sel.match_id)), sel.market, sel.pick)
+            if p is None:
+                without += 1
+            else:
+                judged.append(JudgedPick(p, float(sel.odds), sel.status == WON))
+    return versus(judged, without)
 
 
 @router.get("/bets/{bet_id}")
