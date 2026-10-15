@@ -42,7 +42,7 @@ Test: 129 backend + 11 frontend, tutti verdi.
 - [ ] Io contro Archie
 - Tolto: "Dove conviene giocarla" (D67)
 
-Test: 241 backend + 16 frontend.
+Test: 239 backend + 16 frontend.
 
 **Idea da valutare a fine fase:** far creare a OddsPapi le partite di A e B fino a 10 giorni prima (oggi aspettiamo il calendario di football-data, che arriva pochi giorni prima): più segnali e quote più vicine all'apertura.
 
