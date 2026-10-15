@@ -2,6 +2,7 @@
   <h1 class="title page-title">Pronostici</h1>
   <div role="tablist" aria-label="Scheda" class="seg">
     <button type="button" role="tab" [attr.aria-selected]="tab() === 'pronostici'" (click)="setTab('pronostici')">Tutti i pronostici</button>
+    <button type="button" role="tab" [attr.aria-selected]="tab() === 'multipla'" (click)="setTab('multipla')">Fammi una multipla</button>
     <button type="button" role="tab" [attr.aria-selected]="tab() === 'occasioni'" (click)="setTab('occasioni')">
       Occasioni <span class="trial">in prova</span>
     </button>
@@ -10,6 +11,8 @@
 
 @if (tab() === 'occasioni') {
   <ab-radar [embedded]="true" />
+} @else if (tab() === 'multipla') {
+  <ab-generator />
 } @else {
   @if (data.error()) {
     <p class="warn">I pronostici non rispondono: controlla che il backend sia acceso.</p>

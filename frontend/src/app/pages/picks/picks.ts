@@ -5,8 +5,9 @@ import { Market, pickLabel } from '../../core/bets';
 import { dayLabel, fairOdds, kickoffTime, odds, pct, signedPct } from '../../core/format';
 import { MarketPick, Pick, PicksOut } from '../../core/picks';
 import { Radar } from '../radar/radar';
+import { Generator } from './generator';
 
-type Tab = 'pronostici' | 'occasioni';
+type Tab = 'pronostici' | 'multipla' | 'occasioni';
 
 const SELECTIONS: Record<MarketPick['market'], string[]> = { '1X2': ['1', 'X', '2'], DC: ['1X', 'X2', '12'], 'OU2.5': ['over', 'under'], GG: ['yes', 'no'] };
 const MARKET_LABEL: Record<MarketPick['market'], string> = { '1X2': 'Esito finale', DC: 'Doppia chance', 'OU2.5': 'Under / Over 2.5', GG: 'Goal / NoGoal' };
@@ -14,14 +15,17 @@ const MARKET_LABEL: Record<MarketPick['market'], string> = { '1X2': 'Esito final
 /** Pronostici (D67): la stima migliore per ogni partita, con le quote di Sisal ed Eurobet. Scheda "Occasioni" = radar. */
 @Component({
   selector: 'ab-picks',
-  imports: [RouterLink, Radar],
+  imports: [RouterLink, Radar, Generator],
   templateUrl: './picks.html',
   styleUrl: './picks.scss',
 })
 export class Picks {
   /** Dall'indirizzo: ?tab=occasioni */
   readonly tabParam = input<string | undefined>(undefined, { alias: 'tab' });
-  protected readonly tab = computed<Tab>(() => (this.tabParam() === 'occasioni' ? 'occasioni' : 'pronostici'));
+  protected readonly tab = computed<Tab>(() => {
+    const t = this.tabParam();
+    return t === 'occasioni' || t === 'multipla' ? t : 'pronostici';
+  });
 
   protected readonly data = httpResource<PicksOut>(() => (this.tab() === 'pronostici' ? '/api/picks' : undefined));
   protected readonly country = signal<string>('');
@@ -48,7 +52,7 @@ export class Picks {
   private readonly router = inject(Router);
 
   protected setTab(tab: Tab): void {
-    this.router.navigate([], { queryParams: { tab: tab === 'occasioni' ? 'occasioni' : null } });
+    this.router.navigate([], { queryParams: { tab: tab === 'pronostici' ? null : tab } });
   }
 
   protected market(p: Pick, market: MarketPick['market']): MarketPick | undefined {

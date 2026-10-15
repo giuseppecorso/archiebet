@@ -38,11 +38,11 @@ Test: 129 backend + 11 frontend, tutti verdi.
 - [x] **Pronostici** (D67, menu "Pronostici", API `/api/picks`): per ogni partita dei prossimi 7 giorni la stima migliore (Pinnacle → Betfair → media mercato → modello di Archie), pronostico secco, quote di Sisal ed Eurobet con etichetta valore / nella norma / paga poco, altri mercati (doppia chance, Under/Over 2.5). Il radar è diventato la scheda **Occasioni** della stessa pagina (/radar porta lì)
 - [x] **Multipla del giorno** in dashboard (D68, API `/api/picks/multiple`): una per Sisal e una per Eurobet, Oggi / Settimana, prima con valore, altrimenti nella norma dichiarata; quota, vincita, 1 volta su N, vivo all'ultima, valore atteso
 - [x] Mercati doppia chance e Goal/NoGoal da OddsPapi (pronostici, multipla, radar per il Goal/NoGoal)
-- [ ] Generatore "Archie, fammi una multipla" (più tranquilla / più coraggiosa, numero di partite, mercati, campionati)
+- [x] Generatore "Archie, fammi una multipla" (D69): scheda "Fammi una multipla" in Pronostici, profili tranquilla/equilibrata/coraggiosa, 2–6 partite, mercati, campionati, importo
 - [ ] Io contro Archie
 - Tolto: "Dove conviene giocarla" (D67)
 
-Test: 236 backend + 15 frontend.
+Test: 241 backend + 16 frontend.
 
 **Idea da valutare a fine fase:** far creare a OddsPapi le partite di A e B fino a 10 giorni prima (oggi aspettiamo il calendario di football-data, che arriva pochi giorni prima): più segnali e quote più vicine all'apertura.
 

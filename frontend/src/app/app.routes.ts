@@ -3,19 +3,22 @@ import { authGuard } from './core/auth.guard';
 import { SECTIONS } from './core/sections';
 import { Shell } from './layout/shell';
 import { Login } from './pages/login/login';
-import { MatchPage } from './pages/match/match';
-import { LabLeagues } from './pages/lab/lab-leagues';
-import { LabTeams } from './pages/lab/lab-teams';
-import { Bets } from './pages/bets/bets';
-import { NewBet } from './pages/bets/new-bet';
 import { Matches } from './pages/matches/matches';
-import { SettingsPage } from './pages/settings/settings';
-import { Picks } from './pages/picks/picks';
-import { Stats } from './pages/stats/stats';
-import { SectionPlaceholder } from './pages/section-placeholder/section-placeholder';
 
-/** Sezioni già costruite; le altre mostrano la pagina provvisoria */
-const BUILT: Record<string, Routes[number]['component']> = { partite: Matches, pronostici: Picks, schedine: Bets, statistiche: Stats, impostazioni: SettingsPage };
+type LoadComponent = NonNullable<Routes[number]['loadComponent']>;
+
+/**
+ * Sezioni già costruite; le altre mostrano la pagina provvisoria.
+ * Tutte le pagine tranne login e dashboard si scaricano solo quando servono (lazy loading): l'avvio resta leggero.
+ */
+const BUILT: Record<string, LoadComponent> = {
+  pronostici: () => import('./pages/picks/picks').then((m) => m.Picks),
+  schedine: () => import('./pages/bets/bets').then((m) => m.Bets),
+  statistiche: () => import('./pages/stats/stats').then((m) => m.Stats),
+  impostazioni: () => import('./pages/settings/settings').then((m) => m.SettingsPage),
+};
+const placeholder: LoadComponent = () => import('./pages/section-placeholder/section-placeholder').then((m) => m.SectionPlaceholder);
+const labTeams: LoadComponent = () => import('./pages/lab/lab-teams').then((m) => m.LabTeams);
 
 export const routes: Routes = [
   { path: 'login', component: Login, title: 'Accedi · ArchieBet' },
@@ -25,17 +28,18 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'partite' },
-      { path: 'partite/:id', component: MatchPage, title: 'Partita · ArchieBet' },
-      { path: 'schedine/nuova', component: NewBet, title: 'Registra una giocata · ArchieBet' },
-      { path: 'schedine/:id', component: Bets, title: 'Le mie schedine · ArchieBet' },
+      { path: 'partite', component: Matches, title: 'Partite · ArchieBet', data: { section: SECTIONS[0] } },
+      { path: 'partite/:id', loadComponent: () => import('./pages/match/match').then((m) => m.MatchPage), title: 'Partita · ArchieBet' },
+      { path: 'schedine/nuova', loadComponent: () => import('./pages/bets/new-bet').then((m) => m.NewBet), title: 'Registra una giocata · ArchieBet' },
+      { path: 'schedine/:id', loadComponent: BUILT['schedine'], title: 'Le mie schedine · ArchieBet' },
       { path: 'radar', redirectTo: () => '/pronostici?tab=occasioni' },
       { path: 'laboratorio', pathMatch: 'full', redirectTo: 'laboratorio/campionati' },
-      { path: 'laboratorio/campionati', component: LabLeagues, title: 'Laboratorio · Campionati · ArchieBet' },
-      { path: 'laboratorio/squadre', component: LabTeams, title: 'Laboratorio · Squadre · ArchieBet' },
-      { path: 'laboratorio/squadre/:id', component: LabTeams, title: 'Laboratorio · Squadra · ArchieBet' },
-      ...SECTIONS.filter((section) => section.path !== 'laboratorio').map((section) => ({
+      { path: 'laboratorio/campionati', loadComponent: () => import('./pages/lab/lab-leagues').then((m) => m.LabLeagues), title: 'Laboratorio · Campionati · ArchieBet' },
+      { path: 'laboratorio/squadre', loadComponent: labTeams, title: 'Laboratorio · Squadre · ArchieBet' },
+      { path: 'laboratorio/squadre/:id', loadComponent: labTeams, title: 'Laboratorio · Squadra · ArchieBet' },
+      ...SECTIONS.filter((section) => section.path !== 'laboratorio' && section.path !== 'partite').map((section) => ({
         path: section.path,
-        component: BUILT[section.path] ?? SectionPlaceholder,
+        loadComponent: BUILT[section.path] ?? placeholder,
         title: `${section.label} · ArchieBet`,
         data: { section },
       })),

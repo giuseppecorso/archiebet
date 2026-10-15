@@ -171,4 +171,31 @@ describe('ArchieBet: navigazione', () => {
     expect(page.querySelector('.occ')?.textContent?.trim()).toBe('1 occasione');
     expect(page.querySelector('.source')?.textContent).toContain('Pinnacle');
   });
+
+  it('il generatore manda le scelte al backend e mostra la multipla', async () => {
+    const harness = await navigateAs('/pronostici?tab=multipla', true);
+    const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
+    const premier = { code: 'ENG-1', name: 'Premier League', country: 'Inghilterra', tier: 1 };
+    (await nextRequest('/api/competitions')).flush([serieA, premier]);
+    const first = await nextRequest((r) => r.url.startsWith('/api/picks/multiple'));
+    expect(first.request.url).toBe('/api/picks/multiple?horizon=week&profile=equilibrata&legs=4'); // tutti i mercati e campionati: niente filtri
+    first.flush({ horizon: 'week', profile: 'equilibrata', legs: 4, multiples: [], missing: ['Sisal', 'Eurobet'] });
+    await harness.fixture.whenStable();
+    const page = harness.routeNativeElement!;
+    expect(page.querySelector('ab-generator')!.textContent).toContain("non c'è una multipla sensata");
+
+    const click = (text: string) =>
+      ([...page.querySelectorAll('ab-generator button')] as HTMLButtonElement[]).find((b) => b.textContent?.trim() === text)!.click();
+    click('Più coraggiosa');
+    click('Goal/NoGoal'); // tolto dai mercati
+    click('Premier League'); // solo Premier
+    harness.fixture.detectChanges();
+    const second = await nextRequest((r) => r.url.startsWith('/api/picks/multiple'));
+    const url = new URL(second.request.url, 'http://x');
+    expect(url.searchParams.get('profile')).toBe('coraggiosa');
+    expect(url.searchParams.get('markets')).toBe('1X2,DC,OU2.5');
+    expect(url.searchParams.get('competitions')).toBe('ENG-1');
+    second.flush({ horizon: 'week', profile: 'coraggiosa', legs: 4, missing: [], multiples: [] });
+    await harness.fixture.whenStable();
+  });
 });
