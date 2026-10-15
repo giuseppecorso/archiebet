@@ -6,9 +6,9 @@
 """
 
 from collections.abc import Iterable, Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.forecast.clv import ClvSummary
@@ -104,20 +104,32 @@ def won(home_goals: int, away_goals: int, market: str, selection: str) -> bool:
     raise ValueError(f"Mercato sconosciuto: {market}")
 
 
-def settle_radar(db: Session) -> int:
-    """Calcola CLV (con la chiusura di D48) ed esito dei segnali delle partite finite. Restituisce quanti ne ha chiusi."""
+def settle_radar(db: Session, now: datetime | None = None) -> int:
+    """Misura i segnali: CLV appena c'è la chiusura (dopo il calcio d'inizio, anche senza risultato), esito col risultato.
+
+    Il CLV non aspetta il risultato: football-data lo pubblica anche settimane dopo. Restituisce i CLV nuovi.
+    """
+    now = now or datetime.now(UTC)
     rows = db.execute(
         select(RadarSignal, Match)
         .join(Match, RadarSignal.match_id == Match.id)
-        .where(RadarSignal.clv.is_(None), Match.status == MatchStatus.FINISHED)
+        .where(
+            Match.status != MatchStatus.CANCELLED,
+            or_(
+                and_(RadarSignal.clv.is_(None), Match.kickoff_at < now),
+                and_(RadarSignal.won.is_(None), Match.status == MatchStatus.FINISHED),
+            ),
+        )
     ).all()
     if not rows:
         return 0
     closing = load_book_odds(db, {s.match_id for s, _ in rows}, closing=True)
     settled = 0
     for signal, match in rows:
-        if match.home_goals is not None and match.away_goals is not None:
+        if match.status == MatchStatus.FINISHED and match.home_goals is not None and match.away_goals is not None:
             signal.won = won(match.home_goals, match.away_goals, signal.market, signal.selection)
+        if signal.clv is not None:
+            continue
         ref = fair_reference(closing.get(signal.match_id, {}), signal.market)
         if ref is None:  # chiusura non ancora disponibile: si riprova al prossimo aggiornamento
             continue

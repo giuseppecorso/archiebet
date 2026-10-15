@@ -137,7 +137,7 @@ def refresh_predictions_job() -> None:
 def refresh_radar_job() -> None:
     def work() -> str:
         with SessionLocal() as db:
-            settled = settle_radar(db)  # prima si misurano i segnali delle partite finite
+            settled = settle_radar(db, datetime.now(UTC))  # prima si misurano i segnali delle partite iniziate
             found = refresh_radar(db, datetime.now(UTC), get_settings().radar_bookmaker_list)
         if found or settled:
             logger.info("Radar: %s segnali nuovi, %s misurati con la chiusura", found, settled)

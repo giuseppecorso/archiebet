@@ -62,6 +62,7 @@ def test_settle_with_closing_reference_and_summary(seeded, db):  # noqa: F811
 
     match = db.get(Match, m)
     match.status, match.home_goals, match.away_goals = "finished", 0, 2
+    match.kickoff_at = datetime.now(UTC) - timedelta(hours=3)  # una partita finita è iniziata nel passato
     db.commit()
     assert settle_radar(db) == 0  # chiusura non ancora arrivata
     assert signals(db)[0].won is True  # l'esito invece si sa già
@@ -99,3 +100,22 @@ def test_won_for_every_market():
     assert won(0, 2, "DC", "12") and not won(0, 2, "DC", "1X")
     assert won(1, 1, "GG", "yes") and won(3, 0, "GG", "no") and not won(3, 0, "GG", "yes")
     assert won(2, 1, "OU2.5", "over") and won(1, 1, "OU2.5", "under")
+
+
+def test_clv_does_not_wait_for_the_result(seeded, db):  # noqa: F811
+    m = match_id(db, "Milan", "Inter")
+    set_odds(db, m, "pinnacle", {"1": 2.0, "X": 3.6, "2": 4.0})
+    set_odds(db, m, "sisal", {"1": 1.9, "X": 3.4, "2": 4.4})
+    now = datetime.now(UTC)
+    refresh_radar(db, now)
+    set_odds(db, m, "pinnacle", {"1": 2.1, "X": 3.6, "2": 3.6}, closing=True)
+    kickoff = db.get(Match, m).kickoff_at
+    assert settle_radar(db, kickoff - timedelta(minutes=1)) == 0  # prima del via: niente
+    assert settle_radar(db, kickoff + timedelta(hours=3)) == 1  # iniziata, risultato non ancora arrivato
+    s = signals(db)[0]
+    assert s.clv is not None and s.won is None
+    match = db.get(Match, m)
+    match.status, match.home_goals, match.away_goals = "finished", 1, 1
+    db.commit()
+    assert settle_radar(db, kickoff + timedelta(days=20)) == 0  # nessun CLV nuovo, ma l'esito arriva
+    assert signals(db)[0].won is False
