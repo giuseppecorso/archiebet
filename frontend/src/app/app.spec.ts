@@ -94,7 +94,17 @@ describe('ArchieBet: navigazione', () => {
         ],
       }],
     });
+    (await nextRequest('/api/picks/off-line')).flush([
+      {
+        match: legMatch(7, 'Napoli', 'Frosinone'), market: '1X2', selection: '2', probability: 0.18, bookmaker: 'Eurobet',
+        price: 7.0, value: 0.26, suspicious: true,
+      },
+    ]);
     await harness.fixture.whenStable();
+    const offLine = harness.routeNativeElement!.querySelector('ab-off-line-card')!.textContent!;
+    expect(offLine).toContain('2 · Frosinone');
+    expect(offLine).toContain('+26,0%');
+    expect(offLine).toContain('Sospetta');
     const card = harness.routeNativeElement!.querySelector('ab-multiple-card')!.textContent!;
     expect(card).toContain('1 · Napoli');
     expect(card).toContain('3.40'); // quota totale
