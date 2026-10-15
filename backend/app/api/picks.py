@@ -11,8 +11,9 @@ from sqlalchemy import select
 from app.api.football import BOOKMAKER_LABELS, MatchCard, match_cards
 from app.auth.deps import CurrentUser, DbSession
 from app.config import get_settings
+from app.forecast.clv import SUSPICIOUS_VALUE
 from app.forecast.multiple import LEGS, PROFILES, build_multiple
-from app.forecast.picks import MODEL_SOURCE, PICK_MARKETS, favorite
+from app.forecast.picks import MODEL_SOURCE, PICK_MARKETS, favorite, off_line
 from app.forecast.picks_service import legs_for, upcoming_picks
 from app.ingest.teams import competition_sort_key
 from app.models import RadarSignal
@@ -175,3 +176,35 @@ def multiple(
             )
         )
     return MultiplesOut(horizon=horizon, profile=profile, legs=legs, multiples=multiples, missing=missing)
+
+
+# ---------- Quote fuori linea oggi (D70) ----------
+
+
+class OffLineOut(BaseModel):
+    match: MatchCard
+    market: str
+    selection: str
+    probability: float
+    bookmaker: str
+    price: float
+    value: float
+    suspicious: bool  # sopra il 15%: probabile errore, rischio annullamento (regola 4)
+
+
+@router.get("/off-line")
+def off_line_today(_: CurrentUser, db: DbSession) -> list[OffLineOut]:
+    """Quote di Sisal ed Eurobet di oggi molto sopra il giusto (≥ 8%)."""
+    now = datetime.now(UTC)
+    upcoming = upcoming_picks(db, now, horizon_end(now, "today"), get_settings().radar_bookmaker_list)
+    cards = {c.id: c for c in match_cards(db, [m for m, _ in upcoming], now)}
+    rows = [
+        OffLineOut(
+            match=cards[m.id], market=x.market, selection=x.selection, probability=x.probability,
+            bookmaker=BOOKMAKER_LABELS.get(x.offer.bookmaker, x.offer.bookmaker), price=x.offer.price,
+            value=x.offer.value, suspicious=x.offer.value > SUSPICIOUS_VALUE,
+        )
+        for m, market_picks in upcoming
+        for x in off_line(market_picks)
+    ]  # fmt: skip
+    return sorted(rows, key=lambda r: r.value, reverse=True)

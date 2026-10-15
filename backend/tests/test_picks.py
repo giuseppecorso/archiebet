@@ -4,8 +4,10 @@ from datetime import UTC, datetime
 
 import pytest
 
-from app.forecast.picks import best_probabilities, favorite, match_picks, price_verdict
+from app.api.picks import horizon_end
+from app.forecast.picks import best_probabilities, favorite, match_picks, off_line, price_verdict
 from app.forecast.service import refresh_predictions
+from app.models import Match
 from tests.test_football_api import match_id, seeded  # noqa: F401 (fixture condivisa)
 from tests.test_radar_service import set_odds
 
@@ -91,3 +93,24 @@ def test_double_chance_and_goal_offers():
     gg = picks["GG"]
     assert gg.source == "pinnacle" and gg.probabilities["yes"] == pytest.approx((1 / 1.8) / (1 / 1.8 + 1 / 2.0))
     assert gg.offers["yes"][0].value == pytest.approx(gg.probabilities["yes"] * 1.95 - 1)
+
+
+def test_off_line_prices():
+    book = {"pinnacle": PIN, "sisal": {"1X2": {"1": 2.1, "X": 4.0, "2": 5.0}}, "eurobet": {"1X2": {"2": 4.5}}}
+    lines = off_line(match_picks(book, None, ("sisal", "eurobet")))
+    # 2: 0,2432 × 5,0 − 1 = +21,6% (Sisal) e × 4,5 = +9,4% (Eurobet); X: 0,2703 × 4,0 − 1 = +8,1%; 1: +2,2% non basta
+    assert [(l.selection, l.offer.bookmaker) for l in lines] == [("2", "sisal"), ("2", "eurobet"), ("X", "sisal")]
+    assert lines[0].offer.value == pytest.approx(0.25 / (0.5 + 1 / 3.6 + 0.25) * 5.0 - 1)
+
+
+def test_off_line_api_only_today(logged_client, seeded, db):  # noqa: F811
+    milan_inter = match_id(db, "Milan", "Inter")  # tra 3 giorni: non è "oggi"
+    set_odds(db, milan_inter, "pinnacle", {"1": 3.0, "X": 3.5, "2": 2.4})
+    set_odds(db, milan_inter, "sisal", {"1": 4.0, "X": 3.3, "2": 2.2})  # 1: +28%
+    assert logged_client.get("/api/picks/off-line").json() == []
+    match = db.get(Match, milan_inter)
+    now = datetime.now(UTC)
+    match.kickoff_at = now + (horizon_end(now, "today") - now) / 2  # sempre prima della mezzanotte italiana
+    db.commit()
+    [row] = logged_client.get("/api/picks/off-line").json()
+    assert (row["selection"], row["bookmaker"], row["suspicious"]) == ("1", "Sisal", True)

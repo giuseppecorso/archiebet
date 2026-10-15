@@ -93,3 +93,26 @@ def favorite(picks: Sequence[MarketPick]) -> tuple[str, float] | None:
         return None
     selection = max(one_x_two.probabilities, key=one_x_two.probabilities.get)
     return selection, one_x_two.probabilities[selection]
+
+
+OFF_LINE = 0.08  # una quota "fuori linea": paga almeno l'8% più del giusto (D70)
+
+
+@dataclass(frozen=True)
+class OffLine:
+    market: str
+    selection: str
+    probability: float
+    offer: Offer
+
+
+def off_line(picks: Sequence[MarketPick], threshold: float = OFF_LINE) -> list[OffLine]:
+    """Le quote dei bookmaker di Giuse molto sopra il giusto, dalla più fuori linea."""
+    out = [
+        OffLine(p.market, selection, p.probabilities[selection], o)
+        for p in picks
+        for selection, offers in p.offers.items()
+        for o in offers
+        if o.value >= threshold
+    ]
+    return sorted(out, key=lambda x: x.offer.value, reverse=True)
