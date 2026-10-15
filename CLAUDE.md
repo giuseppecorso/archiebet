@@ -25,8 +25,8 @@ Sei un senior software engineer: progetti e costruisci tu ArchieBet, io guido le
 7. Limiti di gioco impostabili; nessuna funzione premia quanto si gioca, solo quanto si prevede bene.
 8. Basi di scalabilità da subito (sezione 14 delle specifiche): dati legati a user_id, calcoli per partita salvati una volta, un solo modulo per l'AI e uno per ogni fonte dati.
 
-## Stato attuale (2026-10-12)
-Fasi 0, 1 (piano gratuito), 1.5 Laboratorio, 2 Giocate e 3 Modello concluse. Cassaforte 2025/26 aperta il 2026-10-12: modello promosso, radar ancora in prova (troppe poche giocate, D59). Codice del modello in `backend/app/forecast/`. Risultato chiave: in A e B il modello non batte il mercato, il valore sta nel **radar** (quote dei bookmaker contro la quota giusta Pinnacle, D53/D57); tutto resta sul PC di Giuse (D55). **Fase 4 in corso, rimessa a fuoco sui pronostici (D67)**: pagina Pronostici (stima migliore + quote di Sisal ed Eurobet con etichetta di valore), scheda Occasioni (radar), top 5 campionati europei (D64), Multipla del giorno (D68) e generatore (D69); prossimo: Io contro Archie, poi chiusura Fase 4. Dettagli in `docs/STATO.md` e `docs/DECISIONI.md`.
+## Stato attuale (2026-10-15)
+Fasi 0-4 concluse. Fase 4 (rimessa a fuoco sui pronostici, D67): pagina Pronostici (stima migliore: Pinnacle senza margine → Betfair → media mercato → modello di Archie; quote di Sisal ed Eurobet con etichetta di valore), Occasioni (radar, simulazione dal vivo verso 300 giocate, D59), Multipla del giorno e generatore (D68-D69), quote fuori linea e Io contro Archie (D70), top 5 campionati europei (D64). Quote da OddsPapi piano gratuito (D62, D65, D66). Il modello è solo italiano e in A/B non batte il mercato (D53). Tutto resta sul PC di Giuse (D55). **Prossimo passo: Fase 5 – Live**, che parte da una decisione di Giuse sulla fonte a pagamento per risultati e live (API-Football). Dettagli in `docs/STATO.md` e `docs/DECISIONI.md`.
 
 ## Come lavorare (risparmio token: Giuse ha un piano Pro)
 - Leggi solo le parti di file che servono; niente esplorazioni larghe, niente rilettura di file appena scritti.

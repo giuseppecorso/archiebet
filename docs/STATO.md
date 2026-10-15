@@ -1,6 +1,6 @@
 # ArchieBet — Stato del progetto
 
-Ultimo aggiornamento: 2026-10-12
+Ultimo aggiornamento: 2026-10-15
 
 ## Fase 1.5 – Laboratorio (base): CONCLUSA (2026-10-12)
 
@@ -25,7 +25,15 @@ Ultimo aggiornamento: 2026-10-12
 
 Test: 129 backend + 11 frontend, tutti verdi.
 
-## Fase 4 – Pronostici e valore: IN CORSO (rimessa a fuoco con D67)
+## Prossima sessione: Fase 5 – Live
+
+1. **Decisione di Giuse (costa soldi):** la fonte per risultati in diretta e risultati aggiornati. football-data pubblica i risultati con settimane di ritardo (schedine e statistiche restano "in attesa"); OddsPapi `/scores` è a partita e a pagamento sul piano free (non sostenibile). La strada già prevista è il **piano a pagamento di API-Football** (risultati live, Serie C in corso, formazioni): Claude prepara il confronto dei piani con prezzi verificati sul sito.
+2. Primo passo tecnico proposto (IDEE, valutata a fine Fase 4): calendario di A, B e top 5 anche da OddsPapi (già nella richiesta giornaliera, costo zero) → pronostici, multipla e radar vedono le partite fino a 10 giorni prima.
+3. Poi: risultati in diretta, termometro della speranza, "Segui live" nelle schedine.
+
+La simulazione dal vivo del radar (D59, 300 giocate) continua da sola a ogni aggiornamento.
+
+## Fase 4 – Pronostici e valore: CONCLUSA (2026-10-15)
 
 - [x] Modello uscito dalla prova (D59): tolta l'etichetta "in prova" dalla pagina partita, resta la nota sul mercato più preciso
 - [x] Motore del radar (`app/forecast/radar.py`): probabilità giusta Pinnacle/Betfair contro la quota migliore giocabile, segnali ≥ 2%, "sospetto" sopra il 15%
@@ -39,12 +47,13 @@ Test: 129 backend + 11 frontend, tutti verdi.
 - [x] **Multipla del giorno** in dashboard (D68, API `/api/picks/multiple`): una per Sisal e una per Eurobet, Oggi / Settimana, prima con valore, altrimenti nella norma dichiarata; quota, vincita, 1 volta su N, vivo all'ultima, valore atteso
 - [x] Mercati doppia chance e Goal/NoGoal da OddsPapi (pronostici, multipla, radar per il Goal/NoGoal)
 - [x] Generatore "Archie, fammi una multipla" (D69): scheda "Fammi una multipla" in Pronostici, profili tranquilla/equilibrata/coraggiosa, 2–6 partite, mercati, campionati, importo
-- [ ] Io contro Archie
+- [x] **Io contro Archie** (Le mie statistiche, API `/api/bets/versus`): con le probabilità che Archie aveva al momento della giocata (fotografia), il tuo fiuto (vinte − attese ± errore) e il rendimento quando Archie era d'accordo o contrario
+- [x] **Quote fuori linea oggi** in dashboard (D70, API `/api/picks/off-line`): quote di Sisal ed Eurobet ≥ 8% sopra il giusto, "sospetta" sopra il 15% con l'avviso sugli errori palesi
+- [x] Il CLV delle occasioni si misura subito dopo il calcio d'inizio (quota di chiusura), senza aspettare il risultato di football-data
+- In prova (continua da solo): radar / Occasioni fino a 300 giocate misurate (D59)
 - Tolto: "Dove conviene giocarla" (D67)
 
-Test: 239 backend + 16 frontend.
-
-**Idea da valutare a fine fase:** far creare a OddsPapi le partite di A e B fino a 10 giorni prima (oggi aspettiamo il calendario di football-data, che arriva pochi giorni prima): più segnali e quote più vicine all'apertura.
+Test: 246 backend + 17 frontend.
 
 ## Fase 3 – Modello: CONCLUSA (2026-10-12)
 

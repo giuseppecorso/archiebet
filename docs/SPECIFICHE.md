@@ -126,7 +126,7 @@ Forma squadra (xG, Elo, punti), forma e importanza dei giocatori, infortuni e sq
 - Fase 1.5 – Laboratorio (base): schede Campionati e Squadre sui dati già presenti. Fatto: si studiano classifica e numeri di ogni campionato/stagione e la storia di ogni squadra.
 - Fase 2 – Giocate: registrazione giocate reali e simulate, chiusura automatica, statistiche di gioco, limiti, fotografia al momento della giocata.
 - Fase 3 – Modello: Dixon-Coles + rating di forza (anche per la Serie C), mercati, backtest walk-forward, prova del nove dei fattori, verdetto sulla cassaforte. Suggerimenti "in prova" fino al verdetto.
-- Fase 4 – Pronostici e valore (rivista con D67): test OddsPapi, quote automatiche, **Pronostici** (la stima migliore per ogni partita, con le quote di Sisal ed Eurobet ed etichetta di valore), Occasioni sul tuo bookmaker (radar), quote fuori linea, Multipla del giorno, generatore, Io contro Archie. Parte il mese di simulazione (giudicato su CLV e calibrazione).
+- Fase 4 – Pronostici e valore (rivista con D67, conclusa il 2026-10-15): test OddsPapi, quote automatiche, **Pronostici** (la stima migliore per ogni partita, con le quote di Sisal ed Eurobet ed etichetta di valore), Occasioni sul tuo bookmaker (radar), quote fuori linea, Multipla del giorno, generatore, Io contro Archie. Parte il mese di simulazione (giudicato su CLV e calibrazione).
 - Fase 5 – Live: risultati in diretta, termometro della speranza, segui live.
 - Fase 6 – AI e Gioca: Chiedi ad Archie, autopsie "sfortuna o errore", notizie (anche locali Serie C), regolamento personale, simulatore, sfida contro Archie.
 - Fase 7 – Apprendimento: fiuto misurato, autocorrezione, quando giocare, partite gemelle, laboratorio strategie, mappa del valore.
