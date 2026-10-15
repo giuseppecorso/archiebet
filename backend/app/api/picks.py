@@ -1,6 +1,8 @@
 """Pronostici (D67): la stima migliore per ogni partita in programma, con le quote di Sisal ed Eurobet."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, time, timedelta
+from typing import Literal
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -9,10 +11,11 @@ from sqlalchemy import select
 from app.api.football import BOOKMAKER_LABELS, MatchCard, match_cards
 from app.auth.deps import CurrentUser, DbSession
 from app.config import get_settings
-from app.forecast.picks import MODEL_SOURCE, favorite, match_picks
-from app.forecast.radar_service import load_book_odds
+from app.forecast.multiple import multiple_of_the_day
+from app.forecast.picks import MODEL_SOURCE, favorite
+from app.forecast.picks_service import legs_for, upcoming_picks
 from app.ingest.teams import competition_sort_key
-from app.models import Match, MatchPrediction, MatchStatus, RadarSignal
+from app.models import RadarSignal
 
 router = APIRouter(prefix="/api/picks", tags=["pronostici"])
 
@@ -50,25 +53,17 @@ class PicksOut(BaseModel):
 @router.get("")
 def picks(_: CurrentUser, db: DbSession, days: int = Query(7, ge=1, le=14)) -> PicksOut:
     now = datetime.now(UTC)
-    matches = list(
-        db.scalars(
-            select(Match)
-            .where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now, Match.kickoff_at <= now + timedelta(days=days))
-            .order_by(Match.kickoff_at, Match.id)
-        )
-    )
+    bookmakers = get_settings().radar_bookmaker_list
+    upcoming = upcoming_picks(db, now, now + timedelta(days=days), bookmakers)
+    matches = [m for m, _ in upcoming]
     ids = [m.id for m in matches]
-    books = load_book_odds(db, ids, closing=False)
-    models = {p.match_id: p.markets for p in db.scalars(select(MatchPrediction).where(MatchPrediction.match_id.in_(ids)))}
     signals: dict[int, int] = {}
     for match_id in db.scalars(select(RadarSignal.match_id).where(RadarSignal.match_id.in_(ids))):
         signals[match_id] = signals.get(match_id, 0) + 1
-    bookmakers = get_settings().radar_bookmaker_list
 
     cards = {c.id: c for c in match_cards(db, matches, now)}
     out = []
-    for m in sorted(matches, key=lambda m: (m.kickoff_at, competition_sort_key(m.competition))):
-        market_picks = match_picks(books.get(m.id, {}), models.get(m.id), bookmakers)
+    for m, market_picks in sorted(upcoming, key=lambda mp: (mp[0].kickoff_at, competition_sort_key(mp[0].competition))):
         fav = favorite(market_picks)
         out.append(
             PickOut(
@@ -92,3 +87,74 @@ def picks(_: CurrentUser, db: DbSession, days: int = Query(7, ge=1, le=14)) -> P
             )
         )
     return PicksOut(bookmakers=[BOOKMAKER_LABELS.get(b, b) for b in bookmakers], picks=out)
+
+
+# ---------- Multipla del giorno (D68) ----------
+
+ROME = ZoneInfo("Europe/Rome")
+
+
+class LegOut(BaseModel):
+    match: MatchCard
+    market: str
+    selection: str
+    probability: float
+    price: float
+    value: float
+
+
+class MultipleOut(BaseModel):
+    bookmaker: str
+    legs: list[LegOut]
+    with_value: bool
+    price: float
+    win_probability: float
+    one_in: float
+    alive_before_last: float
+    expected_value: float
+
+
+class MultiplesOut(BaseModel):
+    horizon: Literal["today", "week"]
+    multiples: list[MultipleOut]  # una per bookmaker di Giuse
+    missing: list[str]  # bookmaker per cui oggi non c'è una multipla sensata
+
+
+def horizon_end(now: datetime, horizon: str) -> datetime:
+    """Fine dell'orizzonte: mezzanotte italiana di oggi, oppure tra 7 giorni."""
+    if horizon == "today":
+        local = now.astimezone(ROME)
+        return datetime.combine(local.date() + timedelta(days=1), time(0), ROME).astimezone(UTC)
+    return now + timedelta(days=7)
+
+
+@router.get("/multiple")
+def multiple(_: CurrentUser, db: DbSession, horizon: Literal["today", "week"] = "today") -> MultiplesOut:
+    now = datetime.now(UTC)
+    bookmakers = get_settings().radar_bookmaker_list
+    upcoming = upcoming_picks(db, now, horizon_end(now, horizon), bookmakers)
+    cards = {c.id: c for c in match_cards(db, [m for m, _ in upcoming], now)}
+    multiples, missing = [], []
+    for bm in bookmakers:
+        label = BOOKMAKER_LABELS.get(bm, bm)
+        best = multiple_of_the_day(legs_for(upcoming, bm))
+        if best is None:
+            missing.append(label)
+            continue
+        multiples.append(
+            MultipleOut(
+                bookmaker=label,
+                legs=[
+                    LegOut(match=cards[leg.match_id], market=leg.market, selection=leg.selection,
+                           probability=leg.probability, price=leg.price, value=leg.value)
+                    for leg in best.legs
+                ],
+                with_value=best.with_value,
+                price=best.price,
+                win_probability=best.win_probability,
+                one_in=best.one_in,
+                alive_before_last=best.alive_before_last,
+                expected_value=best.expected_value,
+            )
+        )
+    return MultiplesOut(horizon=horizon, multiples=multiples, missing=missing)
