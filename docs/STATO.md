@@ -25,11 +25,15 @@ Ultimo aggiornamento: 2026-10-15
 
 Test: 129 backend + 11 frontend, tutti verdi.
 
-## Prossima sessione: Fase 5 – Live
+## Prossima sessione: API-Football Pro e Fase 5
 
-1. **Decisione di Giuse (costa soldi):** la fonte per risultati in diretta e risultati aggiornati. football-data pubblica i risultati con settimane di ritardo (schedine e statistiche restano "in attesa"); OddsPapi `/scores` è a partita e a pagamento sul piano free (non sostenibile). La strada già prevista è il **piano a pagamento di API-Football** (risultati live, Serie C in corso, formazioni): Claude prepara il confronto dei piani con prezzi verificati sul sito.
-2. ~~Calendario da OddsPapi~~ fatto il 2026-10-15 (D71): pronostici, multipla e radar vedono le partite fino a ~10 giorni prima.
-3. Poi: risultati in diretta, termometro della speranza, "Segui live" nelle schedine.
+Deciso con Giuse il 2026-10-18: **piano Pro (19 $/mese, 7.500 richieste/giorno, mensile)**, da attivare all'inizio della prossima sessione (Giuse lo compra dalla dashboard, Claude verifica con `/status` che è gratuito). Il Pro basta: i piani cambiano solo il numero di richieste; stima di punta ~1.100/giorno.
+
+Blocchi, in ordine:
+1. Risultati aggiornati per A, B e top 5 da API-Football e Serie C in corso (`API_FOOTBALL_SEASONS`/`API_FOOTBALL_LEAGUES` in `backend/.env`): schedine che si chiudono, modello aggiornato. Livello medio.
+2. Seconde divisioni (Championship, LaLiga 2, 2. Bundesliga, Ligue 2: football-data E1/SP2/D2/F2, OddsPapi 18/54/44/182) e coppe europee (Champions 7, Europa 679, Conference 34480 su OddsPapi; squadre di tutti i paesi). Livello medio.
+3. Fattori della sezione 8 con prova del nove: meteo (Open-Meteo), infortuni e squalifiche, formazioni ufficiali, allenatori, stanchezza da coppe e viaggi, campi sintetici. Storico formazioni/infortuni: ~10-15 mila richieste, ~2 giorni in sottofondo. Livello high.
+4. Fase 5 – Live: risultati in diretta, termometro della speranza, "Segui live". Livello medio.
 
 La simulazione dal vivo del radar (D59, 300 giocate) continua da sola a ogni aggiornamento, con la regola D72/D73 dal 2026-10-18 (Shin, quota ≤ 4, soglia che cresce con la quota), misurata su 8 bookmaker italiani (D74); a Giuse si mostrano solo le occasioni su Sisal ed Eurobet. Ripartita da zero.
 
