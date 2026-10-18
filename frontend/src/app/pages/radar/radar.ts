@@ -38,9 +38,9 @@ export class Radar {
   }
 
   /** Stato del segnale adesso, rispetto alla prima rilevazione */
-  protected now(s: RadarSignal, threshold: number): string {
+  protected now(s: RadarSignal): string {
     if (s.latest_price == null) return 'quota sparita';
-    if ((s.latest_value ?? 0) < threshold) return 'valore rientrato';
+    if (!s.latest_is_occasion) return 'valore rientrato';
     return s.latest_price > s.price ? 'quota salita' : s.latest_price < s.price ? 'quota scesa' : 'invariata';
   }
 }

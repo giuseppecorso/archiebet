@@ -15,7 +15,7 @@ from app.forecast.clv import ClvSummary
 from app.forecast.data import ODDS_MARKETS, OVERLAPPING_MARKETS
 from app.forecast.radar import (
     PLAYABLE_BOOKMAKERS,
-    RADAR_THRESHOLD,
+    qualifies,
     BookOdds,
     closing_value,
     fair_reference,
@@ -67,7 +67,7 @@ def refresh_radar(db: Session, now: datetime, playable: Sequence[str] = PLAYABLE
     for match_id in upcoming:
         # Tutti gli esiti, anche senza valore: servono a seguire i segnali già visti
         book = books.get(match_id, {})
-        current = {(c.market, c.selection): c for c in scan(book, threshold=float("-inf"), playable=playable)}
+        current = {(c.market, c.selection): c for c in scan(book, playable=playable, all_outcomes=True)}
         for (m, market, selection), row in existing.items():
             if m == match_id and (market, selection) not in current:  # quota sparita
                 row.latest_bookmaker = row.latest_price = row.latest_value = None
@@ -75,7 +75,7 @@ def refresh_radar(db: Session, now: datetime, playable: Sequence[str] = PLAYABLE
         for (market, selection), c in current.items():
             row = existing.get((match_id, market, selection))
             if row is None:
-                if c.value < RADAR_THRESHOLD:
+                if not qualifies(c.price, c.value):
                     continue
                 row = RadarSignal(
                     match_id=match_id, market=market, selection=selection, detected_at=now, bookmaker=c.bookmaker,

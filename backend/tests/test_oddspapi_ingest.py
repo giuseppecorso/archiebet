@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 
 from app.adapters.football_data import parse_csv
 from app.adapters.oddspapi import BOOKMAKERS, OPFixture
+from app.forecast.demargin import shin
 from app.forecast.radar_service import refresh_radar
 from app.ingest.football_data import import_matches
 from app.ingest.oddspapi import sync_oddspapi
@@ -87,8 +88,8 @@ def test_radar_uses_italian_bookmakers(seeded, db):  # noqa: F811
     sync_oddspapi(db, adapter, now)
     refresh_radar(db, now)
     [s] = db.scalars(select(RadarSignal).where(RadarSignal.match_id == match.id))
-    # Pinnacle 3,0 / 3,5 / 2,4 senza margine → 1 = 0,3218; Sisal paga il 1 a 3,4 → +9,4%
-    fair_home = (1 / 3.0) / (1 / 3.0 + 1 / 3.5 + 1 / 2.4)
+    # Pinnacle 3,0 / 3,5 / 2,4 senza margine (Shin) → 1 ≈ 0,321; Sisal paga il 1 a 3,4 → +9,3% (soglia a 3,4: 3,1%)
+    fair_home = shin([3.0, 3.5, 2.4])[0]
     assert (s.selection, s.bookmaker, s.price, s.fair_source) == ("1", "sisal", 3.4, "pinnacle")
     assert s.value == pytest.approx(fair_home * 3.4 - 1, abs=1e-5)
 

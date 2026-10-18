@@ -21,6 +21,7 @@ export interface RadarSignal {
   latest_bookmaker: string | null;
   latest_price: number | null;
   latest_value: number | null;
+  latest_is_occasion: boolean;
   clv: number | null;
   won: boolean | null;
 }
@@ -36,7 +37,9 @@ export interface RadarLive {
 }
 
 export interface RadarOut {
+  /** Valore minimo a quota 2: la soglia cresce con la quota (D72) */
   threshold: number;
+  max_price: number;
   playable: string[];
   upcoming: RadarSignal[];
   recent: RadarSignal[];

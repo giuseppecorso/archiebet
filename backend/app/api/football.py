@@ -10,7 +10,7 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.auth.deps import CurrentUser, DbSession
-from app.forecast.data import fair_probabilities
+from app.forecast.demargin import shin
 from app.ingest.teams import competition_sort_key
 from app.models import Competition, Match, MatchOdds, MatchPrediction, MatchStatus
 from app.stats.team_stats import Result, TeamSummary, form, head_to_head, standings, summary
@@ -371,7 +371,7 @@ def _market_reference(odds: list[OddsRow]) -> dict[str, MarketReference]:
             prices = row.closing if closing else row.opening
             if row.bookmaker != bookmaker or row.market in out or len(prices) != {"1X2": 3, "OU2.5": 2}.get(row.market):
                 continue
-            fair = fair_probabilities(*prices.values())
+            fair = shin(list(prices.values()))  # D72
             source = f"{row.label} · {'chiusura' if closing else 'apertura'}"
             out[row.market] = MarketReference(source=source, probabilities=dict(zip(prices, fair)))
     return out

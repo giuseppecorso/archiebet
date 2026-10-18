@@ -6,16 +6,33 @@ probabilità giusta × quota − 1 ≥ soglia, è un segnale del radar ("dove gi
 Funzioni pure, niente database: il salvataggio e la simulazione dal vivo stanno in radar_service.py.
 """
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
 
 from app.forecast.clv import SUSPICIOUS_VALUE, ClvSummary
-from app.forecast.data import ODDS_MARKETS, REFERENCE_BOOKMAKERS, fair_probabilities
+from app.forecast.data import ODDS_MARKETS, REFERENCE_BOOKMAKERS
+from app.forecast.demargin import shin
 from app.forecast.markets import value
 
-RADAR_THRESHOLD = 0.02  # valore minimo di un segnale (D57, D59)
+RADAR_THRESHOLD = 0.02  # valore minimo a quota 2 (D57, D59); la soglia cresce con la quota (D72)
+MAX_PRICE = 4.0  # niente occasioni su quote più alte (D72)
+MIN_VALUE_FLOOR = 0.015  # sotto quota ~1,56 la soglia non scende oltre l'1,5% (D72)
+
+
+def required_value(price: float) -> float:
+    """Valore minimo per una quota (D72): 2% × √(quota − 1), mai sotto l'1,5%.
+
+    L'incertezza di una giocata cresce come √(quota − 1): così si chiede la stessa affidabilità a ogni quota.
+    """
+    return max(MIN_VALUE_FLOOR, RADAR_THRESHOLD * math.sqrt(max(price - 1.0, 0.0)))
+
+
+def qualifies(price: float, v: float) -> bool:
+    """È un'occasione? Quota non oltre 4 e valore almeno pari alla soglia della sua quota."""
+    return price <= MAX_PRICE and v >= required_value(price)
 LIVE_TARGET = 300  # giocate necessarie per il giudizio dal vivo (D59)
 
 # Bookmaker italiani su cui si gioca davvero (D66): quelli dove Giuse ha un conto. Si cambiano in
@@ -46,21 +63,24 @@ def _complete(prices: dict[str, float] | None, market: str) -> bool:
 
 
 def fair_reference(book: BookOdds, market: str, sharp: Sequence[str] = REFERENCE_BOOKMAKERS) -> tuple[str, dict[str, float]] | None:
-    """Probabilità giuste del mercato dal primo bookmaker sharp con il mercato completo."""
+    """Probabilità giuste del mercato dal primo bookmaker sharp con il mercato completo (margine tolto con Shin, D72)."""
     for bookmaker in sharp:
         prices = book.get(bookmaker, {}).get(market)
         if _complete(prices, market):
-            return bookmaker, dict(zip(prices, fair_probabilities(*prices.values())))
+            return bookmaker, dict(zip(prices, shin(list(prices.values()))))
     return None
 
 
 def scan(
     book: BookOdds,
-    threshold: float = RADAR_THRESHOLD,
     playable: Sequence[str] = PLAYABLE_BOOKMAKERS,
     sharp: Sequence[str] = REFERENCE_BOOKMAKERS,
+    all_outcomes: bool = False,
 ) -> list[RadarSignal]:
-    """Segnali di una partita: per ogni esito la quota migliore giocabile, se ha valore ≥ soglia. Ordinati per valore."""
+    """Segnali di una partita: per ogni esito la quota migliore giocabile, se è un'occasione (D72). Ordinati per valore.
+
+    all_outcomes=True restituisce tutti gli esiti con una quota (serve a seguire i segnali già visti).
+    """
     signals = []
     for market, selections in ODDS_MARKETS.items():
         ref = fair_reference(book, market, sharp)
@@ -78,7 +98,7 @@ def scan(
             price = max(p for p, _ in offers)
             bookmaker = next(bm for p, bm in offers if p == price)  # a parità, il primo della lista
             v = value(fair[selection], price)
-            if v >= threshold:
+            if all_outcomes or qualifies(price, v):
                 signals.append(RadarSignal(market, selection, bookmaker, price, fair[selection], source, v))
     return sorted(signals, key=lambda s: s.value, reverse=True)
 

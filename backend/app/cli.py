@@ -172,6 +172,37 @@ def _verdict() -> int:
     return 0
 
 
+def _demargin_test(last: str) -> int:
+    """Prova del nove dei metodi per togliere il margine (D72): log loss sui risultati veri."""
+    from app.forecast.demargin import compare_methods
+    from app.ingest.teams import COUNTRY_ORDER
+
+    with SessionLocal() as db:
+        games = [g for country in COUNTRY_ORDER for g in load_games(db, country) if g.season <= last and g.tier <= 2]
+        books = {closing: load_odds(db, ["pinnacle"], closing=closing) for closing in (False, True)}
+    for closing, label in ((False, "apertura"), (True, "chiusura")):
+        for market in ("1X2", "OU2.5"):
+            rows = []
+            for g in games:
+                prices = books[closing].get(g.match_id, {}).get(market)
+                if not prices:
+                    continue
+                if market == "1X2":
+                    outcome = 0 if g.home_goals > g.away_goals else 1 if g.home_goals == g.away_goals else 2
+                    rows.append(((prices["1"], prices["X"], prices["2"]), outcome))
+                else:
+                    rows.append(((prices["over"], prices["under"]), 0 if g.home_goals + g.away_goals >= 3 else 1))
+            if not rows:
+                continue
+            print()
+            print(f"Pinnacle {label}, {market}: {len(rows)} partite (6 campionati, fino al {last})")
+            for s in compare_methods(rows):
+                verdict = "PASSA" if s.passes else ("peggio" if s.diff_vs_proportional > 2 * s.diff_std_error else "pari")
+                print(f"  {s.name:<14} log loss {s.log_loss:.5f}  vs proporzionale {s.diff_vs_proportional:+.5f} ± {s.diff_std_error:.5f} {verdict:<6}"
+                      f"  quote > 4: previste {s.longshot_predicted:.2%}, uscite {s.longshot_observed:.2%}")
+    return 0
+
+
 def _open_vault() -> int:
     if vault_is_open():
         print("La cassaforte è già aperta.")
@@ -210,6 +241,8 @@ def main() -> int:
     ft.add_argument("--from", dest="first", default="2013/14")
     ft.add_argument("--to", dest="last", default="2024/25")
     commands.add_parser("verdict", help="verdetto sulla stagione 2025/26 (solo a cassaforte aperta)")
+    dm = commands.add_parser("demargin-test", help="prova del nove dei metodi per togliere il margine (D72)")
+    dm.add_argument("--last", default="2024/25", help="ultima stagione valutata (la 2025/26 non si usa per tarare)")
     commands.add_parser("open-vault", help="apre la cassaforte 2025/26 per il verdetto (irreversibile)")
     args = parser.parse_args()
     if args.command == "create-user":
@@ -228,6 +261,8 @@ def main() -> int:
         return 0
     if args.command == "factor-test":
         return _factor_test(args.first, args.last)
+    if args.command == "demargin-test":
+        return _demargin_test(args.last)
     if args.command == "verdict":
         return _verdict()
     if args.command == "open-vault":

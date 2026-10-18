@@ -54,7 +54,7 @@
   <section class="panel box block" aria-labelledby="up-title">
     <div class="box-head">
       <h2 id="up-title" class="title box-title">Occasioni sulle prossime partite</h2>
-      <span class="muted small">valore ≥ {{ fmt.signedPct(r.threshold) }} · aggiornati ogni 6 ore</span>
+      <span class="muted small">quote fino a {{ fmt.odds(r.max_price) }}, valore minimo che cresce con la quota (1,5–3,5%) · aggiornati ogni 6 ore</span>
     </div>
     @if (r.upcoming.length) {
       <div class="table-wrap">
@@ -93,7 +93,7 @@
                     {{ fmt.odds(s.latest_price) }} {{ s.latest_bookmaker }} ·
                     <span [class]="sign(s.latest_value)">{{ fmt.signedPct(s.latest_value) }}</span>
                   }
-                  <span class="muted"> {{ now(s, r.threshold) }}</span>
+                  <span class="muted"> {{ now(s) }}</span>
                 </td>
                 <td><a class="play" [routerLink]="['/schedine/nuova']" [queryParams]="{ m: s.match_id }">Gioca</a></td>
               </tr>
@@ -104,7 +104,7 @@
     } @else {
       <p class="muted">
         Nessuna occasione per ora. Archie controlla le quote a ogni aggiornamento: le partite compaiono quando sono nel
-        calendario (di solito pochi giorni prima) e Sisal o Eurobet pagano almeno il {{ unsigned(r.threshold) }}
+        calendario (di solito pochi giorni prima) e Sisal o Eurobet pagano abbastanza più del giusto: almeno l'1,5% sulle quote basse, fino al 3,5% a quota {{ fmt.odds(r.max_price) }}
         più della quota giusta.
       </p>
     }

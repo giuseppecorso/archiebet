@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.forecast.markets import value
-from app.forecast.radar import RADAR_THRESHOLD, BookOdds, fair_reference
+from app.forecast.radar import BookOdds, fair_reference, qualifies
 
 MARKET_SOURCES = ("pinnacle", "betfair_ex", "market_avg")  # dal più preciso al meno preciso
 MODEL_SOURCE = "archie"
@@ -37,9 +37,9 @@ class MarketPick:
     offers: dict[str, list[Offer]]  # esito → quote dei bookmaker di Giuse
 
 
-def price_verdict(v: float, threshold: float = RADAR_THRESHOLD) -> str:
-    """Etichetta di una quota rispetto alla probabilità giusta."""
-    if v >= threshold:
+def price_verdict(v: float, price: float) -> str:
+    """Etichetta di una quota rispetto alla probabilità giusta: "valore" con la stessa regola delle Occasioni (D72)."""
+    if qualifies(price, v):
         return "valore"
     return "nella norma" if v >= LOW_PRICE else "paga poco"
 
@@ -71,7 +71,7 @@ def offers_for(book: BookOdds, market: str, probabilities: dict[str, float], boo
             price = book.get(bm, {}).get(market, {}).get(selection)
             if price and price > 1:
                 v = value(p, price)
-                out.setdefault(selection, []).append(Offer(bm, price, v, price_verdict(v)))
+                out.setdefault(selection, []).append(Offer(bm, price, v, price_verdict(v, price)))
     return out
 
 

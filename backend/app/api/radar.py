@@ -10,7 +10,7 @@ from app.api.football import BOOKMAKER_LABELS, CompetitionOut, TeamRef, competit
 from app.auth.deps import CurrentUser, DbSession
 from app.config import get_settings
 from app.forecast.clv import SUSPICIOUS_VALUE
-from app.forecast.radar import LIVE_TARGET, RADAR_THRESHOLD, live_verdict
+from app.forecast.radar import LIVE_TARGET, MAX_PRICE, RADAR_THRESHOLD, live_verdict, qualifies
 from app.forecast.radar_service import live_summary
 from app.models import Match, RadarSignal
 
@@ -37,6 +37,7 @@ class SignalOut(BaseModel):
     latest_bookmaker: str | None  # le quote di adesso (None = quota sparita)
     latest_price: float | None
     latest_value: float | None
+    latest_is_occasion: bool  # la quota di adesso è ancora un'occasione (regola D72)?
     clv: float | None
     won: bool | None
 
@@ -52,7 +53,8 @@ class LiveOut(BaseModel):
 
 
 class RadarOut(BaseModel):
-    threshold: float
+    threshold: float  # valore minimo a quota 2 (la soglia cresce con la quota, D72)
+    max_price: float
     playable: list[str]
     upcoming: list[SignalOut]
     recent: list[SignalOut]
@@ -82,6 +84,7 @@ def _signal_out(s: RadarSignal, m: Match) -> SignalOut:
         latest_bookmaker=_label(s.latest_bookmaker),
         latest_price=s.latest_price,
         latest_value=s.latest_value,
+        latest_is_occasion=s.latest_price is not None and s.latest_value is not None and qualifies(s.latest_price, s.latest_value),
         clv=s.clv,
         won=s.won,
     )
@@ -101,6 +104,7 @@ def radar(_: CurrentUser, db: DbSession) -> RadarOut:
     summary = live_summary(db)
     return RadarOut(
         threshold=RADAR_THRESHOLD,
+        max_price=MAX_PRICE,
         playable=[BOOKMAKER_LABELS.get(b, b) for b in get_settings().radar_bookmaker_list],
         upcoming=[_signal_out(s, m) for s, m in upcoming],
         recent=[_signal_out(s, m) for s, m in recent],

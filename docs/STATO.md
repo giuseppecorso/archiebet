@@ -31,7 +31,7 @@ Test: 129 backend + 11 frontend, tutti verdi.
 2. ~~Calendario da OddsPapi~~ fatto il 2026-10-15 (D71): pronostici, multipla e radar vedono le partite fino a ~10 giorni prima.
 3. Poi: risultati in diretta, termometro della speranza, "Segui live" nelle schedine.
 
-La simulazione dal vivo del radar (D59, 300 giocate) continua da sola a ogni aggiornamento.
+La simulazione dal vivo del radar (D59, 300 giocate) continua da sola a ogni aggiornamento, con la regola D72/D73 dal 2026-10-18 (Shin, quota ≤ 4, soglia che cresce con la quota): ripartita da zero.
 
 ## Fase 4 – Pronostici e valore: CONCLUSA (2026-10-15)
 
@@ -53,7 +53,7 @@ La simulazione dal vivo del radar (D59, 300 giocate) continua da sola a ogni agg
 - In prova (continua da solo): radar / Occasioni fino a 300 giocate misurate (D59)
 - Tolto: "Dove conviene giocarla" (D67)
 
-Test: 247 backend + 17 frontend.
+Test: 262 backend + 17 frontend.
 
 ## Fase 3 – Modello: CONCLUSA (2026-10-12)
 

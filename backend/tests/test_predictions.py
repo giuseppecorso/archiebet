@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from app.adapters.football_data import parse_csv
 from app.forecast.data import load_games
+from app.forecast.demargin import shin
 from app.forecast.model import MODEL_VERSION
 from app.forecast.service import refresh_predictions
 from app.ingest.football_data import import_matches
@@ -62,11 +63,11 @@ def test_match_detail_shows_prediction_and_market(logged_client, seeded, db):  #
     assert "trial" not in pred  # modello uscito dalla prova (D59)
     assert pred["model_version"] == MODEL_VERSION
     assert set(pred["markets"]) >= {"1X2", "DC", "OU2.5", "GG"}
-    # Mercato: quote medie di apertura 3,1 / 3,4 / 2,3 senza margine
-    implied = [1 / 3.1, 1 / 3.4, 1 / 2.3]
+    # Mercato: quote medie di apertura 3,1 / 3,4 / 2,3 senza margine (Shin, D72)
+    fair = shin([3.1, 3.4, 2.3])
     ref = pred["market"]["1X2"]
     assert ref["source"] == "Media mercato · apertura"
-    assert ref["probabilities"]["1"] == pytest.approx(implied[0] / sum(implied))
+    assert ref["probabilities"]["1"] == pytest.approx(fair[0])
 
 
 def test_foreign_leagues_stay_out_of_the_italian_model(seeded, db):  # noqa: F811
