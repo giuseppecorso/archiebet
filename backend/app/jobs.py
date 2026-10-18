@@ -14,6 +14,7 @@ from app.adapters.oddspapi import OddsPapiAdapter
 from app.betting.service import settle_open_bets
 from app.config import Settings, get_settings
 from app.db import SessionLocal
+from app.forecast.radar import SIMULATION_BOOKMAKERS
 from app.forecast.radar_service import refresh_radar, settle_radar
 from app.forecast.service import refresh_predictions
 from app.ingest.api_football import sync_api_football
@@ -101,7 +102,9 @@ def sync_oddspapi_job() -> None:
                 on_call=lambda source: record_usage(db, source),
                 monthly_reserve=settings.oddspapi_monthly_reserve,
             )
-            report = sync_oddspapi(db, adapter, datetime.now(UTC), log=logger.warning, bookmakers=settings.radar_bookmaker_list)
+            # Quote dei bookmaker di Giuse e di quelli della simulazione (D74), senza doppioni
+            bookmakers = list(dict.fromkeys([*settings.radar_bookmaker_list, *SIMULATION_BOOKMAKERS]))
+            report = sync_oddspapi(db, adapter, datetime.now(UTC), log=logger.warning, bookmakers=bookmakers)
         message = f"{report.created} partite in calendario, quote di {report.current} partite, {report.closing} chiusure"
         if report.not_in_calendar:
             message += f", {report.not_in_calendar} partite già iniziate non aggiunte"
@@ -138,7 +141,7 @@ def refresh_radar_job() -> None:
     def work() -> str:
         with SessionLocal() as db:
             settled = settle_radar(db, datetime.now(UTC))  # prima si misurano i segnali delle partite iniziate
-            found = refresh_radar(db, datetime.now(UTC), get_settings().radar_bookmaker_list)
+            found = refresh_radar(db, datetime.now(UTC), SIMULATION_BOOKMAKERS)  # simulazione su 8 bookmaker (D74)
         if found or settled:
             logger.info("Radar: %s segnali nuovi, %s misurati con la chiusura", found, settled)
         return f"{found} segnali nuovi, {settled} misurati con la chiusura"

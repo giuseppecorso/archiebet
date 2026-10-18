@@ -6,17 +6,16 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
-from sqlalchemy import select
 
 from app.api.football import BOOKMAKER_LABELS, MatchCard, match_cards
 from app.auth.deps import CurrentUser, DbSession
 from app.config import get_settings
 from app.forecast.clv import SUSPICIOUS_VALUE
+from app.forecast.data import ODDS_MARKETS
 from app.forecast.multiple import LEGS, PROFILES, build_multiple
 from app.forecast.picks import MODEL_SOURCE, PICK_MARKETS, favorite, off_line
 from app.forecast.picks_service import legs_for, upcoming_picks
 from app.ingest.teams import competition_sort_key
-from app.models import RadarSignal
 
 router = APIRouter(prefix="/api/picks", tags=["pronostici"])
 
@@ -57,10 +56,11 @@ def picks(_: CurrentUser, db: DbSession, days: int = Query(7, ge=1, le=14)) -> P
     bookmakers = get_settings().radar_bookmaker_list
     upcoming = upcoming_picks(db, now, now + timedelta(days=days), bookmakers)
     matches = [m for m, _ in upcoming]
-    ids = [m.id for m in matches]
-    signals: dict[int, int] = {}
-    for match_id in db.scalars(select(RadarSignal.match_id).where(RadarSignal.match_id.in_(ids))):
-        signals[match_id] = signals.get(match_id, 0) + 1
+    # Occasioni sui bookmaker di Giuse: esiti dei mercati del radar con almeno una quota "valore" (stessa regola, D72/D74)
+    signals = {
+        m.id: len({(p.market, sel) for p in mp if p.market in ODDS_MARKETS for sel, offers in p.offers.items() if any(o.verdict == "valore" for o in offers)})
+        for m, mp in upcoming
+    }
 
     cards = {c.id: c for c in match_cards(db, matches, now)}
     out = []

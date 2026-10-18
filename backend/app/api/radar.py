@@ -10,9 +10,9 @@ from app.api.football import BOOKMAKER_LABELS, CompetitionOut, TeamRef, competit
 from app.auth.deps import CurrentUser, DbSession
 from app.config import get_settings
 from app.forecast.clv import SUSPICIOUS_VALUE
-from app.forecast.radar import LIVE_TARGET, MAX_PRICE, RADAR_THRESHOLD, live_verdict, qualifies
-from app.forecast.radar_service import live_summary
-from app.models import Match, RadarSignal
+from app.forecast.radar import LIVE_TARGET, MAX_PRICE, RADAR_THRESHOLD, SIMULATION_BOOKMAKERS, live_verdict, qualifies, required_value, scan
+from app.forecast.radar_service import live_summary, load_book_odds
+from app.models import Match, MatchStatus, RadarSignal
 
 router = APIRouter(prefix="/api/radar", tags=["radar"])
 
@@ -42,6 +42,25 @@ class SignalOut(BaseModel):
     won: bool | None
 
 
+class OccasionOut(BaseModel):
+    """Occasione di adesso su un bookmaker di Giuse (calcolata al momento, non salvata)."""
+
+    match_id: int
+    competition: CompetitionOut
+    kickoff_at: datetime
+    home: TeamRef
+    away: TeamRef
+    market: str
+    selection: str
+    bookmaker: str
+    price: float
+    fair_probability: float
+    fair_source: str
+    value: float
+    required_value: float  # soglia per quella quota (D72)
+    suspicious: bool
+
+
 class LiveOut(BaseModel):
     n: int
     target: int
@@ -55,8 +74,9 @@ class LiveOut(BaseModel):
 class RadarOut(BaseModel):
     threshold: float  # valore minimo a quota 2 (la soglia cresce con la quota, D72)
     max_price: float
-    playable: list[str]
-    upcoming: list[SignalOut]
+    playable: list[str]  # i bookmaker di Giuse: le occasioni mostrate
+    simulation_bookmakers: list[str]  # quelli su cui si misura la simulazione (D74)
+    upcoming: list[OccasionOut]
     recent: list[SignalOut]
     live: LiveOut
 
@@ -93,10 +113,22 @@ def _signal_out(s: RadarSignal, m: Match) -> SignalOut:
 @router.get("")
 def radar(_: CurrentUser, db: DbSession) -> RadarOut:
     now = datetime.now(UTC)
-    upcoming = db.execute(
-        select(RadarSignal, Match).join(Match, RadarSignal.match_id == Match.id)
-        .where(Match.kickoff_at > now).order_by(Match.kickoff_at, RadarSignal.value.desc())
-    ).all()  # fmt: skip
+    playable = get_settings().radar_bookmaker_list
+    matches = list(db.scalars(
+        select(Match).where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now).order_by(Match.kickoff_at, Match.id)
+    ))  # fmt: skip
+    books = load_book_odds(db, [m.id for m in matches], closing=False)
+    upcoming = [
+        OccasionOut(
+            match_id=m.id, competition=competition_out(m.competition), kickoff_at=m.kickoff_at,
+            home=TeamRef(id=m.home_team.id, name=m.home_team.name), away=TeamRef(id=m.away_team.id, name=m.away_team.name),
+            market=c.market, selection=c.selection, bookmaker=_label(c.bookmaker), price=c.price,
+            fair_probability=c.fair_probability, fair_source=_label(c.fair_source), value=c.value,
+            required_value=required_value(c.price), suspicious=c.suspicious,
+        )
+        for m in matches
+        for c in scan(books.get(m.id, {}), playable=playable)
+    ]  # fmt: skip
     recent = db.execute(
         select(RadarSignal, Match).join(Match, RadarSignal.match_id == Match.id)
         .where(Match.kickoff_at <= now).order_by(Match.kickoff_at.desc(), RadarSignal.id).limit(RECENT_LIMIT)
@@ -105,8 +137,9 @@ def radar(_: CurrentUser, db: DbSession) -> RadarOut:
     return RadarOut(
         threshold=RADAR_THRESHOLD,
         max_price=MAX_PRICE,
-        playable=[BOOKMAKER_LABELS.get(b, b) for b in get_settings().radar_bookmaker_list],
-        upcoming=[_signal_out(s, m) for s, m in upcoming],
+        playable=[_label(b) for b in playable],
+        simulation_bookmakers=[_label(b) for b in SIMULATION_BOOKMAKERS],
+        upcoming=upcoming,
         recent=[_signal_out(s, m) for s, m in recent],
         live=LiveOut(
             n=summary.n if summary else 0,

@@ -46,14 +46,15 @@
       </div>
     </div>
     <p class="note">
-      Ogni occasione conta come una giocata simulata alla prima quota vista. Il radar esce dalla prova con almeno
+      Misurata su {{ r.simulation_bookmakers.join(', ') }} (quota migliore tra loro, D74): ogni occasione conta come una
+      giocata simulata alla prima quota vista. Il radar esce dalla prova con almeno
       {{ r.live.target }} giocate e un CLV medio positivo oltre due errori standard (D59).
     </p>
   </section>
 
   <section class="panel box block" aria-labelledby="up-title">
     <div class="box-head">
-      <h2 id="up-title" class="title box-title">Occasioni sulle prossime partite</h2>
+      <h2 id="up-title" class="title box-title">Le tue occasioni · {{ r.playable.join(' e ') }}</h2>
       <span class="muted small">quote fino a {{ fmt.odds(r.max_price) }}, valore minimo che cresce con la quota (1,5–3,5%) · aggiornati ogni 6 ore</span>
     </div>
     @if (r.upcoming.length) {
@@ -67,7 +68,7 @@
               <th scope="col">Quota</th>
               <th scope="col">Quota giusta</th>
               <th scope="col">Valore</th>
-              <th scope="col">Adesso</th>
+              <th scope="col">Soglia</th>
               <th scope="col"><span class="sr-only">Azioni</span></th>
             </tr>
           </thead>
@@ -88,13 +89,7 @@
                     <span class="suspicious" title="Valore sopra il 15%: controlla notizie e formazioni, la quota potrebbe essere un errore">sospetto</span>
                   }
                 </td>
-                <td class="small">
-                  @if (s.latest_price != null) {
-                    {{ fmt.odds(s.latest_price) }} {{ s.latest_bookmaker }} ·
-                    <span [class]="sign(s.latest_value)">{{ fmt.signedPct(s.latest_value) }}</span>
-                  }
-                  <span class="muted"> {{ now(s) }}</span>
-                </td>
+                <td class="small muted">{{ unsigned(s.required_value) }} a questa quota</td>
                 <td><a class="play" [routerLink]="['/schedine/nuova']" [queryParams]="{ m: s.match_id }">Gioca</a></td>
               </tr>
             }
@@ -113,7 +108,7 @@
   @if (r.recent.length) {
     <section class="panel box block" aria-labelledby="rec-title">
       <div class="box-head">
-        <h2 id="rec-title" class="title box-title">Ultime occasioni</h2>
+        <h2 id="rec-title" class="title box-title">Ultime occasioni della simulazione</h2>
         <span class="muted small">il CLV arriva con la quota di chiusura di Pinnacle</span>
       </div>
       <div class="table-wrap">

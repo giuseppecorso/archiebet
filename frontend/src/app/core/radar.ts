@@ -26,6 +26,25 @@ export interface RadarSignal {
   won: boolean | null;
 }
 
+/** Occasione di adesso su un bookmaker di Giuse (D74) */
+export interface Occasion {
+  match_id: number;
+  competition: Competition;
+  kickoff_at: string;
+  home: TeamRef;
+  away: TeamRef;
+  market: '1X2' | 'OU2.5' | 'GG';
+  selection: string;
+  bookmaker: string;
+  price: number;
+  fair_probability: number;
+  fair_source: string;
+  value: number;
+  /** Soglia per quella quota (D72) */
+  required_value: number;
+  suspicious: boolean;
+}
+
 export interface RadarLive {
   n: number;
   target: number;
@@ -41,7 +60,8 @@ export interface RadarOut {
   threshold: number;
   max_price: number;
   playable: string[];
-  upcoming: RadarSignal[];
+  simulation_bookmakers: string[];
+  upcoming: Occasion[];
   recent: RadarSignal[];
   live: RadarLive;
 }

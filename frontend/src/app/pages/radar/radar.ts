@@ -3,7 +3,7 @@ import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Market, pickLabel } from '../../core/bets';
 import { dayLabel, fairOdds, kickoffTime, odds, pct, signedPct } from '../../core/format';
-import { RadarOut, RadarSignal } from '../../core/radar';
+import { Occasion, RadarOut, RadarSignal } from '../../core/radar';
 
 /** Radar delle quote: dove un bookmaker italiano paga più della quota giusta, e come va la simulazione dal vivo. */
 @Component({
@@ -24,7 +24,7 @@ export class Radar {
     return live ? Math.min(100, Math.round((live.n / live.target) * 100)) : 0;
   });
 
-  protected pick(s: RadarSignal): string {
+  protected pick(s: RadarSignal | Occasion): string {
     return pickLabel(s.market as Market, s.selection, s);
   }
 
@@ -35,12 +35,5 @@ export class Radar {
   /** Percentuale senza segno con un decimale: 0.02 → "2,0%" */
   protected unsigned(value: number | null): string {
     return value == null ? '–' : signedPct(Math.abs(value)).replace('+', '');
-  }
-
-  /** Stato del segnale adesso, rispetto alla prima rilevazione */
-  protected now(s: RadarSignal): string {
-    if (s.latest_price == null) return 'quota sparita';
-    if (!s.latest_is_occasion) return 'valore rientrato';
-    return s.latest_price > s.price ? 'quota salita' : s.latest_price < s.price ? 'quota scesa' : 'invariata';
   }
 }

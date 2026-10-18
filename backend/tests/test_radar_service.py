@@ -7,6 +7,7 @@ import pytest
 from sqlalchemy import delete, select
 
 from app.forecast.demargin import shin
+from app.forecast.radar import SIMULATION_BOOKMAKERS
 from app.forecast.radar_service import live_summary, refresh_radar, settle_radar, won
 from app.models import Match, MatchOdds, RadarSignal
 from tests.test_football_api import match_id, seeded  # noqa: F401 (fixture condivisa)
@@ -88,11 +89,23 @@ def test_radar_api_lists_signals_and_live_progress(logged_client, seeded, db):  
     body = logged_client.get("/api/radar").json()
     [s] = body["upcoming"]
     assert (s["home"]["name"], s["selection"], s["bookmaker"], s["fair_source"]) == ("Milan", "1", "Sisal", "Pinnacle")
-    assert s["latest_price"] == 2.1 and s["suspicious"] is False
+    assert s["price"] == 2.1 and s["suspicious"] is False
+    assert s["required_value"] == pytest.approx(0.02 * 1.1**0.5)  # soglia a quota 2,1
     assert body["recent"] == []
     assert body["live"] == {"n": 0, "target": 300, "mean_clv": None, "clv_std_error": None,
                             "share_positive": None, "roi": None, "verdict": "in prova"}
-    assert "Sisal" in body["playable"] and body["threshold"] == 0.02
+    assert body["playable"] == ["Sisal", "Eurobet"] and body["threshold"] == 0.02
+    assert "Goldbet" in body["simulation_bookmakers"]
+
+
+def test_simulation_on_all_bookmakers_but_giuse_sees_only_his(logged_client, seeded, db):  # noqa: F811
+    m = match_id(db, "Milan", "Inter")
+    set_odds(db, m, "pinnacle", {"1": 2.0, "X": 3.6, "2": 4.0})
+    set_odds(db, m, "goldbet", {"1": 2.1, "X": 3.4, "2": 3.9})  # valore solo su Goldbet
+    set_odds(db, m, "sisal", {"1": 1.95, "X": 3.4, "2": 3.8})
+    assert refresh_radar(db, datetime.now(UTC), SIMULATION_BOOKMAKERS) == 1  # la simulazione lo conta (D74)
+    assert signals(db)[0].bookmaker == "goldbet"
+    assert logged_client.get("/api/radar").json()["upcoming"] == []  # ma a Giuse non si mostra: non ha il conto
 
 
 def test_won_for_every_market():

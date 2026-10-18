@@ -38,6 +38,9 @@ LIVE_TARGET = 300  # giocate necessarie per il giudizio dal vivo (D59)
 # Bookmaker italiani su cui si gioca davvero (D66): quelli dove Giuse ha un conto. Si cambiano in
 # backend/.env con RADAR_BOOKMAKERS; questo è solo il valore predefinito.
 PLAYABLE_BOOKMAKERS = ("sisal", "eurobet")
+# La simulazione verso il verdetto si misura su tutti i bookmaker italiani disponibili (D74); BetFlag no:
+# nelle prove quotava identico a Goldbet e Lottomatica (stessa piattaforma). Con Pinnacle fanno 3 chiamate da 3.
+SIMULATION_BOOKMAKERS = ("sisal", "snai", "eurobet", "goldbet", "lottomatica", "bet365_it", "planetwin365", "betsson")
 
 BookOdds = dict[str, dict[str, dict[str, float]]]  # bookmaker → mercato → esito → quota (una partita)
 
