@@ -135,6 +135,7 @@ class PredictionOut(BaseModel):
 
 class MatchDetail(BaseModel):
     match: MatchCard
+    live_1x2: dict[str, float] | None = None  # probabilità di adesso, solo a partita in corso (termometro, D92)
     stats_as_of: datetime  # tutte le statistiche usano solo partite giocate prima di questo istante
     missing_results: int  # partite di campionato già giocate ma senza risultato nei nostri dati: statistiche incomplete
     home: SideStats
@@ -365,8 +366,11 @@ def match_detail(match_id: int, _: CurrentUser, db: DbSession) -> MatchDetail:
         match_stats["xg"] = [float(v) if v is not None else None for v in match_stats["xg"]]
 
     odds = _odds_table(db, match.id)
+    from app.forecast.live_service import live_1x2
+
     return MatchDetail(
         match=match_cards(db, [match], now)[0],
+        live_1x2=live_1x2(db, match, now),
         stats_as_of=before,
         missing_results=missing_results,
         home=side(match.home_team_id, "home"),

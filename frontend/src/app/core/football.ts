@@ -120,6 +120,8 @@ export interface Prediction {
 
 export interface MatchDetail {
   match: MatchCard;
+  /** Probabilità di 1, X, 2 adesso (solo a partita in corso, termometro D92) */
+  live_1x2?: Record<'1' | 'X' | '2', number> | null;
   stats_as_of: string;
   /** Partite già giocate del campionato senza risultato nei dati: statistiche incomplete */
   missing_results: number;

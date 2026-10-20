@@ -1,8 +1,9 @@
 import { httpResource } from '@angular/common/http';
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, effect, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatchDetail, OddsRow, TeamSummary } from '../../core/football';
 import { dayLabel, fairOdds, kickoffTime, longDate, num, odds, pct } from '../../core/format';
+import { LIVE_REFRESH_MS, liveLabel } from '../../core/live';
 import { Crest, LeagueLogo } from '../../shared/crest';
 import { FormBadges } from '../../shared/form-badges';
 import { ShowMore } from '../../shared/show-more';
@@ -74,10 +75,19 @@ export class MatchPage {
   readonly id = input.required<string>();
 
   protected readonly detail = httpResource<MatchDetail>(() => `/api/matches/${this.id()}`);
+
+  constructor() {
+    // A partita in corso minuto, punteggio e probabilità si aggiornano da soli ogni 30 secondi
+    effect((onCleanup) => {
+      if (!this.detail.value()?.match.live) return;
+      const timer = setInterval(() => this.detail.reload(), LIVE_REFRESH_MS);
+      onCleanup(() => clearInterval(timer));
+    });
+  }
   protected readonly scope = signal<'season' | 'venue'>('season');
   protected readonly tableOpen = signal(false);
 
-  protected readonly fmt = { odds, num, pct, fairOdds, dayLabel, kickoffTime, longDate };
+  protected readonly fmt = { odds, num, pct, fairOdds, dayLabel, kickoffTime, longDate, liveLabel };
 
   /** Le tre schede 1 / X / 2 di Archie, con la probabilità del mercato accanto */
   protected readonly archieCards = computed(() => {

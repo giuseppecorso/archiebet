@@ -57,8 +57,34 @@ def selection_states(db: Session, selections: Sequence[BetSelection], now: datet
     return out
 
 
+def pick_states(db: Session, picks: Sequence[tuple[Match, str, str]], now: datetime) -> list[LegState]:
+    """Situazione di esiti non giocati (es. le gambe della Multipla del giorno): (partita, mercato, esito)."""
+    match_ids = sorted({m.id for m, _, _ in picks})
+    live = live_rows(db, match_ids, now)
+    rates = match_rates(db, match_ids)
+    out = []
+    for m, market, pick in picks:
+        row = live.get(m.id)
+        if row is not None and m.status != MatchStatus.FINISHED:
+            out.append(LegState(market, pick, rates.get(m.id), row.status, row.minute, row.home_goals, row.away_goals))
+        elif m.status == MatchStatus.FINISHED:
+            out.append(LegState(market, pick, rates.get(m.id), "FT", 90, m.home_goals or 0, m.away_goals or 0))
+        else:
+            out.append(LegState(market, pick, rates.get(m.id), "NS", None, 0, 0))
+    return out
+
+
+def live_1x2(db: Session, match: Match, now: datetime) -> dict[str, float] | None:
+    """Probabilità di 1, X e 2 adesso, per una partita in corso; None se non è in corso o mancano le quote."""
+    states = {pick: s for pick, s in zip(("1", "X", "2"), pick_states(db, [(match, "1X2", p) for p in ("1", "X", "2")], now))}
+    if states["1"].status in ("NS", "FT"):
+        return None
+    probs = {pick: leg_probability(s) for pick, s in states.items()}
+    return None if any(p is None for p in probs.values()) else probs
+
+
 def hope(states: Iterable[LegState]) -> float | None:
     return bet_probability(list(states))
 
 
-__all__ = ["FRESH", "hope", "leg_probability", "live_rows", "match_rates", "selection_states"]
+__all__ = ["FRESH", "hope", "leg_probability", "live_1x2", "live_rows", "match_rates", "pick_states", "selection_states"]

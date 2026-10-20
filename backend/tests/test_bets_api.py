@@ -132,3 +132,15 @@ def test_live_match_and_hope_thermometer(logged_client, db, matches):
     live = logged_client.get("/api/matches?view=live").json()
     assert [m["id"] for g in live for m in g["matches"]] == [inter]
     assert live[0]["matches"][0]["live"] == {"status": "2H", "minute": 80, "home_goals": 2, "away_goals": 0}
+
+
+def test_match_page_shows_live_probabilities(logged_client, db, matches):
+    from app.models import MatchLive
+
+    inter = matches["Inter"]
+    assert logged_client.get(f"/api/matches/{inter}").json()["live_1x2"] is None  # non ancora iniziata
+    db.add(MatchLive(match_id=inter, status="HT", minute=45, home_goals=0, away_goals=1, updated_at=datetime.now(UTC)))
+    db.commit()
+    live = logged_client.get(f"/api/matches/{inter}").json()["live_1x2"]
+    assert sum(live.values()) == pytest.approx(1.0, abs=1e-6)
+    assert live["2"] > live["1"]  # sotto 0-1 all'intervallo, anche da favorita

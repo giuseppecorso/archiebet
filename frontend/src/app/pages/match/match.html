@@ -22,7 +22,17 @@
 
     <div class="center">
       <div class="label comp"><ab-league-logo [code]="m.competition.code" [size]="20" /> {{ m.competition.name }} · {{ m.season }}</div>
-      @if (m.status === 'finished') {
+      @if (m.live; as l) {
+        <div class="live-head"><span class="pulse" aria-hidden="true"></span> LIVE · {{ fmt.liveLabel(l) }}</div>
+        <div class="led big-score live" [attr.aria-label]="'In corso, ' + l.home_goals + ' a ' + l.away_goals">{{ l.home_goals }}-{{ l.away_goals }}</div>
+        @if (d.live_1x2; as p) {
+          <div class="live-probs" title="Probabilità di adesso dal minuto, dal punteggio e dalla forza delle squadre (termometro, D92)">
+            <span>1 <strong>{{ fmt.pct(p['1']) }}</strong></span>
+            <span>X <strong>{{ fmt.pct(p['X']) }}</strong></span>
+            <span>2 <strong>{{ fmt.pct(p['2']) }}</strong></span>
+          </div>
+        }
+      } @else if (m.status === 'finished') {
         <div class="led big-score" [attr.aria-label]="'Finita ' + m.home_goals + ' a ' + m.away_goals">{{ m.home_goals }}-{{ m.away_goals }}</div>
         <div class="when">Finale · {{ fmt.longDate(m.kickoff_at) }}</div>
       } @else {
