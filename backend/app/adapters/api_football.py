@@ -11,7 +11,7 @@ Verificato sulle risposte reali (ottobre 2026):
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from app.adapters.base import DataSourceAdapter
@@ -97,6 +97,51 @@ def parse_teams(body: dict[str, Any]) -> list[AFVenue]:
     for item in body.get("response", []):
         team, venue = item["team"], item.get("venue") or {}
         out.append(AFVenue(AFTeam(team["id"], team["name"]), team.get("country") or "", venue.get("name"), venue.get("city"), venue.get("surface")))
+    return out
+
+
+@dataclass(frozen=True)
+class AFCoachSpell:
+    """Un periodo di un allenatore su una panchina (da /coachs): fine None = ancora lì."""
+
+    coach_id: int
+    name: str
+    team_id: int
+    start: date | None
+    end: date | None
+
+
+def _day(text: str | None) -> date | None:
+    try:
+        return date.fromisoformat(text[:10]) if text else None
+    except ValueError:
+        return None
+
+
+def parse_coach_spells(body: dict[str, Any], team_id: int) -> list[AFCoachSpell]:
+    """Tutti i periodi sulla panchina di team_id, di tutti gli allenatori della risposta."""
+    out = []
+    for coach in body.get("response", []):
+        for spell in coach.get("career") or []:
+            if (spell.get("team") or {}).get("id") == team_id:
+                out.append(AFCoachSpell(coach["id"], coach.get("name") or "", team_id, _day(spell.get("start")), _day(spell.get("end"))))
+    return sorted(out, key=lambda c: c.start or date.min)
+
+
+@dataclass(frozen=True)
+class AFLineup:
+    """Formazione ufficiale di una squadra in una partita (da /fixtures/lineups)."""
+
+    team_id: int
+    coach_id: int | None
+    starters: tuple[int, ...]  # id dei giocatori titolari
+
+
+def parse_lineups(body: dict[str, Any]) -> list[AFLineup]:
+    out = []
+    for item in body.get("response", []):
+        starters = tuple(p["player"]["id"] for p in item.get("startXI") or [] if (p.get("player") or {}).get("id"))
+        out.append(AFLineup(item["team"]["id"], (item.get("coach") or {}).get("id"), starters))
     return out
 
 
@@ -196,6 +241,16 @@ class ApiFootballAdapter(DataSourceAdapter):
         key = f"fixtures?league={league_id}&season={season}"
         return parse_fixtures(self.cached(key, max_age, lambda: self._request("/fixtures", params)))
 
+
+    def coaches(self, team_id: int, max_age: timedelta) -> list[AFCoachSpell]:
+        """Allenatori della squadra con le date di ogni periodo in panchina."""
+        body = self.cached(f"coachs?team={team_id}", max_age, lambda: self._request("/coachs", {"team": team_id}))
+        return parse_coach_spells(body, team_id)
+
+    def lineups(self, fixture_id: int, max_age: timedelta) -> list[AFLineup]:
+        """Formazioni ufficiali di una partita (vuoto se non ancora uscite o non disponibili)."""
+        body = self.cached(f"fixtures/lineups?fixture={fixture_id}", max_age, lambda: self._request("/fixtures/lineups", {"fixture": fixture_id}))
+        return parse_lineups(body)
 
     def teams(self, league_id: int, season: int, max_age: timedelta) -> list[AFVenue]:
         """Squadre di un campionato con lo stadio di casa (città e tipo di campo)."""

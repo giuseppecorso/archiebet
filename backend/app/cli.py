@@ -315,6 +315,23 @@ def _odds_archive(since: str) -> int:
     return 0
 
 
+def _af_history() -> int:
+    """Storico API-Football per le prove D89 (coppe, allenatori, formazioni di Serie C), poi gli stadi."""
+    from app.adapters.api_football import ApiFootballAdapter
+    from app.ingest.af_history import download_history
+
+    settings = get_settings()
+    with SessionLocal() as db:
+        adapter = ApiFootballAdapter(FileCache(settings.data_cache_dir, "api-football"), settings.api_football_key,
+                                     on_call=lambda source: record_usage(db, source), daily_reserve=300)
+        report = download_history(adapter, seasons=range(2021, 2026), lineup_seasons=range(2022, 2026))
+        print(f"Fatto: {report.teams} squadre-stagione, {report.cup_fixtures} partite di coppa, {report.coaches} periodi di allenatori,"
+              f" {report.lineups} formazioni. Richieste rimaste oggi: {adapter.remaining_today}")
+    if report.stopped is None:
+        return _venues()
+    return 0
+
+
 def _venues() -> int:
     """Stadi di casa: città e campo da API-Football (piano gratuito, ~40 richieste), coordinate da Open-Meteo."""
     from app.adapters.cache import FileCache
@@ -492,6 +509,7 @@ def main() -> int:
     hsim.add_argument("--last", default="2025/26", help="stagione di conferma (le precedenti sono la taratura)")
     oa = commands.add_parser("odds-archive", help="salva lo storico quote OddsPapi (angoli, cartellini, principali)")
     oa.add_argument("--since", default="2026-04-01", help="data di inizio, AAAA-MM-GG")
+    commands.add_parser("af-history", help="storico API-Football per le prove dei fattori D89 (coppe, allenatori, formazioni)")
     commands.add_parser("venues", help="stadi di casa delle squadre (città, campo, coordinate)")
     dm = commands.add_parser("demargin-test", help="prova del nove dei metodi per togliere il margine (D72)")
     dm.add_argument("--last", default="2024/25", help="ultima stagione valutata (la 2025/26 non si usa per tarare)")
@@ -521,6 +539,8 @@ def main() -> int:
         return _history_sim(args.first, args.last)
     if args.command == "odds-archive":
         return _odds_archive(args.since)
+    if args.command == "af-history":
+        return _af_history()
     if args.command == "venues":
         return _venues()
     if args.command == "demargin-test":

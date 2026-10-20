@@ -234,3 +234,31 @@ def test_adapter_speeds_up_with_the_plan_limit(tmp_path):
     a._request("/status", {})
     a._request("/status", {})
     assert sleeps == [pytest.approx(0.25 - 0.1)]  # Pro: 300 al minuto, con margine
+
+
+def test_parse_coach_spells_keeps_only_the_team():
+    from app.adapters.api_football import parse_coach_spells
+
+    body = {"response": [
+        {"id": 7, "name": "A. Rossi", "career": [
+            {"team": {"id": 505, "name": "Inter"}, "start": "2025-11-03", "end": None},
+            {"team": {"id": 499, "name": "Atalanta"}, "start": "2021-07-01", "end": "2025-06-30"},
+        ]},
+        {"id": 8, "name": "B. Bianchi", "career": [{"team": {"id": 505, "name": "Inter"}, "start": "2023-07-01", "end": "2025-11-02"}]},
+    ]}  # fmt: skip
+    spells = parse_coach_spells(body, 505)
+    assert [(c.coach_id, str(c.start), c.end) for c in spells] == [(8, "2023-07-01", spells[0].end), (7, "2025-11-03", None)]
+    assert str(spells[0].end) == "2025-11-02"
+
+
+def test_parse_lineups():
+    from app.adapters.api_football import parse_lineups
+
+    body = {"response": [
+        {"team": {"id": 505}, "coach": {"id": 7, "name": "A. Rossi"}, "formation": "3-5-2",
+         "startXI": [{"player": {"id": 1, "name": "X", "number": 1, "pos": "G"}}, {"player": {"id": 2, "name": "Y"}}], "substitutes": []},
+        {"team": {"id": 489}, "coach": {}, "startXI": []},
+    ]}  # fmt: skip
+    home, away = parse_lineups(body)
+    assert (home.team_id, home.coach_id, home.starters) == (505, 7, (1, 2))
+    assert (away.coach_id, away.starters) == (None, ())

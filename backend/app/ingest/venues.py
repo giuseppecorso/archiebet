@@ -36,7 +36,7 @@ def city_candidates(city: str, iso: str) -> list[tuple[str, str]]:
 
 
 LEAGUES = (135, 136, 138, 942, 943, 39, 40, 140, 141, 78, 79, 61, 62)
-SEASONS = (2022, 2023, 2024)  # quelle del piano gratuito
+SEASONS = (2021, 2022, 2023, 2024, 2025)  # piano Pro: anche 2021 e 2025 (D89), per riconoscere le squadre di ogni stagione
 
 
 @dataclass
