@@ -3,6 +3,7 @@ import { Component, computed, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatchDetail, OddsRow, TeamSummary } from '../../core/football';
 import { dayLabel, fairOdds, kickoffTime, longDate, num, odds, pct } from '../../core/format';
+import { Crest, LeagueLogo } from '../../shared/crest';
 import { FormBadges } from '../../shared/form-badges';
 import { ShowMore } from '../../shared/show-more';
 
@@ -64,7 +65,7 @@ const ARCHIE_MARKETS: [string, string, string][] = [
 
 @Component({
   selector: 'ab-match',
-  imports: [RouterLink, FormBadges, ShowMore],
+  imports: [RouterLink, FormBadges, ShowMore, Crest, LeagueLogo],
   templateUrl: './match.html',
   styleUrl: './match.scss',
 })

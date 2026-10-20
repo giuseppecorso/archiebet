@@ -107,8 +107,16 @@
     color: var(--amber);
   }
   .teams {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-weight: 700;
     color: var(--text);
+  }
+  .comp {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
   }
   .fav {
     margin-left: auto;

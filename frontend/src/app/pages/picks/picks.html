@@ -42,8 +42,8 @@
           <article class="pick">
             <div class="pick-head">
               <span class="led time">{{ fmt.kickoffTime(p.match.kickoff_at) }}</span>
-              <a class="teams" [routerLink]="['/partite', p.match.id]">{{ p.match.home.name }} – {{ p.match.away.name }}</a>
-              <span class="muted small">{{ p.match.competition.name }}</span>
+              <a class="teams" [routerLink]="['/partite', p.match.id]"><ab-crest [team]="p.match.home" [size]="20" /> {{ p.match.home.name }} – {{ p.match.away.name }} <ab-crest [team]="p.match.away" [size]="20" /></a>
+              <span class="muted small comp"><ab-league-logo [code]="p.match.competition.code" [size]="16" /> {{ p.match.competition.name }}</span>
               @if (p.signals) {
                 <a class="occ" [routerLink]="[]" [queryParams]="{ tab: 'occasioni' }">{{ p.signals === 1 ? '1 occasione' : p.signals + ' occasioni' }}</a>
               }

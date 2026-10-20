@@ -184,3 +184,43 @@ abbr {
     animation: none !important;
   }
 }
+
+/* Atmosfera da stadio di sera: due fari (ambra e verde prato) e le strisce del campo appena accennate */
+body {
+  background-image:
+    radial-gradient(ellipse 60% 40% at 8% -5%, rgb(255 176 0 / 0.1), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 100% 105%, rgb(61 255 110 / 0.07), transparent 70%),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.012) 0 120px, transparent 120px 240px);
+  background-attachment: fixed;
+}
+
+/* Striscia con i colori della bandiera accanto al nome del campionato */
+.flag {
+  display: inline-block;
+  flex: none;
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--line-muted);
+}
+.flag[data-country='Italia'] { background: linear-gradient(#009246 0 33%, #f4f5f0 33% 66%, #ce2b37 66%); }
+.flag[data-country='Inghilterra'] { background: linear-gradient(#f4f5f0 0 35%, #cf142b 35% 65%, #f4f5f0 65%); }
+.flag[data-country='Spagna'] { background: linear-gradient(#aa151b 0 25%, #f1bf00 25% 75%, #aa151b 75%); }
+.flag[data-country='Germania'] { background: linear-gradient(#000 0 33%, #dd0000 33% 66%, #ffce00 66%); }
+.flag[data-country='Francia'] { background: linear-gradient(#0055a4 0 33%, #f4f5f0 33% 66%, #ef4135 66%); }
+
+/* Titoli di pagina: sotto, la linea di metà campo con il cerchio di centrocampo */
+.page-title {
+  position: relative;
+  padding-bottom: 12px;
+}
+.page-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 160px;
+  height: 14px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='14' viewBox='0 0 160 14'%3E%3Cpath d='M0 7h66M94 7h66' stroke='%23ffb000' stroke-width='2' stroke-linecap='round' opacity='.7'/%3E%3Ccircle cx='80' cy='7' r='6' fill='none' stroke='%23ffb000' stroke-width='2' opacity='.7'/%3E%3Ccircle cx='80' cy='7' r='1.6' fill='%23ffb000'/%3E%3C/svg%3E") no-repeat;
+  filter: drop-shadow(0 0 4px rgb(255 176 0 / 0.5));
+}

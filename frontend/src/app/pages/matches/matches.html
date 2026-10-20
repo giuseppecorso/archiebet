@@ -15,6 +15,7 @@
       @if (isOn(c.code)) {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
       }
+      <ab-league-logo [code]="c.code" [size]="16" />
       {{ c.name }}
     </button>
   }
@@ -47,6 +48,8 @@
       } @else if (upcoming.hasValue()) {
         @for (group of upcoming.value(); track group.competition.code) {
           <div class="group-head">
+            <span class="flag" [attr.data-country]="group.competition.country" aria-hidden="true"></span>
+            <ab-league-logo [code]="group.competition.code" [size]="20" />
             <span class="title">{{ group.competition.name }}</span>
           </div>
           @let key = 'prossime-' + group.competition.code;
@@ -73,6 +76,8 @@
       } @else if (results.hasValue()) {
         @for (group of results.value(); track group.competition.code) {
           <div class="group-head">
+            <span class="flag" [attr.data-country]="group.competition.country" aria-hidden="true"></span>
+            <ab-league-logo [code]="group.competition.code" [size]="20" />
             <span class="title">{{ group.competition.name }}</span>
             @if (staleNote(group); as note) {
               <span class="stale">{{ note }}</span>

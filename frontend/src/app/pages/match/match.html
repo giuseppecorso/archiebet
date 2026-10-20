@@ -15,12 +15,13 @@
 
   <section class="header" aria-label="Intestazione partita">
     <div class="side-team">
+      <ab-crest class="crest-big" [team]="m.home" [size]="64" />
       <h1 class="title team-name">{{ m.home.name }}</h1>
       <ab-form-badges [outcomes]="outcomes('home')" [team]="m.home.name" />
     </div>
 
     <div class="center">
-      <div class="label">{{ m.competition.name }} · {{ m.season }}</div>
+      <div class="label comp"><ab-league-logo [code]="m.competition.code" [size]="20" /> {{ m.competition.name }} · {{ m.season }}</div>
       @if (m.status === 'finished') {
         <div class="led big-score" [attr.aria-label]="'Finita ' + m.home_goals + ' a ' + m.away_goals">{{ m.home_goals }}-{{ m.away_goals }}</div>
         <div class="when">Finale · {{ fmt.longDate(m.kickoff_at) }}</div>
@@ -36,6 +37,7 @@
     </div>
 
     <div class="side-team">
+      <ab-crest class="crest-big" [team]="m.away" [size]="64" />
       <h1 class="title team-name">{{ m.away.name }}</h1>
       <ab-form-badges [outcomes]="outcomes('away')" [team]="m.away.name" />
     </div>

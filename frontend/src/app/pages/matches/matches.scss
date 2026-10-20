@@ -117,8 +117,8 @@
 .group-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: flex-start;
   gap: 4px 12px;
   padding: 10px 20px;
   background: var(--panel-head);
@@ -130,6 +130,7 @@
     color: var(--text-2);
   }
 }
+.group-head > .title { margin-right: auto; }
 
 .stale {
   font-size: 12px;

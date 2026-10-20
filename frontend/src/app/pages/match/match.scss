@@ -47,6 +47,14 @@
   align-items: center;
   gap: 10px;
 }
+.crest-big {
+  filter: drop-shadow(0 0 14px rgb(255 176 0 / 0.25));
+}
+.comp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .team-name {
   margin: 0;
   font-size: 30px;

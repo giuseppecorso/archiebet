@@ -2,11 +2,12 @@ import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatchCard } from '../core/football';
 import { dayLabel, kickoffTime, odds } from '../core/format';
+import { Crest } from './crest';
 
 /** Una riga dell'elenco partite, come nel mockup della dashboard. */
 @Component({
   selector: 'ab-match-row',
-  imports: [RouterLink],
+  imports: [RouterLink, Crest],
   template: `
     @let m = match();
     <a class="row" [routerLink]="['/partite', m.id]" [attr.aria-label]="ariaLabel()">
@@ -17,12 +18,14 @@ import { dayLabel, kickoffTime, odds } from '../core/format';
 
       <div class="teams">
         <div class="team">
+          <ab-crest [team]="m.home" [size]="20" />
           <span class="name" [class.winner]="winner() === 'home'">{{ m.home.name }}</span>
           @if (m.status === 'finished') {
             <span class="led score">{{ m.home_goals }}</span>
           }
         </div>
         <div class="team">
+          <ab-crest [team]="m.away" [size]="20" />
           <span class="name" [class.winner]="winner() === 'away'">{{ m.away.name }}</span>
           @if (m.status === 'finished') {
             <span class="led score">{{ m.away_goals }}</span>

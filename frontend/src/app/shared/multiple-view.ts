@@ -4,11 +4,12 @@ import { Market, pickLabel } from '../core/bets';
 import { MatchCard } from '../core/football';
 import { dayLabel, kickoffTime, odds, pct, signedPct } from '../core/format';
 import { MultiplesOut } from '../core/multiple';
+import { Crest } from './crest';
 
 /** Una multipla calcolata da Archie (D68): gambe, numeri e avviso onesto se non ha valore. */
 @Component({
   selector: 'ab-multiple-view',
-  imports: [RouterLink],
+  imports: [RouterLink, Crest],
   template: `
     @let d = data();
     @if (d.multiples.length > 1) {
@@ -26,7 +27,7 @@ import { MultiplesOut } from '../core/multiple';
         @for (l of m.legs; track l.match.id) {
           <li>
             <span class="when muted small">{{ day(l.match.kickoff_at) }} {{ time(l.match.kickoff_at) }} · {{ l.match.competition.name }}</span>
-            <a [routerLink]="['/partite', l.match.id]" class="match">{{ l.match.home.name }} – {{ l.match.away.name }}</a>
+            <a [routerLink]="['/partite', l.match.id]" class="match"><ab-crest [team]="l.match.home" [size]="18" /> {{ l.match.home.name }} – {{ l.match.away.name }} <ab-crest [team]="l.match.away" [size]="18" /></a>
             <span class="pick">{{ label(l.market, l.selection, l.match) }}</span>
             <span class="nums"><span class="muted small">{{ pct(l.probability) }}</span><span class="led">{{ odds(l.price) }}</span></span>
           </li>
@@ -65,7 +66,7 @@ import { MultiplesOut } from '../core/multiple';
     .legs { margin: 8px 0 0; padding: 0; list-style: none; }
     .legs li { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; padding: 8px 0; border-top: 1px solid var(--line-row); }
     .legs .when { grid-column: 1 / -1; }
-    .legs .match { font-weight: 700; color: var(--text); }
+    .legs .match { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--text); }
     .legs .pick { grid-column: 1; font-size: 13px; color: var(--text-2); }
     .legs .nums { grid-column: 2; grid-row: 2 / span 2; align-self: center; text-align: right; }
     .legs .led { margin-left: 6px; font-size: 18px; color: var(--amber); }
