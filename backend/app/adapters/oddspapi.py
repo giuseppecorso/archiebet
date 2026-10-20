@@ -190,6 +190,9 @@ class OddsPapiAdapter(DataSourceAdapter):
             if wait > 0:
                 self._sleep(wait)
         status, body = self._http_get(f"{BASE_URL}/{endpoint}", {**params, "apiKey": self._api_key})
+        if status == 429 and endpoint in FREE_ENDPOINTS:  # troppo veloci (es. due aggiornamenti insieme): attendo e riprovo una volta
+            self._sleep(COOLDOWN.get(endpoint, 5.5))
+            status, body = self._http_get(f"{BASE_URL}/{endpoint}", {**params, "apiKey": self._api_key})
         self._last_call[endpoint] = self._clock()
         if endpoint not in FREE_ENDPOINTS and self.remaining_month is not None:
             self.remaining_month -= 1  # conta anche se la risposta è un errore
