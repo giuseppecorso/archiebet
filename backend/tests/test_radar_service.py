@@ -133,3 +133,21 @@ def test_clv_does_not_wait_for_the_result(seeded, db):  # noqa: F811
     db.commit()
     assert settle_radar(db, kickoff + timedelta(days=20)) == 0  # nessun CLV nuovo, ma l'esito arriva
     assert signals(db)[0].won is False
+
+
+def test_secondary_signal_is_found_settled_and_counted_apart(seeded, db):  # noqa: F811
+    mid = match_id(db, "Milan", "Inter")
+    m = db.get(Match, mid)
+    set_odds(db, mid, "pinnacle", {"over": 1.95, "under": 1.95}, market="COR9.5")
+    set_odds(db, mid, "sisal", {"over": 2.20, "under": 1.65}, market="COR9.5")
+    assert refresh_radar(db, m.kickoff_at - timedelta(days=1), ("sisal",)) == 1
+    set_odds(db, mid, "pinnacle", {"over": 1.80, "under": 2.10}, closing=True, market="COR9.5")
+    m.status, m.home_goals, m.away_goals = "finished", 1, 1
+    m.home_corners, m.away_corners, m.home_yellow, m.away_yellow, m.home_red, m.away_red = 7, 5, 1, 2, 0, 0
+    db.commit()
+    settle_radar(db, m.kickoff_at + timedelta(hours=3))
+    [signal] = signals(db)
+    assert signal.market == "COR9.5" and signal.won is True  # 12 angoli
+    assert signal.clv == pytest.approx(2.20 * shin([1.80, 2.10])[0] - 1, abs=1e-4)
+    assert live_summary(db) is None  # i mercati principali non contano i secondari
+    assert live_summary(db, secondary=True).n == 1

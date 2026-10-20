@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.forecast.clv import ClvSummary
 from app.forecast.data import ODDS_MARKETS, OVERLAPPING_MARKETS
+from app.forecast.radar_markets import is_secondary, secondary_won
 from app.forecast.radar import (
     PLAYABLE_BOOKMAKERS,
     qualifies,
@@ -40,7 +41,7 @@ def load_book_odds(db: Session, match_ids: Iterable[int], closing: bool) -> dict
         rows = db.execute(
             select(MatchOdds.match_id, MatchOdds.source, MatchOdds.bookmaker, MatchOdds.market, MatchOdds.selection, MatchOdds.price).where(
                 MatchOdds.match_id.in_(ids[start : start + 500]),
-                MatchOdds.market.in_([*ODDS_MARKETS, *OVERLAPPING_MARKETS]),
+                or_(MatchOdds.market.in_([*ODDS_MARKETS, *OVERLAPPING_MARKETS]), MatchOdds.market.like("COR%"), MatchOdds.market.like("CRD%")),
                 MatchOdds.is_closing.is_(closing),
             )
         ).all()
@@ -127,7 +128,11 @@ def settle_radar(db: Session, now: datetime | None = None) -> int:
     settled = 0
     for signal, match in rows:
         if match.status == MatchStatus.FINISHED and match.home_goals is not None and match.away_goals is not None:
-            signal.won = won(match.home_goals, match.away_goals, signal.market, signal.selection)
+            if is_secondary(signal.market):  # angoli e cartellini: servono i dati della partita (football-data)
+                signal.won = secondary_won(signal.market, signal.selection, (match.home_corners, match.away_corners),
+                                           (match.home_yellow, match.away_yellow), (match.home_red, match.away_red))
+            else:
+                signal.won = won(match.home_goals, match.away_goals, signal.market, signal.selection)
         if signal.clv is not None:
             continue
         ref = fair_reference(closing.get(signal.match_id, {}), signal.market)
@@ -142,9 +147,19 @@ def settle_radar(db: Session, now: datetime | None = None) -> int:
     return settled
 
 
-def live_summary(db: Session) -> ClvSummary | None:
-    """Riepilogo della simulazione dal vivo sui segnali già misurati con la chiusura."""
-    signals = list(db.scalars(select(RadarSignal).where(RadarSignal.clv.is_not(None))))
+def live_summary(db: Session, secondary: bool = False) -> ClvSummary | None:
+    """Riepilogo della simulazione dal vivo sui segnali già misurati con la chiusura.
+
+    secondary=False: mercati principali (verdetto D59); True: angoli e cartellini (verdetto separato D94), con
+    l'errore standard per partita perché più linee della stessa partita non sono indipendenti.
+    """
+    signals = [s for s in db.scalars(select(RadarSignal).where(RadarSignal.clv.is_not(None))) if is_secondary(s.market) == secondary]
     clv = [s.clv for s in signals]
     profit = [s.price - 1.0 if s.won else -1.0 for s in signals if s.won is not None]
-    return summarize_live(clv, profit)
+    summary = summarize_live(clv, profit)
+    if summary is None or not secondary:
+        return summary
+    from app.forecast.history_sim import clustered_mean
+
+    est = clustered_mean(clv, [s.match_id for s in signals])
+    return ClvSummary(summary.n, summary.mean_clv, est.std_error, summary.share_positive, summary.roi)

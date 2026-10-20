@@ -16,6 +16,7 @@ from app.forecast.clv import SUSPICIOUS_VALUE, ClvSummary
 from app.forecast.data import ODDS_MARKETS, REFERENCE_BOOKMAKERS
 from app.forecast.demargin import shin
 from app.forecast.markets import value
+from app.forecast.radar_markets import is_secondary, selections
 
 RADAR_THRESHOLD = 0.02  # valore minimo a quota 2 (D57, D59); la soglia cresce con la quota (D72)
 MAX_PRICE = 4.0  # niente occasioni su quote più alte (D72)
@@ -62,7 +63,13 @@ class RadarSignal:
 
 
 def _complete(prices: dict[str, float] | None, market: str) -> bool:
-    return bool(prices) and set(prices) == set(ODDS_MARKETS[market]) and all(p > 1 for p in prices.values())
+    return bool(prices) and set(prices) == set(selections(market)) and all(p > 1 for p in prices.values())
+
+
+def radar_markets(book: BookOdds) -> list[str]:
+    """Mercati da guardare per una partita: i principali e gli angoli/cartellini quotati (D94)."""
+    secondary = sorted({m for markets in book.values() for m in markets if is_secondary(m)})
+    return [*ODDS_MARKETS, *secondary]
 
 
 def fair_reference(book: BookOdds, market: str, sharp: Sequence[str] = REFERENCE_BOOKMAKERS) -> tuple[str, dict[str, float]] | None:
@@ -85,12 +92,12 @@ def scan(
     all_outcomes=True restituisce tutti gli esiti con una quota (serve a seguire i segnali già visti).
     """
     signals = []
-    for market, selections in ODDS_MARKETS.items():
+    for market in radar_markets(book):
         ref = fair_reference(book, market, sharp)
         if ref is None:
             continue
         source, fair = ref
-        for selection in selections:
+        for selection in selections(market):
             offers = [
                 (book[bm][market][selection], bm)
                 for bm in playable

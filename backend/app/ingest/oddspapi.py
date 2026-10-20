@@ -253,6 +253,7 @@ def sync_oddspapi(
     bookmakers: Sequence[str] = DEFAULT_BOOKMAKERS,
 ) -> OddsPapiReport:
     report = OddsPapiReport()
+    adapter.markets()  # definizioni dei mercati (angoli e cartellini, D94): dalla cache, una richiesta ogni 3 mesi
     slugs = current_slugs(bookmakers)
     fixtures, current = adapter.upcoming(UPCOMING_MAX_AGE)
     names = adapter.participants()

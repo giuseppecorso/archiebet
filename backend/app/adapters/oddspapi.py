@@ -124,16 +124,38 @@ def parse_current(body: list[dict[str, Any]]) -> dict[str, Prices]:
     return out
 
 
-def parse_history(body: dict[str, Any]) -> History:
+# Angoli e cartellini (D94): solo il riferimento e i bookmaker di Giuse, per non moltiplicare le righe nel database
+SECONDARY_SLUGS = {"pinnacle", "sisal.it", "eurobet.it"}
+
+
+def secondary_market_map(definitions: Sequence[dict[str, Any]]) -> dict[str, tuple[str, dict[str, str]]]:
+    """Over/Under .5 di angoli e cartellini a fine partita (totali e per squadra) → nome nel radar ("COR9.5", "CRDH1.5", ...)."""
+    out = {}
+    for d in definitions:
+        name, line = d.get("marketName", ""), float(d.get("handicap") or 0)
+        if d.get("period") != "fulltime" or "Half" in name or "Over Under" not in name or line % 1 != 0.5:
+            continue
+        family = "COR" if name.startswith("Corners") else "CRD" if name.startswith("Bookings") else None
+        if family is None:
+            continue
+        side = "H" if "Team 1" in name else "A" if "Team 2" in name else ""
+        outcomes = {str(o["outcomeId"]): o["outcomeName"].lower() for o in d.get("outcomes", []) if o["outcomeName"].lower() in ("over", "under")}
+        if len(outcomes) == 2:
+            out[str(d["marketId"])] = (f"{family}{side}{line:.1f}", outcomes)
+    return out
+
+
+def parse_history(body: dict[str, Any], secondary: dict[str, tuple[str, dict[str, str]]] | None = None) -> History:
     """Storia dei prezzi da /historical-odds, in ordine di tempo (la risposta non garantisce l'ordine)."""
     out: History = {}
     for slug, book in (body.get("bookmakers") or {}).items():
         if slug not in BOOKMAKERS:
             continue
+        markets = {**MARKETS, **(secondary or {})} if slug in SECONDARY_SLUGS else MARKETS
         for market_id, market in (book.get("markets") or {}).items():
-            if market_id not in MARKETS:
+            if market_id not in markets:
                 continue
-            name, outcomes = MARKETS[market_id]
+            name, outcomes = markets[market_id]
             for outcome_id, outcome in (market.get("outcomes") or {}).items():
                 entries = (outcome.get("players") or {}).get("0") or []
                 if outcome_id not in outcomes:
@@ -181,6 +203,7 @@ class OddsPapiAdapter(DataSourceAdapter):
         self._sleep = sleep
         self._clock = clock
         self._last_call: dict[str, float] = {}
+        self._secondary: dict[str, tuple[str, dict[str, str]]] | None = None
         self.remaining_month: int | None = None
 
     def _request(self, endpoint: str, params: dict[str, Any]) -> Any:
@@ -257,6 +280,14 @@ class OddsPapiAdapter(DataSourceAdapter):
         params = {"tournamentId": tournament_id, "statusId": 2}
         return self.cached(f"fixtures?tournamentId={tournament_id}&statusId=2", max_age, lambda: self._request("fixtures", params))
 
+    def secondary_markets(self) -> dict[str, tuple[str, dict[str, str]]]:
+        """Mercati di angoli e cartellini dalle definizioni OddsPapi (in cache 3 mesi); vuoto se non disponibili."""
+        if self._secondary is None:
+            # Solo dalla cache: le definizioni le scarica l'aggiornamento normale (una richiesta ogni 3 mesi)
+            definitions = self.cache.get(f"markets?sportId={SOCCER}", timedelta(days=90))
+            self._secondary = secondary_market_map(definitions) if isinstance(definitions, list) else {}
+        return self._secondary
+
     def raw_history(self, fixture_id: str, slugs: Sequence[str]) -> dict[str, Any] | None:
         """Storico completo di una partita (tutti i mercati, senza cache: è grande); None se OddsPapi non ce l'ha."""
         try:
@@ -279,7 +310,7 @@ class OddsPapiAdapter(DataSourceAdapter):
                 if error.status != 404:
                     raise
                 continue  # nessuna quota di questi bookmaker per la partita: non è un guasto
-            out |= parse_history(body)
+            out |= parse_history(body, self.secondary_markets())
         return out
 
 

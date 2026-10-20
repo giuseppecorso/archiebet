@@ -7,7 +7,8 @@ export interface RadarSignal {
   kickoff_at: string;
   home: TeamRef;
   away: TeamRef;
-  market: '1X2' | 'OU2.5' | 'GG';
+  /** Principali: '1X2', 'OU2.5', 'GG'; angoli e cartellini (D94): 'COR9.5', 'CORH4.5', 'CRDA1.5', ... */
+  market: string;
   selection: string;
   /** Prima rilevazione = giocata simulata: quota e valore restano questi */
   detected_at: string;
@@ -24,6 +25,7 @@ export interface RadarSignal {
   latest_is_occasion: boolean;
   clv: number | null;
   won: boolean | null;
+  secondary?: boolean;
 }
 
 /** Occasione di adesso su un bookmaker di Giuse (D74) */
@@ -33,7 +35,7 @@ export interface Occasion {
   kickoff_at: string;
   home: TeamRef;
   away: TeamRef;
-  market: '1X2' | 'OU2.5' | 'GG';
+  market: string;
   selection: string;
   bookmaker: string;
   price: number;
@@ -43,6 +45,8 @@ export interface Occasion {
   /** Soglia per quella quota (D72) */
   required_value: number;
   suspicious: boolean;
+  /** Angoli o cartellini: "in prova", simulazione separata (D94) */
+  secondary?: boolean;
 }
 
 export interface RadarLive {
@@ -64,4 +68,15 @@ export interface RadarOut {
   upcoming: Occasion[];
   recent: RadarSignal[];
   live: RadarLive;
+  /** Simulazione di angoli e cartellini (D94) */
+  live_secondary?: RadarLive;
+}
+
+/** "COR9.5" → "Angoli Over 9.5"; "CRDH1.5" → "Cartellini Torino Under 1.5" */
+export function secondaryLabel(market: string, selection: string, home: string, away: string): string | null {
+  const m = /^(COR|CRD)([HA]?)(\d+\.5)$/.exec(market);
+  if (!m) return null;
+  const family = m[1] === 'COR' ? 'Angoli' : 'Cartellini';
+  const side = m[2] === 'H' ? ` ${home}` : m[2] === 'A' ? ` ${away}` : '';
+  return `${family}${side} ${selection === 'over' ? 'Over' : 'Under'} ${m[3]}`;
 }

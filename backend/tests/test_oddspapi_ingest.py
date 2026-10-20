@@ -30,6 +30,9 @@ class FakeAdapter:
     def participants(self, max_age=None):
         return NAMES
 
+    def markets(self):
+        return []
+
     def history(self, fixture_id, slugs, max_age):
         self.history_calls.append((fixture_id, tuple(slugs)))
         wanted = {BOOKMAKERS[slug] for slug in slugs}

@@ -3,7 +3,7 @@ import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Market, pickLabel } from '../../core/bets';
 import { dayLabel, fairOdds, kickoffTime, odds, pct, signedPct } from '../../core/format';
-import { Occasion, RadarOut, RadarSignal } from '../../core/radar';
+import { Occasion, RadarLive, RadarOut, RadarSignal, secondaryLabel } from '../../core/radar';
 
 /** Radar delle quote: dove un bookmaker italiano paga più della quota giusta, e come va la simulazione dal vivo. */
 @Component({
@@ -25,7 +25,12 @@ export class Radar {
   });
 
   protected pick(s: RadarSignal | Occasion): string {
-    return pickLabel(s.market as Market, s.selection, s);
+    return secondaryLabel(s.market, s.selection, s.home.name, s.away.name) ?? pickLabel(s.market as Market, s.selection, s);
+  }
+
+  /** Avanzamento di una simulazione verso le giocate del giudizio (0-100) */
+  protected progressOf(live: RadarLive | undefined): number {
+    return live ? Math.min(100, Math.round((live.n / live.target) * 100)) : 0;
   }
 
   protected sign(value: number | null): 'pos' | 'neg' | '' {

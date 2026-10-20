@@ -52,6 +52,41 @@
     </p>
   </section>
 
+  @if (r.live_secondary; as ls) {
+    <section class="panel box block" aria-labelledby="sec-title">
+      <div class="box-head">
+        <h2 id="sec-title" class="title box-title">Angoli e cartellini · simulazione a parte</h2>
+        <span [class]="'verdict ' + (ls.verdict === 'superato' ? 'pos' : ls.verdict === 'non superato' ? 'neg' : '')">{{ ls.verdict }}</span>
+      </div>
+      <div class="tiles">
+        <div class="tile wide">
+          <span class="label">Giocate misurate</span>
+          <span class="led">{{ ls.n }}<span class="small muted">/{{ ls.target }}</span></span>
+          <div class="bar" role="progressbar" [attr.aria-valuenow]="ls.n" aria-valuemin="0" [attr.aria-valuemax]="ls.target" aria-label="Angoli e cartellini: giocate verso il giudizio">
+            <span [style.width.%]="progressOf(ls)"></span>
+          </div>
+        </div>
+        <div class="tile">
+          <span class="label">CLV medio</span>
+          <span [class]="'led ' + sign(ls.mean_clv)">{{ fmt.signedPct(ls.mean_clv) }}</span>
+          <span class="muted small">
+            @if (ls.clv_std_error != null) { ± {{ unsigned(ls.clv_std_error) }} per partita } @else { servono più giocate }
+          </span>
+        </div>
+        <div class="tile">
+          <span class="label">Rendimento</span>
+          <span [class]="'led ' + sign(ls.roi)">{{ fmt.signedPct(ls.roi) }}</span>
+          <span class="muted small">non è il giudice</span>
+        </div>
+      </div>
+      <p class="note">
+        Sullo storico (aprile–ottobre 2026, 1.400 partite) le occasioni su angoli e cartellini di Sisal ed Eurobet hanno battuto
+        la chiusura di Pinnacle del 3-6% (D82). Possono essere quote non più giocabili o con limiti bassi: per questo sono
+        "in prova" e contano a parte fino a 300 giocate misurate (D94).
+      </p>
+    </section>
+  }
+
   <section class="panel box block" aria-labelledby="up-title">
     <div class="box-head">
       <h2 id="up-title" class="title box-title">Le tue occasioni · {{ r.playable.join(' e ') }}</h2>
@@ -80,7 +115,12 @@
                   <a [routerLink]="['/partite', s.match_id]">{{ s.home.name }} – {{ s.away.name }}</a>
                   <span class="muted small comp">{{ s.competition.name }}</span>
                 </td>
-                <td><strong>{{ pick(s) }}</strong></td>
+                <td>
+                  <strong>{{ pick(s) }}</strong>
+                  @if (s.secondary) {
+                    <span class="trial-tag" title="Angoli e cartellini: superata la prova sullo storico (D82), ora in prova dal vivo con un conteggio a parte (D94)">in prova</span>
+                  }
+                </td>
                 <td><span class="led price">{{ fmt.odds(s.price) }}</span><span class="small book">{{ s.bookmaker }}</span></td>
                 <td>{{ fmt.fairOdds(s.fair_probability) }} <span class="muted small">{{ fmt.pct(s.fair_probability) }} · {{ s.fair_source }}</span></td>
                 <td>

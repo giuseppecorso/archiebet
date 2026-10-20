@@ -10,6 +10,7 @@ from app.api.football import BOOKMAKER_LABELS, CompetitionOut, TeamRef, competit
 from app.auth.deps import CurrentUser, DbSession
 from app.config import get_settings
 from app.forecast.clv import SUSPICIOUS_VALUE
+from app.forecast.radar_markets import is_secondary
 from app.forecast.radar import LIVE_TARGET, MAX_PRICE, RADAR_THRESHOLD, SIMULATION_BOOKMAKERS, live_verdict, qualifies, required_value, scan
 from app.forecast.radar_service import live_summary, load_book_odds
 from app.models import Match, MatchStatus, RadarSignal
@@ -40,6 +41,7 @@ class SignalOut(BaseModel):
     latest_is_occasion: bool  # la quota di adesso è ancora un'occasione (regola D72)?
     clv: float | None
     won: bool | None
+    secondary: bool = False  # angoli o cartellini: simulazione e verdetto separati (D94)
 
 
 class OccasionOut(BaseModel):
@@ -59,6 +61,7 @@ class OccasionOut(BaseModel):
     value: float
     required_value: float  # soglia per quella quota (D72)
     suspicious: bool
+    secondary: bool = False  # angoli o cartellini, "in prova" (D94)
 
 
 class LiveOut(BaseModel):
@@ -79,6 +82,19 @@ class RadarOut(BaseModel):
     upcoming: list[OccasionOut]
     recent: list[SignalOut]
     live: LiveOut
+    live_secondary: LiveOut  # simulazione di angoli e cartellini su Sisal ed Eurobet (D94)
+
+
+def _live_out(summary) -> LiveOut:
+    return LiveOut(
+        n=summary.n if summary else 0,
+        target=LIVE_TARGET,
+        mean_clv=summary.mean_clv if summary else None,
+        clv_std_error=summary.clv_std_error if summary and summary.n > 1 else None,
+        share_positive=summary.share_positive if summary else None,
+        roi=summary.roi if summary else None,
+        verdict=live_verdict(summary),
+    )
 
 
 def _label(bookmaker: str | None) -> str | None:
@@ -107,6 +123,7 @@ def _signal_out(s: RadarSignal, m: Match) -> SignalOut:
         latest_is_occasion=s.latest_price is not None and s.latest_value is not None and qualifies(s.latest_price, s.latest_value),
         clv=s.clv,
         won=s.won,
+        secondary=is_secondary(s.market),
     )
 
 
@@ -124,7 +141,7 @@ def radar(_: CurrentUser, db: DbSession) -> RadarOut:
             home=TeamRef(id=m.home_team.id, name=m.home_team.name), away=TeamRef(id=m.away_team.id, name=m.away_team.name),
             market=c.market, selection=c.selection, bookmaker=_label(c.bookmaker), price=c.price,
             fair_probability=c.fair_probability, fair_source=_label(c.fair_source), value=c.value,
-            required_value=required_value(c.price), suspicious=c.suspicious,
+            required_value=required_value(c.price), suspicious=c.suspicious, secondary=is_secondary(c.market),
         )
         for m in matches
         for c in scan(books.get(m.id, {}), playable=playable)
@@ -141,13 +158,6 @@ def radar(_: CurrentUser, db: DbSession) -> RadarOut:
         simulation_bookmakers=[_label(b) for b in SIMULATION_BOOKMAKERS],
         upcoming=upcoming,
         recent=[_signal_out(s, m) for s, m in recent],
-        live=LiveOut(
-            n=summary.n if summary else 0,
-            target=LIVE_TARGET,
-            mean_clv=summary.mean_clv if summary else None,
-            clv_std_error=summary.clv_std_error if summary and summary.n > 1 else None,
-            share_positive=summary.share_positive if summary else None,
-            roi=summary.roi if summary else None,
-            verdict=live_verdict(summary),
-        ),
+        live=_live_out(summary),
+        live_secondary=_live_out(live_summary(db, secondary=True)),
     )
