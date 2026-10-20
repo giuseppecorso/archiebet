@@ -172,3 +172,11 @@ def test_loosely_similar_only_confirms():
     assert loosely_similar("Lillestroem SK", "Lillestrom")
     assert loosely_similar("Kuopion Palloseura", "KuPS")
     assert not loosely_similar("AS Roma", "Inter")
+
+
+def test_far_matches_refresh_once_a_day():
+    from app.ingest.oddspapi import FAR_HISTORY_MAX_AGE, HISTORY_MAX_AGE, history_max_age
+
+    now = datetime(2026, 10, 20, 12, tzinfo=UTC)
+    assert history_max_age(now + timedelta(days=2), now) == HISTORY_MAX_AGE
+    assert history_max_age(now + timedelta(days=5), now) == FAR_HISTORY_MAX_AGE

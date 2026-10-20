@@ -29,6 +29,13 @@ LINK_WINDOW = timedelta(hours=48)  # stessa partita se il calcio d'inizio differ
 HORIZON = timedelta(days=7)  # quote attuali solo per le partite dei prossimi giorni
 UPCOMING_MAX_AGE = timedelta(hours=23)  # elenco partite una volta al giorno: ~62 richieste al mese
 HISTORY_MAX_AGE = timedelta(hours=5)  # "Aggiorna ora" subito dopo un giro automatico non riscarica
+NEAR = timedelta(days=3)  # le quote si muovono soprattutto negli ultimi giorni: oltre, basta una volta al giorno
+FAR_HISTORY_MAX_AGE = timedelta(hours=23)
+
+
+def history_max_age(kickoff: datetime, now: datetime) -> timedelta:
+    """Ogni quanto riscaricare le quote di una partita: a ogni giro se è vicina, una volta al giorno se è lontana."""
+    return HISTORY_MAX_AGE if kickoff - now <= NEAR else FAR_HISTORY_MAX_AGE
 DEFAULT_BOOKMAKERS = ("sisal", "eurobet")  # D66
 
 
@@ -252,7 +259,7 @@ def sync_oddspapi(
     for fixture_id, match in links.items():
         if match.status != MatchStatus.SCHEDULED or not (now < match.kickoff_at <= now + HORIZON):
             continue
-        prices = prices_at(adapter.history(fixture_id, slugs, HISTORY_MAX_AGE), now)
+        prices = prices_at(adapter.history(fixture_id, slugs, history_max_age(match.kickoff_at, now)), now)
         for bookmaker, markets in current.get(fixture_id, {}).items():  # elenco del giorno: solo se lo storico non li ha
             for market, selections in markets.items():
                 prices.setdefault(bookmaker, {}).setdefault(market, selections)
