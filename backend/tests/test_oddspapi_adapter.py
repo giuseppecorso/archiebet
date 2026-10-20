@@ -100,7 +100,7 @@ def test_upcoming_uses_one_request_and_cache(tmp_path):
     # prima controlla il budget (gratis), poi una richiesta ogni 5 campionati
     assert [c[0] for c in http.calls] == ["account", "odds-by-tournaments", "odds-by-tournaments"]
     assert http.calls[1][1] == {"tournamentIds": "23,53,17,8,35", "bookmaker": "pinnacle", "apiKey": "KEY"}
-    assert http.calls[2][1]["tournamentIds"] == "34"
+    assert http.calls[2][1]["tournamentIds"] == "34,18,54,44,182"
     assert a.remaining_month == 248
     a.upcoming(max_age=timedelta(hours=5))
     assert len(http.calls) == 3  # dalla cache

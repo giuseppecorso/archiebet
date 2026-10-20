@@ -20,7 +20,11 @@ BASE_URL = "https://football-data.co.uk"
 UK_TZ = ZoneInfo("Europe/London")
 
 # Codice della lega su football-data → codice del campionato in ArchieBet
-LEAGUES = {"I1": "ITA-A", "I2": "ITA-B", "E0": "ENG-1", "SP1": "ESP-1", "D1": "GER-1", "F1": "FRA-1"}
+LEAGUES = {
+    "I1": "ITA-A", "I2": "ITA-B",
+    "E0": "ENG-1", "SP1": "ESP-1", "D1": "GER-1", "F1": "FRA-1",
+    "E1": "ENG-2", "SP2": "ESP-2", "D2": "GER-2", "F2": "FRA-2",  # seconde divisioni (D75)
+}  # fmt: skip
 FIRST_SEASON = 2005  # 2005/06: abbastanza storia per modello e backtest
 
 # (bookmaker, chiusura?, prefissi colonne 1X2, prefissi colonne Over/Under 2.5), in ordine di preferenza

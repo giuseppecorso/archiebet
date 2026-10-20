@@ -30,7 +30,10 @@ SOURCE = "oddspapi"
 BASE_URL = "https://api.oddspapi.io/v4"
 SOCCER = 10
 
-TOURNAMENTS = {23: "ITA-A", 53: "ITA-B", 17: "ENG-1", 8: "ESP-1", 35: "GER-1", 34: "FRA-1"}
+TOURNAMENTS = {
+    23: "ITA-A", 53: "ITA-B", 17: "ENG-1", 8: "ESP-1", 35: "GER-1",
+    34: "FRA-1", 18: "ENG-2", 54: "ESP-2", 44: "GER-2", 182: "FRA-2",  # seconde divisioni (D75)
+}  # fmt: skip
 
 # slug OddsPapi → nome del bookmaker in ArchieBet
 SHARP = {"pinnacle": "pinnacle"}
