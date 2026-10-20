@@ -70,6 +70,25 @@ class AFFixture:
     ht_away_goals: int | None
 
 
+@dataclass(frozen=True)
+class AFVenue:
+    """Squadra con il suo stadio di casa (da /teams)."""
+
+    team: AFTeam
+    country: str  # in inglese, come lo scrive API-Football ("Italy", "England", ...)
+    venue_name: str | None
+    city: str | None
+    surface: str | None
+
+
+def parse_teams(body: dict[str, Any]) -> list[AFVenue]:
+    out = []
+    for item in body.get("response", []):
+        team, venue = item["team"], item.get("venue") or {}
+        out.append(AFVenue(AFTeam(team["id"], team["name"]), team.get("country") or "", venue.get("name"), venue.get("city"), venue.get("surface")))
+    return out
+
+
 def map_status(short: str) -> str:
     if short in FINISHED:
         return "finished"
@@ -161,6 +180,12 @@ class ApiFootballAdapter(DataSourceAdapter):
         params = {"league": league_id, "season": season}
         key = f"fixtures?league={league_id}&season={season}"
         return parse_fixtures(self.cached(key, max_age, lambda: self._request("/fixtures", params)))
+
+
+    def teams(self, league_id: int, season: int, max_age: timedelta) -> list[AFVenue]:
+        """Squadre di un campionato con lo stadio di casa (città e tipo di campo)."""
+        params = {"league": league_id, "season": season}
+        return parse_teams(self.cached(f"teams?league={league_id}&season={season}", max_age, lambda: self._request("/teams", params)))
 
 
 def _http_get(url: str, params: dict[str, Any], headers: dict[str, str]) -> tuple[int, dict[str, str], dict[str, Any]]:

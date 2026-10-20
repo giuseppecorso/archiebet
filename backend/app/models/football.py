@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy import Boolean, Float, ForeignKey, Index, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, UTCDateTime, utcnow
@@ -26,6 +26,11 @@ class Team(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(80))  # nome mostrato nell'app
     country: Mapped[str] = mapped_column(String(40))
+    # Stadio di casa (D76): città da API-Football, coordinate dal geocoding Open-Meteo; servono a meteo e distanze
+    home_city: Mapped[str | None] = mapped_column(String(80))
+    latitude: Mapped[float | None] = mapped_column(Float)
+    longitude: Mapped[float | None] = mapped_column(Float)
+    surface: Mapped[str | None] = mapped_column(String(30))  # "grass", "artificial turf", ...
 
 
 class TeamAlias(Base):
