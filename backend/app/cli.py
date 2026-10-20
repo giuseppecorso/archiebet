@@ -267,6 +267,42 @@ def _weather_test(fetch_only: bool) -> int:
     return 0
 
 
+def _popularity_test() -> int:
+    """Tifo dei bookmaker (D78, ipotesi 6): taratura fino al 2024/25, conferma sul 2025/26."""
+    from sqlalchemy import select
+
+    from app.forecast import popularity_test as pt
+    from app.forecast.demargin import shin
+    from app.models import Competition, Match, MatchStatus
+
+    with SessionLocal() as db:
+        matches = db.execute(
+            select(Match).join(Competition, Match.competition_id == Competition.id)
+            .where(Competition.code.in_(pt.LEAGUES), Match.status == MatchStatus.FINISHED, Match.season >= "2013/14")
+        ).scalars().all()  # fmt: skip
+        teams = {m.id: (m.season, m.home_team.name, m.away_team.name) for m in matches}
+        pinnacle = load_odds(db, ["pinnacle"], closing=False)
+        bet365 = load_odds(db, ["bet365"], closing=False)
+    rows: dict[str, list] = {"taratura (2013/14 - 2024/25)": [], "conferma (2025/26)": []}
+    for match_id, (season, home, away) in teams.items():
+        pin, b365 = pinnacle.get(match_id, {}).get("1X2"), bet365.get(match_id, {}).get("1X2")
+        if not pin or not b365:
+            continue
+        fair = shin([pin["1"], pin["X"], pin["2"]])
+        key = "conferma (2025/26)" if season >= "2025/26" else "taratura (2013/14 - 2024/25)"
+        rows[key] += pt.value_rows(season, home, away, fair, [b365["1"], b365["X"], b365["2"]])
+    for label, rs in rows.items():
+        if len(rs) < 10:
+            print(f"{label}: dati insufficienti ({len(rs)})")
+            continue
+        r = pt.regress(rs)
+        print(f"{label}: {r.n} vittorie quotate")
+        print(f"  squadre popolari:     {pt.describe(r.popular)}  (ipotesi: negativo)")
+        print(f"  avversarie popolari:  {pt.describe(r.against_popular)}  (ipotesi: positivo)")
+        print(f"  {'CONFERMATA' if r.confirmed else 'non confermata'}")
+    return 0
+
+
 def _open_vault() -> int:
     if vault_is_open():
         print("La cassaforte è già aperta.")
@@ -305,6 +341,7 @@ def main() -> int:
     ft.add_argument("--from", dest="first", default="2013/14")
     ft.add_argument("--to", dest="last", default="2024/25")
     commands.add_parser("verdict", help="verdetto sulla stagione 2025/26 (solo a cassaforte aperta)")
+    commands.add_parser("popularity-test", help="tifo dei bookmaker sulle squadre popolari (D78)")
     wt = commands.add_parser("weather-test", help="prova del nove del meteo (D76)")
     wt.add_argument("--fetch-only", action="store_true", help="scarica soltanto il meteo, senza la prova")
     commands.add_parser("venues", help="stadi di casa delle squadre (città, campo, coordinate)")
@@ -328,6 +365,8 @@ def main() -> int:
         return 0
     if args.command == "factor-test":
         return _factor_test(args.first, args.last)
+    if args.command == "popularity-test":
+        return _popularity_test()
     if args.command == "weather-test":
         return _weather_test(args.fetch_only)
     if args.command == "venues":
