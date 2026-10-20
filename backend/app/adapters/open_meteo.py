@@ -79,6 +79,15 @@ class OpenMeteoAdapter(DataSourceAdapter):
         body = self.cached(f"geocoding?name={city}&country={country_code}", timedelta(days=365), lambda: self._request(GEOCODING_URL, params))
         return best_place(body)
 
+    def daily_temperature(self, latitude: float, longitude: float, start: date, end: date) -> dict[str, float | None]:
+        """Temperatura media giornaliera (°C) per costruire la normale climatica di una città (D78)."""
+        lat, lon = round(latitude, 2), round(longitude, 2)
+        params = {"latitude": lat, "longitude": lon, "start_date": start.isoformat(), "end_date": end.isoformat(),
+                  "daily": "temperature_2m_mean", "timezone": "UTC"}  # fmt: skip
+        body = self.cached(f"daily?lat={lat}&lon={lon}&start={start}&end={end}", timedelta(days=3650), lambda: self._request(ARCHIVE_URL, params))
+        d = body.get("daily") or {}
+        return dict(zip(d.get("time") or [], d.get("temperature_2m_mean") or []))
+
     def hourly_uncached(self, latitude: float, longitude: float, start: date, end: date) -> Hourly:
         """Come hourly, ma senza salvare la risposta grezza (anni di dati orari pesano centinaia di MB)."""
         params = {"latitude": round(latitude, 2), "longitude": round(longitude, 2), "start_date": start.isoformat(),

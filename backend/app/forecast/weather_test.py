@@ -9,7 +9,7 @@ import json
 from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -20,11 +20,13 @@ from app.adapters.open_meteo import OpenMeteoAdapter, OpenMeteoError
 from app.forecast.binary_model import BinaryRow
 from app.forecast.binary_model import walk_forward_by_season as binary_walk_forward
 from app.forecast.backtest import paired
-from app.forecast.weather import match_weather
+from app.forecast.weather import monthly_normals, raw_weather
 from app.models import Competition, Match, MatchStatus, Team
 
 LEAGUES = ("ITA-A", "ITA-B", "ENG-1", "ENG-2", "ESP-1", "ESP-2", "GER-1", "GER-2", "FRA-1", "FRA-2")
 FIRST, LAST = "2019/20", "2024/25"  # da quando football-data ha gli orari; la 2025/26 non si usa per tarare
+CONFIRMATION = "2025/26"  # conferma delle ipotesi D78
+NORMALS_FROM, NORMALS_TO = date(2016, 1, 1), date(2018, 12, 31)  # normale climatica, prima di tutte le stagioni provate
 FEATURE_NAMES = ("pioggia", "vento", "temperatura estrema")
 
 
@@ -35,14 +37,17 @@ class Target:
     kickoff: datetime
     lat: float
     lon: float
+    away_lat: float | None
+    away_lon: float | None
 
 
-def targets(db: Session, first: str = FIRST, last: str = LAST) -> list[Target]:
-    home = aliased(Team)
+def targets(db: Session, first: str = FIRST, last: str = CONFIRMATION) -> list[Target]:
+    home, away = aliased(Team), aliased(Team)
     rows = db.execute(
-        select(Match.id, Match.season, Match.kickoff_at, home.latitude, home.longitude)
+        select(Match.id, Match.season, Match.kickoff_at, home.latitude, home.longitude, away.latitude, away.longitude)
         .join(Competition, Match.competition_id == Competition.id)
         .join(home, Match.home_team_id == home.id)
+        .join(away, Match.away_team_id == away.id)
         .where(
             Competition.code.in_(LEAGUES), Match.status == MatchStatus.FINISHED, Match.kickoff_has_time.is_(True),
             Match.season.between(first, last), home.latitude.is_not(None),
@@ -52,28 +57,43 @@ def targets(db: Session, first: str = FIRST, last: str = LAST) -> list[Target]:
 
 
 def fetch_features(
-    meteo: OpenMeteoAdapter, items: list[Target], store: Path, log: Callable[[str], None] = print, max_requests: int = 4000
+    meteo: OpenMeteoAdapter,
+    items: list[Target],
+    store: Path,
+    log: Callable[[str], None] = print,
+    max_requests: int = 4000,
+    wait: Callable[[], bool] | None = None,
 ) -> dict[str, list[float] | None]:
-    """Meteo di ogni partita, salvato in `store`. Riprende da dove si era fermato; si ferma se il servizio limita."""
+    """Meteo grezzo di ogni partita (pioggia mm, vento km/h, °C), salvato in `store`. Riprende da dove si era fermato.
+
+    Se Open-Meteo limita: con `wait` (che aspetta e dice se riprovare) si riprova, altrimenti ci si ferma.
+    """
     done: dict[str, list[float] | None] = json.loads(store.read_text(encoding="utf-8")) if store.exists() else {}
     groups: dict[tuple[float, float, str], list[Target]] = defaultdict(list)
     for t in items:
         if str(t.match_id) not in done:
             groups[(round(t.lat, 2), round(t.lon, 2), t.season)].append(t)
     log(f"Meteo: {len(done)} partite già pronte, {sum(map(len, groups.values()))} da scaricare in {len(groups)} richieste")
-    for i, ((lat, lon, _), group) in enumerate(groups.items()):
-        if i >= max_requests:
-            break
+    pending = list(groups.items())
+    i = 0
+    while i < len(pending) and i < max_requests:
+        (lat, lon, _), group = pending[i]
         start = min(t.kickoff for t in group).date()
         end = (max(t.kickoff for t in group) + timedelta(hours=3)).date()
         try:
             hourly = meteo.hourly_uncached(lat, lon, start, end)
         except OpenMeteoError as e:
+            store.parent.mkdir(parents=True, exist_ok=True)
+            store.write_text(json.dumps(done), encoding="utf-8")
+            if wait and wait():
+                log(f"Open-Meteo ha chiesto una pausa ({e}): riprendo")
+                continue
             log(f"Open-Meteo si è fermato ({e}): riprendo al prossimo lancio")
             break
         for t in group:
-            w = match_weather(hourly, t.kickoff)
+            w = raw_weather(hourly, t.kickoff)
             done[str(t.match_id)] = list(w) if w else None
+        i += 1
         if i % 25 == 0:
             store.parent.mkdir(parents=True, exist_ok=True)
             store.write_text(json.dumps(done), encoding="utf-8")
@@ -116,4 +136,17 @@ def run_binary(rows: list[BinaryRow], factors: dict[str, dict[int, list[float]]]
         common = [m for m in ll if m in base]
         cmp = paired(np.array([ll[m] - base[m] for m in common]))
         out.append(BinaryResult(name, len(ll), float(np.mean(list(ll.values()))), cmp.mean_diff, cmp.std_error))
+    return out
+
+
+def fetch_normals(meteo: OpenMeteoAdapter, items: list[Target], log: Callable[[str], None] = print) -> dict[tuple[float, float], dict[int, float]]:
+    """Normale climatica mensile della città di ogni squadra ospite (una richiesta per città, in cache)."""
+    places = {(round(t.away_lat, 2), round(t.away_lon, 2)) for t in items if t.away_lat is not None}
+    out = {}
+    for lat, lon in sorted(places):
+        try:
+            out[(lat, lon)] = monthly_normals(meteo.daily_temperature(lat, lon, NORMALS_FROM, NORMALS_TO))
+        except OpenMeteoError as e:
+            log(f"Normali climatiche interrotte ({e}): {len(out)} città su {len(places)}, riprendo al prossimo lancio")
+            break
     return out

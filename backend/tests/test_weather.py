@@ -7,7 +7,7 @@ import pytest
 
 from app.adapters.api_football import parse_teams
 from app.adapters.open_meteo import best_place, parse_hourly
-from app.forecast.weather import match_weather
+from app.forecast.weather import climate_shock, match_weather, monthly_normals, raw_weather
 from app.ingest.venues import city_candidates
 
 
@@ -54,3 +54,14 @@ def test_city_candidates():
     assert city_candidates("Cava de&apos; Tirreni", "IT")[1] == ("Cava de' Tirreni", "IT")
     assert city_candidates("Monaco", "FR") == [("Monaco", "MC")]  # il Monaco gioca nel principato
     assert city_candidates("Reggio Emilia", "IT") == [("Reggio nell'Emilia", "IT")]
+
+
+def test_raw_weather_normals_and_climate_shock():
+
+
+    assert raw_weather(HOURLY, datetime(2024, 3, 10, 13, 0, tzinfo=UTC)) == pytest.approx((1.5, 15.0, 4.5))
+    normals = monthly_normals({"2017-01-01": 2.0, "2017-01-02": 4.0, "2017-07-01": 24.0, "2017-07-02": None})
+    assert normals == {1: 3.0, 7: 24.0}
+    assert climate_shock(30.0, normals, 7) == pytest.approx((6.0, 6.0))  # 6 °C più caldo che a casa
+    assert climate_shock(-1.0, normals, 1) == pytest.approx((-4.0, 4.0))
+    assert climate_shock(10.0, normals, 3) is None  # mese senza normale

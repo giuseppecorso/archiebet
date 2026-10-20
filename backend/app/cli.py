@@ -216,56 +216,86 @@ def _venues() -> int:
     return 0
 
 
-def _weather_test(fetch_only: bool) -> int:
-    """Prova del nove del meteo (D76): scarica il meteo delle partite (riprendibile) e lo prova contro il mercato."""
+def _weather_test(fetch_only: bool, patient: bool) -> int:
+    """Meteo (D76) e shock climatico dell'ospite (D78): scarica il meteo grezzo (riprendibile) e prova i fattori."""
+    import time as _time
+
     from app.adapters.cache import FileCache
     from app.adapters.open_meteo import OpenMeteoAdapter
     from app.forecast import factor_test as ft
     from app.forecast import weather_test as wt
     from app.forecast.binary_model import BinaryRow
+    from app.forecast.weather import climate_shock, weather_factors
     from app.ingest.teams import COUNTRY_ORDER
 
     settings = get_settings()
-    store = settings.data_cache_dir / "weather" / "features.json"
+    store = settings.data_cache_dir / "weather" / "raw.json"
+    meteo = OpenMeteoAdapter(FileCache(settings.data_cache_dir, "open-meteo"))
+    waits = {"n": 0}
+
+    def wait() -> bool:  # con --patient aspetta la fine del limite orario di Open-Meteo, al massimo 8 volte
+        if not patient or waits["n"] >= 8:
+            return False
+        waits["n"] += 1
+        print("Pausa di un'ora per il limite di Open-Meteo...", flush=True)
+        _time.sleep(3660)
+        return True
+
     with SessionLocal() as db:
         items = wt.targets(db)
-        done = wt.fetch_features(OpenMeteoAdapter(FileCache(settings.data_cache_dir, "open-meteo")), items, store)
-        missing = len(items) - len(done)
-        if missing:
-            print(f"Mancano ancora {missing} partite: rilancia il comando più tardi (limiti di Open-Meteo).")
+        raw = wt.fetch_features(meteo, items, store, wait=wait)
+        normals = wt.fetch_normals(meteo, items)
+        if len(raw) < len(items):
+            print(f"Mancano ancora {len(items) - len(raw)} partite: rilancia il comando più tardi (limiti di Open-Meteo).")
         if fetch_only:
             return 0
-        games = [g for c in COUNTRY_ORDER for g in load_games(db, c) if g.tier <= 2 and wt.FIRST <= g.season <= wt.LAST]
+        games = [g for c in COUNTRY_ORDER for g in load_games(db, c) if g.tier <= 2 and wt.FIRST <= g.season <= wt.CONFIRMATION]
         opening = load_odds(db, ["pinnacle"], closing=False)
         opening_fair = fair_odds_probabilities(opening)
         closing_fair = fair_odds_probabilities(load_odds(db, REFERENCE_BOOKMAKERS, closing=True))
         offered_bet365 = load_odds(db, ["bet365"], closing=False)
-    weather = {int(m): v for m, v in done.items() if v}
     season_of = {g.match_id: g.season for g in games}
-    std = wt.standardize({m: v for m, v in weather.items() if m in season_of}, season_of, wt.FIRST)
-    factors = {"meteo (pioggia + vento + temperatura)": std}
-    for i, name in enumerate(wt.FEATURE_NAMES):
-        factors[f"solo {name}"] = {m: [v[i]] for m, v in std.items()}
-    eval_seasons = sorted({s for s in season_of.values() if s > wt.FIRST})
+    target_of = {t.match_id: t for t in items}
 
-    ou_rows = [
-        BinaryRow(g.match_id, g.season, int(g.home_goals + g.away_goals >= 3), opening_fair[g.match_id]["OU2.5"]["over"])
-        for g in games if g.match_id in std and "OU2.5" in opening_fair.get(g.match_id, {})
-    ]  # fmt: skip
-    print()
-    print(f"Under/Over 2.5: {len(ou_rows)} partite con meteo e apertura Pinnacle, valutate {eval_seasons[0]} - {eval_seasons[-1]}")
-    for r in wt.run_binary(ou_rows, factors, eval_seasons):
-        cmp = "" if r.diff is None else f"  vs ricalibrato {r.diff:+.5f} ± {r.std_error:.5f} {'PASSA' if r.passes else 'non passa'}"
-        print(f"  {r.name:<40} n={r.n:<6} log loss {r.log_loss:.5f}{cmp}")
+    def report(title: str, factors: dict, seasons: list[str], max_season: str) -> None:
+        sel = [g for g in games if g.season <= max_season]
+        ou = [
+            BinaryRow(g.match_id, g.season, int(g.home_goals + g.away_goals >= 3), opening_fair[g.match_id]["OU2.5"]["over"])
+            for g in sel if g.match_id in next(iter(factors.values())) and "OU2.5" in opening_fair.get(g.match_id, {})
+        ]  # fmt: skip
+        print(f"\n{title} — Under/Over 2.5: {len(ou)} partite, valutate {seasons[0]} - {seasons[-1]}")
+        for r in wt.run_binary(ou, factors, seasons):
+            cmp = "" if r.diff is None else f"  vs ricalibrato {r.diff:+.5f} ± {r.std_error:.5f} {'PASSA' if r.passes else 'non passa'}"
+            print(f"  {r.name:<42} n={r.n:<6} log loss {r.log_loss:.5f}{cmp}")
+        rows = [r for r in ft.market_rows(sel, opening_fair, closing_fair) if r.match_id in next(iter(factors.values()))]
+        print(f"{title} — 1X2: {len(rows)} partite")
+        for r in ft.run(rows, factors, seasons, opening, offered_bet365, closing_fair):
+            if r.vs_baseline is None:
+                continue
+            print(f"  {r.name:<42} n={r.n:<6} log loss {r.log_loss:.5f}  vs ricalibrato {r.vs_baseline.mean_diff:+.5f} ± {r.vs_baseline.std_error:.5f} {'PASSA' if r.passes else 'non passa'}")
 
-    rows = [r for r in ft.market_rows(games, opening_fair, closing_fair) if r.match_id in std]
-    print()
-    print(f"Esito finale (1X2): {len(rows)} partite")
-    for r in ft.run(rows, factors, eval_seasons, opening, offered_bet365, closing_fair):
-        cmp = "" if r.vs_baseline is None else f"  vs ricalibrato {r.vs_baseline.mean_diff:+.5f} ± {r.vs_baseline.std_error:.5f} {'PASSA' if r.passes else 'non passa'}"
-        print(f"  {r.name:<40} n={r.n:<6} log loss {r.log_loss:.5f}{cmp}")
+    tuning = sorted({s for s in season_of.values() if wt.FIRST < s <= wt.LAST})
+    # D76: meteo assoluto (solo stagioni di taratura)
+    weather = {int(m): list(weather_factors(v)) for m, v in raw.items() if v and season_of.get(int(m), "9") <= wt.LAST}
+    std = wt.standardize(weather, season_of, wt.FIRST)
+    factors = {"meteo (pioggia + vento + temperatura)": std} | {f"solo {n}": {m: [v[i]] for m, v in std.items()} for i, n in enumerate(wt.FEATURE_NAMES)}
+    report("D76 meteo", factors, tuning, wt.LAST)
+
+    # D78 (3): shock climatico dell'ospite, taratura e poi conferma sulla 2025/26
+    shock = {}
+    for m, v in raw.items():
+        t = target_of.get(int(m))
+        if not v or t is None or t.away_lat is None:
+            continue
+        s = climate_shock(v[2], normals.get((round(t.away_lat, 2), round(t.away_lon, 2)), {}), t.kickoff.month)
+        if s:
+            shock[int(m)] = list(s)
+    std_shock = wt.standardize(shock, season_of, wt.FIRST)
+    shock_factors = {"shock climatico (con segno + assoluto)": std_shock, "solo con segno": {m: [v[0]] for m, v in std_shock.items()},
+                     "solo assoluto": {m: [v[1]] for m, v in std_shock.items()}}  # fmt: skip
+    report("D78 shock climatico, taratura", shock_factors, tuning, wt.LAST)
+    report("D78 shock climatico, conferma", shock_factors, [wt.CONFIRMATION], wt.CONFIRMATION)
     return 0
-
 
 def _popularity_test() -> int:
     """Tifo dei bookmaker (D78, ipotesi 6): taratura fino al 2024/25, conferma sul 2025/26."""
@@ -344,6 +374,7 @@ def main() -> int:
     commands.add_parser("popularity-test", help="tifo dei bookmaker sulle squadre popolari (D78)")
     wt = commands.add_parser("weather-test", help="prova del nove del meteo (D76)")
     wt.add_argument("--fetch-only", action="store_true", help="scarica soltanto il meteo, senza la prova")
+    wt.add_argument("--patient", action="store_true", help="se Open-Meteo limita, aspetta un'ora e riprende")
     commands.add_parser("venues", help="stadi di casa delle squadre (città, campo, coordinate)")
     dm = commands.add_parser("demargin-test", help="prova del nove dei metodi per togliere il margine (D72)")
     dm.add_argument("--last", default="2024/25", help="ultima stagione valutata (la 2025/26 non si usa per tarare)")
@@ -368,7 +399,7 @@ def main() -> int:
     if args.command == "popularity-test":
         return _popularity_test()
     if args.command == "weather-test":
-        return _weather_test(args.fetch_only)
+        return _weather_test(args.fetch_only, args.patient)
     if args.command == "venues":
         return _venues()
     if args.command == "demargin-test":
