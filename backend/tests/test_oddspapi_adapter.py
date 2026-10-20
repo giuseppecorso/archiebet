@@ -151,3 +151,28 @@ def test_errors_are_raised_and_not_cached(tmp_path):
         a.participants()
     assert a.remaining_month == 249  # anche gli errori consumano una richiesta
     assert not (tmp_path / "oddspapi").exists() or not any((tmp_path / "oddspapi").iterdir())
+
+
+def test_http_get_retries_when_the_network_drops(monkeypatch):
+    import httpx2
+
+    from app.adapters import oddspapi
+
+    class Ok:
+        status_code = 200
+
+        def json(self):
+            return {"ok": True}
+
+    answers = [httpx2.ConnectTimeout("handshake"), Ok()]
+
+    def fake_get(*args, **kwargs):
+        answer = answers.pop(0)
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+    monkeypatch.setattr(httpx2, "get", fake_get)
+    waits = []
+    assert oddspapi._http_get("https://x", {}, sleep=waits.append) == (200, {"ok": True})
+    assert waits == [10]

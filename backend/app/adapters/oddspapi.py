@@ -273,10 +273,18 @@ def _retry_after(body: Any, default: float) -> float:
     return max(default, float(found.group(1)) + 0.5) if found else default
 
 
-def _http_get(url: str, params: dict[str, Any]) -> tuple[int, Any]:
+def _http_get(url: str, params: dict[str, Any], attempts: int = 3, sleep: Callable[[float], None] = time.sleep) -> tuple[int, Any]:
+    """GET con nuovi tentativi se la rete cade (timeout, connessione): i dati di OddsPapi arrivano a volte lenti."""
     import httpx2
 
-    response = httpx2.get(url, params=params, timeout=60, headers={"User-Agent": "ArchieBet/0.1 (uso personale)"})
+    for attempt in range(attempts):
+        try:
+            response = httpx2.get(url, params=params, timeout=60, headers={"User-Agent": "ArchieBet/0.1 (uso personale)"})
+            break
+        except httpx2.TransportError:
+            if attempt == attempts - 1:
+                raise
+            sleep(10 * (attempt + 1))
     try:
         return response.status_code, response.json()
     except ValueError:
