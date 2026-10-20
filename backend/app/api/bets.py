@@ -50,6 +50,7 @@ class SelectionOut(BaseModel):
     status: str
     fair_closing_odds: Decimal | None
     clv: Decimal | None
+    probability: float | None = None  # probabilità che vinca adesso (termometro, D92); solo per le schedine aperte
 
 
 class BetOut(BaseModel):
@@ -65,6 +66,8 @@ class BetOut(BaseModel):
     placed_at: datetime
     settled_at: datetime | None
     selections: list[SelectionOut]
+    hope: float | None = None  # termometro della speranza: probabilità di vincere adesso (solo aperte)
+    live: bool = False  # almeno una partita della schedina è in corso
 
 
 class BetCreated(BaseModel):
@@ -100,9 +103,14 @@ class Prefill(BaseModel):
 
 
 def _bet_out(db, bet: Bet) -> BetOut:
+    from app.forecast.live_service import hope, leg_probability, selection_states
+
     now = datetime.now(UTC)
     cards = {c.id: c for c in match_cards(db, [s.match for s in bet.selections], now)}
+    states = selection_states(db, bet.selections, now) if bet.status == "open" else {}
     return BetOut(
+        hope=hope(states.values()) if states else None,
+        live=any(c.live is not None for c in cards.values()),
         id=bet.id,
         kind=bet.kind,
         stake=bet.stake,
@@ -124,6 +132,7 @@ def _bet_out(db, bet: Bet) -> BetOut:
                 status=s.status,
                 fair_closing_odds=s.fair_closing_odds,
                 clv=s.clv,
+                probability=leg_probability(states[s.id]) if s.id in states else None,
             )
             for s in bet.selections
         ],

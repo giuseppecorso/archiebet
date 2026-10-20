@@ -114,3 +114,21 @@ def test_breakdown_endpoint(logged_client, db, matches):
     assert real["habits"]["bets"] == 1 and real["habits"]["top_bookmaker"] == "Snai"
     simulated = logged_client.get("/api/bets/breakdown?kind=simulated").json()
     assert simulated["by_size"] == [] and simulated["habits"]["bets"] == 1  # aperta: solo abitudini
+
+
+def test_live_match_and_hope_thermometer(logged_client, db, matches):
+    from app.models import MatchLive
+
+    inter = matches["Inter"]
+    bet = logged_client.post("/api/bets", json=bet_body(inter, odds="1.95")).json()["bet"]
+    before = logged_client.get(f"/api/bets/{bet['id']}").json()
+    assert before["live"] is False and 0.4 < before["hope"] < 0.6  # Inter favorita dalla media di mercato
+
+    db.add(MatchLive(match_id=inter, status="2H", minute=80, home_goals=2, away_goals=0, updated_at=datetime.now(UTC)))
+    db.commit()
+    during = logged_client.get(f"/api/bets/{bet['id']}").json()
+    assert during["live"] is True and during["hope"] > 0.95  # 2-0 a dieci minuti dalla fine
+    assert during["selections"][0]["probability"] == pytest.approx(during["hope"])
+    live = logged_client.get("/api/matches?view=live").json()
+    assert [m["id"] for g in live for m in g["matches"]] == [inter]
+    assert live[0]["matches"][0]["live"] == {"status": "2H", "minute": 80, "home_goals": 2, "away_goals": 0}

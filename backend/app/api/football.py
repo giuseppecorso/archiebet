@@ -52,6 +52,15 @@ class CompetitionOut(BaseModel):
     tier: int
 
 
+class LiveOut(BaseModel):
+    """Partita in corso (D92): codice di stato ("1H", "HT", "2H", ...), minuto e punteggio di adesso."""
+
+    status: str
+    minute: int | None
+    home_goals: int
+    away_goals: int
+
+
 class MatchCard(BaseModel):
     id: int
     competition: CompetitionOut
@@ -64,6 +73,7 @@ class MatchCard(BaseModel):
     home_goals: int | None
     away_goals: int | None
     odds_1x2: dict[str, float] | None  # media di mercato: apertura per le prossime, chiusura per le giocate
+    live: LiveOut | None = None  # solo mentre la partita è in corso
 
 
 class CompetitionGroup(BaseModel):
@@ -174,7 +184,10 @@ def _odds_1x2(db: Session, matches: list[Match]) -> dict[int, dict[str, float]]:
 
 
 def match_cards(db: Session, matches: list[Match], now: datetime) -> list[MatchCard]:
+    from app.forecast.live_service import live_rows
+
     odds = _odds_1x2(db, matches)
+    live = live_rows(db, [m.id for m in matches if m.status != MatchStatus.FINISHED], now)
     return [
         MatchCard(
             id=m.id,
@@ -188,6 +201,7 @@ def match_cards(db: Session, matches: list[Match], now: datetime) -> list[MatchC
             home_goals=m.home_goals,
             away_goals=m.away_goals,
             odds_1x2=odds.get(m.id),
+            live=LiveOut(status=r.status, minute=r.minute, home_goals=r.home_goals, away_goals=r.away_goals) if (r := live.get(m.id)) else None,
         )
         for m in matches
     ]
@@ -224,7 +238,7 @@ def list_competitions(_: CurrentUser, db: DbSession) -> list[CompetitionOut]:
 def list_matches(
     _: CurrentUser,
     db: DbSession,
-    view: Literal["upcoming", "results"] = "upcoming",
+    view: Literal["upcoming", "results", "live"] = "upcoming",
     competitions: str | None = Query(None, description="codici separati da virgola, es. ITA-A,ITA-B"),
     limit: int = Query(40, ge=1, le=200, description="partite massime per campionato"),
 ) -> list[CompetitionGroup]:
@@ -232,7 +246,12 @@ def list_matches(
     query = select(Match).join(Competition)
     if competitions:
         query = query.where(Competition.code.in_(competitions.split(",")))
-    if view == "upcoming":
+    if view == "live":
+        from app.forecast.live_service import FRESH
+        from app.models import MatchLive
+
+        query = query.join(MatchLive, MatchLive.match_id == Match.id).where(MatchLive.updated_at >= now - FRESH).order_by(Match.kickoff_at)
+    elif view == "upcoming":
         query = query.where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at >= now - RESULT_GRACE)
         query = query.order_by(Match.kickoff_at)
     else:
