@@ -436,6 +436,104 @@ def _d89_test() -> int:
     return 0
 
 
+def _secondary_test() -> int:
+    """Prova D82 su angoli e cartellini con l'archivio dello storico quote (da lanciare su una copia del database)."""
+    import json
+    from datetime import timedelta
+
+    from sqlalchemy import select
+
+    from app.adapters.oddspapi import BOOKMAKERS, TOURNAMENTS, OddsPapiAdapter, OPFixture
+    from app.forecast import secondary_test as st
+    from app.ingest.oddspapi import OddsPapiReport, link_fixtures
+    from app.models import Match
+
+    settings = get_settings()
+    adapter = OddsPapiAdapter(FileCache(settings.data_cache_dir, "oddspapi"), settings.oddspapi_key)
+    lines = {str(m["marketId"]): line for m in adapter.markets() if (line := st.line_of(m))}
+    outcome_names = {str(o["outcomeId"]): o["outcomeName"].lower() for m in adapter.markets() if str(m["marketId"]) in lines for o in m["outcomes"]}
+    records = []
+    for path in (settings.data_cache_dir / "odds-archive").glob("*.json"):
+        data = json.loads(path.read_text(encoding="utf-8"))["data"]
+        if data["bookmakers"] and TOURNAMENTS.get(data["fixture"]["tournamentId"], "").startswith(("ITA-A", "ITA-B", "ENG", "ESP", "GER", "FRA")):
+            records.append(data)
+    print(f"Archivio: {len(records)} partite con storico (campionati con i risultati di angoli e cartellini)")
+
+    fixtures = [OPFixture(r["fixture"]["fixtureId"], r["fixture"]["tournamentId"], datetime.fromisoformat(r["fixture"]["startTime"].replace("Z", "+00:00")),
+                          r["fixture"]["participant1Id"], r["fixture"]["participant2Id"], 2) for r in records]  # fmt: skip
+    names = {str(r["fixture"][f"participant{k}Id"]): r["fixture"][f"participant{k}Name"] for r in records for k in (1, 2)}
+    with SessionLocal() as db:
+        report = OddsPapiReport()
+        links = link_fixtures(db, fixtures, adapter.participants() | names, report, datetime.now(UTC))
+        db.commit()
+        results = {}
+        for fid, m in links.items():
+            if m.home_corners is not None and m.home_yellow is not None:
+                results[fid] = st.Result(m.home_corners, m.away_corners, m.home_yellow, m.away_yellow, m.home_red or 0, m.away_red or 0)
+    print(f"Agganciate: {len(links)} partite, con risultati di angoli e cartellini: {len(results)}; squadre non riconosciute: {len(set(report.unknown_teams))}")
+
+    def series(points):
+        out = []
+        for p in points:
+            ts = datetime.fromisoformat(p["createdAt"].replace("Z", "+00:00"))
+            out.append((ts, float(p["price"]) if p.get("active", True) and p.get("price") else None))
+        return sorted(out, key=lambda x: x[0])
+
+    histories = []
+    for r, fx in zip(records, fixtures):
+        if fx.id not in links:
+            continue
+        by_market: dict[str, dict] = {}
+        for slug, book in r["bookmakers"].items():
+            bm = BOOKMAKERS.get(slug, slug)
+            for mid, market in (book.get("markets") or {}).items():
+                if mid not in lines:
+                    continue
+                for oid, outcome in (market.get("outcomes") or {}).items():
+                    name = outcome_names.get(oid)
+                    if name in ("over", "under"):
+                        by_market.setdefault(mid, {}).setdefault(bm, {})[name] = series((outcome.get("players") or {}).get("0") or [])
+        for mid, prices in by_market.items():
+            histories.append(st.MarketHistory(fx.id, fx.start_time, lines[mid], prices))
+    print(f"Linee Over/Under: {len(histories)}")
+
+    print("\n(a)+(b) Precisione delle quote di chiusura (log loss dell'Over, più basso = meglio), Pinnacle contro ogni italiano sulle stesse linee")
+    best_rule: dict[str, tuple[str, float]] = {}
+    for family in ("angoli", "cartellini"):
+        for rule in (st.RULES if family == "cartellini" else ("cartellini",)):
+            label = family if family == "angoli" else f"{family}, regola '{rule}'"
+            for italian in ("sisal", "eurobet"):
+                acc = {a.bookmaker: a for a in st.closing_log_loss(histories, results, ("pinnacle", italian), family, rule)}
+                if len(acc) < 2:
+                    print(f"  {label}, {italian}: nessuna linea in comune")
+                    continue
+                pin, it = acc["pinnacle"], acc[italian]
+                print(f"  {label}: pinnacle {pin.log_loss:.4f} contro {italian} {it.log_loss:.4f} (n {it.n})"
+                      f"  {'Pinnacle almeno pari' if pin.log_loss <= it.log_loss else italian + ' più preciso'}")
+                if family == "cartellini":
+                    for a in acc.values():
+                        if a.bookmaker not in best_rule or a.log_loss < best_rule[a.bookmaker][1]:
+                            best_rule[a.bookmaker] = (rule, a.log_loss)
+    if best_rule:
+        print("  regola dei cartellini che spiega meglio ogni bookmaker: " + ", ".join(f"{bm} '{r}'" for bm, (r, _) in sorted(best_rule.items())))
+
+    print("\n(c) Occasioni con la regola D72 su Sisal ed Eurobet (CLV contro la chiusura di Pinnacle, errore standard per partita)")
+    rule_of = lambda bm: best_rule.get(bm, ("cartellini", 0))[0]  # noqa: E731
+    for family in ("angoli", "cartellini"):
+        for side in ("totale", "squadra"):
+            hs = [h for h in histories if h.line.family == family and (h.line.side == "totale") == (side == "totale")]
+            plays = st.occasions(hs, results, ("sisal", "eurobet"), rule_of)
+            est = st.clv_estimate(plays)
+            if est is None:
+                print(f"  {family} {side}: nessuna occasione")
+                continue
+            won = [p for p in plays if p.match_id in results]
+            roi = sum((p.price - 1) if p.won else -1 for p in won) / len(won) if won else float("nan")
+            print(f"  {family} {side}: {est.n} occasioni in {est.clusters} partite, CLV {est.mean * 100:+.2f}% ± {est.std_error * 100:.2f}"
+                  f" (t {est.t:.1f}){' PASSA' if est.significant else ''}; rendimento {roi * 100:+.1f}% su {len(won)}")
+    return 0
+
+
 def _odds_archive(since: str) -> int:
     """Salva lo storico quote di OddsPapi (gratuito, ma solo ~6 mesi) per le prove sui mercati (D82)."""
     from app.adapters.cache import FileCache
@@ -645,6 +743,7 @@ def main() -> int:
     hsim.add_argument("--last", default="2025/26", help="stagione di conferma (le precedenti sono la taratura)")
     oa = commands.add_parser("odds-archive", help="salva lo storico quote OddsPapi (angoli, cartellini, principali)")
     oa.add_argument("--since", default="2026-04-01", help="data di inizio, AAAA-MM-GG")
+    commands.add_parser("secondary-test", help="prova D82 su angoli e cartellini (usare una copia del database)")
     commands.add_parser("d89-test", help="prova del nove dei fattori D89 (riposo, allenatore, sintetico, distanza, assenze)")
     commands.add_parser("af-history", help="storico API-Football per le prove dei fattori D89 (coppe, allenatori, formazioni)")
     commands.add_parser("venues", help="stadi di casa delle squadre (città, campo, coordinate)")
@@ -676,6 +775,8 @@ def main() -> int:
         return _history_sim(args.first, args.last)
     if args.command == "odds-archive":
         return _odds_archive(args.since)
+    if args.command == "secondary-test":
+        return _secondary_test()
     if args.command == "d89-test":
         return _d89_test()
     if args.command == "af-history":
