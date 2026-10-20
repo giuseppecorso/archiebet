@@ -34,6 +34,7 @@ TOURNAMENTS = {
     23: "ITA-A", 53: "ITA-B", 17: "ENG-1", 8: "ESP-1", 35: "GER-1",
     34: "FRA-1", 18: "ENG-2", 54: "ESP-2", 44: "GER-2", 182: "FRA-2",  # seconde divisioni (D75)
     7: "EU-CL", 679: "EU-EL", 34480: "EU-ECL",  # coppe europee (D85, id verificati con /tournaments)
+    26554: "ITA-C-A", 26556: "ITA-C-B", 26558: "ITA-C-C",  # Serie C (D88): Pinnacle non la quota, Sisal sì
 }  # fmt: skip
 
 # slug OddsPapi → nome del bookmaker in ArchieBet
@@ -65,6 +66,8 @@ FREE_ENDPOINTS = {"historical-odds", "account"}
 MAX_BOOKMAKERS_PER_HISTORY_CALL = 3
 RATE_LIMIT_RETRIES = 4
 MAX_TOURNAMENTS_PER_CALL = 5
+# Con quale bookmaker chiedere l'elenco partite: Pinnacle dove c'è, altrimenti un bookmaker italiano (D88)
+LISTING_BOOKMAKER = {26554: "sisal.it", 26556: "sisal.it", 26558: "sisal.it"}
 
 Prices = dict[str, dict[str, dict[str, float]]]  # bookmaker → mercato → esito → quota
 History = dict[str, dict[str, dict[str, list[tuple[datetime, float]]]]]  # bookmaker → mercato → esito → [(ora, quota)]
@@ -220,15 +223,30 @@ class OddsPapiAdapter(DataSourceAdapter):
         return self.cached("participants?sportId=10", max_age, lambda: self._request("participants", {"sportId": SOCCER}))
 
     def upcoming(self, max_age: timedelta) -> tuple[list[OPFixture], dict[str, Prices]]:
-        """Partite in programma di tutti i campionati seguiti con le quote di Pinnacle (una richiesta ogni 5 campionati)."""
-        tournaments = list(TOURNAMENTS)
+        """Partite in programma di tutti i campionati seguiti con le quote di Pinnacle (Sisal per la Serie C).
+
+        Una richiesta ogni 5 campionati con lo stesso bookmaker. Se in quei campionati non c'è nessuna partita quotata
+        (pause, fine stagione) OddsPapi risponde 404: si salva un elenco vuoto, non è un guasto.
+        """
+        groups: dict[str, list[int]] = {}
+        for t in TOURNAMENTS:
+            groups.setdefault(LISTING_BOOKMAKER.get(t, "pinnacle"), []).append(t)
         body: list[dict[str, Any]] = []
-        for start in range(0, len(tournaments), MAX_TOURNAMENTS_PER_CALL):
-            ids = ",".join(str(t) for t in tournaments[start : start + MAX_TOURNAMENTS_PER_CALL])
-            params = {"tournamentIds": ids, "bookmaker": "pinnacle"}
-            body += self.cached(f"odds-by-tournaments?tournamentIds={ids}&bookmaker=pinnacle", max_age,
-                                lambda params=params: self._request("odds-by-tournaments", params))
+        for bookmaker, tournaments in groups.items():
+            for start in range(0, len(tournaments), MAX_TOURNAMENTS_PER_CALL):
+                ids = ",".join(str(t) for t in tournaments[start : start + MAX_TOURNAMENTS_PER_CALL])
+                params = {"tournamentIds": ids, "bookmaker": bookmaker}
+                body += self.cached(f"odds-by-tournaments?tournamentIds={ids}&bookmaker={bookmaker}", max_age,
+                                    lambda params=params: self._listing(params))
         return parse_fixtures(body), parse_current(body)
+
+    def _listing(self, params: dict[str, Any]) -> list[dict[str, Any]]:
+        try:
+            return self._request("odds-by-tournaments", params)
+        except OddsPapiError as error:
+            if error.status == 404:
+                return []
+            raise
 
     def markets(self, max_age: timedelta = timedelta(days=90)) -> list[dict[str, Any]]:
         """Definizioni di tutti i mercati del calcio (nome, linea, tempo, esiti): una richiesta ogni 3 mesi."""

@@ -74,6 +74,8 @@ def test_normalize_team_names():
     assert normalize_team_name("Hellas Verona") == normalize_team_name("Verona")
     assert normalize_team_name("Juventus U23") != normalize_team_name("Juventus")
     assert normalize_team_name("Milan Futuro") != normalize_team_name("Milan")
+    assert normalize_team_name("S.S.D. Casarano Calcio") == normalize_team_name("Casarano")  # sigle puntate
+    assert normalize_team_name("Juventus Next Gen") == normalize_team_name("Juventus U23")
 
 
 class FakeApi:

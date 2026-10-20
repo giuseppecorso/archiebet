@@ -37,10 +37,17 @@ class MarketPick:
     offers: dict[str, list[Offer]]  # esito → quote dei bookmaker di Giuse
 
 
-def price_verdict(v: float, price: float) -> str:
-    """Etichetta di una quota rispetto alla probabilità giusta: "valore" con la stessa regola delle Occasioni (D72)."""
+MODEL_VALUE = "sopra Archie"  # la quota batte solo il modello, non ancora messo alla prova contro i bookmaker (D88)
+
+
+def price_verdict(v: float, price: float, source: str = "pinnacle") -> str:
+    """Etichetta di una quota rispetto alla probabilità giusta: "valore" con la stessa regola delle Occasioni (D72).
+
+    Se la probabilità viene dal solo modello di Archie (es. Serie C, dove Pinnacle non c'è) la quota alta si chiama
+    "sopra Archie": è un'indicazione, non un valore dimostrato.
+    """
     if qualifies(price, v):
-        return "valore"
+        return MODEL_VALUE if source == MODEL_SOURCE else "valore"
     return "nella norma" if v >= LOW_PRICE else "paga poco"
 
 
@@ -63,7 +70,9 @@ def best_probabilities(book: BookOdds, model: dict[str, Any] | None) -> dict[str
     return out
 
 
-def offers_for(book: BookOdds, market: str, probabilities: dict[str, float], bookmakers: Sequence[str]) -> dict[str, list[Offer]]:
+def offers_for(
+    book: BookOdds, market: str, probabilities: dict[str, float], bookmakers: Sequence[str], source: str = "pinnacle"
+) -> dict[str, list[Offer]]:
     """Quote dei bookmaker di Giuse per ogni esito, con valore ed etichetta (solo dove la quota c'è)."""
     out: dict[str, list[Offer]] = {}
     for selection, p in probabilities.items():
@@ -71,7 +80,7 @@ def offers_for(book: BookOdds, market: str, probabilities: dict[str, float], boo
             price = book.get(bm, {}).get(market, {}).get(selection)
             if price and price > 1:
                 v = value(p, price)
-                out.setdefault(selection, []).append(Offer(bm, price, v, price_verdict(v, price)))
+                out.setdefault(selection, []).append(Offer(bm, price, v, price_verdict(v, price, source)))
     return out
 
 
@@ -79,7 +88,7 @@ def match_picks(book: BookOdds, model: dict[str, Any] | None, bookmakers: Sequen
     """Tutti i mercati di una partita con la loro fonte, probabilità e quote dei bookmaker di Giuse."""
     probs = best_probabilities(book, model)
     return [
-        MarketPick(market, source, p, offers_for(book, market, p, bookmakers))
+        MarketPick(market, source, p, offers_for(book, market, p, bookmakers, source))
         for market in PICK_MARKETS
         if market in probs
         for source, p in [probs[market]]

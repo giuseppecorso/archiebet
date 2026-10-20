@@ -21,6 +21,11 @@ const MARKET_LABEL: Record<MarketPick['market'], string> = { '1X2': 'Esito final
   styleUrl: './picks.scss',
 })
 export class Picks {
+  /** Classe del riquadro della quota: verde valore, azzurro tratteggiato "sopra Archie", grigio nella norma, rosso paga poco */
+  protected verdictClass(v: string): string {
+    return v === 'valore' ? 'valore' : v === 'sopra Archie' ? 'archie' : v === 'paga poco' ? 'poco' : 'norma';
+  }
+
   /** Dall'indirizzo: ?tab=occasioni */
   readonly tabParam = input<string | undefined>(undefined, { alias: 'tab' });
   protected readonly tab = computed<Tab>(() => {

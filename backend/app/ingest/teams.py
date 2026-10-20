@@ -50,6 +50,18 @@ _NOISE = {
 _SAME_TEAM = {
     "feralpisalo": "feralpisalo",
     "feralpi salo": "feralpisalo",
+    # Serie C su OddsPapi (D88)
+    "ostiamare": "ostia mare",
+    "alcione milano": "alcione",
+    "altamura societa sportiva": "team altamura",
+    "desenzano": "desenzano calvina",
+    "delfino pescara": "pescara",
+    "inter milano u23": "inter u23",
+    "juventus next gen": "juventus u23",
+    "perugia spa": "perugia",
+    "casarano": "casarano",
+    "sef torres sassari": "torres",
+    "pergolettese crema": "pergolettese",
     "sudtirol": "sudtirol",
     "alto adige": "sudtirol",
     "spal 2013": "spal",
@@ -220,6 +232,7 @@ DISPLAY_NAMES = {
 def normalize_team_name(name: str) -> str:
     """"SS Monopoli 1966" → "monopoli"; "FeralpiSalò" → "feralpisalo". Serve solo per confrontare."""
     text = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii").lower()
+    text = re.sub(r"(?<![a-z])[a-z]\.", " ", text)  # sigle puntate ("S.S.D.", "A.C."): si tolgono come le altre sigle
     text = re.sub(r"[^a-z0-9 ]", " ", text)
     words = [w for w in text.split() if w not in _NOISE and not re.fullmatch(r"(18|19|20)\d\d", w)]
     joined = " ".join(words)

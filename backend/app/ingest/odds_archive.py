@@ -15,6 +15,7 @@ from app.adapters.cache import MISSING, FileCache
 from app.adapters.oddspapi import MARKETS, TOURNAMENTS, OddsPapiAdapter, OddsPapiError
 
 ARCHIVE_SLUGS = ("pinnacle", "sisal.it", "eurobet.it")  # riferimento + bookmaker di Giuse: una chiamata per partita
+SERIE_C_SLUGS = ("sisal.it", "eurobet.it", "snai.it")  # in Serie C Pinnacle non c'è: un terzo bookmaker italiano
 FOREVER = timedelta(days=36500)
 RETRIES = 3
 
@@ -73,7 +74,8 @@ def archive_history(
         if archive.get(key, FOREVER) is not MISSING:
             report.already += 1
             continue
-        body = _fetch(adapter, key, sleep)
+        slugs = SERIE_C_SLUGS if TOURNAMENTS.get(fixture.get("tournamentId"), "").startswith("ITA-C") else ARCHIVE_SLUGS
+        body = _fetch(adapter, key, sleep, slugs)
         if body is False:
             report.failed += 1
             continue
@@ -90,11 +92,11 @@ def archive_history(
     return report
 
 
-def _fetch(adapter: OddsPapiAdapter, fixture_id: str, sleep: Callable[[float], None]) -> dict[str, Any] | None | bool:
+def _fetch(adapter: OddsPapiAdapter, fixture_id: str, sleep: Callable[[float], None], slugs=ARCHIVE_SLUGS) -> dict[str, Any] | None | bool:
     """Storico grezzo; None se non esiste, False se la rete continua a fallire (si riproverà al prossimo lancio)."""
     for attempt in range(RETRIES):
         try:
-            return adapter.raw_history(fixture_id, ARCHIVE_SLUGS)
+            return adapter.raw_history(fixture_id, slugs)
         except OddsPapiError as error:
             if error.status != 429 and (error.status is None or error.status < 500):
                 raise

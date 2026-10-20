@@ -199,6 +199,11 @@
     color: var(--loss);
     border-color: var(--line-muted);
   }
+  &.archie {
+    color: #7cc4ff;
+    border-color: #2f5a7a;
+    border-style: dashed;
+  }
 }
 .source {
   display: flex;
