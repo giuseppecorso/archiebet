@@ -25,8 +25,8 @@ Sei un senior software engineer: progetti e costruisci tu ArchieBet, io guido le
 7. Limiti di gioco impostabili; nessuna funzione premia quanto si gioca, solo quanto si prevede bene.
 8. Basi di scalabilità da subito (sezione 14 delle specifiche): dati legati a user_id, calcoli per partita salvati una volta, un solo modulo per l'AI e uno per ogni fonte dati.
 
-## Stato attuale (2026-10-15)
-Fasi 0-4 concluse. Fase 4 (rimessa a fuoco sui pronostici, D67): pagina Pronostici (stima migliore: Pinnacle senza margine → Betfair → media mercato → modello di Archie; quote di Sisal ed Eurobet con etichetta di valore), Occasioni (radar, simulazione dal vivo verso 300 giocate, D59), Multipla del giorno e generatore (D68-D69), quote fuori linea e Io contro Archie (D70), top 5 campionati europei (D64). Quote da OddsPapi piano gratuito (D62, D65, D66). Il modello è solo italiano e in A/B non batte il mercato (D53). Tutto resta sul PC di Giuse (D55). **Prossimo passo: Fase 5 – Live**, che parte da una decisione di Giuse sulla fonte a pagamento per risultati e live (API-Football). Dettagli in `docs/STATO.md` e `docs/DECISIONI.md`.
+## Stato attuale (2026-10-21)
+Fasi 0-5 concluse. API-Football **Pro** attivo (scade il 2026-11-20): risultati e calendario di A, B, C, top 5, seconde divisioni e coppe europee (D80, D85); Serie C con quote Sisal/Eurobet ("sopra Archie" dove manca Pinnacle, D88). Fase 5 Live (D92): `match_live`, lavoro ogni minuto, termometro della speranza verificato all'intervallo, scheda Live, segui live. Prove fatte: simulazione 5 stagioni (D86-D87: Pronostici calibrati, Occasioni D72 confermate), meteo (D81) e fattori D89 (D91): nessuno passa. In corso: archivio quote OddsPapi per angoli/cartellini (D82, `odds-archive` poi `secondary-test`). **Prossimo passo: Fase 6 – AI e Gioca**, che parte da una decisione di Giuse sulla chiave Claude API (budget 15 €/mese). Dettagli in `docs/STATO.md` e `docs/DECISIONI.md`.
 
 ## Come lavorare (risparmio token: Giuse ha un piano Pro)
 - Leggi solo le parti di file che servono; niente esplorazioni larghe, niente rilettura di file appena scritti.
@@ -34,4 +34,4 @@ Fasi 0-4 concluse. Fase 4 (rimessa a fuoco sui pronostici, D67): pagina Pronosti
 - Screenshot con Edge headless solo per schermate nuove o cambi di layout importanti, non per ogni ritocco.
 - Mai ridurre funzioni, test o qualità del modello per risparmiare: si risparmia sul processo, non sul prodotto.
 - Ambiente: Windows; backend `backend/.venv` (test: `.venv/Scripts/python -m pytest -q`), frontend Angular 22 (`npx ng test --watch=false`, `npx ng build`). Avvio app: icone Desktop "Avvia/Spegni ArchieBet" (porte 8000 e 4280). Per le prove usa una copia del DB e le porte 8001/4290, e alla fine verifica che siano libere (il processo node sopravvive allo stop).
-- Chiave API-Football in `backend/.env` (piano Free: stagioni 2022-2024, 100 richieste/giorno).
+- Chiave API-Football in `backend/.env` (piano Pro: tutte le stagioni, 7.500 richieste/giorno, 300/minuto).
