@@ -59,7 +59,7 @@ MARKETS = {
 }
 
 # Pausa minima tra due chiamate allo stesso endpoint (secondi), con un po' di margine
-COOLDOWN = {"odds-by-tournaments": 1.5, "historical-odds": 5.5, "participants": 1.5, "account": 1.5}
+COOLDOWN = {"odds-by-tournaments": 1.5, "historical-odds": 5.5, "participants": 1.5, "account": 1.5, "fixtures": 2.0, "markets": 1.5}
 FREE_ENDPOINTS = {"historical-odds", "account"}
 MAX_BOOKMAKERS_PER_HISTORY_CALL = 3
 RATE_LIMIT_RETRIES = 4
@@ -187,7 +187,7 @@ class OddsPapiAdapter(DataSourceAdapter):
                 raise QuotaExhausted(f"Restano {self.remaining_month} richieste nel mese: tengo la riserva di {self._monthly_reserve}")
         last = self._last_call.get(endpoint)
         if last is not None:
-            wait = COOLDOWN[endpoint] - (self._clock() - last)
+            wait = COOLDOWN.get(endpoint, 2.0) - (self._clock() - last)
             if wait > 0:
                 self._sleep(wait)
         status, body = self._http_get(f"{BASE_URL}/{endpoint}", {**params, "apiKey": self._api_key})

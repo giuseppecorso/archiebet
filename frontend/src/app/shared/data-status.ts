@@ -16,18 +16,29 @@ const STALE_HOURS = 12;
     @if (status.value(); as s) {
       <section class="bar" aria-label="Stato dei dati">
         <span class="title head">Dati</span>
-        <span [class.warn]="stale()">aggiornati {{ lastUpdate() }}</span>
-        @for (c of s.competitions; track c.competition.code) {
-          @if (c.next_match_at || c.awaiting_results) {
-            <span class="comp" [class.warn]="c.awaiting_results > 0">
-              {{ c.competition.name }}: risultati fino a {{ c.last_result_at ? day(c.last_result_at) : '–' }}
-              @if (c.awaiting_results > 0) {
-                ({{ c.awaiting_results }} in arrivo)
-              }
-            </span>
-          }
+        <span class="fresh" [class.warn]="stale()">aggiornati {{ lastUpdate() }}</span>
+        @for (f of failing(); track f.source) {
+          <span class="warn small">{{ f.label }} ferme a {{ ago(f.last_ok_at) }}</span>
         }
-        <span>previsioni {{ s.upcoming_with_prediction }}/{{ s.upcoming }}</span>
+        <!-- Tabellone che scorre: i campionati passano da destra a sinistra (fermo col mouse sopra o con "riduci movimento") -->
+        <div class="ticker" aria-label="Risultati per campionato">
+          <div class="track">
+            @for (copy of [0, 1]; track copy) {
+              <div class="lap" [attr.aria-hidden]="copy === 1">
+                @for (c of shown(); track c.competition.code) {
+                  <span class="comp" [class.late]="c.awaiting_results > 0">
+                    <span class="dot" aria-hidden="true"></span>
+                    <strong>{{ c.competition.name }}</strong> risultati fino a {{ c.last_result_at ? day(c.last_result_at) : '–' }}
+                    @if (c.awaiting_results > 0) {
+                      · {{ c.awaiting_results }} in arrivo
+                    }
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+        <span class="small">previsioni {{ s.upcoming_with_prediction }}/{{ s.upcoming }}</span>
         <button type="button" class="refresh" [disabled]="s.syncing || starting()" (click)="refresh()">
           {{ s.syncing || starting() ? 'Aggiornamento…' : 'Aggiorna ora' }}
         </button>
@@ -58,10 +69,26 @@ const STALE_HOURS = 12;
   `,
   styles: `
     .bar {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-bottom: 14px; padding: 8px 14px;
+      display: flex; align-items: center; gap: 6px 14px; margin-bottom: 14px; padding: 8px 14px;
       font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
     }
-    .head { font-size: 16px; color: var(--text-2); }
+    @media (max-width: 860px) { .bar { flex-wrap: wrap; } .ticker { order: 9; flex-basis: 100%; } }
+    .head { font-size: 16px; color: var(--amber); }
+    .fresh, .small { white-space: nowrap; }
+    .ticker {
+      flex: 1; min-width: 0; overflow: hidden; padding: 4px 0; background: var(--bg-ticker); border-radius: 4px;
+      mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+    }
+    .track { display: flex; width: max-content; animation: scroll 60s linear infinite; }
+    .ticker:hover .track { animation-play-state: paused; }
+    @media (prefers-reduced-motion: reduce) { .track { animation: none; } .ticker { overflow-x: auto; } }
+    @keyframes scroll { to { transform: translateX(-50%); } }
+    .lap { display: flex; gap: 26px; padding-right: 26px; }
+    .comp { white-space: nowrap; color: var(--text-2); }
+    .comp strong { color: var(--text); font-weight: 600; }
+    .dot { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--value); box-shadow: 0 0 6px var(--value); }
+    .comp.late .dot { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+    .comp.late { color: var(--amber); }
     .warn { color: var(--amber); }
     .refresh, .link {
       min-height: 30px; padding: 2px 10px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
@@ -83,17 +110,23 @@ export class DataStatusBar {
   protected readonly ago = ago;
   protected readonly day = dayLabel;
 
-  /** L'aggiornamento riuscito più vecchio tra le fonti configurate: è lui che dice quanto sono freschi i dati */
-  private readonly oldestOk = computed(() => {
-    const sources = this.status.value()?.sources.filter((s) => s.configured) ?? [];
-    if (!sources.length || sources.some((s) => !s.last_ok_at)) return null;
-    return sources.map((s) => s.last_ok_at as string).sort()[0];
+  private readonly configured = computed(() => this.status.value()?.sources.filter((s) => s.configured) ?? []);
+  /** Ultimo giro di aggiornamento (anche se una fonte non ha risposto: quella si segnala a parte) */
+  private readonly lastRun = computed(() => {
+    const runs = this.configured().map((s) => s.last_run_at).filter((t): t is string => !!t);
+    return runs.length ? runs.sort().at(-1)! : null;
   });
-  protected readonly lastUpdate = computed(() => ago(this.oldestOk()));
+  protected readonly lastUpdate = computed(() => ago(this.lastRun()));
   protected readonly stale = computed(() => {
-    const oldest = this.oldestOk();
-    return !oldest || Date.now() - new Date(oldest).getTime() > STALE_HOURS * 3600_000;
+    const last = this.lastRun();
+    return !last || Date.now() - new Date(last).getTime() > STALE_HOURS * 3600_000;
   });
+  /** Fonti il cui ultimo tentativo non è riuscito */
+  protected readonly failing = computed(() => this.configured().filter((s) => s.last_run_ok === false));
+  /** Campionati con partite in programma o risultati attesi */
+  protected readonly shown = computed(() =>
+    (this.status.value()?.competitions ?? []).filter((c) => c.next_match_at || c.awaiting_results),
+  );
 
   constructor() {
     // Mentre l'aggiornamento è in corso ricontrolla ogni 3 secondi; alla fine ricarica la pagina dei dati

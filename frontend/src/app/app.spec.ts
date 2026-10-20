@@ -115,7 +115,7 @@ describe('ArchieBet: navigazione', () => {
 
     const bar = harness.routeNativeElement!.querySelector('ab-data-status')!.textContent!;
     expect(bar).toContain('previsioni 3/5');
-    expect(bar).toContain('(8 in arrivo)');
+    expect(bar).toContain('· 8 in arrivo');
 
     const row = harness.routeNativeElement!.querySelector('ab-match-row a') as HTMLAnchorElement;
     expect(row.textContent).toContain('Napoli');
