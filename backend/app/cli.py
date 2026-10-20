@@ -300,6 +300,142 @@ def _history_sim(first: str, last: str) -> int:
     return 0
 
 
+def _d89_test() -> int:
+    """Prova del nove dei fattori D89: base mercato (A, B, top 5, seconde) e base modello (Serie C)."""
+    from collections import defaultdict
+    from datetime import timedelta
+
+    from sqlalchemy import select
+
+    from app.adapters.api_football import ApiFootballAdapter
+    from app.forecast import factor_test as ft
+    from app.forecast import factors_d89 as fd
+    from app.forecast import weather_test as wt
+    from app.forecast.binary_model import BinaryRow
+    from app.forecast.demargin import shin
+    from app.forecast.market_model import MarketRow
+    from app.ingest.af_history import CUP_LEAGUES, SERIE_C_LEAGUES
+    from app.ingest.teams import COUNTRY_ORDER
+    from app.models import MatchSource, Team, TeamAlias
+
+    forever = timedelta(days=36500)
+    settings = get_settings()
+    af = ApiFootballAdapter(FileCache(settings.data_cache_dir, "api-football"), settings.api_football_key)
+    tuning, confirm = ["2022/23", "2023/24", "2024/25"], ["2025/26"]
+
+    with SessionLocal() as db:
+        af_team = {int(a.alias): a.team_id for a in db.scalars(select(TeamAlias).where(TeamAlias.source == "api-football")) if a.alias.isdigit()}
+        af_match = {int(m.external_id): m.match_id for m in db.scalars(select(MatchSource).where(MatchSource.source == "api-football"))}
+        teams = list(db.scalars(select(Team)))
+        comps = {c.id: c for c in db.scalars(select(Competition))}
+        games = sorted((g for c in COUNTRY_ORDER for g in load_games(db, c)), key=lambda g: g.kickoff_at)
+        opening = load_odds(db, ["pinnacle"], closing=False)
+    surface = {t.id: t.surface for t in teams}
+    coords = {t.id: (t.latitude, t.longitude) for t in teams if t.latitude is not None and t.longitude is not None}
+
+    # Calendario completo di ogni squadra: campionati (database) + coppe (API-Football)
+    all_dates: dict[int, list] = defaultdict(list)
+    european: dict[int, list] = defaultdict(list)
+    for g in games:
+        all_dates[g.home_id].append(g.kickoff_at)
+        all_dates[g.away_id].append(g.kickoff_at)
+    for league in CUP_LEAGUES:
+        for season in range(2021, 2026):
+            try:
+                cup = af.fixtures(league, season, forever)
+            except Exception:  # noqa: BLE001 - coppa non in cache: si salta
+                continue
+            for fx in cup:
+                if fx.status == "cancelled":
+                    continue
+                for t in (fx.home.id, fx.away.id):
+                    if t in af_team:
+                        all_dates[af_team[t]].append(fx.kickoff_at)
+                        if league in (2, 3, 848):
+                            european[af_team[t]].append(fx.kickoff_at)
+    fixtures = [fd.Fixture(g.match_id, g.kickoff_at, g.home_id, g.away_id) for g in games]
+    f1 = fd.congestion_features(fixtures, all_dates, european)
+
+    spells: dict[int, list] = {}
+    for af_id, team_id in af_team.items():
+        try:
+            found = af.coaches(af_id, forever)
+        except Exception:  # noqa: BLE001 - non in cache
+            continue
+        spells[team_id] = [fd.CoachSpell(c.start, c.end) for c in found if c.start]
+    f2 = fd.coach_features(fixtures, spells)
+
+    def report(title, rows, ou_rows, factors, seasons):
+        print(f"\n{title} — 1X2: {len(rows)} partite, valutate {seasons[0]} - {seasons[-1]}")
+        for r in ft.run(rows, factors, seasons, {}, {}, {}):
+            cmp = "" if r.vs_baseline is None else f"  vs ricalibrato {r.vs_baseline.mean_diff:+.5f} ± {r.vs_baseline.std_error:.5f} {'PASSA' if r.passes else 'non passa'}"
+            print(f"  {r.name:<44} n={r.n:<6} log loss {r.log_loss:.5f}{cmp}")
+        print(f"{title} — Under/Over 2.5: {len(ou_rows)} partite")
+        for r in wt.run_binary(ou_rows, factors, seasons):
+            cmp = "" if r.diff is None else f"  vs ricalibrato {r.diff:+.5f} ± {r.std_error:.5f} {'PASSA' if r.passes else 'non passa'}"
+            print(f"  {r.name:<44} n={r.n:<6} log loss {r.log_loss:.5f}{cmp}")
+
+    # --- Base mercato: Pinnacle d'apertura (Shin), 10 campionati ---
+    rows, ou_rows = [], []
+    for g in games:
+        if g.tier > 2 or not ("2021/22" <= g.season <= "2025/26"):
+            continue
+        o = opening.get(g.match_id, {})
+        if "1X2" in o:
+            p = shin([o["1X2"]["1"], o["1X2"]["X"], o["1X2"]["2"]])
+            outcome = 0 if g.home_goals > g.away_goals else 1 if g.home_goals == g.away_goals else 2
+            rows.append(MarketRow(g.match_id, g.season, outcome, tuple(p)))
+        if "OU2.5" in o:
+            p_over = shin([o["OU2.5"]["over"], o["OU2.5"]["under"]])[0]
+            ou_rows.append(BinaryRow(g.match_id, g.season, int(g.home_goals + g.away_goals >= 3), p_over))
+    market_factors = {"F1 partite ravvicinate (riposo + coppe europee)": f1, "F2 nuovo allenatore": f2}
+    print(f"Base mercato: {len(rows)} partite con Pinnacle d'apertura; nuovi allenatori trovati in {sum(1 for v in f2.values() if v[0])} partite")
+    for label, seasons in (("Taratura", tuning), ("Conferma", confirm)):
+        report(f"{label} (base mercato)", [r for r in rows if r.season <= seasons[-1]], [r for r in ou_rows if r.season <= seasons[-1]], market_factors, seasons)
+
+    # --- Base modello: Serie C, previsioni walk-forward di Archie ---
+    lineups: dict[tuple[int, int], tuple] = {}
+    coach_of: dict[tuple[int, int], int] = {}
+    for league in SERIE_C_LEAGUES:
+        for season in range(2022, 2026):
+            for fx in af.fixtures(league, season, forever):
+                mid = af_match.get(fx.id)
+                if mid is None or fx.status != "finished":
+                    continue
+                try:
+                    found = af.lineups(fx.id, forever)
+                except Exception:  # noqa: BLE001 - non in cache
+                    continue
+                for lu in found:
+                    team = af_team.get(lu.team_id)
+                    if team is None:
+                        continue
+                    if lu.starters:
+                        lineups[(mid, team)] = lu.starters
+                    if lu.coach_id:
+                        coach_of[(mid, team)] = lu.coach_id
+    italian = [g for g in games if comps[g.competition_id].country == "Italia"]
+    c_seasons = ["2023/24", "2024/25", "2025/26"]
+    print(f"\nSerie C: formazioni per {len({m for m, _ in lineups})} partite; modello di Archie in walk-forward {c_seasons[0]} - {c_seasons[-1]} (qualche minuto)")
+    res = walk_forward(italian, c_seasons, ModelConfig())
+    preds = [pr for pr in res.predictions if comps[pr.competition_id].tier == 3]
+    c_fixtures = [f for f in fixtures if f.match_id in {pr.match_id for pr in preds}]
+    c_rows = [MarketRow(pr.match_id, pr.season, pr.outcome, pr.p_1x2) for pr in preds]
+    c_ou = [BinaryRow(pr.match_id, pr.season, int(pr.total_goals >= 3), pr.p_over25) for pr in preds]
+    model_factors = {
+        "F1 partite ravvicinate (riposo + coppe)": f1,
+        "F2 nuovo allenatore (formazioni)": fd.coach_features_from_lineups(c_fixtures, coach_of),
+        "F4 campo sintetico": fd.turf_features(c_fixtures, surface),
+        "F5 distanza della trasferta": fd.distance_features(c_fixtures, coords),
+        "F1b titolari abituali assenti": fd.absence_features(c_fixtures, lineups),
+    }
+    for name, feats in model_factors.items():
+        print(f"  {name}: valori per {sum(1 for f in c_fixtures if f.match_id in feats)} partite di Serie C")
+    report("Taratura (base modello, Serie C)", [r for r in c_rows if r.season <= "2024/25"], [r for r in c_ou if r.season <= "2024/25"], model_factors, ["2024/25"])
+    report("Conferma (base modello, Serie C)", c_rows, c_ou, model_factors, confirm)
+    return 0
+
+
 def _odds_archive(since: str) -> int:
     """Salva lo storico quote di OddsPapi (gratuito, ma solo ~6 mesi) per le prove sui mercati (D82)."""
     from app.adapters.cache import FileCache
@@ -509,6 +645,7 @@ def main() -> int:
     hsim.add_argument("--last", default="2025/26", help="stagione di conferma (le precedenti sono la taratura)")
     oa = commands.add_parser("odds-archive", help="salva lo storico quote OddsPapi (angoli, cartellini, principali)")
     oa.add_argument("--since", default="2026-04-01", help="data di inizio, AAAA-MM-GG")
+    commands.add_parser("d89-test", help="prova del nove dei fattori D89 (riposo, allenatore, sintetico, distanza, assenze)")
     commands.add_parser("af-history", help="storico API-Football per le prove dei fattori D89 (coppe, allenatori, formazioni)")
     commands.add_parser("venues", help="stadi di casa delle squadre (città, campo, coordinate)")
     dm = commands.add_parser("demargin-test", help="prova del nove dei metodi per togliere il margine (D72)")
@@ -539,6 +676,8 @@ def main() -> int:
         return _history_sim(args.first, args.last)
     if args.command == "odds-archive":
         return _odds_archive(args.since)
+    if args.command == "d89-test":
+        return _d89_test()
     if args.command == "af-history":
         return _af_history()
     if args.command == "venues":
