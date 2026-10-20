@@ -219,3 +219,18 @@ def test_cup_rematch_in_same_season_does_not_overwrite_first_match(db):
     assert import_fixtures(db, later, countries).skipped == 1
     first = db.scalar(select(Match))
     assert first.kickoff_at.month == 10 and first.status == "finished"
+
+
+def test_adapter_speeds_up_with_the_plan_limit(tmp_path):
+    sleeps = []
+    clock = iter(range(0, 1000))
+    calls = []
+
+    def fake(url, params, headers):
+        calls.append(url)
+        return 200, {"x-ratelimit-limit": "300", "x-ratelimit-requests-remaining": "7000"}, {"response": [], "errors": []}
+
+    a = ApiFootballAdapter(FileCache(tmp_path, "api-football"), "KEY", http_get=fake, sleep=sleeps.append, clock=lambda: float(next(clock)) / 10)
+    a._request("/status", {})
+    a._request("/status", {})
+    assert sleeps == [pytest.approx(0.25 - 0.1)]  # Pro: 300 al minuto, con margine

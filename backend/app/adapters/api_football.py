@@ -167,13 +167,14 @@ class ApiFootballAdapter(DataSourceAdapter):
         self._sleep = sleep
         self._clock = clock
         self._last_call: float | None = None
+        self._min_interval = MIN_SECONDS_BETWEEN_CALLS  # si adegua al piano con l'intestazione x-ratelimit-limit
         self.remaining_today: int | None = None
 
     def _request(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
         if self.remaining_today is not None and self.remaining_today <= self._daily_reserve:
             raise QuotaExhausted(f"Restano {self.remaining_today} richieste oggi: tengo la riserva di {self._daily_reserve}")
         if self._last_call is not None:
-            wait = MIN_SECONDS_BETWEEN_CALLS - (self._clock() - self._last_call)
+            wait = self._min_interval - (self._clock() - self._last_call)
             if wait > 0:
                 self._sleep(wait)
         self._last_call = self._clock()
@@ -181,6 +182,9 @@ class ApiFootballAdapter(DataSourceAdapter):
         remaining = headers.get("x-ratelimit-requests-remaining")
         if remaining is not None and str(remaining).isdigit():
             self.remaining_today = int(remaining)
+        per_minute = headers.get("x-ratelimit-limit")
+        if per_minute is not None and str(per_minute).isdigit() and int(per_minute) > 0:
+            self._min_interval = 60 / int(per_minute) * 1.25  # 25% di margine (Pro: 300 al minuto -> 0,25 s)
         if status != 200:
             raise ApiFootballError(f"HTTP {status} da {path}")
         if body.get("errors"):
