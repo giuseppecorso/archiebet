@@ -32,3 +32,19 @@ class FileCache:
         self.dir.mkdir(parents=True, exist_ok=True)
         entry = {"key": key, "saved_at": self._now().isoformat(), "data": data}
         self._path(key).write_text(json.dumps(entry, ensure_ascii=False), encoding="utf-8")
+
+    def prune(self, key_prefix: str, older_than: timedelta) -> int:
+        """Cancella i file delle richieste che iniziano con key_prefix salvati da più di older_than. Restituisce quanti."""
+        if not self.dir.exists():
+            return 0
+        limit = (self._now() - older_than).timestamp()
+        removed = 0
+        for path in self.dir.glob("*.json"):
+            if path.stat().st_mtime >= limit:
+                continue
+            with path.open(encoding="utf-8") as f:
+                head = f.read(300)  # la chiave è il primo campo: non serve leggere file da 20 MB
+            if head.startswith(f'{{"key": "{key_prefix}'):
+                path.unlink()
+                removed += 1
+        return removed

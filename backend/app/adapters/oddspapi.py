@@ -225,6 +225,24 @@ class OddsPapiAdapter(DataSourceAdapter):
                                 lambda params=params: self._request("odds-by-tournaments", params))
         return parse_fixtures(body), parse_current(body)
 
+    def markets(self, max_age: timedelta = timedelta(days=90)) -> list[dict[str, Any]]:
+        """Definizioni di tutti i mercati del calcio (nome, linea, tempo, esiti): una richiesta ogni 3 mesi."""
+        return self.cached(f"markets?sportId={SOCCER}", max_age, lambda: self._request("markets", {"sportId": SOCCER}))
+
+    def finished_fixtures(self, tournament_id: int, max_age: timedelta) -> list[dict[str, Any]]:
+        """Partite finite di un campionato (circa due stagioni): una richiesta."""
+        params = {"tournamentId": tournament_id, "statusId": 2}
+        return self.cached(f"fixtures?tournamentId={tournament_id}&statusId=2", max_age, lambda: self._request("fixtures", params))
+
+    def raw_history(self, fixture_id: str, slugs: Sequence[str]) -> dict[str, Any] | None:
+        """Storico completo di una partita (tutti i mercati, senza cache: è grande); None se OddsPapi non ce l'ha."""
+        try:
+            return self._request("historical-odds", {"fixtureId": fixture_id, "bookmakers": ",".join(slugs)})
+        except OddsPapiError as error:
+            if error.status == 404:
+                return None
+            raise
+
     def history(self, fixture_id: str, slugs: Sequence[str], max_age: timedelta) -> History:
         """Storia dei prezzi di una partita per più bookmaker (chiamate gratuite, 3 bookmaker per volta)."""
         out: History = {}

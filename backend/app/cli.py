@@ -200,6 +200,21 @@ def _demargin_test(last: str) -> int:
     return 0
 
 
+def _odds_archive(since: str) -> int:
+    """Salva lo storico quote di OddsPapi (gratuito, ma solo ~6 mesi) per le prove sui mercati (D82)."""
+    from app.adapters.cache import FileCache
+    from app.adapters.oddspapi import OddsPapiAdapter
+    from app.ingest.odds_archive import archive_history
+
+    settings = get_settings()
+    adapter = OddsPapiAdapter(FileCache(settings.data_cache_dir, "oddspapi"), settings.oddspapi_key,
+                              monthly_reserve=settings.oddspapi_monthly_reserve)
+    start = datetime.fromisoformat(since).replace(tzinfo=UTC)
+    report = archive_history(adapter, FileCache(settings.data_cache_dir, "odds-archive"), start)
+    print(f"Archivio: {report.saved} salvate, {report.missing} senza storico, {report.already} già presenti, {report.failed} da riprovare")
+    return 0
+
+
 def _venues() -> int:
     """Stadi di casa: città e campo da API-Football (piano gratuito, ~40 richieste), coordinate da Open-Meteo."""
     from app.adapters.cache import FileCache
@@ -372,6 +387,8 @@ def main() -> int:
     wt = commands.add_parser("weather-test", help="prova del nove del meteo (D76)")
     wt.add_argument("--fetch-only", action="store_true", help="scarica soltanto il meteo, senza la prova")
     wt.add_argument("--patient", action="store_true", help="se Open-Meteo limita, aspetta un'ora e riprende")
+    oa = commands.add_parser("odds-archive", help="salva lo storico quote OddsPapi (angoli, cartellini, principali)")
+    oa.add_argument("--since", default="2026-04-01", help="data di inizio, AAAA-MM-GG")
     commands.add_parser("venues", help="stadi di casa delle squadre (città, campo, coordinate)")
     dm = commands.add_parser("demargin-test", help="prova del nove dei metodi per togliere il margine (D72)")
     dm.add_argument("--last", default="2024/25", help="ultima stagione valutata (la 2025/26 non si usa per tarare)")
@@ -397,6 +414,8 @@ def main() -> int:
         return _popularity_test()
     if args.command == "weather-test":
         return _weather_test(args.fetch_only, args.patient)
+    if args.command == "odds-archive":
+        return _odds_archive(args.since)
     if args.command == "venues":
         return _venues()
     if args.command == "demargin-test":

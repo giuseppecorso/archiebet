@@ -110,6 +110,8 @@ def sync_oddspapi_job() -> None:
             # Quote dei bookmaker di Giuse e di quelli della simulazione (D74), senza doppioni
             bookmakers = list(dict.fromkeys([*settings.radar_bookmaker_list, *SIMULATION_BOOKMAKERS]))
             report = sync_oddspapi(db, adapter, datetime.now(UTC), log=logger.warning, bookmakers=bookmakers)
+        # Gli storici completi pesano fino a 20 MB l'uno e si riscaricano gratis: si tengono 2 giorni
+        adapter.cache.prune("historical-odds", timedelta(days=2))
         message = f"{report.created} partite in calendario, quote di {report.current} partite, {report.closing} chiusure"
         if report.not_in_calendar:
             message += f", {report.not_in_calendar} partite già iniziate non aggiunte"
