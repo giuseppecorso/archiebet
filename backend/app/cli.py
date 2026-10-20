@@ -200,6 +200,106 @@ def _demargin_test(last: str) -> int:
     return 0
 
 
+def _history_sim(first: str, last: str) -> int:
+    """Simulazione storica di Pronostici, Occasioni e Multipla del giorno (D86)."""
+    from zoneinfo import ZoneInfo
+
+    from sqlalchemy import select
+
+    from app.forecast import history_sim as hs
+    from app.forecast.demargin import shin
+    from app.forecast.multiple import PROFILES
+    from app.models import Match, MatchStatus
+
+    rome = ZoneInfo("Europe/Rome")
+    leagues = ("ITA-A", "ITA-B", "ENG-1", "ENG-2", "ESP-1", "ESP-2", "GER-1", "GER-2", "FRA-1", "FRA-2")
+
+    def fair(prices):
+        return {market: dict(zip(sel, shin(list(sel.values())))) for market, sel in prices.items() if market in ("1X2", "OU2.5")}
+
+    with SessionLocal() as db:
+        matches = db.execute(
+            select(Match).join(Competition, Match.competition_id == Competition.id)
+            .where(Competition.code.in_(leagues), Match.status == MatchStatus.FINISHED, Match.season >= first, Match.season <= last)
+        ).scalars().all()  # fmt: skip
+        info = {m.id: (m.season, m.competition.code, m.kickoff_at, m.home_goals, m.away_goals) for m in matches}
+        pin_open = load_odds(db, ["pinnacle"], closing=False)
+        pin_close = load_odds(db, ["pinnacle"], closing=True)
+        books = {"bet365": load_odds(db, ["bet365"], closing=False), "migliore del mercato": load_odds(db, ["market_max"], closing=False)}
+
+    def build(book):
+        out = []
+        for mid, (season, league, kickoff, hg, ag) in info.items():
+            if mid not in pin_open or mid not in pin_close or mid not in book or hg is None:
+                continue
+            out.append(hs.SimMatch(mid, season, league, kickoff.astimezone(rome).date(), kickoff, hg, ag, fair(pin_open[mid]),
+                                   fair(pin_close[mid]), {k: v for k, v in book[mid].items() if k in ("1X2", "OU2.5")}))
+        return out
+
+    sims = build(books["bet365"])
+    tuning = [m for m in sims if m.season < last]
+    confirm = [m for m in sims if m.season == last]
+    print(f"Partite con Pinnacle (apertura e chiusura) e bet365: {len(sims)} ({first} - {last}); taratura {len(tuning)}, conferma {len(confirm)}")
+
+    def pct(x):
+        return f"{x * 100:+.2f}%"
+
+    print("\n(1) Calibrazione dei Pronostici (Pinnacle d'apertura senza margine), tutte le stagioni")
+    for market in ("1X2", "OU2.5"):
+        print(f"  {market}")
+        for b in hs.calibration(sims, market):
+            flag = "" if abs(b.off_by) <= 2 * b.std_error else "  <-- fuori da 2 errori standard"
+            print(f"    {b.low:.0%}-{b.high:.0%}: {b.n:6d} esiti  previsto {b.predicted:.1%}  uscito {b.observed:.1%}  (± {b.std_error:.1%}){flag}")
+        fav = hs.favorite_hits(sims, market)
+        print(f"    pronostico secco: {fav.n} partite, giusti {fav.observed} contro {fav.expected:.0f} attesi (± {fav.std_error:.0f}), rapporto {fav.ratio:.3f}")
+
+    print("\n(2) Occasioni alla quota bet365 d'apertura")
+    best_t, results = None, {}
+    for rule in hs.RULES:
+        t_sum, c_sum = hs.summarize_plays(hs.occasions(tuning, rule)), hs.summarize_plays(hs.occasions(confirm, rule))
+        results[rule.name] = (t_sum, c_sum)
+        for label, sm in (("taratura", t_sum), ("conferma", c_sum)):
+            if sm is None:
+                print(f"  {rule.name:<30} {label}: nessuna giocata")
+                continue
+            print(f"  {rule.name:<30} {label}: {sm.clv.n:5d} giocate in {sm.clv.clusters:5d} partite  CLV {pct(sm.clv.mean)} ± {sm.clv.std_error * 100:.2f}"
+                  f"  (t {sm.clv.t:5.1f}){' PASSA' if sm.clv.significant else ''}   rendimento {pct(sm.roi.mean)} ± {sm.roi.std_error * 100:.1f}")
+    current = results[hs.RULES[0].name]
+    for rule in hs.RULES[1:]:
+        t_sum, c_sum = results[rule.name]
+        better = (t_sum and current[0] and t_sum.clv.t > current[0].clv.t and c_sum and current[1] and c_sum.clv.mean > current[1].clv.mean
+                  and c_sum.clv.significant)
+        print(f"  {rule.name}: {'migliore di D72 in taratura e in conferma' if better else 'non sostituisce D72'}")
+
+    d72 = hs.RULES[0]
+    plays = hs.occasions(sims, d72)
+    print("\n  D72 per stagione / campionato / fascia di quota / mercato (tutte le stagioni)")
+    for title, key in (("stagione", lambda p: p.season), ("campionato", lambda p: p.league),
+                       ("quota", lambda p: hs.price_band(p.price)), ("mercato", lambda p: f"{p.market} {p.selection}")):
+        print(f"   per {title}:")
+        for k, ps in sorted(hs.group_plays(plays, key).items()):
+            sm = hs.summarize_plays(ps)
+            print(f"     {k:<12} {sm.clv.n:5d}  CLV {pct(sm.clv.mean)} ± {sm.clv.std_error * 100:.2f}   rendimento {pct(sm.roi.mean)} ± {sm.roi.std_error * 100:.1f}")
+
+    best_sims = build(books["migliore del mercato"])
+    sm = hs.summarize_plays(hs.occasions(best_sims, d72))
+    if sm:
+        print(f"\n  D72 alla quota migliore del mercato (non giocabile da Giuse, solo confronto): {sm.clv.n} giocate, CLV {pct(sm.clv.mean)} ± {sm.clv.std_error * 100:.2f}, rendimento {pct(sm.roi.mean)}")
+
+    print("\n(3) Multipla del giorno (gambe 1X2 e Under/Over 2.5 a quota bet365), tutte le stagioni")
+    for name, n in (("tranquilla", 3), ("equilibrata", 4), ("coraggiosa", 4)):
+        ms = hs.daily_multiples(sims, PROFILES[name], n)
+        su = hs.summarize_multiples(ms)
+        if su is None:
+            print(f"  {name}: nessuna multipla")
+            continue
+        value_share = sum(m.with_value for m in ms) / len(ms)
+        print(f"  {name} ({n} partite): {su.n} giorni, vinte {su.wins} contro {su.expected_wins:.1f} attese (± {su.std_error:.1f})"
+              f"{' OK' if su.within_two_se else ' <-- fuori da 2 errori standard'}, quota media {sum(m.price for m in ms) / len(ms):.2f},"
+              f" con valore {value_share:.0%} dei giorni, rendimento {pct(su.roi)}")
+    return 0
+
+
 def _odds_archive(since: str) -> int:
     """Salva lo storico quote di OddsPapi (gratuito, ma solo ~6 mesi) per le prove sui mercati (D82)."""
     from app.adapters.cache import FileCache
@@ -387,6 +487,9 @@ def main() -> int:
     wt = commands.add_parser("weather-test", help="prova del nove del meteo (D76)")
     wt.add_argument("--fetch-only", action="store_true", help="scarica soltanto il meteo, senza la prova")
     wt.add_argument("--patient", action="store_true", help="se Open-Meteo limita, aspetta un'ora e riprende")
+    hsim = commands.add_parser("history-sim", help="simulazione storica di Pronostici, Occasioni e Multipla (D86)")
+    hsim.add_argument("--first", default="2021/22")
+    hsim.add_argument("--last", default="2025/26", help="stagione di conferma (le precedenti sono la taratura)")
     oa = commands.add_parser("odds-archive", help="salva lo storico quote OddsPapi (angoli, cartellini, principali)")
     oa.add_argument("--since", default="2026-04-01", help="data di inizio, AAAA-MM-GG")
     commands.add_parser("venues", help="stadi di casa delle squadre (città, campo, coordinate)")
@@ -414,6 +517,8 @@ def main() -> int:
         return _popularity_test()
     if args.command == "weather-test":
         return _weather_test(args.fetch_only, args.patient)
+    if args.command == "history-sim":
+        return _history_sim(args.first, args.last)
     if args.command == "odds-archive":
         return _odds_archive(args.since)
     if args.command == "venues":
