@@ -91,4 +91,4 @@ def test_rate_limit_is_retried_then_skipped(tmp_path):
     adapter = FakeAdapter([fixture("a", "2026-05-01T15:00:00.000Z"), fixture("b", "2026-05-02T15:00:00.000Z")],
                           {"a": [limited, limited, limited], "b": {"bookmakers": {}}})
     report = archive_history(adapter, FileCache(tmp_path, "odds-archive"), datetime(2026, 4, 1, tzinfo=UTC), log=lambda _: None, sleep=lambda s: None)
-    assert report.failed == 1 and report.missing == 1  # "a" si riprova al prossimo lancio, "b" va avanti
+    assert report.failed == 1 and report.saved == 1  # "a" si riprova al prossimo lancio, "b" va avanti
