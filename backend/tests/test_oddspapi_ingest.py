@@ -180,3 +180,12 @@ def test_far_matches_refresh_once_a_day():
     now = datetime(2026, 10, 20, 12, tzinfo=UTC)
     assert history_max_age(now + timedelta(days=2), now) == HISTORY_MAX_AGE
     assert history_max_age(now + timedelta(days=5), now) == FAR_HISTORY_MAX_AGE
+
+
+def test_same_match_with_two_oddspapi_codes_is_linked_once(seeded, db):  # noqa: F811
+    milan_inter, adapter = setup(db)
+    kickoff = milan_inter.kickoff_at
+    adapter.fixtures = [OPFixture("fx-mi", 23, kickoff, 1, 2, 0), OPFixture("fx-mi-bis", 23, kickoff + timedelta(hours=2), 1, 2, 0)]
+    sync_oddspapi(db, adapter, kickoff - timedelta(days=1))
+    codes = db.scalars(select(MatchSource.external_id).where(MatchSource.match_id == milan_inter.id, MatchSource.source == "oddspapi")).all()
+    assert codes == ["fx-mi"]

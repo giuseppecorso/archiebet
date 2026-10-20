@@ -141,6 +141,7 @@ def link_fixtures(
     """
     competitions = {c.code: c for c in db.scalars(select(Competition))}
     links = {s.external_id: s.match_id for s in db.scalars(select(MatchSource).where(MatchSource.source == SOURCE))}
+    linked_matches = set(links.values())
     by_alias, by_name = _team_index(db)
     out: dict[str, Match] = {}
     for fx in fixtures:
@@ -211,12 +212,17 @@ def link_fixtures(
             db.add(match)
             db.flush()
             report.created += 1
+        if match.id in linked_matches:
+            # Stessa partita con un altro codice OddsPapi (capita dopo i rinvii): si usano le sue quote, il collegamento resta il primo
+            out[fx.id] = match
+            continue
         db.add(MatchSource(match_id=match.id, source=SOURCE, external_id=fx.id))
         for pid, team in zip((fx.home_id, fx.away_id), teams):
             if str(pid) not in by_alias:
                 db.add(TeamAlias(team_id=team, source=SOURCE, alias=str(pid)))
                 by_alias[str(pid)] = team
         links[fx.id] = match.id
+        linked_matches.add(match.id)
         out[fx.id] = match
         report.linked += 1
     db.flush()
