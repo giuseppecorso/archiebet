@@ -94,9 +94,9 @@ def _fetch(adapter: OddsPapiAdapter, fixture_id: str, sleep: Callable[[float], N
         try:
             return adapter.raw_history(fixture_id, ARCHIVE_SLUGS)
         except OddsPapiError as error:
-            if error.status is None or error.status < 500:
+            if error.status != 429 and (error.status is None or error.status < 500):
                 raise
-            sleep(10 * (attempt + 1))  # guasto momentaneo del servizio
+            sleep(30 * (attempt + 1))  # limite condiviso con l'app accesa, o guasto momentaneo del servizio
         except Exception:  # timeout o rete: attendo e riprovo
             sleep(10 * (attempt + 1))
     return False

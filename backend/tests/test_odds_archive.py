@@ -82,3 +82,13 @@ def test_prune_removes_only_old_files_with_prefix(tmp_path):
     clock[0] = datetime.now(UTC)
     assert cache.prune("historical-odds", timedelta(days=2)) == 1
     assert cache.get("participants?sportId=10", timedelta(days=3650)) == {}
+
+
+def test_rate_limit_is_retried_then_skipped(tmp_path):
+    from app.adapters.oddspapi import OddsPapiError
+
+    limited = OddsPapiError("HTTP 429", 429)
+    adapter = FakeAdapter([fixture("a", "2026-05-01T15:00:00.000Z"), fixture("b", "2026-05-02T15:00:00.000Z")],
+                          {"a": [limited, limited, limited], "b": {"bookmakers": {}}})
+    report = archive_history(adapter, FileCache(tmp_path, "odds-archive"), datetime(2026, 4, 1, tzinfo=UTC), log=lambda _: None, sleep=lambda s: None)
+    assert report.failed == 1 and report.missing == 1  # "a" si riprova al prossimo lancio, "b" va avanti
