@@ -32,7 +32,8 @@ Deciso con Giuse il 2026-10-18: **piano Pro (19 $/mese, 7.500 richieste/giorno, 
 Blocchi, in ordine:
 1. Risultati aggiornati per A, B e top 5 da API-Football e Serie C in corso (`API_FOOTBALL_SEASONS`/`API_FOOTBALL_LEAGUES` in `backend/.env`): schedine che si chiudono, modello aggiornato. Livello medio.
 2. ~~Seconde divisioni~~ fatte il 2026-10-20 (D75). Coppe europee (Champions 7, Europa 679, Conference 34480 su OddsPapi; squadre di tutti i paesi). Livello medio.
-3. Fattori della sezione 8 con prova del nove: ~~meteo~~ provato il 2026-10-20, non passa (D77; completare il download con `python -m app.cli weather-test` e ripetere); infortuni e squalifiche, formazioni ufficiali, allenatori, stanchezza da coppe e viaggi, campi sintetici. Storico formazioni/infortuni: ~10-15 mila richieste, ~2 giorni in sottofondo. Livello high.
+3. Gruppo di prove D78 (taratura fino al 2024/25 + conferma 2025/26): (6) "tifo" dei bookmaker provato, non confermato (D79: bet365 tiene più margine su entrambe le squadre nelle partite delle big); (3) shock climatico dell'ospite in corso (`python -m app.cli weather-test --patient`, sulla copia del DB: scarica il meteo grezzo in `data/cache/weather/raw.json` aspettando i limiti di Open-Meteo, poi prova D76 completo e D78). Prima di usarlo sul DB vero serve l'avvio di ArchieBet (migrazione stadi) e `python -m app.cli venues`.
+   Fattori della sezione 8 con prova del nove: ~~meteo~~ provato il 2026-10-20, non passa (D77; completare il download con `python -m app.cli weather-test` e ripetere); infortuni e squalifiche, formazioni ufficiali, allenatori, stanchezza da coppe e viaggi, campi sintetici. Storico formazioni/infortuni: ~10-15 mila richieste, ~2 giorni in sottofondo. Livello high.
 4. Fase 5 – Live: risultati in diretta, termometro della speranza, "Segui live". Livello medio.
 
 La simulazione dal vivo del radar (D59, 300 giocate) continua da sola a ogni aggiornamento, con la regola D72/D73 dal 2026-10-18 (Shin, quota ≤ 4, soglia che cresce con la quota), misurata su 8 bookmaker italiani (D74); a Giuse si mostrano solo le occasioni su Sisal ed Eurobet. Ripartita da zero.
@@ -57,7 +58,7 @@ La simulazione dal vivo del radar (D59, 300 giocate) continua da sola a ogni agg
 - In prova (continua da solo): radar / Occasioni fino a 300 giocate misurate (D59)
 - Tolto: "Dove conviene giocarla" (D67)
 
-Test: 270 backend + 17 frontend.
+Test: 274 backend + 17 frontend.
 
 ## Fase 3 – Modello: CONCLUSA (2026-10-12)
 
