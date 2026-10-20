@@ -156,6 +156,15 @@ def test_team_shared_with_football_data(db):
     assert count(db, Team) == 2  # riconosciute come le stesse squadre di football-data
 
 
+
+def test_foreign_teams_are_matched_in_their_country(db):
+    csv = "Div,Date,HomeTeam,AwayTeam,FTHG,FTAG\nSP2,15/09/2025,Sociedad B,Celta B,1,0\n"
+    import_matches(db, parse_csv(csv), season="2025/26")
+    import_fixtures(db, parse_fixtures(body(fixture(7, (9585, "Real Sociedad II"), (9571, "Celta de Vigo II"), league=141, season=2025))))
+    assert count(db, Team) == 2  # stesse squadre di football-data, cercate tra quelle spagnole
+    import_fixtures(db, parse_fixtures(body(fixture(8, (50, "Manchester City"), (49, "Chelsea"), league=39, season=2025))))
+    assert {t.country for t in db.scalars(select(Team).where(Team.name.in_(["Manchester City", "Chelsea"])))} == {"Inghilterra"}
+
 def test_sync_skips_seasons_outside_plan_and_reports(db, tmp_path):
     plan_error = {"errors": {"plan": "Free plans do not have access to this season"}, "response": []}
     api = FakeApi([body(fixture(1, (1, "A"), (2, "B"))), plan_error])

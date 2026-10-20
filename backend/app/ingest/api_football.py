@@ -15,7 +15,7 @@ from app.models import Match, MatchSource
 
 def import_fixtures(db: Session, fixtures: Iterable[AFFixture]) -> ImportReport:
     competitions = ensure_competitions(db)
-    teams = TeamResolver(db, SOURCE)
+    resolvers: dict[str, TeamResolver] = {}  # uno per paese: le squadre si cercano tra quelle dello stesso paese
     report = ImportReport()
     sources = {s.external_id: s for s in db.scalars(select(MatchSource).where(MatchSource.source == SOURCE))}
 
@@ -24,6 +24,7 @@ def import_fixtures(db: Session, fixtures: Iterable[AFFixture]) -> ImportReport:
             continue
         competition = competitions[LEAGUES[fx.league_id]]
         season = season_label(fx.season)
+        teams = resolvers.setdefault(competition.country, TeamResolver(db, SOURCE, competition.country))
         home = teams.resolve(str(fx.home.id), fx.home.name)
         away = teams.resolve(str(fx.away.id), fx.away.name)
 

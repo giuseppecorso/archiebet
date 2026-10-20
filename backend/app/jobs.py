@@ -9,7 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.adapters.api_football import ApiFootballAdapter
 from app.adapters.cache import FileCache
-from app.adapters.football_data import FootballDataAdapter
+from app.adapters.football_data import FootballDataAdapter, season_of
 from app.adapters.oddspapi import OddsPapiAdapter
 from app.betting.service import settle_open_bets
 from app.config import Settings, get_settings
@@ -18,7 +18,7 @@ from app.forecast.radar import SIMULATION_BOOKMAKERS
 from app.forecast.radar_service import refresh_radar, settle_radar
 from app.forecast.service import refresh_predictions
 from app.ingest.api_football import sync_api_football
-from app.ingest.football_data import sync_football_data
+from app.ingest.football_data import ImportReport, sync_football_data
 from app.ingest.oddspapi import sync_oddspapi
 from app.models.sync import SyncRun
 from app.usage import record_usage
@@ -69,6 +69,17 @@ def api_football_adapter(db, settings: Settings) -> ApiFootballAdapter:
     )
 
 
+def sync_api_football_all(db, settings: Settings, log=logger.info) -> ImportReport:
+    """Serie C con lo storico; tutti i campionati per la stagione in corso (D80)."""
+    adapter = api_football_adapter(db, settings)
+    current = season_of(datetime.now(UTC).date())
+    past = [s for s in settings.api_football_season_years if s < current]
+    report = sync_api_football(db, adapter, settings.api_football_league_ids, past, log=log)
+    leagues = [*settings.api_football_league_ids, *settings.api_football_current_league_ids]
+    report.add(sync_api_football(db, adapter, leagues, [current], log=log))
+    return report
+
+
 def sync_api_football_job() -> None:
     settings = get_settings()
     if not settings.api_football_key:
@@ -76,13 +87,7 @@ def sync_api_football_job() -> None:
 
     def work() -> str:
         with SessionLocal() as db:
-            report = sync_api_football(
-                db,
-                api_football_adapter(db, settings),
-                settings.api_football_league_ids,
-                settings.api_football_season_years,
-                log=logger.info,
-            )
+            report = sync_api_football_all(db, settings)
         logger.info("API-Football aggiornato: %s nuove, %s aggiornate", report.created, report.updated)
         return f"{report.created} partite nuove, {report.updated} aggiornate"
 

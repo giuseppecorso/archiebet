@@ -156,3 +156,10 @@ Ogni decisione importante con data, scelta e motivo. Le decisioni di prodotto so
 | # | Decisione | Perché |
 |---|-----------|--------|
 | D79 | Nessun fattore "contro le big". Si annota il fatto osservato (più margine di bet365 sulle partite delle big, ~1,4–2% di valore in meno per esito): le occasioni sono più probabili nelle partite senza big. Da registrare come ipotesi nuova e verificare su Sisal/Eurobet quando avremo il loro storico dal vivo | Rispetto della registrazione: si adotta solo ciò che era stato previsto; il risultato inatteso diventa un'ipotesi da confermare su dati nuovi. |
+
+**Prova del meteo completa e dello shock climatico (D76 + D78 ipotesi 3, `python -m app.cli weather-test --patient`, 2026-10-20):** meteo grezzo scaricato per tutte le 25.681 partite, normali climatiche per 196 città su 215. Meteo di giornata (18.593 partite, 2020/21–2024/25): nessun fattore passa, né su Under/Over (migliore: pioggia −0,00009 ± 0,00009) né su 1X2. Shock climatico dell'ospite, taratura (16.197 partite Under/Over, 16.262 1X2): tutte le varianti peggiorano o restano entro l'errore; conferma 2025/26 (1.315 / 1.322): idem. **Non passa.**
+
+| # | Decisione | Perché |
+|---|-----------|--------|
+| D80 | **API-Football Pro** attivo dal 2026-10-20 (mensile, scade il 2026-11-20; 7.500 richieste/giorno). A ogni giro: Serie C con lo storico 2022/23–2025/26, e tutti i campionati (A, B, top 5, seconde divisioni, Serie C) per la stagione in corso, ~13 richieste ogni 6 ore. Lo storico di A/B/top 5 resta di football-data (ha le quote). Squadre cercate tra quelle dello stesso paese | Risultati e date aggiornati (schedine che si chiudono, modello aggiornato) senza aspettare football-data; prova su copia del DB: nessun doppione. |
+| D81 | Meteo e shock climatico fuori dal modello in via definitiva; i dati (stadi, coordinate, meteo grezzo) restano per il live e per prove future | Prova completa su dati quasi interi: il mercato d'apertura li ha già. |

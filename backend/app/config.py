@@ -27,8 +27,11 @@ class Settings(BaseSettings):
 
     # API-Football: chiave, campionati (id) e stagioni (anno di inizio) da scaricare
     api_football_key: str | None = None
-    api_football_leagues: str = "138,942,943"  # Serie C, gironi A, B, C
-    api_football_seasons: str = "2022,2023,2024"  # quelle del piano gratuito
+    api_football_leagues: str = "138,942,943"  # Serie C, gironi A, B, C: anche lo storico
+    api_football_seasons: str = "2022,2023,2024,2025"  # stagioni concluse della Serie C (piano Pro, D80)
+    # Questi si scaricano solo per la stagione in corso (insieme alla Serie C): risultati e date a ogni giro;
+    # il loro storico, con le quote, resta di football-data
+    api_football_current_leagues: str = "135,136,39,40,140,141,78,79,61,62"
     api_football_daily_reserve: int = 10  # richieste del giorno da non usare mai in automatico
 
     # OddsPapi: quote dei bookmaker italiani e di Pinnacle/Betfair (D61)
@@ -52,6 +55,10 @@ class Settings(BaseSettings):
     @property
     def api_football_league_ids(self) -> list[int]:
         return [int(x) for x in self.api_football_leagues.split(",") if x.strip()]
+
+    @property
+    def api_football_current_league_ids(self) -> list[int]:
+        return [int(x) for x in self.api_football_current_leagues.split(",") if x.strip()]
 
     @property
     def api_football_season_years(self) -> list[int]:

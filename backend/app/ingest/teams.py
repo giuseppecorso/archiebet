@@ -134,6 +134,8 @@ _SAME_TEAM = {
     "spvgg greuther furth": "greuther furth",
     "stade brestois 29": "brest",
     "villarreal ii": "villarreal b",
+    "real sociedad ii": "sociedad b",  # API-Football
+    "celta de vigo ii": "celta b",
     # Seconde divisioni: nomi completi di OddsPapi → abbreviazioni di football-data (D75)
     "birmingham city": "birmingham",
     "blackburn rovers": "blackburn",

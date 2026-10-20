@@ -20,10 +20,9 @@ from app.forecast.service import refresh_predictions
 from app.forecast.vault import VAULT_FIRST_SEASON, open_vault, vault_is_open
 from app.forecast.verdict import compute as compute_verdict
 from app.forecast.verdict import sharp_opening
-from app.ingest.api_football import sync_api_football
 from app.ingest.football_data import sync_football_data
 from app.ingest.teams import tidy_teams
-from app.jobs import api_football_adapter
+from app.jobs import api_football_adapter, sync_api_football_all
 from app.models.football import Competition
 from app.usage import record_usage
 
@@ -76,9 +75,7 @@ def _sync(source: str, first_season: int) -> int:
             if not settings.api_football_key:
                 print("API-Football: manca API_FOOTBALL_KEY in backend/.env, salto.")
             else:
-                report = sync_api_football(
-                    db, api_football_adapter(db, settings), settings.api_football_league_ids, settings.api_football_season_years
-                )
+                report = sync_api_football_all(db, settings, log=print)
                 print(f"API-Football: {report.created} partite nuove, {report.updated} aggiornate.")
     return 0
 
