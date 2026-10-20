@@ -46,6 +46,7 @@ import { Crest } from './crest';
         <p class="note">
           Nessuna multipla con valore: questa è la migliore con quote nella norma. Il margine dei bookmaker si moltiplica:
           giocata sempre, nel lungo periodo fa perdere circa il {{ loss(m.expected_value) }} di quanto giochi.
+          Rifatta su 5 stagioni passate, la multipla del giorno è uscita quanto previsto (72 volte contro 72 attese) e ha reso −9,6%.
         </p>
       }
       @if (d.missing.length) {
