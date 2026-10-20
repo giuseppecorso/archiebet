@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { MatchCard } from '../core/football';
 import { dayLabel, kickoffTime, odds } from '../core/format';
 import { Crest } from './crest';
+import { liveShort } from '../core/live';
 
 /** Una riga dell'elenco partite, come nel mockup della dashboard. */
 @Component({
@@ -12,22 +13,31 @@ import { Crest } from './crest';
     @let m = match();
     <a class="row" [routerLink]="['/partite', m.id]" [attr.aria-label]="ariaLabel()">
       <div class="when">
-        <span class="label">{{ day() }}</span>
-        <span class="led time">{{ time() }}</span>
+        @if (m.live; as l) {
+          <span class="label live-tag"><span class="pulse" aria-hidden="true"></span>LIVE</span>
+          <span class="led time">{{ minute(l) }}</span>
+        } @else {
+          <span class="label">{{ day() }}</span>
+          <span class="led time">{{ time() }}</span>
+        }
       </div>
 
       <div class="teams">
         <div class="team">
           <ab-crest [team]="m.home" [size]="20" />
           <span class="name" [class.winner]="winner() === 'home'">{{ m.home.name }}</span>
-          @if (m.status === 'finished') {
+          @if (m.live; as l) {
+            <span class="led score live">{{ l.home_goals }}</span>
+          } @else if (m.status === 'finished') {
             <span class="led score">{{ m.home_goals }}</span>
           }
         </div>
         <div class="team">
           <ab-crest [team]="m.away" [size]="20" />
           <span class="name" [class.winner]="winner() === 'away'">{{ m.away.name }}</span>
-          @if (m.status === 'finished') {
+          @if (m.live; as l) {
+            <span class="led score live">{{ l.away_goals }}</span>
+          } @else if (m.status === 'finished') {
             <span class="led score">{{ m.away_goals }}</span>
           }
         </div>
@@ -54,6 +64,7 @@ import { Crest } from './crest';
   styleUrl: './match-row.scss',
 })
 export class MatchRow {
+  protected readonly minute = liveShort;
   readonly match = input.required<MatchCard>();
   protected readonly selections = ['1', 'X', '2'] as const;
   protected readonly format = odds;

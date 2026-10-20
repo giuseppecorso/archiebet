@@ -320,3 +320,28 @@
 .pad {
   padding: 4px 16px 12px;
 }
+
+/* Termometro della speranza (D92) */
+.hope .meter {
+  display: block;
+  height: 6px;
+  margin-top: 6px;
+  background: var(--bg-deep);
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.hope .meter span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--loss), var(--amber) 50%, var(--value));
+  transition: width 0.6s ease;
+}
+.hope.on-air {
+  border-color: var(--amber);
+  box-shadow: 0 0 12px rgb(255 176 0 / 0.2);
+}
+.live-score {
+  font-weight: 700;
+  color: var(--amber);
+}

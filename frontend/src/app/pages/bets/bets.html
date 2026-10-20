@@ -26,6 +26,15 @@
           <div class="tile"><span class="label">Quota</span><span class="led">{{ fmt.odds(+bet.total_odds) }}</span></div>
           @if (bet.status === 'open') {
             <div class="tile"><span class="label">Vincita possibile</span><span class="led">{{ fmt.euro(bet.potential_payout) }}</span></div>
+            @if (bet.hope != null) {
+              <div class="tile hope" [class.on-air]="bet.live">
+                <span class="label">Termometro della speranza</span>
+                <span class="led">{{ fmt.pct(bet.hope) }}</span>
+                <span class="meter" role="meter" aria-label="Probabilità di vincere adesso" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="+(bet.hope * 100).toFixed(0)">
+                  <span [style.width.%]="bet.hope * 100"></span>
+                </span>
+              </div>
+            }
           } @else {
             <div class="tile"><span class="label">Tornato</span><span class="led" [attr.data-status]="bet.status">{{ fmt.euro(bet.payout) }}</span></div>
           }
@@ -41,7 +50,9 @@
                 <a class="sel-match" [routerLink]="['/partite', s.match.id]">{{ s.match.home.name }} – {{ s.match.away.name }}</a>
                 <span class="muted small">
                   {{ s.match.competition.name }} · {{ fmt.dayLabel(s.match.kickoff_at) }} {{ fmt.kickoffTime(s.match.kickoff_at) }}
-                  @if (s.match.status === 'finished') {
+                  @if (s.match.live; as l) {
+                    · <span class="live-score">LIVE {{ fmt.liveLabel(l) }} {{ l.home_goals }}-{{ l.away_goals }}</span>
+                  } @else if (s.match.status === 'finished') {
                     · finita {{ s.match.home_goals }}-{{ s.match.away_goals }}
                   }
                 </span>
@@ -49,6 +60,9 @@
               </div>
               <div class="sel-numbers">
                 <span class="led sel-odds">{{ fmt.odds(+s.odds) }}</span>
+                @if (s.status === 'open' && s.probability != null) {
+                  <span class="small muted" title="Probabilità che questa partita vada come hai giocato, adesso">{{ fmt.pct(s.probability) }}</span>
+                }
                 @if (s.status !== 'open') {
                   <span [class]="'small clv ' + clvClass(s.clv)" [attr.title]="s.fair_closing_odds ? 'Quota giusta di chiusura ' + s.fair_closing_odds : 'Quota di chiusura non disponibile'">
                     CLV {{ clvText(s.clv) }}
@@ -61,6 +75,17 @@
 
         @if (bet.note) {
           <p class="note">{{ bet.note }}</p>
+        }
+        @if (bet.status === 'open' && bet.hope != null) {
+          <p class="note">
+            Termometro: la probabilità di vincere adesso, dal minuto e dal punteggio di ogni partita e dalla forza delle squadre
+            secondo le quote di prima della partita. Verificato su 5 stagioni con i risultati all'intervallo (D92).
+            È un'informazione, non un consiglio per giocare live.
+            @if (anyLive()) {
+              <button type="button" class="link-btn" (click)="follow.set(!follow())">{{ follow() ? 'Smetti di seguire live' : 'Segui live' }}</button>
+              @if (follow()) { <span class="muted small">· si aggiorna da sola ogni 30 secondi</span> }
+            }
+          </p>
         }
         <p class="note">
           CLV: quanto la tua quota batte la quota "giusta" di chiusura (media del mercato senza il margine del bookmaker).

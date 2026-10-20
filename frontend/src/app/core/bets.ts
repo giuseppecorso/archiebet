@@ -14,6 +14,8 @@ export interface Selection {
   status: BetStatus;
   fair_closing_odds: string | null;
   clv: string | null;
+  /** Probabilità che vinca adesso (termometro, D92); solo schedine aperte */
+  probability?: number | null;
 }
 
 export interface Bet {
@@ -29,6 +31,10 @@ export interface Bet {
   placed_at: string;
   settled_at: string | null;
   selections: Selection[];
+  /** Termometro della speranza: probabilità di vincere adesso (solo aperte) */
+  hope?: number | null;
+  /** Almeno una partita della schedina è in corso */
+  live?: boolean;
 }
 
 export interface BetCreated {

@@ -95,3 +95,28 @@
     width: auto;
   }
 }
+
+/* Partita in corso (D92): minuto e punteggio in ambra, puntino che pulsa */
+.live-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--amber);
+}
+.pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  50% { opacity: 0.25; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; }
+}
+.score.live {
+  color: var(--amber);
+}

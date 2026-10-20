@@ -1,9 +1,10 @@
 import { HttpClient, httpResource } from '@angular/common/http';
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Bet, BudgetStatus, KIND_LABEL, MARKET_LABEL, STATUS_LABEL, euro, pickLabel } from '../../core/bets';
-import { dayLabel, kickoffTime, odds } from '../../core/format';
+import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
+import { LIVE_REFRESH_MS, liveLabel } from '../../core/live';
 import { ShowMore } from '../../shared/show-more';
 
 type StatusFilter = 'open' | 'closed' | 'all';
@@ -30,7 +31,18 @@ export class Bets {
   protected readonly listOpen = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  protected readonly fmt = { euro, odds, dayLabel, kickoffTime, pickLabel };
+  protected readonly fmt = { euro, odds, dayLabel, kickoffTime, pickLabel, pct, liveLabel };
+  /** "Segui live": la pagina si aggiorna da sola ogni 30 secondi (D92). Si accende da sola se una partita è in corso */
+  protected readonly follow = signal(true);
+  protected readonly anyLive = computed(() => this.bets.value().some((b) => b.live));
+
+  constructor() {
+    effect((onCleanup) => {
+      if (!this.follow() || !this.anyLive()) return;
+      const timer = setInterval(() => this.bets.reload(), LIVE_REFRESH_MS);
+      onCleanup(() => clearInterval(timer));
+    });
+  }
   protected readonly labels = { KIND_LABEL, MARKET_LABEL, STATUS_LABEL };
 
   protected readonly filtered = computed(() =>

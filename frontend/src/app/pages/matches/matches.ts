@@ -1,6 +1,7 @@
 import { httpResource } from '@angular/common/http';
 import { Component, computed, effect, signal } from '@angular/core';
 import { Competition, CompetitionGroup } from '../../core/football';
+import { LIVE_REFRESH_MS } from '../../core/live';
 import { DataStatusBar } from '../../shared/data-status';
 import { MatchRow } from '../../shared/match-row';
 import { LeagueLogo } from '../../shared/crest';
@@ -8,7 +9,7 @@ import { MultipleCard } from '../../shared/multiple-card';
 import { OffLineCard } from '../../shared/off-line-card';
 import { ShowMore } from '../../shared/show-more';
 
-type Tab = 'tutte' | 'prossime' | 'risultati';
+type Tab = 'tutte' | 'live' | 'prossime' | 'risultati';
 /** Paese scelto nella tendina; '' = tutti i paesi */
 const ALL_COUNTRIES = '';
 const STORAGE_KEY = 'archiebet.matches.filters';
@@ -45,15 +46,30 @@ export class Matches {
 
   protected readonly upcoming = httpResource<CompetitionGroup[]>(() => {
     const q = this.query();
-    return q && this.tab() !== 'risultati' ? `/api/matches?view=upcoming${q}` : undefined;
+    return q && (this.tab() === 'tutte' || this.tab() === 'prossime') ? `/api/matches?view=upcoming${q}` : undefined;
   });
+  /** Partite in corso adesso (D92): sempre, per il contatore della scheda e per la vista Live */
+  protected readonly live = httpResource<CompetitionGroup[]>(() => {
+    const q = this.query();
+    return q ? `/api/matches?view=live${q}` : undefined;
+  }, { defaultValue: [] });
+  protected readonly liveCount = computed(() => this.live.value().reduce((n, g) => n + g.matches.length, 0));
   protected readonly results = httpResource<CompetitionGroup[]>(() => {
     const q = this.query();
     const limit = this.tab() === 'tutte' ? 10 : 40;
-    return q && this.tab() !== 'prossime' ? `/api/matches?view=results&limit=${limit}${q}` : undefined;
+    return q && (this.tab() === 'tutte' || this.tab() === 'risultati') ? `/api/matches?view=results&limit=${limit}${q}` : undefined;
   });
 
   constructor() {
+    // Mentre c'è qualcosa in corso si ricaricano partite e punteggi ogni 30 secondi
+    effect((onCleanup) => {
+      if (!this.liveCount()) return;
+      const timer = setInterval(() => {
+        this.live.reload();
+        if (this.tab() !== 'live') this.upcoming.reload();
+      }, LIVE_REFRESH_MS);
+      onCleanup(() => clearInterval(timer));
+    });
     effect(() => {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ tab: this.tab(), hidden: this.hidden(), country: this.country() }));

@@ -26,7 +26,9 @@
     <div class="list-head">
       <div role="tablist" aria-label="Filtra partite" class="tabs">
         <button type="button" role="tab" class="tab title" [attr.aria-selected]="tab() === 'tutte'" (click)="tab.set('tutte')">Tutte</button>
-        <button type="button" role="tab" class="tab title" aria-selected="false" aria-disabled="true" disabled title="I risultati in diretta arrivano nella Fase 5">Live · Fase 5</button>
+        <button type="button" role="tab" class="tab title live-tab" [attr.aria-selected]="tab() === 'live'" (click)="tab.set('live')">
+          Live @if (liveCount()) { <span class="live-count">{{ liveCount() }}</span> }
+        </button>
         <button type="button" role="tab" class="tab title" [attr.aria-selected]="tab() === 'prossime'" (click)="tab.set('prossime')">Prossime</button>
         <button type="button" role="tab" class="tab title" [attr.aria-selected]="tab() === 'risultati'" (click)="tab.set('risultati')">Risultati</button>
       </div>
@@ -37,7 +39,22 @@
       <p class="empty">Nessun campionato selezionato: scegline almeno uno qui sopra.</p>
     }
 
-    @if (tab() !== 'risultati') {
+    @if (tab() === 'live') {
+      @for (group of live.value(); track group.competition.code) {
+        <div class="group-head">
+          <span class="flag" [attr.data-country]="group.competition.country" aria-hidden="true"></span>
+          <ab-league-logo [code]="group.competition.code" [size]="20" />
+          <span class="title">{{ group.competition.name }}</span>
+        </div>
+        @for (m of group.matches; track m.id) {
+          <ab-match-row [match]="m" />
+        }
+      } @empty {
+        <p class="empty">Nessuna partita in corso nei campionati scelti. Minuto e punteggio arrivano da soli, aggiornati ogni minuto.</p>
+      }
+    }
+
+    @if (tab() === 'tutte' || tab() === 'prossime') {
       @if (tab() === 'tutte') {
         <h2 class="block-title title">Prossime partite</h2>
       }
@@ -65,7 +82,7 @@
       }
     }
 
-    @if (tab() !== 'prossime') {
+    @if (tab() === 'tutte' || tab() === 'risultati') {
       @if (tab() === 'tutte') {
         <h2 class="block-title title">Ultimi risultati</h2>
       }

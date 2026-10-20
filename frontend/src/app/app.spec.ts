@@ -19,7 +19,11 @@ describe('ArchieBet: navigazione', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // La dashboard chiede sempre anche le partite in corso (D92): qui non ce ne sono
+    http.match((r) => r.url.startsWith('/api/matches?view=live')).forEach((r) => r.flush([]));
+    http.verify();
+  });
 
   /** La navigazione è asincrona: aspetta che il guard faccia partire la richiesta. */
   async function nextRequest(url: string | ((req: HttpRequest<unknown>) => boolean)) {
@@ -75,6 +79,7 @@ describe('ArchieBet: navigazione', () => {
       },
     ]);
     (await nextRequest((r) => r.url.startsWith('/api/matches?view=results'))).flush([]);
+    (await nextRequest((r) => r.url.startsWith('/api/matches?view=live'))).flush([]); // nessuna partita in corso
     (await nextRequest('/api/status')).flush({
       now: '2026-10-10T12:00:00Z', syncing: false, upcoming: 5, upcoming_with_prediction: 3,
       sources: [{ source: 'football-data', label: 'Serie A e B', configured: true, last_ok_at: '2026-10-10T11:00:00Z', last_run_at: '2026-10-10T11:00:00Z', last_run_ok: true, message: 'ok' }],
@@ -134,6 +139,7 @@ describe('ArchieBet: navigazione', () => {
     expect(english.request.url).not.toContain('ITA-A');
     english.flush([]);
     (await nextRequest((r) => r.url.startsWith('/api/matches?view=results'))).flush([]);
+    (await nextRequest((r) => r.url.startsWith('/api/matches?view=live'))).flush([]); // nessuna partita in corso
     await harness.fixture.whenStable();
     const chips = [...harness.routeNativeElement!.querySelectorAll('.filters .chip')].map((b) => b.textContent?.trim());
     expect(chips).toEqual(['Premier League']);

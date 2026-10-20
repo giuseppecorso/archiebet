@@ -15,6 +15,14 @@ export interface Competition {
 export type MatchStatus = 'scheduled' | 'finished' | 'awaiting_result';
 export type Odds1x2 = Record<'1' | 'X' | '2', number>;
 
+/** Partita in corso (D92): codice API-Football ("1H", "HT", "2H", "ET", "P"), minuto, punteggio di adesso */
+export interface LiveState {
+  status: string;
+  minute: number | null;
+  home_goals: number;
+  away_goals: number;
+}
+
 export interface MatchCard {
   id: number;
   competition: Competition;
@@ -27,6 +35,7 @@ export interface MatchCard {
   home_goals: number | null;
   away_goals: number | null;
   odds_1x2: Odds1x2 | null;
+  live?: LiveState | null;
 }
 
 export interface CompetitionGroup {
