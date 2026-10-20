@@ -1,7 +1,7 @@
 import { httpResource } from '@angular/common/http';
 import { Component, WritableSignal, computed, signal } from '@angular/core';
 import { Competition } from '../../core/football';
-import { MultiplesOut } from '../../core/multiple';
+import { Horizon, MultiplesOut } from '../../core/multiple';
 import { MultipleView } from '../../shared/multiple-view';
 
 type Profile = 'tranquilla' | 'equilibrata' | 'coraggiosa';
@@ -11,6 +11,24 @@ const PROFILES: { key: Profile; label: string; hint: string }[] = [
   { key: 'equilibrata', label: 'Equilibrata', hint: 'partite al 65% o più, quota 3–5' },
   { key: 'coraggiosa', label: 'Più coraggiosa', hint: 'partite al 45% o più, quota 5–15, scelta per valore' },
 ];
+const HORIZONS: [Horizon, string][] = [
+  ['today', 'Oggi'],
+  ['tomorrow', 'Domani'],
+  ['2days', 'Oggi e domani'],
+  ['3days', 'Prossimi 3 giorni'],
+  ['week', 'Prossimi 7 giorni'],
+  ['range', 'Scegli le date…'],
+];
+/** Le quote arrivano fino a 7 giorni prima */
+const MAX_DAYS_AHEAD = 7;
+
+/** Giorno locale in formato AAAA-MM-GG, spostato di "offset" giorni da oggi */
+function isoDay(offset = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const MARKETS: [string, string][] = [
   ['1X2', '1X2'],
   ['DC', 'Doppia chance'],
@@ -45,10 +63,19 @@ const MARKETS: [string, string][] = [
         </label>
         <label>Quando
           <select [value]="horizon()" (change)="horizon.set($any($event.target).value)">
-            <option value="today" [selected]="horizon() === 'today'">Oggi</option>
-            <option value="week" [selected]="horizon() === 'week'">Prossimi 7 giorni</option>
+            @for (h of horizons; track h[0]) { <option [value]="h[0]" [selected]="horizon() === h[0]">{{ h[1] }}</option> }
           </select>
         </label>
+        @if (horizon() === 'range') {
+          <label>Dal
+            <input type="date" class="day" [min]="firstDay" [max]="lastDay" [value]="dateFrom()"
+                   (change)="setFrom($any($event.target).value)" />
+          </label>
+          <label>Al
+            <input type="date" class="day" [min]="dateFrom()" [max]="lastDay" [value]="dateTo()"
+                   (change)="dateTo.set($any($event.target).value || dateFrom())" />
+          </label>
+        }
         <label>Importo €
           <input type="number" min="1" max="1000" step="1" [value]="stake()" (input)="stake.set(+$any($event.target).value || 10)" />
         </label>
@@ -108,15 +135,21 @@ const MARKETS: [string, string][] = [
       background: var(--bg-deep); border: 1px solid var(--line-strong); border-radius: 4px;
     }
     input { width: 90px; }
+    input.day { width: 150px; color-scheme: dark; }
     .warn { color: var(--loss); }
   `,
 })
 export class Generator {
   protected readonly profiles = PROFILES;
   protected readonly markets = MARKETS;
+  protected readonly horizons = HORIZONS;
+  protected readonly firstDay = isoDay();
+  protected readonly lastDay = isoDay(MAX_DAYS_AHEAD);
   protected readonly profile = signal<Profile>('equilibrata');
   protected readonly legs = signal(4);
-  protected readonly horizon = signal<'today' | 'week'>('week');
+  protected readonly horizon = signal<Horizon>('week');
+  protected readonly dateFrom = signal(isoDay());
+  protected readonly dateTo = signal(isoDay(2));
   protected readonly stake = signal(10);
   protected readonly selectedMarkets = signal<string[]>(MARKETS.map((m) => m[0]));
   protected readonly selectedComps = signal<string[]>([]);
@@ -126,10 +159,21 @@ export class Generator {
 
   protected readonly result = httpResource<MultiplesOut>(() => {
     const params = new URLSearchParams({ horizon: this.horizon(), profile: this.profile(), legs: String(this.legs()) });
+    if (this.horizon() === 'range') {
+      params.set('date_from', this.dateFrom());
+      params.set('date_to', this.dateTo());
+    }
     if (this.selectedMarkets().length < MARKETS.length) params.set('markets', this.selectedMarkets().join(','));
     if (this.selectedComps().length) params.set('competitions', this.selectedComps().join(','));
     return this.selectedMarkets().length ? `/api/picks/multiple?${params}` : undefined;
   });
+
+  /** Il primo giorno non può superare l'ultimo: se succede, l'ultimo lo segue */
+  protected setFrom(day: string): void {
+    if (!day) return;
+    this.dateFrom.set(day);
+    if (this.dateTo() < day) this.dateTo.set(day);
+  }
 
   protected isOn(list: string[], key: string): boolean {
     return list.includes(key);

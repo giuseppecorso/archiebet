@@ -59,27 +59,32 @@ def archive_history(
     """
     keep = archived_market_ids(adapter.markets())
     report = ArchiveReport()
+    # Prima le partite più vecchie di tutti i campionati: sono quelle che escono per prime dalla finestra di ~6 mesi
+    todo = []
     for tournament_id, code in TOURNAMENTS.items():
         fixtures = [f for f in adapter.finished_fixtures(tournament_id, max_age=timedelta(days=1)) if f["startTime"] >= since.isoformat()[:19]]
         log(f"{code}: {len(fixtures)} partite dal {since.date()}")
-        for fixture in fixtures:
-            key = fixture["fixtureId"]
-            if archive.get(key, FOREVER) is not MISSING:
-                report.already += 1
-                continue
-            body = _fetch(adapter, key, sleep)
-            if body is False:
-                report.failed += 1
-                continue
-            record = {
-                "fixture": {k: fixture.get(k) for k in ("fixtureId", "tournamentId", "startTime", "participant1Id", "participant2Id",
-                                                        "participant1Name", "participant2Name")},
-                "bookmakers": compact(body, keep) if body else {},
-            }
-            archive.set(key, record)
-            report.saved += bool(body)
-            report.missing += not body
-        log(f"{code}: finora {report.saved} salvate, {report.missing} senza storico, {report.already} già in archivio")
+        todo += fixtures
+    todo.sort(key=lambda f: f["startTime"])
+    for n, fixture in enumerate(todo, 1):
+        key = fixture["fixtureId"]
+        if archive.get(key, FOREVER) is not MISSING:
+            report.already += 1
+            continue
+        body = _fetch(adapter, key, sleep)
+        if body is False:
+            report.failed += 1
+            continue
+        record = {
+            "fixture": {k: fixture.get(k) for k in ("fixtureId", "tournamentId", "startTime", "participant1Id", "participant2Id",
+                                                    "participant1Name", "participant2Name")},
+            "bookmakers": compact(body, keep) if body else {},
+        }
+        archive.set(key, record)
+        report.saved += bool(body)
+        report.missing += not body
+        if n % 25 == 0:
+            log(f"{n}/{len(todo)} ({fixture['startTime'][:10]}): {report.saved} salvate, {report.missing} senza storico")
     return report
 
 

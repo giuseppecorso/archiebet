@@ -1,5 +1,8 @@
 import { MatchCard } from './football';
 
+/** Periodo della multipla (D83): giorni italiani, al massimo 7 giorni avanti */
+export type Horizon = 'today' | 'tomorrow' | '2days' | '3days' | 'week' | 'range';
+
 /** Tipi dell'API /api/picks/multiple (vedi backend/app/api/picks.py, D68). */
 export interface MultipleLeg {
   match: MatchCard;
@@ -23,7 +26,7 @@ export interface Multiple {
 }
 
 export interface MultiplesOut {
-  horizon: 'today' | 'week';
+  horizon: Horizon;
   multiples: Multiple[];
   missing: string[];
 }

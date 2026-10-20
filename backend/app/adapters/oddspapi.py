@@ -62,6 +62,7 @@ MARKETS = {
 COOLDOWN = {"odds-by-tournaments": 1.5, "historical-odds": 5.5, "participants": 1.5, "account": 1.5}
 FREE_ENDPOINTS = {"historical-odds", "account"}
 MAX_BOOKMAKERS_PER_HISTORY_CALL = 3
+RATE_LIMIT_RETRIES = 4
 MAX_TOURNAMENTS_PER_CALL = 5
 
 Prices = dict[str, dict[str, dict[str, float]]]  # bookmaker → mercato → esito → quota
@@ -190,8 +191,11 @@ class OddsPapiAdapter(DataSourceAdapter):
             if wait > 0:
                 self._sleep(wait)
         status, body = self._http_get(f"{BASE_URL}/{endpoint}", {**params, "apiKey": self._api_key})
-        if status == 429 and endpoint in FREE_ENDPOINTS:  # troppo veloci (es. due aggiornamenti insieme): attendo e riprovo una volta
-            self._sleep(COOLDOWN.get(endpoint, 5.5))
+        for attempt in range(RATE_LIMIT_RETRIES):
+            if status != 429 or endpoint not in FREE_ENDPOINTS:
+                break
+            # troppo veloci (es. aggiornamento e archivio insieme): attendo quanto chiede OddsPapi e riprovo
+            self._sleep(_retry_after(body, COOLDOWN.get(endpoint, 5.5)) * (attempt + 1))
             status, body = self._http_get(f"{BASE_URL}/{endpoint}", {**params, "apiKey": self._api_key})
         self._last_call[endpoint] = self._clock()
         if endpoint not in FREE_ENDPOINTS and self.remaining_month is not None:
@@ -258,6 +262,15 @@ class OddsPapiAdapter(DataSourceAdapter):
                 continue  # nessuna quota di questi bookmaker per la partita: non è un guasto
             out |= parse_history(body)
         return out
+
+
+def _retry_after(body: Any, default: float) -> float:
+    """Secondi da aspettare secondo il messaggio di OddsPapi ("Please wait 1.49 seconds ..."), almeno default."""
+    import re
+
+    message = body.get("error", {}).get("message", "") if isinstance(body, dict) else ""
+    found = re.search(r"wait ([0-9.]+) seconds", message)
+    return max(default, float(found.group(1)) + 0.5) if found else default
 
 
 def _http_get(url: str, params: dict[str, Any]) -> tuple[int, Any]:

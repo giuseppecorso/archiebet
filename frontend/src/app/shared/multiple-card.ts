@@ -1,10 +1,10 @@
 import { httpResource } from '@angular/common/http';
 import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MultiplesOut } from '../core/multiple';
+import { Horizon as MultipleHorizon, MultiplesOut } from '../core/multiple';
 import { MultipleView } from './multiple-view';
 
-type Horizon = 'today' | 'week';
+type Horizon = Extract<MultipleHorizon, 'today' | 'week'>;
 
 /** Multipla del giorno in dashboard (specifiche sezione 5, D68): una per bookmaker di Giuse, oggi o nella settimana. */
 @Component({

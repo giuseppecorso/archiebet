@@ -1,11 +1,11 @@
 """Multipla del giorno: probabilità, quota, arrivare vivi all'ultima, valore atteso e scelta delle gambe."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
 from app.adapters.football_data import parse_csv
-from app.api.picks import horizon_end
+from app.api.picks import horizon_end, horizon_window
 from app.forecast.multiple import PROFILES, Leg, Multiple, build_multiple, eligible, multiple_of_the_day
 from app.ingest.football_data import import_matches
 from tests.test_football_api import day, match_id, seeded  # noqa: F401 (fixture condivisa)
@@ -136,3 +136,20 @@ def test_generator_filters(logged_client, seeded, db):  # noqa: F811
     assert logged_client.get(base + "&competitions=ITA-B").json()["multiples"] == []  # partite tutte di Serie A
     assert logged_client.get(base + "&competitions=ITA-A&markets=1X2").json()["multiples"][0]["legs"]
     assert logged_client.get("/api/picks/multiple?legs=9").status_code == 422  # massimo 6 partite
+
+
+def test_horizon_windows_follow_italian_days():
+    now = datetime(2026, 10, 17, 10, 0, tzinfo=UTC)  # sabato, mezzogiorno in Italia
+    midnight = lambda d: datetime(2026, 10, d, 22, 0, tzinfo=UTC)  # mezzanotte italiana (ora legale) del giorno d+1
+    assert horizon_window(now, "tomorrow") == (midnight(17), midnight(18))
+    assert horizon_window(now, "2days") == (now, midnight(18))
+    assert horizon_window(now, "3days") == (now, midnight(19))
+    # dal giorno al giorno: mai prima di adesso, mai oltre 7 giorni
+    assert horizon_window(now, "range", date(2026, 10, 17), date(2026, 10, 18)) == (now, midnight(18))
+    assert horizon_window(now, "range", date(2026, 10, 19), date(2026, 10, 30)) == (midnight(18), now + timedelta(days=7))
+    with pytest.raises(ValueError):
+        horizon_window(now, "range", date(2026, 10, 19), None)
+
+
+def test_multiple_range_needs_both_dates(logged_client):
+    assert logged_client.get("/api/picks/multiple?horizon=range&date_from=2026-10-19").status_code == 422

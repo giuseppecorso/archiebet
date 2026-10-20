@@ -1,10 +1,10 @@
 """Pronostici (D67): la stima migliore per ogni partita in programma, con le quote di Sisal ed Eurobet."""
 
-from datetime import UTC, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Literal
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from app.api.football import BOOKMAKER_LABELS, MatchCard, match_cards
@@ -115,27 +115,51 @@ class MultipleOut(BaseModel):
     expected_value: float
 
 
+# Oggi, domani, oggi+domani, prossimi 3 giorni, 7 giorni, oppure dal giorno al giorno (D83)
+Horizon = Literal["today", "tomorrow", "2days", "3days", "week", "range"]
+MAX_DAYS_AHEAD = 7  # oltre non ci sono ancora quote
+
+
 class MultiplesOut(BaseModel):
-    horizon: Literal["today", "week"]
+    horizon: Horizon
     profile: str
     legs: int
     multiples: list[MultipleOut]  # una per bookmaker di Giuse
     missing: list[str]  # bookmaker per cui oggi non c'è una multipla sensata
 
 
+def _midnight(day: date) -> datetime:
+    """Mezzanotte italiana all'inizio del giorno, in UTC."""
+    return datetime.combine(day, time(0), ROME).astimezone(UTC)
+
+
+def horizon_window(now: datetime, horizon: str, date_from: date | None = None, date_to: date | None = None) -> tuple[datetime, datetime]:
+    """Da quando a quando cercare le partite: i giorni sono quelli italiani (finiscono a mezzanotte)."""
+    today = now.astimezone(ROME).date()
+    days = {"today": 1, "2days": 2, "3days": 3}
+    if horizon in days:
+        return now, _midnight(today + timedelta(days=days[horizon]))
+    if horizon == "tomorrow":
+        return _midnight(today + timedelta(days=1)), _midnight(today + timedelta(days=2))
+    if horizon == "range":
+        if date_from is None or date_to is None or date_to < date_from:
+            raise ValueError("servono date_from e date_to, con date_to non prima di date_from")
+        return max(now, _midnight(date_from)), min(_midnight(date_to + timedelta(days=1)), now + timedelta(days=MAX_DAYS_AHEAD))
+    return now, now + timedelta(days=MAX_DAYS_AHEAD)
+
+
 def horizon_end(now: datetime, horizon: str) -> datetime:
-    """Fine dell'orizzonte: mezzanotte italiana di oggi, oppure tra 7 giorni."""
-    if horizon == "today":
-        local = now.astimezone(ROME)
-        return datetime.combine(local.date() + timedelta(days=1), time(0), ROME).astimezone(UTC)
-    return now + timedelta(days=7)
+    """Fine dell'orizzonte (mezzanotte italiana di oggi, oppure tra 7 giorni, ...)."""
+    return horizon_window(now, horizon)[1]
 
 
 @router.get("/multiple")
 def multiple(
     _: CurrentUser,
     db: DbSession,
-    horizon: Literal["today", "week"] = "today",
+    horizon: Horizon = "today",
+    date_from: date | None = Query(None, description="Con horizon=range: primo giorno, AAAA-MM-GG"),
+    date_to: date | None = Query(None, description="Con horizon=range: ultimo giorno, AAAA-MM-GG"),
     profile: Literal["tranquilla", "equilibrata", "coraggiosa"] = "equilibrata",
     legs: int = Query(LEGS, ge=2, le=6),
     markets: str | None = Query(None, description="Mercati separati da virgola, es. 1X2,DC"),
@@ -144,7 +168,11 @@ def multiple(
     """Multipla del giorno (senza parametri) o generatore "Archie, fammi una multipla"."""
     now = datetime.now(UTC)
     bookmakers = get_settings().radar_bookmaker_list
-    upcoming = upcoming_picks(db, now, horizon_end(now, horizon), bookmakers)
+    try:
+        start, end = horizon_window(now, horizon, date_from, date_to)
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from error
+    upcoming = upcoming_picks(db, start, end, bookmakers)
     if competitions:
         wanted = set(competitions.split(","))
         upcoming = [(m, mp) for m, mp in upcoming if m.competition.code in wanted]

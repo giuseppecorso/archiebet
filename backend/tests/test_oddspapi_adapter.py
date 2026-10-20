@@ -132,12 +132,13 @@ def test_history_without_odds_is_empty_not_an_error(tmp_path):
     assert a.history("id1", ["sisal.it"], max_age=timedelta(hours=1)) == {}
 
 
-def test_rate_limited_history_waits_and_retries_once(tmp_path):
-    answers = iter([(429, {"error": {"message": "You are being rate limited."}}), (200, {"fixtureId": "id1", "bookmakers": {}})])
+def test_rate_limited_history_waits_and_retries(tmp_path):
+    limited = (429, {"error": {"message": "You are being rate limited."}})
+    answers = iter([limited, limited, (200, {"fixtureId": "id1", "bookmakers": {}})])
     sleeps = []
     a = adapter(tmp_path, lambda url, params: next(answers), sleeps)
     assert a.history("id1", ["sisal.it"], max_age=timedelta(hours=1)) == {}
-    assert sleeps == [5.5]
+    assert sleeps == [5.5, 11.0]  # attese crescenti
 
 def test_errors_are_raised_and_not_cached(tmp_path):
     def broken(url, params):
