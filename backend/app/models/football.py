@@ -101,6 +101,19 @@ class Match(Base):
     away_team: Mapped[Team] = relationship(foreign_keys=[away_team_id], lazy="joined")
 
 
+class MatchLive(Base):
+    """Situazione di una partita in corso (D92): minuto e punteggio di adesso. Il risultato finale resta in Match."""
+
+    __tablename__ = "match_live"
+
+    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), primary_key=True)
+    status: Mapped[str] = mapped_column(String(10))  # "1H", "HT", "2H", "ET", "P", ...
+    minute: Mapped[int | None] = mapped_column(Integer)
+    home_goals: Mapped[int] = mapped_column(Integer)
+    away_goals: Mapped[int] = mapped_column(Integer)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+
+
 class MatchSource(Base):
     """Codice della partita presso ogni fonte (es. id del fixture su API-Football): serve per formazioni e live."""
 

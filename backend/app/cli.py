@@ -534,6 +534,103 @@ def _secondary_test() -> int:
     return 0
 
 
+def _live_check() -> int:
+    """Verifica del termometro (D92) e dell'effetto del punteggio (D93) sul risultato all'intervallo."""
+    import math
+
+    import numpy as np
+    from sqlalchemy import select
+
+    from app.forecast import live as lv
+    from app.forecast.demargin import shin
+    from app.forecast.history_sim import CalibrationBin
+    from app.models import Match, MatchStatus
+
+    leagues = ("ITA-A", "ITA-B", "ENG-1", "ENG-2", "ESP-1", "ESP-2", "GER-1", "GER-2", "FRA-1", "FRA-2")
+    with SessionLocal() as db:
+        matches = db.execute(
+            select(Match).join(Competition, Match.competition_id == Competition.id)
+            .where(Competition.code.in_(leagues), Match.status == MatchStatus.FINISHED, Match.season >= "2021/22",
+                   Match.ht_home_goals.is_not(None))
+        ).scalars().all()  # fmt: skip
+        rows = [(m.id, m.season, m.home_goals, m.away_goals, m.ht_home_goals, m.ht_away_goals) for m in matches]
+        closing = load_odds(db, ["pinnacle"], closing=True)
+
+    fits = {}  # partita -> (p1, px, p2, gol attesi casa, gol attesi ospite)
+    for mid, *_ in rows:
+        o = closing.get(mid, {})
+        if "1X2" in o:
+            p1, px, p2 = shin([o["1X2"]["1"], o["1X2"]["X"], o["1X2"]["2"]])
+            p_over = shin([o["OU2.5"]["over"], o["OU2.5"]["under"]])[0] if "OU2.5" in o else None
+            fits[mid] = (p1, px, p2, *lv.fit_rates(p1, p2, p_over))
+    rows = [r for r in rows if r[0] in fits]
+    tuning, confirm = [r for r in rows if r[1] <= "2024/25"], [r for r in rows if r[1] == "2025/26"]
+    first_half = sum(r[4] + r[5] for r in tuning) / sum(r[2] + r[3] for r in tuning)
+    share = 1 - first_half
+    print(f"Quota dei gol nel primo tempo (taratura, {len(tuning)} partite): {first_half:.3f}  (nel modello: {lv.FIRST_HALF_SHARE})")
+
+    # D93: gol del secondo tempo osservati / attesi per chi è avanti, indietro, in parità all'intervallo
+    obs = {"leader": 0.0, "trailer": 0.0, "level": 0.0}
+    exp = {"leader": 0.0, "trailer": 0.0, "level": 0.0}
+    for mid, season, hg, ag, hth, hta in tuning:
+        lh, la = fits[mid][3] * share, fits[mid][4] * share
+        sides = ("leader", "trailer") if hth > hta else ("trailer", "leader") if hth < hta else ("level", "level")
+        for side, o_goals, e_goals in zip(sides, (hg - hth, ag - hta), (lh, la)):
+            obs[side] += o_goals
+            exp[side] += e_goals
+    effect = {k: obs[k] / exp[k] for k in obs}
+    print("Effetto del punteggio (gol del secondo tempo osservati / attesi): " + ", ".join(f"{k} {v:.3f}" for k, v in effect.items()))
+
+    def evaluate(sample, eff):
+        out, preds, best = [], [], []
+        for mid, season, hg, ag, hth, hta in sample:
+            p1, px, p2, lh, la = fits[mid]
+            rh, ra = lv.remaining_rates((lh, la), share, hth, hta, eff)
+            probs = lv.outcome_probabilities(rh, ra, hth, hta)
+            result = "1" if hg > ag else "X" if hg == ag else "2"
+            out.append(-math.log(max(probs[result], 1e-9)))
+            preds += [(probs[sel], sel == result) for sel in ("1", "X", "2")]
+            top = max(("1", "X", "2"), key=lambda sel: probs[sel])
+            best.append((probs[top], top == result))
+        return np.array(out), preds, best
+
+    def calibration_table(preds):
+        edges = (0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0001)
+        outside = 0
+        for low, high in zip(edges, edges[1:]):
+            inside = [(p, w) for p, w in preds if low <= p < high]
+            if not inside:
+                continue
+            k = len(inside)
+            b = CalibrationBin(low, min(high, 1.0), k, sum(p for p, _ in inside) / k, sum(w for _, w in inside) / k,
+                               math.sqrt(sum(p * (1 - p) for p, _ in inside)) / k)
+            off = abs(b.off_by) > 2 * b.std_error
+            outside += off
+            print(f"    {b.low:.0%}-{b.high:.0%}: {b.n:6d} esiti  previsto {b.predicted:.1%}  uscito {b.observed:.1%}  (± {b.std_error:.1%}){'  <-- fuori' if off else ''}")
+        return outside
+
+    results = {}
+    for label, sample in (("Taratura 2021/22 - 2024/25", tuning), ("Conferma 2025/26", confirm)):
+        print(f"\n{label}: {len(sample)} partite")
+        for name, eff in (("senza effetto del punteggio (D92)", lv.NO_SCORE_EFFECT), ("con effetto del punteggio (D93)", effect)):
+            ll, preds, best = evaluate(sample, eff)
+            print(f"  {name}: log loss all'intervallo {ll.mean():.4f}")
+            outside = calibration_table(preds)
+            hits, expected = sum(w for _, w in best), sum(p for p, _ in best)
+            se = math.sqrt(sum(p * (1 - p) for p, _ in best))
+            print(f"    esito più probabile: uscito {hits} contro {expected:.0f} attese (± {se:.0f}); fasce fuori: {outside}")
+            results[(label, name)] = (ll, outside, abs(hits - expected) <= 2 * se)
+
+    base = results[("Conferma 2025/26", "senza effetto del punteggio (D92)")]
+    new = results[("Conferma 2025/26", "con effetto del punteggio (D93)")]
+    diff = new[0] - base[0]
+    se = diff.std(ddof=1) / math.sqrt(len(diff))
+    adopt = diff.mean() < -2 * se and new[1] <= base[1]
+    print(f"\nD92 termometro: {'AFFIDABILE' if base[1] <= 1 and base[2] else 'non affidabile'} (fasce fuori {base[1]})")
+    print(f"D93 effetto del punteggio, conferma: log loss {diff.mean():+.5f} ± {se:.5f}, fasce fuori {new[1]} contro {base[1]} -> {'SI ADOTTA' if adopt else 'non si adotta'}")
+    return 0
+
+
 def _odds_archive(since: str) -> int:
     """Salva lo storico quote di OddsPapi (gratuito, ma solo ~6 mesi) per le prove sui mercati (D82)."""
     from app.adapters.cache import FileCache
@@ -743,6 +840,7 @@ def main() -> int:
     hsim.add_argument("--last", default="2025/26", help="stagione di conferma (le precedenti sono la taratura)")
     oa = commands.add_parser("odds-archive", help="salva lo storico quote OddsPapi (angoli, cartellini, principali)")
     oa.add_argument("--since", default="2026-04-01", help="data di inizio, AAAA-MM-GG")
+    commands.add_parser("live-check", help="verifica del termometro della speranza sul punteggio all'intervallo (D92)")
     commands.add_parser("secondary-test", help="prova D82 su angoli e cartellini (usare una copia del database)")
     commands.add_parser("d89-test", help="prova del nove dei fattori D89 (riposo, allenatore, sintetico, distanza, assenze)")
     commands.add_parser("af-history", help="storico API-Football per le prove dei fattori D89 (coppe, allenatori, formazioni)")
@@ -775,6 +873,8 @@ def main() -> int:
         return _history_sim(args.first, args.last)
     if args.command == "odds-archive":
         return _odds_archive(args.since)
+    if args.command == "live-check":
+        return _live_check()
     if args.command == "secondary-test":
         return _secondary_test()
     if args.command == "d89-test":

@@ -9,7 +9,7 @@ Verificato sulle risposte reali (ottobre 2026):
 """
 
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any
@@ -44,6 +44,7 @@ LEAGUES = {
 FINISHED = {"FT", "AET", "PEN", "AWD", "WO"}
 POSTPONED = {"PST", "TBD"}
 CANCELLED = {"CANC", "ABD"}
+LIVE = {"1H", "HT", "2H", "ET", "BT", "P", "SUSP", "INT", "LIVE"}  # partita in corso (D92)
 
 MIN_SECONDS_BETWEEN_CALLS = 6.5  # limite di 10 richieste al minuto, con margine
 
@@ -79,6 +80,14 @@ class AFFixture:
     away_goals: int | None
     ht_home_goals: int | None
     ht_away_goals: int | None
+    status_short: str = ""  # codice di API-Football: "1H", "HT", "2H", "FT", ...
+    elapsed: int | None = None  # minuto di gioco (solo dal vivo)
+    live_home_goals: int | None = None  # punteggio di adesso (anche a partita in corso)
+    live_away_goals: int | None = None
+
+    @property
+    def is_live(self) -> bool:
+        return self.status_short in LIVE
 
 
 @dataclass(frozen=True)
@@ -187,6 +196,10 @@ def parse_fixtures(body: dict[str, Any]) -> list[AFFixture]:
                 away_goals=item["goals"]["away"] if finished else None,
                 ht_home_goals=halftime.get("home") if finished else None,
                 ht_away_goals=halftime.get("away") if finished else None,
+                status_short=fx["status"]["short"],
+                elapsed=fx["status"].get("elapsed"),
+                live_home_goals=item["goals"]["home"],
+                live_away_goals=item["goals"]["away"],
             )
         )
     return fixtures
@@ -241,6 +254,14 @@ class ApiFootballAdapter(DataSourceAdapter):
         key = f"fixtures?league={league_id}&season={season}"
         return parse_fixtures(self.cached(key, max_age, lambda: self._request("/fixtures", params)))
 
+
+    def live(self, league_ids: Sequence[int]) -> list[AFFixture]:
+        """Partite in corso adesso nei campionati indicati (una richiesta, mai in cache)."""
+        return parse_fixtures(self._request("/fixtures", {"live": "-".join(str(i) for i in league_ids)}))
+
+    def fixtures_by_ids(self, fixture_ids: Sequence[int]) -> list[AFFixture]:
+        """Situazione aggiornata di alcune partite (al massimo 20 per richiesta), mai in cache."""
+        return parse_fixtures(self._request("/fixtures", {"ids": "-".join(str(i) for i in fixture_ids)}))
 
     def coaches(self, team_id: int, max_age: timedelta) -> list[AFCoachSpell]:
         """Allenatori della squadra con le date di ogni periodo in panchina."""

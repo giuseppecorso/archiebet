@@ -19,6 +19,7 @@ from app.forecast.radar_service import refresh_radar, settle_radar
 from app.forecast.service import refresh_predictions
 from app.ingest.api_football import sync_api_football
 from app.ingest.football_data import ImportReport, sync_football_data
+from app.ingest.live import needs_live, sync_live
 from app.ingest.oddspapi import sync_oddspapi
 from app.models.sync import SyncRun
 from app.usage import record_usage
@@ -156,6 +157,35 @@ def refresh_radar_job() -> None:
     _tracked("radar", work)
 
 
+_live_lock = threading.Lock()
+
+
+def live_job() -> None:
+    """Ogni minuto: se una nostra partita è in corso, minuto e punteggio; a fine partita risultato e schedine (D92).
+
+    Non si scrive nel registro degli aggiornamenti (sarebbe una riga al minuto): gli errori vanno nel log.
+    """
+    settings = get_settings()
+    if not settings.api_football_key or not _live_lock.acquire(blocking=False):
+        return
+    try:
+        now = datetime.now(UTC)
+        with SessionLocal() as db:
+            if not needs_live(db, now):
+                return
+            leagues = [*settings.api_football_league_ids, *settings.api_football_current_league_ids]
+            report = sync_live(db, api_football_adapter(db, settings), leagues, now)
+            if report.finished:
+                settle_radar(db, now)
+        if report.finished:
+            settle_bets_job()
+            logger.info("Live: %s partite finite, schedine aggiornate", report.finished)
+    except Exception:
+        logger.exception("Aggiornamento live non riuscito: riprovo tra un minuto")
+    finally:
+        _live_lock.release()
+
+
 def sync_all_job() -> bool:
     """Aggiorna tutto. Se un aggiornamento è già in corso non ne parte un secondo (restituisce False)."""
     if not _sync_lock.acquire(blocking=False):
@@ -186,6 +216,7 @@ def start_scheduler(settings: Settings) -> BackgroundScheduler | None:
         max_instances=1,
         coalesce=True,
     )
+    scheduler.add_job(live_job, "interval", seconds=60, id="live", max_instances=1, coalesce=True)
     scheduler.start()
     logger.info("Aggiornamento automatico attivo ogni %s ore", settings.sync_interval_hours)
     return scheduler

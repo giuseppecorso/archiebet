@@ -10,7 +10,7 @@ from app.adapters.api_football import LEAGUES, SOURCE, AFFixture, ApiFootballAda
 from app.adapters.football_data import season_label, season_of
 from app.ingest.football_data import ImportReport
 from app.ingest.teams import COUNTRY_NAMES, CUP_COUNTRY, TeamResolver, ensure_competitions
-from app.models import Match, MatchSource
+from app.models import Match, MatchSource, Team, TeamAlias
 
 
 def import_fixtures(db: Session, fixtures: Iterable[AFFixture], team_countries: dict[int, str] | None = None) -> ImportReport:
@@ -26,7 +26,7 @@ def import_fixtures(db: Session, fixtures: Iterable[AFFixture], team_countries: 
         competition = competitions[LEAGUES[fx.league_id]]
         season = season_label(fx.season)
         if competition.country == CUP_COUNTRY:
-            countries = [COUNTRY_NAMES.get(c, c) for c in ((team_countries or {}).get(t.id) for t in (fx.home, fx.away)) if c]
+            countries = [c for c in (_team_country(db, t.id, team_countries) for t in (fx.home, fx.away)) if c]
             if len(countries) < 2:
                 report.skipped += 1  # paese sconosciuto: meglio saltare che creare un doppione
                 continue
@@ -75,6 +75,15 @@ def import_fixtures(db: Session, fixtures: Iterable[AFFixture], team_countries: 
 
     db.commit()
     return report
+
+
+def _team_country(db: Session, af_team_id: int, team_countries: dict[int, str] | None) -> str | None:
+    """Paese di una squadra di coppa: dall'elenco squadre della coppa, oppure da quella già nota con questo codice."""
+    if team_countries and af_team_id in team_countries:
+        return COUNTRY_NAMES.get(team_countries[af_team_id], team_countries[af_team_id])
+    return db.scalar(
+        select(Team.country).join(TeamAlias, TeamAlias.team_id == Team.id).where(TeamAlias.source == SOURCE, TeamAlias.alias == str(af_team_id))
+    )
 
 
 def _linked_elsewhere(db: Session, match_id: int, fixture_id: str) -> bool:
