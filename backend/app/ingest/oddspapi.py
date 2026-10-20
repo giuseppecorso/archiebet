@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 from app.adapters.football_data import season_label, season_of
 from app.adapters.oddspapi import ITALIAN, SHARP, SOURCE, TOURNAMENTS, OddsPapiAdapter, OPFixture, Prices, prices_at
-from app.ingest.teams import normalize_team_name
+from app.ingest.teams import CUP_COUNTRY, normalize_team_name
 from app.models import Competition, Match, MatchOdds, MatchSource, MatchStatus, Team, TeamAlias
 
 ROME = ZoneInfo("Europe/Rome")
@@ -62,6 +62,68 @@ def _team_index(db: Session) -> tuple[dict[str, int], dict[tuple[str, str], int]
     return by_alias, by_name
 
 
+CUP_WINDOW = timedelta(hours=3)  # coppe: la partita del nostro calendario alla stessa ora
+
+
+def similar_names(a: str, b: str) -> bool:
+    """Stessa squadra con nomi diversi? "Ajax Amsterdam" ~ "Ajax", "SL Benfica" ~ "Benfica", "GNK Dinamo Zagreb" ~ "Dinamo Zagreb"."""
+    na, nb = normalize_team_name(a), normalize_team_name(b)
+    if not na or not nb:
+        return False
+    if na == nb or na in nb or nb in na:
+        return True
+    return bool({w for w in na.split() if len(w) >= 4} & {w for w in nb.split() if len(w) >= 4})
+
+
+def loosely_similar(a: str, b: str) -> bool:
+    """Somiglianza debole, solo come conferma: stesse prime 4 lettere ("Lillestroem" ~ "Lillestrom")
+    oppure sigla ("Kuopion Palloseura" ~ "KuPS": le iniziali compaiono in ordine nella sigla)."""
+    na, nb = normalize_team_name(a), normalize_team_name(b)
+    if not na or not nb:
+        return False
+    if na.replace(" ", "")[:4] == nb.replace(" ", "")[:4]:
+        return True
+    for long, short in ((na, nb), (nb, na)):
+        letters = "".join(w[0] for w in long.split())
+        if len(letters) >= 2 and " " not in short and _in_order(letters, short):
+            return True
+    return False
+
+
+def _in_order(letters: str, word: str) -> bool:
+    it = iter(word)
+    return all(ch in it for ch in letters)
+
+
+def _cup_match(db: Session, fx: OPFixture, names: dict[str, str], competition_id: int, by_alias: dict[str, int]) -> Match | None:
+    """Partita di coppa del nostro calendario (messa da API-Football) che corrisponde a quella di OddsPapi.
+
+    Si cercano le partite della stessa coppa alla stessa ora; per ogni lato basta il codice OddsPapi già noto o un nome
+    simile. Vale solo se la candidata è una sola.
+    """
+    candidates = db.scalars(
+        select(Match).where(
+            Match.competition_id == competition_id,
+            Match.kickoff_at.between(fx.start_time - CUP_WINDOW, fx.start_time + CUP_WINDOW),
+        )
+    ).all()
+
+    def side_ok(pid: int, team: Team) -> bool:
+        known = by_alias.get(str(pid))
+        return known == team.id if known is not None else similar_names(names.get(str(pid), ""), team.name)
+
+    found = [m for m in candidates if side_ok(fx.home_id, m.home_team) and side_ok(fx.away_id, m.away_team)]
+    if not found:
+        # Un solo lato riconosciuto (es. "Kuopion Palloseura" contro "KuPS"): basta se all'ora esatta la partita è una sola
+        def loose(pid: int, team: Team) -> bool:
+            return side_ok(pid, team) or loosely_similar(names.get(str(pid), ""), team.name)
+
+        found = [m for m in candidates if abs(m.kickoff_at - fx.start_time) <= timedelta(minutes=15)
+                 and ((side_ok(fx.home_id, m.home_team) and loose(fx.away_id, m.away_team))
+                      or (side_ok(fx.away_id, m.away_team) and loose(fx.home_id, m.home_team)))]
+    return found[0] if len(found) == 1 else None
+
+
 def link_fixtures(
     db: Session, fixtures: Iterable[OPFixture], names: dict[str, str], report: OddsPapiReport, now: datetime
 ) -> dict[str, Match]:
@@ -86,18 +148,26 @@ def link_fixtures(
         competition = competitions.get(TOURNAMENTS[fx.tournament_id])
         if competition is None:
             continue
+        is_cup = competition.country == CUP_COUNTRY
+        if is_cup:
+            cup_match = _cup_match(db, fx, names, competition.id, by_alias)
+            if cup_match is None:
+                report.unknown_teams += [names.get(str(p), f"id {p}") for p in (fx.home_id, fx.away_id) if str(p) not in by_alias]
+                continue
         teams = []
         for pid in (fx.home_id, fx.away_id):
             name = names.get(str(pid), "")
             team = by_alias.get(str(pid))
-            if team is None and name:
+            if is_cup:
+                team = cup_match.home_team_id if pid == fx.home_id else cup_match.away_team_id
+            elif team is None and name:
                 team = by_name.get((competition.country, normalize_team_name(name)))
             if team is None:
                 report.unknown_teams.append(name or f"id {pid}")
             teams.append(team)
         if None in teams:
             continue
-        match = db.scalar(
+        match = cup_match if is_cup else db.scalar(
             select(Match).where(
                 Match.competition_id == competition.id,
                 Match.home_team_id == teams[0],
@@ -106,7 +176,7 @@ def link_fixtures(
             )
         )
         season = season_label(season_of(fx.start_time.astimezone(ROME).date()))
-        if match is None:
+        if match is None and not is_cup:
             # Stessa accoppiata nella stessa stagione con data lontana (rinvio): è la stessa partita
             match = db.scalar(
                 select(Match).where(
@@ -117,6 +187,8 @@ def link_fixtures(
                 )
             )
         if match is None:
+            if is_cup:  # il calendario delle coppe lo dà API-Football (la stessa sfida può tornare in stagione)
+                continue
             if fx.start_time <= now:
                 report.not_in_calendar += 1
                 continue

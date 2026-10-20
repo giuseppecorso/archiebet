@@ -197,3 +197,23 @@ def test_tidy_teams_merges_refounded_clubs_and_renames(db):
 def test_new_teams_get_italian_display_names(db):
     import_fixtures(db, parse_fixtures(body(fixture(1, (100, "Atalanta II"), (101, "SS Monopoli")))))
     assert sorted(db.scalars(select(Team.name))) == ["Atalanta U23", "Monopoli"]
+
+
+def test_cup_teams_keep_their_country_and_known_teams_are_reused(db):
+    import_fixtures(db, parse_fixtures(body(fixture(1, (505, "Inter"), (489, "AC Milan"), league=135, season=2026))))
+    cup = parse_fixtures(body(fixture(2, (505, "Inter"), (211, "Benfica"), league=2, season=2026, rnd="League Stage - 1")))
+    assert import_fixtures(db, cup).skipped == 1  # senza il paese di Benfica non si crea nulla
+    report = import_fixtures(db, cup, {505: "Italy", 211: "Portugal"})
+    assert report.created == 1
+    teams = {t.name: t.country for t in db.scalars(select(Team))}
+    assert teams["Inter"] == "Italia" and teams["Benfica"] == "Portugal"
+    assert count(db, Team) == 3  # Inter è la stessa della Serie A
+
+
+def test_cup_rematch_in_same_season_does_not_overwrite_first_match(db):
+    countries = {505: "Italy", 211: "Portugal"}
+    import_fixtures(db, parse_fixtures(body(fixture(2, (505, "Inter"), (211, "Benfica"), league=2, season=2026, date="2026-10-01T19:00:00+00:00"))), countries)
+    later = parse_fixtures(body(fixture(3, (505, "Inter"), (211, "Benfica"), league=2, season=2026, date="2027-03-10T20:00:00+00:00", status="NS")))
+    assert import_fixtures(db, later, countries).skipped == 1
+    first = db.scalar(select(Match))
+    assert first.kickoff_at.month == 10 and first.status == "finished"

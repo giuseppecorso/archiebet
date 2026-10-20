@@ -35,7 +35,7 @@ def test_reimport_updates_without_duplicates(db):
     assert (report.created, report.updated) == (0, 2)
     assert count(db, Match) == 2
     assert count(db, MatchOdds) == 6
-    assert count(db, Competition) == 13  # Serie A, B, tre gironi di C e 8 campionati esteri, creati una volta sola
+    assert count(db, Competition) == 16  # Serie A, B, tre gironi di C, 8 campionati esteri e 3 coppe, creati una volta sola
 
 
 def test_fixture_becomes_result(db):

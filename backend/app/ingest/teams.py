@@ -22,10 +22,17 @@ COMPETITIONS = {
     "ESP-2": {"name": "LaLiga 2", "country": "Spagna", "tier": 2},
     "GER-2": {"name": "2. Bundesliga", "country": "Germania", "tier": 2},
     "FRA-2": {"name": "Ligue 2", "country": "Francia", "tier": 2},
+    # Coppe europee (D85): squadre di tutti i paesi, ognuna resta nel suo paese
+    "EU-CL": {"name": "Champions League", "country": "Europa", "tier": 1},
+    "EU-EL": {"name": "Europa League", "country": "Europa", "tier": 2},
+    "EU-ECL": {"name": "Conference League", "country": "Europa", "tier": 3},
 }
 
 # Ordine dei paesi nei menu (specifiche, sezione 3)
-COUNTRY_ORDER = ["Italia", "Inghilterra", "Spagna", "Germania", "Francia"]
+COUNTRY_ORDER = ["Italia", "Europa", "Inghilterra", "Spagna", "Germania", "Francia"]
+CUP_COUNTRY = "Europa"  # "paese" delle coppe europee: le squadre invece restano nel loro
+# Paesi come li scrive API-Football -> come li scriviamo noi (gli altri restano in inglese)
+COUNTRY_NAMES = {"Italy": "Italia", "England": "Inghilterra", "Spain": "Spagna", "Germany": "Germania", "France": "Francia"}
 
 
 def competition_sort_key(c: Competition) -> tuple[int, int, str]:

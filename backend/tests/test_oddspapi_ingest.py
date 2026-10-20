@@ -137,3 +137,38 @@ def test_creates_missing_matches_and_football_data_reuses_them(seeded, db):  # n
     # Partita già iniziata e mai vista: non si inventa
     adapter.fixtures = [OPFixture("fx-old", 53, now - timedelta(hours=2), 4, 3, 0)]  # Bari-Palermo
     assert sync_oddspapi(db, adapter, now).not_in_calendar == 1
+
+
+def test_cup_matches_link_by_name_in_any_country_but_are_never_created(seeded, db):  # noqa: F811
+    from app.ingest.teams import ensure_competitions
+
+    now = datetime.now(UTC)
+    kickoff = (now + timedelta(days=3)).replace(hour=19, minute=0, second=0, microsecond=0)
+    cup = ensure_competitions(db)["EU-CL"]
+    milan, inter = db.get(Match, match_id(db, "Milan", "Inter")).home_team, db.get(Match, match_id(db, "Milan", "Inter")).away_team
+    db.add(Match(competition_id=cup.id, season="2026/27", kickoff_at=kickoff, home_team_id=inter.id, away_team_id=milan.id))
+    db.commit()
+    adapter = FakeAdapter([OPFixture("fx-cl", 7, kickoff, 2, 1, 0),  # Inter-Milan in Champions: trovate per nome
+                           OPFixture("fx-cl2", 7, kickoff, 6, 1, 0)], {}, {})  # Roma-Milan: non in calendario
+    report = sync_oddspapi(db, adapter, now)
+    linked = db.scalar(select(Match).join(MatchSource).where(MatchSource.external_id == "fx-cl"))
+    assert linked.competition.code == "EU-CL" and linked.home_team.name == "Inter"
+    assert report.created == 0  # le coppe le mette in calendario solo API-Football
+
+
+def test_similar_names():
+    from app.ingest.oddspapi import similar_names
+
+    assert similar_names("Ajax Amsterdam", "Ajax")
+    assert similar_names("SL Benfica", "Benfica")
+    assert similar_names("GNK Dinamo Zagreb", "Dinamo Zagreb")
+    assert not similar_names("Celtic Glasgow", "Celta")
+    assert similar_names("Inter Club de Escaldes", "Inter")  # nome contenuto: a evitare errori ci pensa "stessa coppa, stessa ora"
+
+
+def test_loosely_similar_only_confirms():
+    from app.ingest.oddspapi import loosely_similar
+
+    assert loosely_similar("Lillestroem SK", "Lillestrom")
+    assert loosely_similar("Kuopion Palloseura", "KuPS")
+    assert not loosely_similar("AS Roma", "Inter")

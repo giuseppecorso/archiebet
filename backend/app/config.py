@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     api_football_seasons: str = "2022,2023,2024,2025"  # stagioni concluse della Serie C (piano Pro, D80)
     # Questi si scaricano solo per la stagione in corso (insieme alla Serie C): risultati e date a ogni giro;
     # il loro storico, con le quote, resta di football-data
-    api_football_current_leagues: str = "135,136,39,40,140,141,78,79,61,62"
+    api_football_current_leagues: str = "135,136,39,40,140,141,78,79,61,62,2,3,848"  # ... e coppe europee (D85)
     api_football_daily_reserve: int = 10  # richieste del giorno da non usare mai in automatico
 
     # OddsPapi: quote dei bookmaker italiani e di Pinnacle/Betfair (D61)

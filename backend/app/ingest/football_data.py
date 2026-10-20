@@ -17,11 +17,13 @@ class ImportReport:
     created: int = 0
     updated: int = 0
     odds: int = 0
+    skipped: int = 0
 
     def add(self, other: "ImportReport") -> None:
         self.created += other.created
         self.updated += other.updated
         self.odds += other.odds
+        self.skipped += other.skipped
 
 
 def import_matches(db: Session, rows: Iterable[FDMatch], season: str | None = None) -> ImportReport:

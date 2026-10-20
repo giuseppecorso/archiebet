@@ -35,6 +35,9 @@ LEAGUES = {
     79: "GER-2",
     61: "FRA-1",
     62: "FRA-2",
+    2: "EU-CL",
+    3: "EU-EL",
+    848: "EU-ECL",
 }
 
 # Stati API-Football → stato in ArchieBet. Gli stati "in corso" restano "scheduled" finché non c'è il live (Fase 5).

@@ -9,11 +9,12 @@ from sqlalchemy.orm import Session
 from app.adapters.api_football import LEAGUES, SOURCE, AFFixture, ApiFootballAdapter, ApiFootballError, QuotaExhausted
 from app.adapters.football_data import season_label, season_of
 from app.ingest.football_data import ImportReport
-from app.ingest.teams import TeamResolver, ensure_competitions
+from app.ingest.teams import COUNTRY_NAMES, CUP_COUNTRY, TeamResolver, ensure_competitions
 from app.models import Match, MatchSource
 
 
-def import_fixtures(db: Session, fixtures: Iterable[AFFixture]) -> ImportReport:
+def import_fixtures(db: Session, fixtures: Iterable[AFFixture], team_countries: dict[int, str] | None = None) -> ImportReport:
+    """team_countries: id squadra -> paese (in inglese), serve per le coppe: ogni squadra nuova va nel suo paese."""
     competitions = ensure_competitions(db)
     resolvers: dict[str, TeamResolver] = {}  # uno per paese: le squadre si cercano tra quelle dello stesso paese
     report = ImportReport()
@@ -24,9 +25,15 @@ def import_fixtures(db: Session, fixtures: Iterable[AFFixture]) -> ImportReport:
             continue
         competition = competitions[LEAGUES[fx.league_id]]
         season = season_label(fx.season)
-        teams = resolvers.setdefault(competition.country, TeamResolver(db, SOURCE, competition.country))
-        home = teams.resolve(str(fx.home.id), fx.home.name)
-        away = teams.resolve(str(fx.away.id), fx.away.name)
+        if competition.country == CUP_COUNTRY:
+            countries = [COUNTRY_NAMES.get(c, c) for c in ((team_countries or {}).get(t.id) for t in (fx.home, fx.away)) if c]
+            if len(countries) < 2:
+                report.skipped += 1  # paese sconosciuto: meglio saltare che creare un doppione
+                continue
+        else:
+            countries = [competition.country, competition.country]
+        home = resolvers.setdefault(countries[0], TeamResolver(db, SOURCE, countries[0])).resolve(str(fx.home.id), fx.home.name)
+        away = resolvers.setdefault(countries[1], TeamResolver(db, SOURCE, countries[1])).resolve(str(fx.away.id), fx.away.name)
 
         link = sources.get(str(fx.id))
         match = db.get(Match, link.match_id) if link else None
@@ -39,6 +46,10 @@ def import_fixtures(db: Session, fixtures: Iterable[AFFixture]) -> ImportReport:
                     Match.away_team_id == away.id,
                 )
             )
+        if match is not None and link is None and _linked_elsewhere(db, match.id, str(fx.id)):
+            # Coppe: stessa sfida due volte nella stessa stagione (girone e poi eliminazione diretta)
+            report.skipped += 1
+            continue
         if match is None:
             match = Match(competition_id=competition.id, season=season, home_team_id=home.id, away_team_id=away.id)
             db.add(match)
@@ -66,6 +77,12 @@ def import_fixtures(db: Session, fixtures: Iterable[AFFixture]) -> ImportReport:
     return report
 
 
+def _linked_elsewhere(db: Session, match_id: int, fixture_id: str) -> bool:
+    """La partita è già collegata a un altro fixture di API-Football?"""
+    other = db.scalar(select(MatchSource.external_id).where(MatchSource.match_id == match_id, MatchSource.source == SOURCE))
+    return other is not None and other != fixture_id
+
+
 def sync_api_football(
     db: Session,
     adapter: ApiFootballAdapter,
@@ -85,7 +102,10 @@ def sync_api_football(
         for league in leagues:
             max_age = timedelta(hours=6) if season >= current else timedelta(days=36500)
             try:
-                report = import_fixtures(db, adapter.fixtures(league, season, max_age))
+                countries = None
+                if LEAGUES.get(league, "").startswith("EU-"):  # coppe: il paese di ogni squadra (una richiesta a settimana)
+                    countries = {v.team.id: v.country for v in adapter.teams(league, season, max_age=timedelta(days=7))}
+                report = import_fixtures(db, adapter.fixtures(league, season, max_age), countries)
             except QuotaExhausted as error:
                 log(f"Mi fermo: {error}. Riprendo al prossimo giro, il resto è già in cache.")
                 return total
