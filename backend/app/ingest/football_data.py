@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.adapters.football_data import FIRST_SEASON, LEAGUES, SOURCE, FDMatch, FootballDataAdapter, season_label, season_of
 from app.ingest.teams import TeamResolver, ensure_competitions
-from app.models import Match, MatchOdds, MatchStatus
+from app.models import Competition, Match, MatchOdds, MatchStatus
 
 
 @dataclass
@@ -100,12 +100,31 @@ def sync_football_data(
     first_season: int = FIRST_SEASON,
     now: datetime | None = None,
     log=print,
+    skip_imported: bool = False,
 ) -> ImportReport:
-    """Scarica (o legge dalla cache) tutte le stagioni dei campionati di football-data e le prossime partite."""
+    """Scarica (o legge dalla cache) tutte le stagioni dei campionati di football-data e le prossime partite.
+
+    skip_imported: le stagioni concluse già importate (con le quote) non si rileggono. Serve al giro automatico,
+    che altrimenti riscriverebbe ogni volta ~80.000 partite che non cambiano più.
+    """
     current = season_of((now or datetime.now(UTC)).date())
+    imported: set[tuple[str, str]] = set()
+    if skip_imported:
+        imported = {
+            (code, season)
+            for code, season in db.execute(
+                select(Competition.code, Match.season)
+                .join(Match, Match.competition_id == Competition.id)
+                .join(MatchOdds, MatchOdds.match_id == Match.id)
+                .where(MatchOdds.source == SOURCE)
+                .distinct()
+            )
+        }
     total = ImportReport()
     for league in LEAGUES:
         for year in range(first_season, current + 1):
+            if year < current and (LEAGUES[league], season_label(year)) in imported:
+                continue
             report = import_matches(db, adapter.season(league, year, current), season=season_label(year))
             log(f"{LEAGUES[league]} {season_label(year)}: {report.created} nuove, {report.updated} aggiornate, {report.odds} quote")
             total.add(report)

@@ -53,7 +53,7 @@ def sync_football_data_job() -> None:
                 FileCache(get_settings().data_cache_dir, "football-data"),
                 on_call=lambda source: record_usage(db, source),
             )
-            report = sync_football_data(db, adapter, log=logger.debug)
+            report = sync_football_data(db, adapter, log=logger.debug, skip_imported=True)
         logger.info("football-data aggiornato: %s nuove, %s aggiornate", report.created, report.updated)
         return f"{report.created} partite nuove, {report.updated} aggiornate"
 

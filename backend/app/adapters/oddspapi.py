@@ -71,6 +71,10 @@ History = dict[str, dict[str, dict[str, list[tuple[datetime, float]]]]]  # bookm
 class OddsPapiError(Exception):
     """Errore restituito dal servizio. Non viene mai salvato in cache."""
 
+    def __init__(self, message: str, status: int | None = None):
+        super().__init__(message)
+        self.status = status
+
 
 class QuotaExhausted(OddsPapiError):
     """Richieste del mese quasi finite: ci fermiamo per lasciare una riserva."""
@@ -191,7 +195,8 @@ class OddsPapiAdapter(DataSourceAdapter):
             self.remaining_month -= 1  # conta anche se la risposta è un errore
         if status != 200:
             error = body.get("error", {}) if isinstance(body, dict) else {}
-            raise OddsPapiError(f"HTTP {status} da {endpoint}: {error.get('message', '')} {error.get('details', '')}".strip())
+            message = f"HTTP {status} da {endpoint}: {error.get('message', '')} {error.get('details', '')}".strip()
+            raise OddsPapiError(message, status)
         return body
 
     def account(self) -> dict[str, Any]:
@@ -223,8 +228,13 @@ class OddsPapiAdapter(DataSourceAdapter):
         for start in range(0, len(slugs), MAX_BOOKMAKERS_PER_HISTORY_CALL):
             group = ",".join(slugs[start : start + MAX_BOOKMAKERS_PER_HISTORY_CALL])
             params = {"fixtureId": fixture_id, "bookmakers": group}
-            body = self.cached(f"historical-odds?fixtureId={fixture_id}&bookmakers={group}", max_age,
-                               lambda params=params: self._request("historical-odds", params))
+            try:
+                body = self.cached(f"historical-odds?fixtureId={fixture_id}&bookmakers={group}", max_age,
+                                   lambda params=params: self._request("historical-odds", params))
+            except OddsPapiError as error:
+                if error.status != 404:
+                    raise
+                continue  # nessuna quota di questi bookmaker per la partita: non è un guasto
             out |= parse_history(body)
         return out
 

@@ -123,6 +123,14 @@ def test_history_groups_three_bookmakers_and_waits_between_calls(tmp_path):
     assert sleeps and sleeps[0] == pytest.approx(5.5 - 1)  # 5 secondi e mezzo tra due chiamate allo storico
 
 
+
+def test_history_without_odds_is_empty_not_an_error(tmp_path):
+    def missing(url, params):
+        return 404, {"error": {"message": "No historical odds found."}}
+
+    a = adapter(tmp_path, missing, [])
+    assert a.history("id1", ["sisal.it"], max_age=timedelta(hours=1)) == {}
+
 def test_errors_are_raised_and_not_cached(tmp_path):
     def broken(url, params):
         if url.endswith("account"):

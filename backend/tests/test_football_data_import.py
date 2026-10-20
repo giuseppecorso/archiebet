@@ -92,3 +92,22 @@ def test_sync_downloads_each_season_and_logs_calls(db, tmp_path):
     # Seconda volta: tutto dalla cache, nessuna chiamata in più
     sync_football_data(db, adapter, first_season=2025, now=now, log=lambda _: None)
     assert len(calls) == 21
+
+
+def test_automatic_sync_skips_past_seasons_already_imported(db, tmp_path):
+    read: list[str] = []
+    past = HEADER + "I1,22/08/2025,17:30,Inter,Monza,4,1,13,7,1.2,7,13\n"
+
+    def fake_get(url: str) -> str:
+        return FIXTURE_HEADER if url.endswith("fixtures.csv") else (past if url.endswith("2526/I1.csv") else HEADER)
+
+    adapter = FootballDataAdapter(FileCache(tmp_path, "football-data"), http_get=fake_get)
+    original = adapter.season
+    adapter.season = lambda league, year, current: (read.append(f"{league}{year}"), original(league, year, current))[1]
+    now = datetime(2026, 10, 11, tzinfo=UTC)
+    sync_football_data(db, adapter, first_season=2025, now=now, log=lambda _: None, skip_imported=True)
+    assert "I12025" in read
+    read.clear()
+    sync_football_data(db, adapter, first_season=2025, now=now, log=lambda _: None, skip_imported=True)
+    assert "I12025" not in read  # 2025/26 di Serie A già importata con le quote: non si rilegge
+    assert "I12026" in read and "E02025" in read  # stagione in corso sempre; stagioni senza quote si riprovano
