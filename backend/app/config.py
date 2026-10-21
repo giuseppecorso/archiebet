@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     # Bookmaker su cui Giuse ha un conto: il radar gioca solo lì (D66). Nomi: sisal, snai, eurobet, goldbet, ...
     radar_bookmakers: str = "sisal,eurobet"
 
+    # Claude API (Fase 6): un solo modulo per l'AI (app/ai); tetto di spesa mensile controllato dal codice
+    anthropic_api_key: str | None = None
+    ai_model: str = "claude-sonnet-5-5"
+    ai_monthly_budget_usd: float = 10.0
+
     # Aggiornamento automatico dei dati mentre il backend è acceso
     sync_enabled: bool = True
     sync_interval_hours: int = 6
