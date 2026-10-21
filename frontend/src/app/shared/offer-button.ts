@@ -21,9 +21,17 @@ import { SlipService } from '../core/slip';
     </button>
   `,
   styles: `
-    .offer-btn { font: inherit; cursor: pointer; border: 1px solid transparent; }
-    .offer-btn:hover { border-color: var(--amber); }
-    .offer-btn.in-slip { outline: 2px solid var(--amber); outline-offset: 1px; }
+    .offer-btn {
+      padding: 3px 8px; font: inherit; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap;
+      color: var(--text); background: var(--chip); border: 1px solid var(--line-strong); border-radius: 4px; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .offer-btn:hover { border-color: var(--amber); background: #1d3a27; }
+    .offer-btn.valore { color: var(--value); border-color: var(--value); background: rgba(57, 255, 116, 0.08); }
+    .offer-btn.norma { color: var(--text-2); }
+    .offer-btn.poco { color: var(--loss); border-color: var(--line-muted); }
+    .offer-btn.archie { color: var(--sky); border-color: #2f5a7a; border-style: dashed; }
+    .offer-btn.in-slip { color: var(--bg); background: var(--amber); border-color: var(--amber); }
   `,
 })
 export class OfferButton {

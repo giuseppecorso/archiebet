@@ -3,28 +3,31 @@
    ambra = live, in corso, quote e orari. Il colore non è mai l'unico segnale. */
 
 :root {
-  --bg: #0a0c0b;
-  --bg-deep: #050605;
-  --bg-header: #0f1211;
-  --bg-ticker: #070908;
-  --panel: #111513;
-  --panel-head: #0d100f;
-  --chip: #1a1f1c;
+  /* "Stadio di sera" (D127): verde prato profondo, giallo LED acceso, verde e rosso vivi */
+  --bg: #06120c;
+  --bg-deep: #030a06;
+  --bg-header: rgba(4, 13, 8, 0.86);
+  --bg-ticker: #050e09;
+  --panel: rgba(13, 30, 21, 0.92);
+  --panel-head: #0b1a12;
+  --chip: #16301f;
 
-  --line: #222a26;
-  --line-strong: #2a322e;
-  --line-row: #1c2320;
-  --line-muted: #3a443f;
+  --line: #1f3a29;
+  --line-strong: #2b5039;
+  --line-row: #19301f;
+  --line-muted: #3c5c47;
 
-  --text: #ededed;
-  --text-2: #c9d1cc;
-  --muted: #8e9892;
-  --dim: #5c6661;
+  --text: #f2f5f1;
+  --text-2: #cfdcd2;
+  --muted: #93a99a;
+  --dim: #5f7767;
 
-  --amber: #ffb000;
-  --amber-hover: #ffc94d;
-  --value: #3dff6e;
-  --loss: #ff6b5e;
+  --amber: #ffc61a;
+  --amber-hover: #ffd85c;
+  --value: #39ff74;
+  --loss: #ff5d52;
+  --pitch: #23c55e;
+  --sky: #4cc3ff;
 
   --font-led: 'Doto', ui-monospace, monospace;
   --font-title: 'Bebas Neue', 'Arial Narrow', sans-serif;
@@ -57,6 +60,13 @@ body {
   margin: 0;
   min-height: 100%;
   background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(76, 195, 255, 0.10), transparent 70%),
+    linear-gradient(180deg, rgba(6, 18, 12, 0.94) 0%, rgba(6, 18, 12, 0.97) 55%, rgba(6, 18, 12, 0.88) 100%),
+    url('/img/prato.webp');
+  background-size: auto, auto, cover;
+  background-position: center top, center, center bottom;
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-text);
   font-size: 14px;
@@ -258,4 +268,52 @@ body {
   color: #7cc4ff;
   border: 1px dashed #2f5a7a;
   border-radius: 3px;
+}
+
+/* Banner delle sezioni principali: lo stadio di sera sotto il titolo (D127) */
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  min-height: 150px;
+  margin: 0 0 16px;
+  padding: 18px 22px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, rgba(3, 10, 6, 0.88) 0%, rgba(3, 10, 6, 0.45) 50%, rgba(3, 10, 6, 0.05) 100%),
+    url('/img/stadio-sera.webp') center 62% / cover;
+  border-color: rgba(255, 198, 26, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.hero h1 {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 40px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+.hero p {
+  margin: 0;
+  max-width: 640px;
+  color: var(--text-2);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+.hero .hero-accent {
+  color: var(--amber);
+}
+@media (max-width: 600px) {
+  .hero {
+    min-height: 100px;
+    padding: 14px 16px;
+  }
+  .hero h1 {
+    font-size: 30px;
+  }
 }

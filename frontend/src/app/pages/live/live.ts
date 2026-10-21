@@ -64,15 +64,14 @@ export class LiveCard {
   selector: 'ab-live',
   imports: [LiveCard, LeagueLogo, RouterLink],
   template: `
-    <div class="head">
-      <h1 class="title page-title">Live</h1>
-      <span class="trial-tag" title="Stesso motore del termometro live, verificato all'intervallo sull'1X2 (D92); da provare in simulata">sperimentale</span>
-    </div>
-    <p class="intro">
-      Le partite in corso, aggiornate ogni 30 secondi. Per ognuna Archie calcola, dal punteggio e dal minuto, la probabilità
-      di ogni esito e la <strong>quota minima da cui conviene giocare adesso</strong>: apri l'app del bookmaker e se la quota
-      live è almeno quella, secondo Archie c'è valore. Le quote live hanno più margine: provalo prima in simulata.
-    </p>
+    <header class="hero">
+      <h1>Live <span class="trial-tag" title="Stesso motore del termometro live, verificato all'intervallo sull'1X2 (D92); da provare in simulata">sperimentale</span></h1>
+      <p>
+        Le partite in corso, aggiornate ogni 30 secondi, con la <strong>quota minima da cui conviene giocare adesso</strong>:
+        se sull'app del bookmaker la quota live è almeno quella, secondo Archie c'è valore. Le quote live hanno più margine:
+        provalo prima in simulata.
+      </p>
+    </header>
     @for (group of live.value(); track group.competition.code) {
       <div class="group-head">
         <ab-league-logo [code]="group.competition.code" [size]="20" />
@@ -91,8 +90,6 @@ export class LiveCard {
     }
   `,
   styles: `
-    .head { display: flex; align-items: baseline; gap: 12px; }
-    .intro { color: var(--text-2); line-height: 1.5; max-width: 860px; }
     .group-head { display: flex; align-items: center; gap: 8px; margin: 18px 0 8px; }
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
     .empty { padding: 16px; color: var(--text-2); }
