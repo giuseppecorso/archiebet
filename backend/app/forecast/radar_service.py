@@ -23,7 +23,8 @@ from app.forecast.radar import (
     scan,
     summarize_live,
 )
-from app.models.football import Match, MatchOdds, MatchStatus
+from app.forecast.strategy_search import Fixture, Strategy, matching, season_moments
+from app.models.football import Competition, Match, MatchOdds, MatchStatus
 from app.models.forecast import RadarSignal
 
 
@@ -54,11 +55,28 @@ def load_book_odds(db: Session, match_ids: Iterable[int], closing: bool) -> dict
     return out
 
 
-def refresh_radar(db: Session, now: datetime, playable: Sequence[str] = PLAYABLE_BOOKMAKERS) -> int:
-    """Aggiorna i segnali delle partite non ancora iniziate (solo sui bookmaker giocabili). Restituisce quanti segnali nuovi."""
+def strategy_context(db: Session, upcoming: Sequence[int]) -> tuple[dict[int, str], dict[int, str | None]]:
+    """Campionato e momento della stagione delle partite in arrivo, per le strategie di Archie (D118)."""
+    codes = dict(db.execute(select(Competition.id, Competition.code)).all())
+    rows = db.execute(select(Match.id, Match.competition_id, Match.season).where(Match.id.in_(upcoming))).all()
+    league = {mid: codes[cid] for mid, cid, _ in rows}
+    seasons = {(cid, season) for _, cid, season in rows}
+    same_season = or_(*(and_(Match.competition_id == cid, Match.season == season) for cid, season in seasons))
+    fixtures = [Fixture(m.id, codes[m.competition_id], m.season, m.kickoff_at, m.home_team_id, m.away_team_id)
+                for m in db.scalars(select(Match).where(same_season))]  # fmt: skip
+    return league, season_moments(fixtures)
+
+
+def refresh_radar(db: Session, now: datetime, playable: Sequence[str] = PLAYABLE_BOOKMAKERS,
+                  strategies: Sequence[Strategy] = ()) -> int:  # fmt: skip
+    """Aggiorna i segnali delle partite non ancora iniziate (solo sui bookmaker giocabili). Restituisce quanti segnali nuovi.
+
+    Oltre alla regola D72, un esito diventa occasione se lo gioca una strategia trovata da Archie e confermata (D118).
+    """
     upcoming = list(db.scalars(select(Match.id).where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now)))
     if not upcoming:
         return 0
+    league, moments = strategy_context(db, upcoming) if strategies else ({}, {})
     books = load_book_odds(db, upcoming, closing=False)
     existing = {
         (s.match_id, s.market, s.selection): s
@@ -76,12 +94,13 @@ def refresh_radar(db: Session, now: datetime, playable: Sequence[str] = PLAYABLE
         for (market, selection), c in current.items():
             row = existing.get((match_id, market, selection))
             if row is None:
-                if not qualifies(c.price, c.value):
+                found = matching(strategies, league.get(match_id, ""), market, selection, c.price, c.value, moments.get(match_id)) if strategies else None
+                if not qualifies(c.price, c.value) and found is None:
                     continue
                 row = RadarSignal(
                     match_id=match_id, market=market, selection=selection, detected_at=now, bookmaker=c.bookmaker,
                     price=c.price, fair_probability=round(c.fair_probability, 5), fair_source=c.fair_source,
-                    value=round(c.value, 5),
+                    value=round(c.value, 5), strategy=found.name[:200] if found else None,
                 )
                 db.add(row)
                 created += 1

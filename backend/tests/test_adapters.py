@@ -65,7 +65,7 @@ def test_scheduler_registers_sync_job():
     scheduler = start_scheduler(Settings(sync_enabled=True, sync_interval_hours=6))
     try:
         jobs = {job.id: job for job in scheduler.get_jobs()}
-        assert set(jobs) == {"sync-data", "live", "odds-archive", "news", "player-stats"}
+        assert set(jobs) == {"sync-data", "live", "odds-archive", "news", "player-stats", "learning"}
         assert jobs["sync-data"].trigger.interval.total_seconds() == 6 * 3600
         assert jobs["live"].trigger.interval.total_seconds() == 60  # risultati in diretta (D92)
         assert jobs["odds-archive"].trigger.interval.days == 7  # archivio quote della Serie C (D98)

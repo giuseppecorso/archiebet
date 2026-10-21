@@ -3,6 +3,7 @@
 import argparse
 import getpass
 import sys
+from collections.abc import Sequence
 from datetime import UTC, datetime
 
 from app.adapters.cache import FileCache
@@ -200,43 +201,87 @@ def _demargin_test(last: str) -> int:
     return 0
 
 
+def _timing_test() -> int:
+    """Prova D119: quando conviene giocare da Sisal ed Eurobet."""
+    from app.forecast import timing as tm
+
+    from app.forecast.learning_service import load_timing_books
+
+    books = load_timing_books()
+    print(f"Partite nell'archivio: {len(books)}")
+
+    def reference(b):
+        return "consensus" if b.group == "Serie C" else "pinnacle"
+
+    obs = tm.observations(books, reference)
+    for group in ("Serie A e B", "Serie C", "estero", "serie minori"):
+        sel = [o for o in obs if o.group == group]
+        if not sel:
+            print(f"\n{group}: nessun dato")
+            continue
+        advice = tm.advise(sel)
+        print(f"\n{group}: {len({o.fixture_id for o in sel})} partite, {len(sel)} esiti (Sisal ed Eurobet, 1X2 e U/O 2.5)"
+              f" -> {advice.verdict}{' (' + advice.best + ')' if advice.best else ''}")
+        for r in advice.results:
+            print(f"  {r.label:<17} CLV {r.clv.mean * 100:+.2f}% ± {r.clv.std_error * 100:.2f}   rispetto a 30 minuti {r.vs_last.mean * 100:+.2f} ± {r.vs_last.std_error * 100:.2f}"
+                  f"  ({r.clv.n} esiti)")
+        if group != "Serie C":
+            for h in tm.OCCASION_HORIZONS:
+                t = tm.occasion_timing(sel, h)
+                if t is None:
+                    print(f"  occasioni viste {h}: nessuna")
+                    continue
+                print(f"  occasioni viste {h}: {t.n}, CLV giocando subito {t.now.mean * 100:+.2f}% ± {t.now.std_error * 100:.2f},"
+                      f" guadagno contro 30 minuti {t.gain.mean * 100:+.2f} ± {t.gain.std_error * 100:.2f}, ancora con valore a 30 minuti {t.still_value:.0%}"
+                      f" -> {'giocala subito' if t.play_now else 'nessun consiglio'}")
+    return 0
+
+
+def _strategy_search(first: str, split: str, last: str) -> int:
+    """Archie cerca da solo le strategie (D118): taratura fino a split escluso, conferma da split a last."""
+    from app.forecast import strategy_search as ss
+
+    from app.forecast.learning_service import HISTORY_LEAGUES, sim_matches
+
+    by_book, fixtures = sim_matches(first, last)
+    moments = ss.season_moments(fixtures)
+    items = ss.bets(by_book["bet365"], moments)
+    tuning = [b for b in items if b.season < split]
+    confirm = [b for b in items if b.season >= split]
+    strategies = ss.all_strategies(HISTORY_LEAGUES)
+    print(f"Giocate possibili: taratura {len(tuning)} ({first} - prima del {split}), conferma {len(confirm)} ({split} - {last});"
+          f" strategie provate: {len(strategies)}")
+    results = ss.search(strategies, tuning, confirm)
+
+    def show(r):
+        def part(n, clv, roi):
+            if not n:
+                return "nessuna giocata"
+            return f"{n:5d} giocate  CLV {clv.mean * 100:+.2f}% ± {clv.std_error * 100:.2f} (t {clv.t:4.1f})  rendimento {roi.mean * 100:+.1f}%"
+        return f"  {r.strategy.name}\n     taratura: {part(r.tuning_n, r.tuning_clv, r.tuning_roi)}\n     conferma: {part(r.confirm_n, r.confirm_clv, r.confirm_roi)}"
+
+    candidates = [r for r in results if r.candidate]
+    print(f"\nCandidate in taratura (almeno {ss.MIN_PLAYS} giocate, CLV >= {ss.MIN_CLV:.0%}, t >= {ss.T_SCREEN}): {len(candidates)}")
+    for r in sorted(candidates, key=lambda r: -r.tuning_clv.t):
+        print(show(r) + ("   <-- PASSA" if r.passed else ""))
+    passed = [r for r in candidates if r.passed]
+    print(f"\nStrategie che passano la conferma: {len(passed)}")
+    valid = [r for r in results if r.tuning_n >= ss.MIN_PLAYS and r.tuning_clv]
+    print(f"\nPer confronto, le 10 migliori in taratura per t (anche sotto soglia), su {len(valid)} con almeno {ss.MIN_PLAYS} giocate:")
+    for r in sorted(valid, key=lambda r: -r.tuning_clv.t)[:10]:
+        print(show(r))
+    return 0
+
+
 def _history_sim(first: str, last: str) -> int:
     """Simulazione storica di Pronostici, Occasioni e Multipla del giorno (D86)."""
-    from zoneinfo import ZoneInfo
-
-    from sqlalchemy import select
-
     from app.forecast import history_sim as hs
-    from app.forecast.demargin import shin
     from app.forecast.multiple import PROFILES
-    from app.models import Match, MatchStatus
 
-    rome = ZoneInfo("Europe/Rome")
-    leagues = ("ITA-A", "ITA-B", "ENG-1", "ENG-2", "ESP-1", "ESP-2", "GER-1", "GER-2", "FRA-1", "FRA-2")
+    from app.forecast.learning_service import sim_matches
 
-    def fair(prices):
-        return {market: dict(zip(sel, shin(list(sel.values())))) for market, sel in prices.items() if market in ("1X2", "OU2.5")}
-
-    with SessionLocal() as db:
-        matches = db.execute(
-            select(Match).join(Competition, Match.competition_id == Competition.id)
-            .where(Competition.code.in_(leagues), Match.status == MatchStatus.FINISHED, Match.season >= first, Match.season <= last)
-        ).scalars().all()  # fmt: skip
-        info = {m.id: (m.season, m.competition.code, m.kickoff_at, m.home_goals, m.away_goals) for m in matches}
-        pin_open = load_odds(db, ["pinnacle"], closing=False)
-        pin_close = load_odds(db, ["pinnacle"], closing=True)
-        books = {"bet365": load_odds(db, ["bet365"], closing=False), "migliore del mercato": load_odds(db, ["market_max"], closing=False)}
-
-    def build(book):
-        out = []
-        for mid, (season, league, kickoff, hg, ag) in info.items():
-            if mid not in pin_open or mid not in pin_close or mid not in book or hg is None:
-                continue
-            out.append(hs.SimMatch(mid, season, league, kickoff.astimezone(rome).date(), kickoff, hg, ag, fair(pin_open[mid]),
-                                   fair(pin_close[mid]), {k: v for k, v in book[mid].items() if k in ("1X2", "OU2.5")}))
-        return out
-
-    sims = build(books["bet365"])
+    by_book, _ = sim_matches(first, last, ("bet365", "market_max"))
+    sims = by_book["bet365"]
     tuning = [m for m in sims if m.season < last]
     confirm = [m for m in sims if m.season == last]
     print(f"Partite con Pinnacle (apertura e chiusura) e bet365: {len(sims)} ({first} - {last}); taratura {len(tuning)}, conferma {len(confirm)}")
@@ -281,7 +326,7 @@ def _history_sim(first: str, last: str) -> int:
             sm = hs.summarize_plays(ps)
             print(f"     {k:<12} {sm.clv.n:5d}  CLV {pct(sm.clv.mean)} ± {sm.clv.std_error * 100:.2f}   rendimento {pct(sm.roi.mean)} ± {sm.roi.std_error * 100:.1f}")
 
-    best_sims = build(books["migliore del mercato"])
+    best_sims = by_book["market_max"]
     sm = hs.summarize_plays(hs.occasions(best_sims, d72))
     if sm:
         print(f"\n  D72 alla quota migliore del mercato (non giocabile da Giuse, solo confronto): {sm.clv.n} giocate, CLV {pct(sm.clv.mean)} ± {sm.clv.std_error * 100:.2f}, rendimento {pct(sm.roi.mean)}")
@@ -1249,6 +1294,12 @@ def main() -> int:
     wt = commands.add_parser("weather-test", help="prova del nove del meteo (D76)")
     wt.add_argument("--fetch-only", action="store_true", help="scarica soltanto il meteo, senza la prova")
     wt.add_argument("--patient", action="store_true", help="se Open-Meteo limita, aspetta un'ora e riprende")
+    commands.add_parser("learning-refresh", help="Archie rifà le prove della Fase 7 e salva i risultati (come il lavoro settimanale)")
+    commands.add_parser("timing-test", help="prova D119: quando giocare da Sisal ed Eurobet (archivio OddsPapi)")
+    stg = commands.add_parser("strategy-search", help="prova D118: Archie cerca da solo le strategie")
+    stg.add_argument("--first", default="2012/13")
+    stg.add_argument("--split", default="2020/21", help="prima stagione di conferma")
+    stg.add_argument("--last", default="2025/26")
     hsim = commands.add_parser("history-sim", help="simulazione storica di Pronostici, Occasioni e Multipla (D86)")
     hsim.add_argument("--first", default="2021/22")
     hsim.add_argument("--last", default="2025/26", help="stagione di conferma (le precedenti sono la taratura)")
@@ -1290,6 +1341,15 @@ def main() -> int:
         return _popularity_test()
     if args.command == "weather-test":
         return _weather_test(args.fetch_only, args.patient)
+    if args.command == "learning-refresh":
+        from app.forecast.learning_service import refresh_learning
+
+        print(refresh_learning())
+        return 0
+    if args.command == "timing-test":
+        return _timing_test()
+    if args.command == "strategy-search":
+        return _strategy_search(args.first, args.split, args.last)
     if args.command == "history-sim":
         return _history_sim(args.first, args.last)
     if args.command == "odds-archive":

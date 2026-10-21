@@ -10,8 +10,11 @@ from sqlalchemy.orm import Session
 
 from app.api.football import CompetitionOut, MatchCard, StandingOut, TeamRef, competition_out, match_cards, to_result
 from app.auth.deps import CurrentUser, DbSession
+from app.forecast.learning_service import load_learning, twins
+from app.forecast.picks import best_probabilities
+from app.forecast.radar_service import load_book_odds
 from app.ingest.teams import competition_sort_key
-from app.models import Competition, Match, MatchStatus, Team
+from app.models import Competition, Match, MatchPrediction, MatchStatus, Team
 from app.stats.league_stats import LeagueSummary, league_summary
 from app.stats.team_stats import StandingRow, standings
 
@@ -263,3 +266,59 @@ def lab_team_matches(team_id: int, season: str, _: CurrentUser, db: DbSession) -
         .order_by(Match.kickoff_at)
     ).all()
     return match_cards(db, list(games), datetime.now(UTC))
+
+
+# ---------- Cosa impara Archie (Fase 7, D117-D121) ----------
+
+
+@router.get("/learning")
+def learning(_: CurrentUser) -> dict:
+    """Risultati delle prove che Archie rifà da solo ogni settimana (strategie, quando giocare, taratura, mappa del valore)."""
+    report = load_learning()
+    if report is None:
+        raise HTTPException(404, "Archie non ha ancora fatto le prove: partono entro due ore dall'avvio")
+    return report
+
+
+class TwinExample(BaseModel):
+    match_id: int
+    league: str
+    day: str
+    home: str | None
+    away: str | None
+    score: str
+
+
+class TwinsOut(BaseModel):
+    source: str  # da dove vengono le probabilità della partita
+    probabilities: dict[str, float]
+    p_over: float | None
+    n: int
+    observed: dict[str, float]
+    expected: dict[str, float]
+    over_observed: float | None
+    over_expected: float | None
+    avg_goals: float
+    top_scores: list[tuple[str, float]]
+    examples: list[TwinExample]
+
+
+@router.get("/twins/{match_id}")
+def match_twins(match_id: int, _: CurrentUser, db: DbSession) -> TwinsOut:
+    """Partite gemelle (D121): le 100 partite passate con le probabilità d'apertura più simili, e come sono finite."""
+    match = db.get(Match, match_id)
+    if match is None:
+        raise HTTPException(404, "Partita non trovata")
+    model = db.scalar(select(MatchPrediction).where(MatchPrediction.match_id == match_id))
+    best = best_probabilities(load_book_odds(db, [match_id], closing=False).get(match_id, {}), model.markets if model else None)
+    if "1X2" not in best:
+        raise HTTPException(422, "Per questa partita mancano le probabilità")
+    source, probs = best["1X2"]
+    p_over = best["OU2.5"][1]["over"] if "OU2.5" in best else None
+    t = twins(probs, p_over)
+    if t is None:
+        raise HTTPException(404, "Archie non ha ancora preparato le partite gemelle")
+    ids = [e["match_id"] for e in t["examples"]]
+    names = {m.id: (m.home_team.name, m.away_team.name) for m in db.scalars(select(Match).where(Match.id.in_(ids)))}
+    examples = [TwinExample(**e, home=names.get(e["match_id"], (None, None))[0], away=names.get(e["match_id"], (None, None))[1]) for e in t["examples"]]
+    return TwinsOut(source=source, probabilities=probs, p_over=p_over, **{k: v for k, v in t.items() if k != "examples"}, examples=examples)

@@ -47,6 +47,7 @@ class RadarSignal(Base):
     fair_probability: Mapped[float] = mapped_column(Float)
     fair_source: Mapped[str] = mapped_column(String(30))
     value: Mapped[float] = mapped_column(Float)
+    strategy: Mapped[str | None] = mapped_column(String(200))  # strategia trovata da Archie (D118); None = regola D72
     checked_at: Mapped[datetime] = mapped_column(UTCDateTime)  # ultimo controllo prima del calcio d'inizio
     latest_bookmaker: Mapped[str | None] = mapped_column(String(30))  # None = quota sparita
     latest_price: Mapped[float | None] = mapped_column(Float)

@@ -12,7 +12,9 @@ from app.config import get_settings
 from app.forecast.clv import SUSPICIOUS_VALUE
 from app.forecast.radar_markets import is_secondary
 from app.forecast.radar import LIVE_TARGET, MAX_PRICE, RADAR_THRESHOLD, SIMULATION_BOOKMAKERS, live_verdict, qualifies, required_value, scan
-from app.forecast.radar_service import live_summary, load_book_odds
+from app.forecast.learning_service import passed_strategies
+from app.forecast.radar_service import live_summary, load_book_odds, strategy_context
+from app.forecast.strategy_search import matching
 from app.models import Match, MatchStatus, RadarSignal
 
 router = APIRouter(prefix="/api/radar", tags=["radar"])
@@ -42,6 +44,7 @@ class SignalOut(BaseModel):
     clv: float | None
     won: bool | None
     secondary: bool = False  # angoli o cartellini: simulazione e verdetto separati (D94)
+    strategy: str | None = None  # strategia di Archie che l'ha trovata (D118)
 
 
 class OccasionOut(BaseModel):
@@ -62,6 +65,7 @@ class OccasionOut(BaseModel):
     required_value: float  # soglia per quella quota (D72)
     suspicious: bool
     secondary: bool = False  # angoli o cartellini, "in prova" (D94)
+    strategy: str | None = None  # strategia trovata da Archie e confermata che la gioca (D118)
 
 
 class LiveOut(BaseModel):
@@ -124,6 +128,7 @@ def _signal_out(s: RadarSignal, m: Match) -> SignalOut:
         clv=s.clv,
         won=s.won,
         secondary=is_secondary(s.market),
+        strategy=s.strategy,
     )
 
 
@@ -135,17 +140,22 @@ def radar(_: CurrentUser, db: DbSession) -> RadarOut:
         select(Match).where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now).order_by(Match.kickoff_at, Match.id)
     ))  # fmt: skip
     books = load_book_odds(db, [m.id for m in matches], closing=False)
-    upcoming = [
-        OccasionOut(
-            match_id=m.id, competition=competition_out(m.competition), kickoff_at=m.kickoff_at,
-            home=TeamRef(id=m.home_team.id, name=m.home_team.name), away=TeamRef(id=m.away_team.id, name=m.away_team.name),
-            market=c.market, selection=c.selection, bookmaker=_label(c.bookmaker), price=c.price,
-            fair_probability=c.fair_probability, fair_source=_label(c.fair_source), value=c.value,
-            required_value=required_value(c.price), suspicious=c.suspicious, secondary=is_secondary(c.market),
-        )
-        for m in matches
-        for c in scan(books.get(m.id, {}), playable=playable)
-    ]  # fmt: skip
+    strategies = passed_strategies()
+    league, moments = strategy_context(db, [m.id for m in matches]) if strategies and matches else ({}, {})
+    upcoming = []
+    for m in matches:
+        for c in scan(books.get(m.id, {}), playable=playable, all_outcomes=bool(strategies)):
+            found = matching(strategies, league.get(m.id, ""), c.market, c.selection, c.price, c.value, moments.get(m.id)) if strategies else None
+            if not qualifies(c.price, c.value) and found is None:
+                continue
+            upcoming.append(OccasionOut(
+                match_id=m.id, competition=competition_out(m.competition), kickoff_at=m.kickoff_at,
+                home=TeamRef(id=m.home_team.id, name=m.home_team.name), away=TeamRef(id=m.away_team.id, name=m.away_team.name),
+                market=c.market, selection=c.selection, bookmaker=_label(c.bookmaker), price=c.price,
+                fair_probability=c.fair_probability, fair_source=_label(c.fair_source), value=c.value,
+                required_value=required_value(c.price), suspicious=c.suspicious, secondary=is_secondary(c.market),
+                strategy=found.name if found else None,
+            ))  # fmt: skip
     recent = db.execute(
         select(RadarSignal, Match).join(Match, RadarSignal.match_id == Match.id)
         .where(Match.kickoff_at <= now).order_by(Match.kickoff_at.desc(), RadarSignal.id).limit(RECENT_LIMIT)

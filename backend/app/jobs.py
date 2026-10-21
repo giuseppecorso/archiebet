@@ -14,6 +14,7 @@ from app.adapters.oddspapi import OddsPapiAdapter
 from app.betting.service import settle_open_bets
 from app.config import Settings, get_settings
 from app.db import SessionLocal
+from app.forecast.learning_service import passed_strategies, refresh_learning
 from app.forecast.radar import SIMULATION_BOOKMAKERS
 from app.forecast.radar_service import refresh_radar, settle_radar
 from app.forecast.service import refresh_predictions
@@ -151,7 +152,7 @@ def refresh_radar_job() -> None:
     def work() -> str:
         with SessionLocal() as db:
             settled = settle_radar(db, datetime.now(UTC))  # prima si misurano i segnali delle partite iniziate
-            found = refresh_radar(db, datetime.now(UTC), SIMULATION_BOOKMAKERS)  # simulazione su 8 bookmaker (D74)
+            found = refresh_radar(db, datetime.now(UTC), SIMULATION_BOOKMAKERS, passed_strategies())  # 8 bookmaker (D74) + strategie D118
         if found or settled:
             logger.info("Radar: %s segnali nuovi, %s misurati con la chiusura", found, settled)
         return f"{found} segnali nuovi, {settled} misurati con la chiusura"
@@ -160,9 +161,9 @@ def refresh_radar_job() -> None:
 
 
 def archive_job() -> None:
-    """Ogni settimana: storico quote della Serie C delle ultime 3 settimane, per ripetere la prova D98 a fine stagione.
+    """Ogni settimana: storico quote delle ultime 3 settimane di Serie C e campionati principali (prove D98 e D119).
 
-    Lo storico è gratuito; costa una richiesta per girone (3 a settimana sulle 250 del mese).
+    Lo storico è gratuito; costa una richiesta per campionato o girone (13 a settimana, ~56 al mese sulle 250).
     """
     settings = get_settings()
     if not settings.oddspapi_key:
@@ -173,10 +174,19 @@ def archive_job() -> None:
             adapter = OddsPapiAdapter(FileCache(settings.data_cache_dir, "oddspapi"), settings.oddspapi_key,
                                       on_call=lambda source: record_usage(db, source), monthly_reserve=settings.oddspapi_monthly_reserve)
             report = archive_history(adapter, FileCache(settings.data_cache_dir, "odds-archive"), datetime.now(UTC) - timedelta(days=21),
-                                     log=logger.debug, prefix="ITA-C")  # fmt: skip
-        return f"archivio Serie C: {report.saved} salvate, {report.missing} senza storico, {report.already} già presenti"
+                                     log=logger.debug)  # fmt: skip
+        return f"archivio quote: {report.saved} salvate, {report.missing} senza storico, {report.already} già presenti"
 
     _tracked("oddspapi", work)
+
+
+def learning_job() -> None:
+    """Ogni settimana, dopo l'archivio: Archie rifà da solo le prove della Fase 7 (strategie, quando giocare, taratura)."""
+
+    def work() -> str:
+        return refresh_learning(log=logger.debug)
+
+    _tracked("learning", work)
 
 
 def news_job() -> None:
@@ -278,6 +288,8 @@ def start_scheduler(settings: Settings) -> BackgroundScheduler | None:
     scheduler.add_job(live_job, "interval", seconds=60, id="live", max_instances=1, coalesce=True)
     scheduler.add_job(archive_job, "interval", days=7, next_run_time=datetime.now(UTC) + timedelta(minutes=30),
                       id="odds-archive", max_instances=1, coalesce=True)  # fmt: skip
+    scheduler.add_job(learning_job, "interval", days=7, next_run_time=datetime.now(UTC) + timedelta(hours=2),
+                      id="learning", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.add_job(player_stats_job, "interval", hours=12, next_run_time=datetime.now(UTC) + timedelta(minutes=20),
                       id="player-stats", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.add_job(news_job, "interval", hours=2, next_run_time=datetime.now(UTC) + timedelta(minutes=3),
