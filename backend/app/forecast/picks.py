@@ -13,10 +13,17 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.forecast.markets import value
-from app.forecast.radar import BookOdds, fair_reference, qualifies
+from app.forecast.demargin import proportional
+from app.forecast.radar import SIMULATION_BOOKMAKERS, BookOdds, fair_reference, qualifies
+from app.forecast.radar_markets import selections
 
 MARKET_SOURCES = ("pinnacle", "betfair_ex", "market_avg")  # dal più preciso al meno preciso
 MODEL_SOURCE = "archie"
+# Dove manca Pinnacle (Serie C): media delle probabilità senza margine dei bookmaker italiani, più precisa del
+# modello di Archie nella prova D95. Almeno 2 bookmaker per fare una media.
+CONSENSUS_SOURCE = "consenso"
+CONSENSUS_MIN_BOOKMAKERS = 2
+ESTIMATE_ONLY = (MODEL_SOURCE, CONSENSUS_SOURCE)  # stime senza riferimento sharp: niente "valore", niente multiple
 LOW_PRICE = -0.05  # sotto questo valore il bookmaker "paga poco" (margine più alto del solito)
 PICK_MARKETS = ("1X2", "DC", "OU2.5", "GG")
 
@@ -38,6 +45,7 @@ class MarketPick:
 
 
 MODEL_VALUE = "sopra Archie"  # la quota batte solo il modello, non ancora messo alla prova contro i bookmaker (D88)
+CONSENSUS_VALUE = "sopra la media"  # la quota batte la media dei bookmaker italiani: un'indicazione, non valore (D96)
 
 
 def price_verdict(v: float, price: float, source: str = "pinnacle") -> str:
@@ -47,8 +55,21 @@ def price_verdict(v: float, price: float, source: str = "pinnacle") -> str:
     "sopra Archie": è un'indicazione, non un valore dimostrato.
     """
     if qualifies(price, v):
-        return MODEL_VALUE if source == MODEL_SOURCE else "valore"
+        return MODEL_VALUE if source == MODEL_SOURCE else CONSENSUS_VALUE if source == CONSENSUS_SOURCE else "valore"
     return "nella norma" if v >= LOW_PRICE else "paga poco"
+
+
+def italian_consensus(book: BookOdds, market: str) -> dict[str, float] | None:
+    """Media delle probabilità senza margine (proporzionale, come nella prova D95) dei bookmaker italiani con il mercato completo."""
+    wanted = selections(market)
+    probs = []
+    for bm in SIMULATION_BOOKMAKERS:
+        prices = book.get(bm, {}).get(market)
+        if prices and set(prices) == set(wanted) and all(p > 1 for p in prices.values()):
+            probs.append(dict(zip(wanted, proportional([prices[s] for s in wanted]))))
+    if len(probs) < CONSENSUS_MIN_BOOKMAKERS:
+        return None
+    return {s: sum(p[s] for p in probs) / len(probs) for s in wanted}
 
 
 def double_chance(p1x2: dict[str, float]) -> dict[str, float]:
@@ -62,6 +83,8 @@ def best_probabilities(book: BookOdds, model: dict[str, Any] | None) -> dict[str
         ref = fair_reference(book, market, MARKET_SOURCES)
         if ref is not None:
             out[market] = ref
+        elif (consensus := italian_consensus(book, market)) is not None:
+            out[market] = (CONSENSUS_SOURCE, consensus)
         elif model and market in model:
             out[market] = (MODEL_SOURCE, {k: float(v) for k, v in model[market].items()})
     if "1X2" in out:

@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.forecast.multiple import Leg
-from app.forecast.picks import MODEL_SOURCE, MarketPick, match_picks
+from app.forecast.picks import ESTIMATE_ONLY, MarketPick, match_picks
 from app.forecast.radar_service import load_book_odds
 from app.models import Match, MatchPrediction, MatchStatus
 
@@ -32,8 +32,8 @@ def legs_for(picks: Sequence[tuple[Match, list[MarketPick]]], bookmaker: str) ->
     legs = []
     for match, markets in picks:
         for mp in markets:
-            if mp.source == MODEL_SOURCE:
-                continue  # niente gambe stimate dal solo modello finché non è provato contro i bookmaker (D88)
+            if mp.source in ESTIMATE_ONLY:
+                continue  # niente gambe senza riferimento sharp: modello (D88) o media dei bookmaker italiani (D96)
             for selection, offers in mp.offers.items():
                 for offer in offers:
                     if offer.bookmaker == bookmaker:

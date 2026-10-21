@@ -19,7 +19,7 @@ from app.ingest.teams import competition_sort_key
 
 router = APIRouter(prefix="/api/picks", tags=["pronostici"])
 
-SOURCE_LABELS = BOOKMAKER_LABELS | {"archie": "Modello di Archie"}
+SOURCE_LABELS = BOOKMAKER_LABELS | {"archie": "Modello di Archie", "consenso": "Media dei bookmaker italiani"}
 
 
 class OfferOut(BaseModel):

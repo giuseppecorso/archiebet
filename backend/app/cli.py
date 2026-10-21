@@ -631,6 +631,85 @@ def _live_check() -> int:
     return 0
 
 
+def _seriec_test() -> int:
+    """Prova D95: modello di Archie contro il consenso di Sisal, Eurobet e Snai in Serie C (usare una copia del database)."""
+    import json
+    import math
+
+    import numpy as np
+
+    from app.adapters.oddspapi import BOOKMAKERS, MARKETS, TOURNAMENTS, OddsPapiAdapter, OPFixture
+    from app.forecast.demargin import proportional
+    from app.forecast.secondary_test import closing
+    from app.ingest.oddspapi import OddsPapiReport, link_fixtures
+
+    settings = get_settings()
+    adapter = OddsPapiAdapter(FileCache(settings.data_cache_dir, "oddspapi"), settings.oddspapi_key)
+    records = []
+    for path in (settings.data_cache_dir / "odds-archive").glob("*.json"):
+        data = json.loads(path.read_text(encoding="utf-8"))["data"]
+        if data["bookmakers"] and TOURNAMENTS.get(data["fixture"]["tournamentId"], "").startswith("ITA-C"):
+            records.append(data)
+    fixtures = [OPFixture(r["fixture"]["fixtureId"], r["fixture"]["tournamentId"], datetime.fromisoformat(r["fixture"]["startTime"].replace("Z", "+00:00")),
+                          r["fixture"]["participant1Id"], r["fixture"]["participant2Id"], 2) for r in records]  # fmt: skip
+    names = {str(r["fixture"][f"participant{k}Id"]): r["fixture"][f"participant{k}Name"] for r in records for k in (1, 2)}
+    with SessionLocal() as db:
+        report = OddsPapiReport()
+        links = link_fixtures(db, fixtures, adapter.participants() | names, report, datetime.now(UTC))
+        db.commit()
+        linked = {fid: (m.id, m.season, m.home_goals, m.away_goals, m.status) for fid, m in links.items()}
+        games = load_games(db)
+    print(f"Serie C nell'archivio: {len(records)} partite, agganciate {len(linked)}; squadre non riconosciute: {sorted(set(report.unknown_teams))[:10]}")
+
+    # Consenso dei bookmaker italiani in chiusura (ultima quota attiva prima del calcio d'inizio)
+    name_1x2, outcomes_1x2 = MARKETS["101"]
+    consensus = {}
+    for r, fx in zip(records, fixtures):
+        if fx.id not in linked:
+            continue
+        probs = []
+        for slug, book in r["bookmakers"].items():
+            market = (book.get("markets") or {}).get("101")
+            if not market:
+                continue
+            prices = {}
+            for oid, outcome in (market.get("outcomes") or {}).items():
+                points = [(datetime.fromisoformat(p["createdAt"].replace("Z", "+00:00")), float(p["price"]) if p.get("active", True) and p.get("price") else None)
+                          for p in (outcome.get("players") or {}).get("0") or []]  # fmt: skip
+                price = closing(sorted(points, key=lambda x: x[0]), fx.start_time)
+                if price and oid in outcomes_1x2:
+                    prices[outcomes_1x2[oid]] = price
+            if set(prices) == {"1", "X", "2"}:
+                probs.append(dict(zip(("1", "X", "2"), proportional([prices["1"], prices["X"], prices["2"]]))))
+        if probs:
+            mid = linked[fx.id][0]
+            consensus[mid] = {k: sum(p[k] for p in probs) / len(probs) for k in ("1", "X", "2")}
+
+    seasons = sorted({linked[f][1] for f in linked})
+    print(f"Consenso dei bookmaker per {len(consensus)} partite; modello di Archie in walk-forward {seasons} (qualche minuto)")
+    res = walk_forward(games, seasons, ModelConfig())
+    model = {p.match_id: p for p in res.predictions}
+    diffs, ll_model, ll_books = [], [], []
+    for mid, cons in consensus.items():
+        p = model.get(mid)
+        if p is None:
+            continue
+        result = ("1", "X", "2")[p.outcome]
+        a, b = -math.log(max(p.p_1x2[p.outcome], 1e-9)), -math.log(max(cons[result], 1e-9))
+        ll_model.append(a)
+        ll_books.append(b)
+        diffs.append(a - b)
+    d = np.array(diffs)
+    se = d.std(ddof=1) / math.sqrt(len(d))
+    print(f"\nPartite confrontate: {len(d)}")
+    print(f"  log loss 1X2: Archie {np.mean(ll_model):.4f}, consenso Sisal/Eurobet/Snai {np.mean(ll_books):.4f}")
+    print(f"  Archie meno consenso: {d.mean():+.5f} ± {se:.5f}  (negativo = Archie più preciso)")
+    verdict = "Archie MIGLIORE: 'sopra Archie' diventa 'valore'" if d.mean() < -2 * se else (
+        "Archie PEGGIORE: in Serie C la stima migliore diventa il consenso dei bookmaker" if d.mean() > 2 * se else "nessuna differenza dimostrata: resta tutto com'è")
+    print(f"Verdetto D95: {verdict}")
+    return 0
+
+
 def _odds_archive(since: str) -> int:
     """Salva lo storico quote di OddsPapi (gratuito, ma solo ~6 mesi) per le prove sui mercati (D82)."""
     from app.adapters.cache import FileCache
@@ -840,6 +919,7 @@ def main() -> int:
     hsim.add_argument("--last", default="2025/26", help="stagione di conferma (le precedenti sono la taratura)")
     oa = commands.add_parser("odds-archive", help="salva lo storico quote OddsPapi (angoli, cartellini, principali)")
     oa.add_argument("--since", default="2026-04-01", help="data di inizio, AAAA-MM-GG")
+    commands.add_parser("seriec-test", help="prova D95: modello di Archie contro i bookmaker italiani in Serie C (copia del DB)")
     commands.add_parser("live-check", help="verifica del termometro della speranza sul punteggio all'intervallo (D92)")
     commands.add_parser("secondary-test", help="prova D82 su angoli e cartellini (usare una copia del database)")
     commands.add_parser("d89-test", help="prova del nove dei fattori D89 (riposo, allenatore, sintetico, distanza, assenze)")
@@ -873,6 +953,8 @@ def main() -> int:
         return _history_sim(args.first, args.last)
     if args.command == "odds-archive":
         return _odds_archive(args.since)
+    if args.command == "seriec-test":
+        return _seriec_test()
     if args.command == "live-check":
         return _live_check()
     if args.command == "secondary-test":

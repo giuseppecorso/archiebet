@@ -139,3 +139,16 @@ def test_multiple_skips_model_only_legs():
     model = MarketPick("1X2", MODEL_SOURCE, {"1": 0.5}, {"1": [Offer("sisal", 2.2, 0.1, "sopra Archie")]})
     market = MarketPick("OU2.5", "pinnacle", {"over": 0.5}, {"over": [Offer("sisal", 2.0, 0.0, "nella norma")]})
     assert [(leg.market, leg.selection) for leg in legs_for([(M, [model, market])], "sisal")] == [("OU2.5", "over")]
+
+
+def test_without_sharp_odds_the_italian_consensus_beats_the_model():
+    from app.forecast.picks import CONSENSUS_SOURCE, CONSENSUS_VALUE, best_probabilities, italian_consensus, price_verdict
+
+    book = {"sisal": {"1X2": {"1": 2.0, "X": 3.2, "2": 3.8}}, "eurobet": {"1X2": {"1": 2.1, "X": 3.1, "2": 3.6}}}
+    model = {"1X2": {"1": 0.6, "X": 0.2, "2": 0.2}}
+    source, probs = best_probabilities(book, model)["1X2"]
+    assert source == CONSENSUS_SOURCE  # Serie C: la media dei bookmaker italiani prima del modello (D95-D96)
+    assert sum(probs.values()) == pytest.approx(1.0)
+    assert italian_consensus({"sisal": book["sisal"]}, "1X2") is None  # con un solo bookmaker non si fa la media
+    assert best_probabilities({"sisal": book["sisal"]}, model)["1X2"][0] == "archie"
+    assert price_verdict(0.10, 2.0, CONSENSUS_SOURCE) == CONSENSUS_VALUE
