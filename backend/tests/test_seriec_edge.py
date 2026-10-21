@@ -15,6 +15,7 @@ from app.forecast.seriec_edge import (
     improvement,
     kaunitz_occasions,
     model_occasions,
+    pinnacle_occasions,
     lineup_correction,
     opening_consensus,
     pool_correction,
@@ -103,3 +104,16 @@ def test_model_occasions_use_archie_probabilities():
     assert [(p.selection, p.bookmaker, p.price) for p in plays] == [("1", "eurobet", 2.4)]  # 0,50 × 2,4 − 1 = +20%
     assert plays[0].won and plays[0].clv == pytest.approx(plays[0].p_close * 2.4 - 1)
     assert model_occasions([m], {}) == []  # senza previsione di Archie niente occasioni
+
+
+def test_pinnacle_occasions_measure_clv_against_pinnacle_close():
+    # Pinnacle 2,0 / 3,6 / 4,2 (prob. giusta dell'1 ≈ 0,49), Sisal paga l'1 a 2,25: valore ~+10%
+    prices = book_1x2(pinnacle=(2.0, 3.6, 4.2), sisal=(2.25, 3.2, 3.6), eurobet=(1.95, 3.3, 3.8))
+    m = MatchBook(9, KO, 0, 0, prices)
+    plays = [p for p in pinnacle_occasions([m]) if p.market == "1X2"]
+    assert [(p.selection, p.bookmaker, p.price) for p in plays] == [("1", "sisal", 2.25)]
+    from app.forecast.demargin import shin
+
+    p_close = shin([2.0, 3.6, 4.2])[0]
+    assert plays[0].clv == pytest.approx(p_close * 2.25 - 1)
+    assert pinnacle_occasions([MatchBook(9, KO, 0, 0, book_1x2(sisal=(2.25, 3.2, 3.6)))]) == []  # senza Pinnacle niente

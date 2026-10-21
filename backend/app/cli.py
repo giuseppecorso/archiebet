@@ -1022,6 +1022,42 @@ def _style_test() -> int:
     return 0
 
 
+def _minor_test() -> int:
+    """Prova D106 (b): Occasioni D72 su Sisal ed Eurobet contro Pinnacle nelle serie minori, CLV contro la chiusura Pinnacle.
+
+    La prova passa solo se passano (a) e (b): si comincia da (b), che non ha bisogno dei risultati."""
+    from collections import defaultdict
+
+    from app.forecast import seriec_edge as se
+    from app.forecast.learning_service import load_timing_books
+
+    minor = [b for b in load_timing_books() if b.group == "serie minori"]
+    books = [se.MatchBook(i, b.kickoff, 0, 0, b.prices) for i, b in enumerate(minor)]
+    with_pin = [m for m in books if "pinnacle" in m.prices]
+    times = sorted(m.kickoff for m in with_pin)
+    split = times[len(times) // 2]
+    print(f"Serie minori nell'archivio: {len(books)} partite, con Pinnacle {len(with_pin)}; divisione al {split:%d/%m/%Y}")
+    plays = se.pinnacle_occasions(with_pin)
+    ok = True
+    for label, part in (("taratura", [p for p in plays if p.kickoff < split]), ("conferma", [p for p in plays if p.kickoff >= split])):
+        e = se.clv_of(part)
+        if e is None:
+            print(f"  {label}: nessuna occasione")
+            ok = False
+            continue
+        good = e.mean > 2 * e.std_error
+        ok = ok and good
+        print(f"  {label}: {e.n} occasioni in {e.clusters} partite, CLV {e.mean * 100:+.2f}% ± {e.std_error * 100:.2f} -> {'positivo' if good else 'non positivo'}")
+    by_market = defaultdict(list)
+    for p in plays:
+        by_market[p.market].append(p)
+    for market, ps in sorted(by_market.items()):
+        e = se.clv_of(ps)
+        print(f"  (controllo) {market}: {e.n} occasioni, CLV {e.mean * 100:+.2f}% ± {e.std_error * 100:.2f}")
+    print(f"(b) {'PASSA' if ok else 'NON passa'}" + ("" if ok else ": la prova D106 non passa, (a) non serve"))
+    return 0
+
+
 def _lineup_test() -> int:
     """Prova D123: formazioni previste (metodo pesato) contro "stessi titolari dell'ultima partita"."""
     from app.forecast.lineups import backtest
@@ -1311,6 +1347,7 @@ def main() -> int:
     wt = commands.add_parser("weather-test", help="prova del nove del meteo (D76)")
     wt.add_argument("--fetch-only", action="store_true", help="scarica soltanto il meteo, senza la prova")
     wt.add_argument("--patient", action="store_true", help="se Open-Meteo limita, aspetta un'ora e riprende")
+    commands.add_parser("minor-test", help="prova D106 (b): Occasioni nelle serie minori contro Pinnacle")
     commands.add_parser("lineup-test", help="prova D123: formazioni previste contro l'ultima formazione")
     commands.add_parser("learning-refresh", help="Archie rifà le prove della Fase 7 e salva i risultati (come il lavoro settimanale)")
     commands.add_parser("timing-test", help="prova D119: quando giocare da Sisal ed Eurobet (archivio OddsPapi)")
@@ -1359,6 +1396,8 @@ def main() -> int:
         return _popularity_test()
     if args.command == "weather-test":
         return _weather_test(args.fetch_only, args.patient)
+    if args.command == "minor-test":
+        return _minor_test()
     if args.command == "lineup-test":
         return _lineup_test()
     if args.command == "learning-refresh":

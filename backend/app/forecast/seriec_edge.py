@@ -201,17 +201,18 @@ Fair = Callable[["MatchBook", str, Prices, str], Mapping[str, float] | None]  # 
 
 
 def occasions(books: Sequence[MatchBook], fair: Fair, playable: Sequence[str] = PLAYABLE,
-              markets: Sequence[str] = tuple(SELECTIONS)) -> list[EdgePlay]:  # fmt: skip
+              markets: Sequence[str] = tuple(SELECTIONS),
+              closing_fair: Callable[["MatchBook", str], Mapping[str, float] | None] | None = None) -> list[EdgePlay]:  # fmt: skip
     """Ogni 6 ore negli ultimi 7 giorni: quota giocabile contro una probabilità giusta, regola D72.
 
     La prima rilevazione per partita, mercato ed esito è la giocata (a parità di momento la quota più alta);
-    CLV contro il consenso in chiusura di tutti i bookmaker (D98 T0: riferimento valido).
+    CLV contro il consenso in chiusura di tutti i bookmaker (D98 T0: riferimento valido), oppure contro closing_fair.
     """
     plays = []
     for m in books:
         for market in markets:
             sels = SELECTIONS[market]
-            close = consensus(m.snapshot(market), market)
+            close = closing_fair(m, market) if closing_fair else consensus(m.snapshot(market), market)
             if close is None:
                 continue
             taken: set[str] = set()
@@ -252,3 +253,20 @@ def clv_of(plays: Sequence[EdgePlay]) -> Estimate | None:
     if not plays:
         return None
     return clustered_mean([p.clv for p in plays], [p.match_id for p in plays])
+
+
+def pinnacle_fair(book: Prices, market: str) -> dict[str, float] | None:
+    """Probabilità giuste di Pinnacle (Shin) da un'istantanea delle quote, se il mercato è completo."""
+    from app.forecast.demargin import shin
+
+    prices = book.get("pinnacle")
+    if not prices:
+        return None
+    sels = SELECTIONS[market]
+    return dict(zip(sels, shin([prices[s] for s in sels])))
+
+
+def pinnacle_occasions(books: Sequence[MatchBook], playable: Sequence[str] = PLAYABLE) -> list[EdgePlay]:
+    """D106 (b): regola D72 su Sisal ed Eurobet contro Pinnacle, CLV contro la chiusura di Pinnacle."""
+    return occasions(books, lambda m, market, book, bm: pinnacle_fair(book, market), playable,
+                     closing_fair=lambda m, market: pinnacle_fair(m.snapshot(market), market))  # fmt: skip

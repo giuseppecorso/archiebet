@@ -130,7 +130,7 @@ Forma squadra (xG, Elo, punti), forma e importanza dei giocatori, infortuni e sq
 - Fase 5 – Live: risultati in diretta, termometro della speranza, segui live.
 - Fase 6 – AI e Gioca: Chiedi ad Archie, autopsie "sfortuna o errore", notizie (anche locali Serie C), regolamento personale, simulatore, sfida contro Archie.
 - Fase 7 – Apprendimento (rivista con D117): Archie cerca da solo le strategie, autocorrezione (controllo della taratura), quando giocare, partite gemelle, mappa del valore.
-- Fase 8 – Coppe europee e altri campionati; formazioni previste; piano partita live.
+- Fase 8 – Coppe europee e altri campionati; formazioni previste; piano partita live. (Conclusa il 2026-10-21: D106, D123, D124.)
 - Soldi veri solo se backtest e simulazione mostrano CLV positivo.
 
 ## 14. Basi per la scalabilità (da fare subito, costo zero)

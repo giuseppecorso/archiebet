@@ -2,6 +2,14 @@
 
 Ultimo aggiornamento: 2026-10-21
 
+## Fase 8 – Coppe, altri campionati, formazioni, piano live: CONCLUSA (2026-10-21)
+
+- [x] Coppe europee già attive da D85 (calendario, risultati, quote).
+- [x] **Altri campionati** (D106): prova sulle 23 serie minori con l'archivio finora scaricato (2.009 partite): **non passa** (Occasioni con CLV −1/−3%); restano fuori dalle Occasioni. Da ripetere con `minor-test` quando l'archivio è completo.
+- [x] **Formazioni** nella pagina partita (D123): previste = ultima formazione senza gli assenti delle notizie (provato su 2.700 formazioni: 8 titolari su 11, meglio del metodo pesato); ufficiali da API-Football circa un'ora prima (Serie A e B).
+- [x] **Piano partita live** (D124, sperimentale): per 11 situazioni tipiche quota giusta e quota minima da giocare (soglia D72), stesso motore del termometro.
+- Test: 418 backend + 24 frontend, tutti verdi.
+
 ## Fase 7 – Apprendimento: CONCLUSA (2026-10-21)
 
 Rivista con Giuse (D117): le strategie le trova Archie da solo; tolti il Laboratorio strategie (regole scritte a mano) e il fiuto come fattore.
