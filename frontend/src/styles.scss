@@ -225,3 +225,27 @@ body {
   filter: drop-shadow(0 0 4px rgb(255 176 0 / 0.5));
 }
 .flag[data-country='Europa'] { background: radial-gradient(circle, #ffcc00 0 2px, #003399 2.5px); }
+
+/* Etichette delle quote e "in prova": usate in più pagine (D107) */
+.v {
+  font-size: 15px;
+  &.home {
+    text-align: right;
+  }
+  &.away {
+    color: var(--text-2);
+    text-shadow: none;
+  }
+}
+
+.trial-tag {
+  margin-left: 6px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #7cc4ff;
+  border: 1px dashed #2f5a7a;
+  border-radius: 3px;
+}

@@ -103,6 +103,60 @@
     </section>
   }
 
+  @if (matchPicks.value()?.suggestions?.length || analysis.value()) {
+    <section class="panel box analysis" aria-labelledby="an-title">
+      <div class="box-head">
+        <h2 id="an-title" class="title box-title">Analisi di Archie</h2>
+        <span class="muted small">"sicuro" = più probabile, non per forza conveniente: lo dice l'etichetta della quota</span>
+      </div>
+      @if (matchPicks.value()?.suggestions; as sugg) {
+        <div class="sugg-cards">
+          @for (s of sugg; track s.kind) {
+            <div class="sugg" [class.bold]="s.kind === 'spinto'">
+              <span class="title sugg-kind">{{ s.kind === 'sicuro' ? 'Il più sicuro' : 'Il più spinto' }}</span>
+              <span class="sugg-pick">{{ pickName(s.market, s.selection) }}</span>
+              <span class="led sugg-pct">{{ fmt.pct(s.probability) }}</span>
+              <span class="sugg-offer">
+                quota {{ fmt.odds(s.offer.price) }} · {{ s.offer.bookmaker }}
+                <span [class]="'v ' + verdictClass(s.offer.verdict)">{{ s.offer.verdict }}</span>
+              </span>
+              <span class="muted small">probabilità da {{ s.source }}</span>
+            </div>
+          }
+        </div>
+      }
+      @if (analysis.value(); as a) {
+        <div class="an-text">
+          <p class="an-summary">{{ a.summary }}</p>
+          <ul class="an-points">
+            @for (p of a.points; track $index) {
+              <li>{{ p }}</li>
+            }
+          </ul>
+          <p class="an-verdict"><strong>I pronostici:</strong> {{ a.verdict }}</p>
+          <p class="muted small">Scritta da Archie {{ fmt.dayLabel(a.created_at) }} alle {{ fmt.kickoffTime(a.created_at) }} con i numeri calcolati dall'app.</p>
+        </div>
+      }
+      @if (d.match.status === 'scheduled') {
+        <div class="an-actions">
+          <button type="button" class="btn-primary" (click)="writeAnalysis()" [disabled]="writing()">
+            @if (writing()) {
+              Archie sta scrivendo…
+            } @else if (analysis.value()) {
+              Aggiorna l'analisi
+            } @else {
+              Scrivi l'analisi
+            }
+          </button>
+          <span class="muted small">circa 3 centesimi; si aggiorna al massimo ogni 3 ore</span>
+          @if (analysisError(); as err) {
+            <span class="an-error">{{ err }}</span>
+          }
+        </div>
+      }
+    </section>
+  }
+
   @if (d.match.competition.code.startsWith('ITA-') || fan.value()?.facts?.length) {
     <section class="panel box fan" aria-labelledby="fan-title">
       <div class="box-head">

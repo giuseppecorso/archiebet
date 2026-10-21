@@ -13,8 +13,10 @@ from app.config import get_settings
 from app.forecast.clv import SUSPICIOUS_VALUE
 from app.forecast.data import ODDS_MARKETS
 from app.forecast.multiple import LEGS, PROFILES, build_multiple
-from app.forecast.picks import MODEL_SOURCE, PICK_MARKETS, favorite, off_line
-from app.forecast.picks_service import legs_for, upcoming_picks
+from app.forecast.picks import MODEL_SOURCE, PICK_MARKETS, MarketPick, favorite, off_line
+from app.forecast.picks_service import legs_for, match_market_picks, upcoming_picks
+from app.forecast.suggestions import suggestions
+from app.models import Match
 from app.ingest.teams import competition_sort_key
 
 router = APIRouter(prefix="/api/picks", tags=["pronostici"])
@@ -71,23 +73,57 @@ def picks(_: CurrentUser, db: DbSession, days: int = Query(7, ge=1, le=14)) -> P
                 match=cards[m.id],
                 favorite=fav[0] if fav else None,
                 favorite_probability=fav[1] if fav else None,
-                markets=[
-                    MarketOut(
-                        market=p.market,
-                        source=SOURCE_LABELS.get(p.source, p.source),
-                        from_model=p.source == MODEL_SOURCE,
-                        probabilities=p.probabilities,
-                        offers={
-                            sel: [OfferOut(bookmaker=BOOKMAKER_LABELS.get(o.bookmaker, o.bookmaker), price=o.price, value=o.value, verdict=o.verdict) for o in offers]
-                            for sel, offers in p.offers.items()
-                        },
-                    )
-                    for p in market_picks
-                ],
+                markets=[market_out(p) for p in market_picks],
                 signals=signals.get(m.id, 0),
             )
         )
     return PicksOut(bookmakers=[BOOKMAKER_LABELS.get(b, b) for b in bookmakers], picks=out)
+
+
+def offer_out(o) -> OfferOut:
+    return OfferOut(bookmaker=BOOKMAKER_LABELS.get(o.bookmaker, o.bookmaker), price=o.price, value=o.value, verdict=o.verdict)
+
+
+def market_out(p: MarketPick) -> MarketOut:
+    return MarketOut(
+        market=p.market,
+        source=SOURCE_LABELS.get(p.source, p.source),
+        from_model=p.source == MODEL_SOURCE,
+        probabilities=p.probabilities,
+        offers={sel: [offer_out(o) for o in offers] for sel, offers in p.offers.items()},
+    )
+
+
+# ---------- I due pronostici della pagina partita (D107) ----------
+
+
+class SuggestionOut(BaseModel):
+    kind: str  # "sicuro" | "spinto"
+    market: str
+    selection: str
+    probability: float
+    source: str
+    offer: OfferOut
+    has_value: bool
+
+
+class MatchPicksOut(BaseModel):
+    suggestions: list[SuggestionOut]
+    markets: list[MarketOut]
+
+
+@router.get("/match/{match_id}")
+def match_picks_out(match_id: int, _: CurrentUser, db: DbSession) -> MatchPicksOut:
+    match = db.get(Match, match_id)
+    if match is None:
+        raise HTTPException(404, "Partita non trovata")
+    picks = match_market_picks(db, match, get_settings().radar_bookmaker_list) if match.status == "scheduled" else []
+    return MatchPicksOut(
+        suggestions=[SuggestionOut(kind=s.kind, market=s.market, selection=s.selection, probability=s.probability,
+                                   source=SOURCE_LABELS.get(s.source, s.source), offer=offer_out(s.offer), has_value=s.has_value)
+                     for s in suggestions(picks)],  # fmt: skip
+        markets=[market_out(p) for p in picks],
+    )
 
 
 # ---------- Multipla del giorno (D68) ----------

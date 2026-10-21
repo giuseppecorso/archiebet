@@ -217,3 +217,33 @@ def test_fan_test_keeps_serie_c_and_serie_a_b_apart(db):
     c_signals, _ = fan_test(db, serie_c=True)
     ab_signals, _ = fan_test(db, serie_c=False)
     assert [s.match_id for s in c_signals] == [c_match.id] and [s.match_id for s in ab_signals] == [a_match.id]
+
+
+def test_match_picks_and_analysis_endpoints(logged_client, db, monkeypatch):
+    from app.ai import analysis as analysis_module
+    from app.ai.analysis import Analysis
+    from app.api import fan as fan_api
+
+    m = setup_match(db)
+    m.kickoff_at = datetime.now(UTC) + timedelta(days=2)
+    db.commit()
+    picks = logged_client.get(f"/api/picks/match/{m.id}").json()
+    assert [p["market"] for p in picks["markets"]] == ["1X2", "DC"]  # dal consenso di Sisal e Snai
+    assert [(s["kind"], s["offer"]["verdict"]) for s in picks["suggestions"]] == [("sicuro", "paga poco")]  # il più probabile tra 2 e 4 è lo stesso: non si ripete
+
+    brief = fan_api.analysis_brief(db, m)
+    assert "Picerno (casa) - Barletta (ospite)" in brief and "Pronostico più sicuro" in brief
+    calls = []
+
+    def fake_write(ai, model, text):
+        calls.append(text)
+        return Analysis(summary="Partita equilibrata.", points=["Uno", "Due"], verdict="Il sicuro è il 1X.")
+
+    monkeypatch.setattr(analysis_module, "write_analysis", fake_write)
+    monkeypatch.setattr(fan_api, "get_settings", lambda: Settings(anthropic_api_key="k"))
+    assert logged_client.get(f"/api/fan/match/{m.id}/analysis").json() is None
+    first = logged_client.post(f"/api/fan/match/{m.id}/analysis").json()
+    assert first["points"] == ["Uno", "Due"] and len(calls) == 1
+    logged_client.post(f"/api/fan/match/{m.id}/analysis")  # ancora fresca: nessuna nuova chiamata
+    assert len(calls) == 1
+    assert logged_client.get(f"/api/fan/match/{m.id}/analysis").json()["summary"] == "Partita equilibrata."

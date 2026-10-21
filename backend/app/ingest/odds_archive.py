@@ -6,7 +6,7 @@ quelli principali, angoli e cartellini (Over/Under totali e per squadra, 1X2) a 
 """
 
 import time
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -47,6 +47,14 @@ class ArchiveReport:
     failed: int = 0
 
 
+# Serie minori di tutto il mondo per la prova D106 (id OddsPapi da /tournaments, 2026-10-21)
+MINOR_TOURNAMENTS = {
+    24: "ENG-3", 25: "ENG-4", 173: "ENG-5", 206: "SCO-2", 491: "GER-3", 34834: "ESP-3", 47986: "FRA-3", 131: "NED-2",
+    239: "POR-2", 9: "BEL-2", 135: "AUT-2", 216: "SUI-2", 47: "DEN-2", 46: "SWE-2", 98: "TUR-2", 186: "GRE-2", 205: "CZE-2",
+    390: "BRA-2", 703: "ARG-2", 402: "JPN-2", 2094: "JPN-3", 28163: "USA-2", 27382: "MEX-2",
+}  # fmt: skip
+
+
 def archive_history(
     adapter: OddsPapiAdapter,
     archive: FileCache,
@@ -54,6 +62,7 @@ def archive_history(
     log: Callable[[str], None] = print,
     sleep: Callable[[float], None] = time.sleep,
     prefix: str = "",
+    tournaments: Mapping[int, str] | None = None,
 ) -> ArchiveReport:
     """Scarica e salva lo storico delle partite finite dei campionati seguiti, dalla data since in poi.
 
@@ -65,7 +74,7 @@ def archive_history(
     report = ArchiveReport()
     # Prima le partite più vecchie di tutti i campionati: sono quelle che escono per prime dalla finestra di ~6 mesi
     todo = []
-    for tournament_id, code in TOURNAMENTS.items():
+    for tournament_id, code in (tournaments or TOURNAMENTS).items():
         if code.startswith("EU-") or not code.startswith(prefix):
             continue  # coppe escluse: per angoli e cartellini servono i risultati di football-data, che non le copre
         fixtures = [f for f in adapter.finished_fixtures(tournament_id, max_age=timedelta(days=1)) if f["startTime"] >= since.isoformat()[:19]]

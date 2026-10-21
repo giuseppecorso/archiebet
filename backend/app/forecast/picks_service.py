@@ -27,6 +27,13 @@ def upcoming_picks(db: Session, now: datetime, until: datetime, bookmakers: Sequ
     return [(m, match_picks(books.get(m.id, {}), models.get(m.id), bookmakers)) for m in matches]
 
 
+def match_market_picks(db: Session, match: Match, bookmakers: Sequence[str]) -> list[MarketPick]:
+    """I Pronostici di una sola partita (pagina partita, D107)."""
+    book = load_book_odds(db, [match.id], closing=False).get(match.id, {})
+    prediction = db.scalar(select(MatchPrediction).where(MatchPrediction.match_id == match.id))
+    return match_picks(book, prediction.markets if prediction else None, bookmakers)
+
+
 def legs_for(picks: Sequence[tuple[Match, list[MarketPick]]], bookmaker: str) -> list[Leg]:
     """Tutte le gambe giocabili su un bookmaker: ogni esito con la sua probabilità e la quota di quel bookmaker."""
     legs = []

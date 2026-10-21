@@ -57,3 +57,17 @@ class MatchInsight(Base):
     close_draw: Mapped[float | None] = mapped_column(Float)
     close_away: Mapped[float | None] = mapped_column(Float)
 
+
+
+class MatchAnalysis(Base):
+    """Analisi scritta da Archie per una partita (D107): spiega i numeri calcolati dal codice e le notizie."""
+
+    __tablename__ = "match_analyses"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+    model: Mapped[str] = mapped_column(String(40))
+    summary: Mapped[str] = mapped_column(Text)
+    points: Mapped[str] = mapped_column(Text)  # un punto per riga
+    verdict: Mapped[str] = mapped_column(Text)

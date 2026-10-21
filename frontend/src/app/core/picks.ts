@@ -32,3 +32,34 @@ export interface PicksOut {
   bookmakers: string[];
   picks: Pick[];
 }
+
+/** I due pronostici della pagina partita (D107): il più sicuro (più probabile) e il più spinto (quota 2-4) */
+export interface Suggestion {
+  kind: 'sicuro' | 'spinto';
+  market: MarketPick['market'];
+  selection: string;
+  probability: number;
+  source: string;
+  offer: Offer;
+  /** La quota batte la probabilità giusta con la regola delle Occasioni (D72) */
+  has_value: boolean;
+}
+
+export interface MatchPicks {
+  suggestions: Suggestion[];
+  markets: MarketPick[];
+}
+
+/** Analisi scritta da Archie (D107): spiega i numeri calcolati dal codice e le notizie */
+export interface MatchAnalysis {
+  created_at: string;
+  model: string;
+  summary: string;
+  points: string[];
+  verdict: string;
+}
+
+/** Classe CSS dell'etichetta di una quota */
+export function verdictClass(v: Verdict): string {
+  return v === 'valore' ? 'valore' : v === 'sopra la media' ? 'archie' : v === 'paga poco' ? 'poco' : 'norma';
+}

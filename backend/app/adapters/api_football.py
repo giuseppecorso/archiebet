@@ -273,6 +273,14 @@ class ApiFootballAdapter(DataSourceAdapter):
         body = self.cached(f"fixtures/lineups?fixture={fixture_id}", max_age, lambda: self._request("/fixtures/lineups", {"fixture": fixture_id}))
         return parse_lineups(body)
 
+    def fixture_statistics(self, fixture_id: int, max_age: timedelta) -> dict[str, Any]:
+        """Statistiche di squadra di una partita (tiri, angoli, falli, cartellini, possesso...): risposta grezza."""
+        return self.cached(f"fixtures/statistics?fixture={fixture_id}", max_age, lambda: self._request("/fixtures/statistics", {"fixture": fixture_id}))
+
+    def fixture_players(self, fixture_id: int, max_age: timedelta) -> dict[str, Any]:
+        """Statistiche di ogni giocatore in una partita (minuti, tiri, falli, cartellini...): risposta grezza."""
+        return self.cached(f"fixtures/players?fixture={fixture_id}", max_age, lambda: self._request("/fixtures/players", {"fixture": fixture_id}))
+
     def teams(self, league_id: int, season: int, max_age: timedelta) -> list[AFVenue]:
         """Squadre di un campionato con lo stadio di casa (città e tipo di campo)."""
         params = {"league": league_id, "season": season}

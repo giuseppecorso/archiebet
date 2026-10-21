@@ -1,5 +1,8 @@
-import { httpResource } from '@angular/common/http';
-import { Component, computed, effect, input, signal } from '@angular/core';
+import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { Market, pickLabel } from '../../core/bets';
+import { MatchAnalysis, MatchPicks, verdictClass } from '../../core/picks';
 import { RouterLink } from '@angular/router';
 import { FanFact, MatchFan, SOURCE_LABELS, factTone } from '../../core/fan';
 import { MatchDetail, OddsRow, TeamSummary } from '../../core/football';
@@ -79,6 +82,32 @@ export class MatchPage {
   /** Archie tifoso (D102): fatti delle due squadre dalle notizie e giudizio di Archie */
   protected readonly fan = httpResource<MatchFan>(() => `/api/fan/match/${this.id()}`);
   protected readonly factTone = factTone;
+  /** I due pronostici (D107) e l'analisi scritta da Archie */
+  protected readonly matchPicks = httpResource<MatchPicks>(() => `/api/picks/match/${this.id()}`);
+  protected readonly analysis = httpResource<MatchAnalysis | null>(() => `/api/fan/match/${this.id()}/analysis`);
+  protected readonly writing = signal(false);
+  protected readonly analysisError = signal<string | null>(null);
+  protected readonly verdictClass = verdictClass;
+  private readonly http = inject(HttpClient);
+
+  protected pickName(market: string, selection: string): string {
+    return pickLabel(market as Market, selection, this.detail.value()?.match);
+  }
+
+  /** Chiede ad Archie di scrivere (o aggiornare) l'analisi: ~0,03 €, al massimo una ogni 3 ore per partita */
+  protected async writeAnalysis(): Promise<void> {
+    this.writing.set(true);
+    this.analysisError.set(null);
+    try {
+      const out = await firstValueFrom(this.http.post<MatchAnalysis>(`/api/fan/match/${this.id()}/analysis`, {}));
+      this.analysis.set(out);
+    } catch (e) {
+      const detail = e instanceof HttpErrorResponse ? e.error?.detail : null;
+      this.analysisError.set(typeof detail === 'string' ? detail : 'Analisi non riuscita: riprova tra poco.');
+    } finally {
+      this.writing.set(false);
+    }
+  }
   protected readonly sourceLabels = SOURCE_LABELS;
 
   /** I fatti divisi per squadra: [casa, ospite] */

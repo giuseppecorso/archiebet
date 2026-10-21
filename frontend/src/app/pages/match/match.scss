@@ -294,16 +294,6 @@
   align-items: center;
   gap: 10px;
 }
-.v {
-  font-size: 15px;
-  &.home {
-    text-align: right;
-  }
-  &.away {
-    color: var(--text-2);
-    text-shadow: none;
-  }
-}
 .track {
   height: 10px;
   display: flex;
@@ -586,14 +576,95 @@
 .fan-note {
   margin: 10px 0 0;
 }
-.trial-tag {
-  margin-left: 6px;
-  padding: 0 5px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+
+.analysis {
+  margin: 20px 0;
+}
+.sugg-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 10px 0 14px;
+}
+.sugg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(79, 209, 139, 0.35);
+  background: linear-gradient(135deg, rgba(79, 209, 139, 0.1), rgba(79, 209, 139, 0.02));
+  &.bold {
+    border-color: rgba(255, 176, 59, 0.4);
+    background: linear-gradient(135deg, rgba(255, 176, 59, 0.12), rgba(255, 176, 59, 0.02));
+  }
+}
+.sugg-kind {
+  font-size: 11px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: #7cc4ff;
-  border: 1px dashed #2f5a7a;
+}
+.sugg-pick {
+  font-size: 17px;
+  font-weight: 700;
+}
+.sugg-pct {
+  font-size: 26px;
+}
+.sugg-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.v {
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--line-strong);
   border-radius: 3px;
+  white-space: nowrap;
+  &.valore {
+    color: var(--value);
+    border-color: var(--value);
+  }
+  &.norma {
+    color: var(--text-2);
+  }
+  &.poco {
+    color: var(--loss);
+    border-color: var(--line-muted);
+  }
+  &.archie {
+    color: #7cc4ff;
+    border-color: #2f5a7a;
+    border-style: dashed;
+  }
+}
+.an-text {
+  line-height: 1.55;
+}
+.an-summary {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+.an-points {
+  margin: 0 0 8px;
+  padding-left: 20px;
+  li {
+    margin-bottom: 4px;
+  }
+}
+.an-verdict {
+  margin: 0 0 6px;
+}
+.an-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.an-error {
+  color: var(--loss);
 }

@@ -897,7 +897,7 @@ def _seriec_edge() -> int:
     print(f"Verdetto D99: (a) {'passa' if a_ok else 'non passa'}, (b) {'passa' if b_ok else 'non passa'}")
     return 0
 
-def _odds_archive(since: str) -> int:
+def _odds_archive(since: str, minor: bool = False) -> int:
     """Salva lo storico quote di OddsPapi (gratuito, ma solo ~6 mesi) per le prove sui mercati (D82)."""
     from app.adapters.cache import FileCache
     from app.adapters.oddspapi import OddsPapiAdapter
@@ -907,8 +907,27 @@ def _odds_archive(since: str) -> int:
     adapter = OddsPapiAdapter(FileCache(settings.data_cache_dir, "oddspapi"), settings.oddspapi_key,
                               monthly_reserve=settings.oddspapi_monthly_reserve)
     start = datetime.fromisoformat(since).replace(tzinfo=UTC)
-    report = archive_history(adapter, FileCache(settings.data_cache_dir, "odds-archive"), start)
+    tournaments = None
+    if minor:
+        from app.ingest.odds_archive import MINOR_TOURNAMENTS
+
+        tournaments = MINOR_TOURNAMENTS
+    report = archive_history(adapter, FileCache(settings.data_cache_dir, "odds-archive"), start, tournaments=tournaments)
     print(f"Archivio: {report.saved} salvate, {report.missing} senza storico, {report.already} già presenti, {report.failed} da riprovare")
+    return 0
+
+
+def _af_stats(seasons: str) -> int:
+    """Scarica tiri, angoli, falli e cartellini di squadre e giocatori (Serie A e B) per i modelli dei mercati secondari."""
+    from app.adapters.api_football import ApiFootballAdapter
+    from app.ingest.af_stats import STATS_LEAGUES, download_match_stats
+
+    settings = get_settings()
+    with SessionLocal() as db:
+        adapter = ApiFootballAdapter(FileCache(settings.data_cache_dir, "api-football"), settings.api_football_key,
+                                     on_call=lambda source: record_usage(db, source), daily_reserve=500)
+        report = download_match_stats(adapter, STATS_LEAGUES, [int(x) for x in seasons.split(",")])
+    print(f"Partite: {report.fixtures}, scaricate {report.done}, non riuscite {report.failed}" + (f"; fermato: {report.stopped}" if report.stopped else ""))
     return 0
 
 
@@ -1106,11 +1125,14 @@ def main() -> int:
     hsim.add_argument("--last", default="2025/26", help="stagione di conferma (le precedenti sono la taratura)")
     oa = commands.add_parser("odds-archive", help="salva lo storico quote OddsPapi (angoli, cartellini, principali)")
     oa.add_argument("--since", default="2026-04-01", help="data di inizio, AAAA-MM-GG")
+    oa.add_argument("--minor", action="store_true", help="serie minori di tutto il mondo (prova D106)")
     commands.add_parser("seriec-test", help="prova D95: modello di Archie contro i bookmaker italiani in Serie C (copia del DB)")
     commands.add_parser("seriec-edge", help="prova D98: battere il consenso dei bookmaker italiani in Serie C (copia del DB)")
     commands.add_parser("live-check", help="verifica del termometro della speranza sul punteggio all'intervallo (D92)")
     commands.add_parser("secondary-test", help="prova D82 su angoli e cartellini (usare una copia del database)")
     commands.add_parser("d89-test", help="prova del nove dei fattori D89 (riposo, allenatore, sintetico, distanza, assenze)")
+    afs = commands.add_parser("af-stats", help="statistiche di squadre e giocatori da API-Football (Serie A e B)")
+    afs.add_argument("--seasons", default="2026,2025,2024")
     commands.add_parser("af-history", help="storico API-Football per le prove dei fattori D89 (coppe, allenatori, formazioni)")
     commands.add_parser("venues", help="stadi di casa delle squadre (città, campo, coordinate)")
     dm = commands.add_parser("demargin-test", help="prova del nove dei metodi per togliere il margine (D72)")
@@ -1140,7 +1162,7 @@ def main() -> int:
     if args.command == "history-sim":
         return _history_sim(args.first, args.last)
     if args.command == "odds-archive":
-        return _odds_archive(args.since)
+        return _odds_archive(args.since, args.minor)
     if args.command == "seriec-test":
         return _seriec_test()
     if args.command == "seriec-edge":
@@ -1151,6 +1173,8 @@ def main() -> int:
         return _secondary_test()
     if args.command == "d89-test":
         return _d89_test()
+    if args.command == "af-stats":
+        return _af_stats(args.seasons)
     if args.command == "af-history":
         return _af_history()
     if args.command == "venues":
