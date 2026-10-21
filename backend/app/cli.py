@@ -62,6 +62,28 @@ def _set_password(username: str) -> int:
     return 0
 
 
+def _demo_setup(first_season: int) -> int:
+    """Avvio dimostrativo (Docker): utente demo, storico gratuito di football-data e previsioni. Ripetibile senza danni."""
+    import os
+
+    from sqlalchemy import func, select
+
+    from app.models import Match, User
+
+    username = os.environ.get("DEMO_USER", "demo")
+    password = os.environ.get("DEMO_PASSWORD", "archiebet-demo")
+    with SessionLocal() as db:
+        if db.scalar(select(User).where(User.username == username)) is None:
+            create_user(db, username, password)
+            print(f"Utente dimostrativo '{username}' creato.")
+        has_matches = (db.scalar(select(func.count()).select_from(Match)) or 0) > 0
+    if not has_matches:
+        _sync("football-data", first_season)
+    with SessionLocal() as db:
+        print(f"Previsioni aggiornate: {refresh_predictions(db, datetime.now(UTC), force=True)}")
+    return 0
+
+
 def _sync(source: str, first_season: int) -> int:
     settings = get_settings()
     with SessionLocal() as db:
@@ -1333,6 +1355,8 @@ def main() -> int:
     sync = commands.add_parser("sync", help="scarica e aggiorna partite e quote")
     sync.add_argument("--source", choices=["all", "football-data", "api-football"], default="all")
     sync.add_argument("--from", dest="first_season", type=int, default=FIRST_SEASON, help="prima stagione (anno di inizio)")
+    demo = commands.add_parser("demo-setup", help="avvio dimostrativo: utente demo, storico gratuito e previsioni (Docker)")
+    demo.add_argument("--from", dest="first_season", type=int, default=2023, help="prima stagione da scaricare")
     commands.add_parser("tidy-teams", help="applica le regole di nomi e unioni alle squadre già salvate")
     bt = commands.add_parser("backtest", help="backtest walk-forward del modello (stagioni fuori dalla cassaforte)")
     bt.add_argument("--from", dest="first", default="2012/13", help='prima stagione valutata, es. "2012/13"')
@@ -1392,6 +1416,8 @@ def main() -> int:
         return 0
     if args.command == "backtest":
         return _backtest(args.first, args.last, ModelConfig(xi_per_day=args.xi, ridge=args.ridge, window_days=args.window, elo_prior=args.elo))
+    if args.command == "demo-setup":
+        return _demo_setup(args.first_season)
     if args.command == "predict":
         with SessionLocal() as db:
             print(f"Previsioni aggiornate: {refresh_predictions(db, datetime.now(UTC), force=args.force)}")

@@ -3,26 +3,59 @@
 *Give me the odds, I'll move the world.*
 
 [![CI](https://github.com/giuseppecorso/archiebet/actions/workflows/ci.yml/badge.svg)](https://github.com/giuseppecorso/archiebet/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.143-009688?logo=fastapi&logoColor=white)
 ![Angular](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)
-![Test](https://img.shields.io/badge/test-420%20backend%20%2B%2028%20frontend-brightgreen)
+![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
+![Test](https://img.shields.io/badge/test-423%20backend%20%2B%2028%20frontend-brightgreen)
 
-**Piattaforma personale di previsioni sul calcio e di analisi dei dati.** Stima la probabilità di ogni esito, la confronta con le quote dei bookmaker e misura, con metodi statistici verificabili, se un'informazione o una strategia batte davvero un mercato quasi efficiente. L'AI (Claude) legge notizie e scrive analisi, ma **i numeri li calcola sempre il codice**.
+🇬🇧 [English version](README.en.md)
 
-> **In English.** ArchieBet is a full-stack football forecasting and data-analysis platform (FastAPI + SQLAlchemy + Angular 22).
-> It estimates match-outcome probabilities, compares them with bookmaker prices and tests, with pre-registered experiments,
-> whether any model, factor or strategy beats a near-efficient betting market. Outcomes are judged on calibration and
-> closing-line value (CLV), not short-term profit. 134 documented decisions, ~15k lines of Python, 450+ automated tests.
+**Piattaforma di previsioni sul calcio e di analisi dei dati.** Stima la probabilità di ogni esito, la confronta con le
+quote dei bookmaker e verifica, con prove statistiche pre-registrate, se un modello, un'informazione o una strategia
+batte davvero un mercato quasi efficiente. L'AI (Claude) legge notizie e scrive analisi, ma **i numeri li calcola
+sempre il codice**.
+
+![ArchieBet in uso](docs/screenshots/archiebet-demo.gif)
 
 ---
 
+## In breve
+
+| | |
+|---|---|
+| **Problema** | Capire, con metodo, se e dove un modello o un'informazione batte le quote di un mercato molto efficiente |
+| **Soluzione** | Backend FastAPI con 6 fonti dati, modelli statistici (Dixon-Coles, Elo, Shin, binomiale negativa, Poisson live, Monte Carlo), frontend Angular 22 |
+| **Metodo** | 134 decisioni documentate; ogni ipotesi provata con regole scritte prima di vedere i dati, taratura e conferma su periodi separati, errori standard per partita |
+| **Risultato** | Un solo vantaggio confermato sullo storico (CLV +2,5% ± 0,3 su 734 casi), in verifica dal vivo; decine di ipotesi scartate e documentate |
+| **Qualità** | 451 test automatici, CI su GitHub Actions, migrazioni Alembic, avvio con Docker in un comando |
+
+## Provalo in 2 minuti (Docker)
+
+```bash
+git clone https://github.com/giuseppecorso/archiebet.git
+cd archiebet
+docker compose up --build
+```
+
+Apri **http://localhost:8080** ed entra con **demo / archiebet-demo**. Senza chiavi API l'app scarica lo storico
+gratuito di football-data.co.uk (10 campionati, dal 2023): statistiche, pagine partita, previsioni di Archie,
+simulatore. Quote attuali, live, notizie e AI si attivano aggiungendo le chiavi in `backend/.env` (vedi `.env.example`).
+
 ## Perché è interessante
 
-- **Metodo prima dei risultati.** Ogni idea entra nel modello solo se una prova *scritta prima di guardare i dati* dimostra che migliora le previsioni: taratura su alcune stagioni, conferma su altre, errori standard per partita, soglie fissate in anticipo ([docs/DECISIONI.md](docs/DECISIONI.md), 134 decisioni con motivazione).
-- **Risultati negativi dichiarati.** Meteo, riposo, cambio allenatore, formazioni, incastri di stile, 1.650 strategie generate in automatico, serie minori di 23 paesi: quasi tutto *non* batte il mercato, ed è scritto. L'unico vantaggio confermato (quote dei bookmaker italiani sopra la quota "giusta" di Pinnacle, regola D72) ha CLV +2,5% ± 0,3 su 734 casi storici ed è ora in verifica dal vivo.
-- **Misure giuste.** Calibrazione delle probabilità, log loss appaiata, CLV (quota presa rispetto alla quota giusta di chiusura). Il guadagno di una settimana non conta.
-- **Ingegneria completa.** Adattatori per 6 fonti dati con cache e quote di richieste, job pianificati, 15 migrazioni Alembic, 52 endpoint REST, 24 tabelle, autenticazione a sessione, AI con tetto di spesa nel codice, frontend Angular a signal con lazy loading.
+- **Metodo prima dei risultati.** Un fattore entra nel modello solo se una prova *scritta prima di guardare i dati* dimostra che migliora le previsioni. Le prove con molte ipotesi (es. 1.650 strategie generate in automatico) usano una soglia più severa in taratura e una conferma su stagioni separate, per non scambiare il caso per una scoperta.
+- **Risultati negativi dichiarati.** Meteo, riposo, cambio allenatore, formazioni, "incastri di stile", strategie automatiche, serie minori di 23 paesi: non battono il mercato, ed è scritto nel [registro delle decisioni](docs/DECISIONI.md) con i numeri.
+- **Misure corrette.** Calibrazione delle probabilità, log loss appaiata, **CLV** (quota presa rispetto alla quota giusta di chiusura). I soldi vinti in una settimana non sono una misura.
+- **Ingegneria completa.** Adattatori con cache e quote di richieste, job pianificati, 52 endpoint REST, 24 tabelle, autenticazione a sessione, AI con tetto di spesa controllato dal codice, frontend a signal con caricamento pigro delle pagine.
+
+## Schermate
+
+| Statistiche dei campionati | Cosa impara Archie |
+|---|---|
+| ![Statistiche](docs/screenshots/statistiche-campionati.jpg) | ![Cosa impara Archie](docs/screenshots/cosa-impara-archie.jpg) |
+| **Pagina partita** | **Storia di una squadra** |
+| ![Pagina partita](docs/screenshots/pagina-partita.jpg) | ![Storia squadra](docs/screenshots/storia-squadra.jpg) |
 
 ## Funzioni
 
@@ -31,9 +64,9 @@
 | **Home "Oggi"** | Partite di oggi, occasioni del momento, giocate in corso, ArchieTV (video ufficiali delle leghe dai feed RSS di YouTube) |
 | **Partite** | Serie A, B, C, top 5 europei con seconde divisioni, coppe UEFA, 17 campionati dell'Est e del Nord; pagina partita con statistiche, formazioni previste, numeri attesi (tiri, angoli, cartellini), analisi scritta dall'AI, partite "gemelle" |
 | **Live** | Risultati in diretta e quote giuste del momento dal punteggio e dal minuto (modello di Poisson verificato all'intervallo) |
-| **Pronostici** | Stima migliore per ogni partita, Occasioni (valore rispetto a Pinnacle), generatore di multiple, Statistiche (campionati, squadre, "Cosa impara Archie"), simulatore Monte Carlo da 10.000 partite |
-| **Il mio Archie** | Schedine reali e simulate chiuse in automatico, CLV, "sfortuna o errore?", regolamento personale, domande in linguaggio naturale ad Archie (Claude con strumenti sui dati dell'app) |
-| **Schedina** | Sempre visibile: un clic su una quota la aggiunge, controllo del regolamento prima di registrare |
+| **Pronostici** | Stima migliore per ogni partita (1X2, doppia chance, Under/Over 1.5–2.5–3.5, Goal), Occasioni, generatore di multiple con 5 livelli di rischio e profilo personalizzato, statistiche, simulatore Monte Carlo |
+| **Il mio Archie** | Schedine reali e simulate chiuse in automatico, CLV, "sfortuna o errore?", regolamento personale, domande in linguaggio naturale (Claude con strumenti sui dati dell'app) |
+| **Schedina** | Sempre visibile: un clic su una quota la aggiunge; controllo del regolamento prima di registrare |
 
 ## Architettura
 
@@ -43,77 +76,73 @@ flowchart LR
     FD[football-data.co.uk<br/>storico e quote]
     AF[API-Football<br/>calendario, live, giocatori]
     OP[OddsPapi<br/>quote Pinnacle e italiane]
-    NW[Notizie RSS<br/>Google News, TuttoC]
-    YT[YouTube RSS<br/>ArchieTV]
+    NW[Notizie RSS]
+    YT[YouTube RSS]
   end
   subgraph Backend["Backend · FastAPI"]
     AD[Adattatori<br/>cache su file, quote di richieste]
     JOB[Job pianificati<br/>APScheduler]
     DB[(SQLite / PostgreSQL<br/>SQLAlchemy + Alembic)]
-    FC[Previsioni<br/>Dixon-Coles, Elo, Shin,<br/>binomiale negativa, Poisson live]
+    FC[Previsioni e prove<br/>Dixon-Coles, Elo, Shin,<br/>binomiale negativa, Poisson]
     AI[Modulo AI unico<br/>Claude, tetto di spesa]
-    API[API REST<br/>52 endpoint]
+    API[API REST · 52 endpoint]
   end
-  FE[Frontend<br/>Angular 22, signal]
+  FE[Frontend · Angular 22]
   Fonti --> AD --> JOB --> DB
   DB --> FC --> DB
   NW --> AI --> DB
   DB --> API --> FE
 ```
 
-Il processo principale (dati → probabilità → occasioni → giocata → verifica del CLV → apprendimento settimanale) in BPMN 2.0:
+Il processo principale in **BPMN 2.0** (sorgente: [docs/bpmn/ciclo-previsione.bpmn](docs/bpmn/ciclo-previsione.bpmn), si apre con [bpmn.io](https://demo.bpmn.io) o Camunda Modeler):
 
 ![Ciclo di una previsione (BPMN)](docs/bpmn/ciclo-previsione.svg)
 
-Sorgente: [docs/bpmn/ciclo-previsione.bpmn](docs/bpmn/ciclo-previsione.bpmn) (si apre con [bpmn.io](https://demo.bpmn.io) o Camunda Modeler). Dettagli tecnici nel [documento tecnico](docs/DOCUMENTO-TECNICO.md).
+Dettagli nel **[documento tecnico](docs/DOCUMENTO-TECNICO.md)**: architettura, modello dei dati, modelli statistici, metodo delle prove, qualità, limiti.
 
 ## Stack
 
-- **Backend:** Python 3.12, FastAPI, SQLAlchemy 2, Alembic, Pydantic, APScheduler, NumPy/SciPy, SDK Anthropic
-- **Frontend:** Angular 22 (standalone, signal, `httpResource`, lazy loading), TypeScript, SCSS, Vitest
+- **Backend:** Python 3.14, FastAPI, SQLAlchemy 2, Alembic, Pydantic, APScheduler, NumPy/SciPy, SDK Anthropic
+- **Frontend:** Angular 22 (componenti standalone, signal, `httpResource`, lazy loading), TypeScript, SCSS, Vitest
 - **Dati:** SQLite in locale (pronto per PostgreSQL), cache su file per ogni fonte
-- **Qualità:** pytest (420 test), Vitest (28 test), GitHub Actions
+- **DevOps:** Docker e Docker Compose (nginx davanti al frontend), GitHub Actions (test backend, build e test frontend, build delle immagini)
 
-## Avvio rapido
+## Sviluppo locale (senza Docker)
 
 Servono Python 3.12+ e Node.js 22+.
 
 ```bash
-# Backend
 cd backend
 python -m venv .venv
-.venv/Scripts/python -m pip install -e ".[dev]"     # su Linux/macOS: .venv/bin/python
-copy .env.example .env                               # e inserisci le chiavi delle fonti dati che usi
+.venv/Scripts/python -m pip install -e ".[dev]"     # Linux/macOS: .venv/bin/python
+copy .env.example .env                               # chiavi delle fonti dati facoltative
 .venv/Scripts/alembic upgrade head
-.venv/Scripts/python -m app.cli create-user demo --admin
+.venv/Scripts/python -m app.cli create-user tuonome --admin
 .venv/Scripts/uvicorn app.main:app --port 8000
 
-# Frontend (secondo terminale)
-cd frontend
+cd ../frontend
 npm install
 npm start                                            # http://localhost:4280
 ```
 
-Su Windows, dopo la prima installazione, basta `riavvia-archiebet.bat`: applica le migrazioni, avvia (o riavvia) backend e frontend e apre il browser.
-
-Test: `cd backend && .venv/Scripts/python -m pytest -q` e `cd frontend && npx ng test --watch=false`.
-
-Le chiavi delle fonti dati (API-Football, OddsPapi, Anthropic) vanno solo nel file `.env`, che non è nel repository. Senza chiavi l'app funziona con i dati storici gratuiti di football-data.co.uk.
-
-## Documentazione
-
-| Documento | Contenuto |
-|---|---|
-| [Documento tecnico](docs/DOCUMENTO-TECNICO.md) | Architettura, modello dei dati, modelli statistici, metodo delle prove, test, scelte e limiti |
-| [Processo BPMN](docs/bpmn/ciclo-previsione.bpmn) | Ciclo di una previsione, dai dati al verdetto |
-| [Decisioni](docs/DECISIONI.md) | 134 decisioni con motivazione, comprese le prove fallite |
-| [Specifiche](docs/SPECIFICHE.md) | Requisiti, principi, fasi del progetto |
-| [Stato](docs/STATO.md) | Avanzamento fase per fase |
+Test: `cd backend && .venv/Scripts/python -m pytest -q` · `cd frontend && npx ng test --watch=false`.
+Su Windows `riavvia-archiebet.bat` applica le migrazioni e avvia (o riavvia) backend e frontend.
 
 ## Come è stato sviluppato
 
-Progetto personale, ottobre 2026, sviluppato con **Claude Code come pair programmer**: requisiti, scelte di prodotto e verifica sono miei, buona parte del codice è scritta con l'assistente e rivista. Il file [CLAUDE.md](CLAUDE.md) contiene le regole di lavoro date all'assistente (principi statistici, test obbligatori per ogni calcolo, niente segreti su Git).
+ArchieBet è un progetto personale (ottobre 2026) realizzato con un **flusso di lavoro AI-assisted** strutturato:
+io nel ruolo di product owner e revisore tecnico, **[Claude Code](https://www.anthropic.com/claude-code)** (Anthropic) nel ruolo di
+sviluppatore che implementa sotto regole precise.
+
+- **Cosa ho fatto io:** requisiti e specifiche ([SPECIFICHE.md](docs/SPECIFICHE.md)), scelte di prodotto e priorità, principi statistici non negoziabili, approvazione delle decisioni, verifica dell'app in uso, revisione dei risultati delle prove.
+- **Regole date all'assistente** ([CLAUDE.md](CLAUDE.md)): ogni calcolo ha un test; niente dati dal futuro; un fattore entra solo se una prova sul passato lo giustifica; i numeri li calcola il codice, mai l'AI; chiavi solo in `.env`; commit piccoli e documentati.
+- **Controlli:** 451 test automatici e CI a ogni push; ogni decisione registrata con motivazione ([DECISIONI.md](docs/DECISIONI.md)); prove pesanti eseguite su copie del database; avanzamento tracciato fase per fase ([STATO.md](docs/STATO.md)).
+- **Commit:** quelli scritti con l'assistente riportano il trailer `Co-Authored-By: Claude`.
+
+L'obiettivo era anche imparare a guidare in modo professionale uno sviluppo assistito dall'AI: definire bene il problema, fissare criteri di accettazione verificabili e non accettare un risultato senza test e senza prove.
 
 ## Avvertenze
 
-Uso privato e a scopo di studio: non è un servizio di pronostici e non contiene consigli di gioco. Il gioco d'azzardo può creare dipendenza; l'app ha limiti di spesa impostabili e nessuna funzione premia quanto si gioca. Le foto sono di [Unsplash](https://unsplash.com/license).
+Progetto personale a scopo di studio: non è un servizio di pronostici e non contiene consigli di gioco. Il gioco
+d'azzardo può creare dipendenza; l'app ha limiti di spesa impostabili e nessuna funzione premia quanto si gioca.
+Le foto sono di [Unsplash](https://unsplash.com/license); i video di ArchieTV sono incorporati dai canali YouTube ufficiali delle leghe.

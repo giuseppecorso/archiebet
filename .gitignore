@@ -32,3 +32,6 @@ frontend/coverage/
 .idea/
 Thumbs.db
 .DS_Store
+
+# Appunti personali (preparazione colloqui): mai su Git
+privato/

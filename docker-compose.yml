@@ -1,0 +1,27 @@
+# Avvio dimostrativo: docker compose up --build  →  http://localhost:8080  (utente demo / archiebet-demo)
+# Senza chiavi API: storico e statistiche da football-data.co.uk, previsioni di Archie, simulatore, Laboratorio.
+# Con le chiavi (file backend/.env, mai su Git) si attivano quote attuali, live, notizie e AI.
+services:
+  backend:
+    build: ./backend
+    environment:
+      DEMO: "1"
+      DATABASE_URL: sqlite:////data/archiebet.db
+      DATA_CACHE_DIR: /data/cache
+      SYNC_ENABLED: "false"
+    env_file:
+      - path: backend/.env
+        required: false
+    volumes:
+      - archiebet-data:/data
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  archiebet-data:

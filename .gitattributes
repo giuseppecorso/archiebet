@@ -2,3 +2,6 @@
 * text=auto
 *.sh text eol=lf
 *.bat text eol=crlf
+# File dei container Linux: sempre a capo in stile Unix
+Dockerfile text eol=lf
+nginx.conf text eol=lf

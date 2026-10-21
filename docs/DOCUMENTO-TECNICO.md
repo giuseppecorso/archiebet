@@ -1,6 +1,6 @@
 # ArchieBet — Documento tecnico
 
-Versione 1.0 · ottobre 2026 · autore: Giuseppe Corso
+Versione 1.1 · ottobre 2026 · autore: Giuseppe Corso
 
 Questo documento descrive architettura, dati, modelli statistici, metodo di verifica e qualità del software di ArchieBet.
 Le motivazioni di ogni scelta sono nel registro delle decisioni ([DECISIONI.md](DECISIONI.md)), citato come `Dnn`.
@@ -91,7 +91,7 @@ offline e le quote di richieste non si sprecano. Le partite di fonti diverse si 
 | **Tiri dei giocatori** | `forecast/player_props.py` | Tasso per minuto ristretto alla media del ruolo × minuti attesi × avversario; calibrato su 22.800 presenze (D110) |
 | **Live** | `forecast/live.py` | Gol attesi dalle probabilità pre-partita, Poisson per squadra, 45% dei gol nel primo tempo; verificato all'intervallo (D92) |
 | **Simulatore** | `forecast/simulator.py` | Monte Carlo da 10.000 partite e "E se..." da qualunque minuto e punteggio |
-| **Multipla** | `forecast/multiple.py` | Ricerca combinatoria con limite adattivo; probabilità di vincita "1 volta su N" verificata sullo storico |
+| **Multipla** | `forecast/multiple.py` | Ricerca combinatoria con limite adattivo; 5 livelli di rischio e profilo personalizzato; fasce dichiarate "valore / nella norma / paga poco"; "1 volta su N" verificato sullo storico (D130) |
 
 ## 5. Metodo delle prove
 
@@ -127,9 +127,10 @@ spesa** che registra ogni chiamata e blocca oltre il tetto mensile. Usi:
 
 ## 7. Qualità
 
-- **420 test backend** (pytest) e **28 test frontend** (Vitest): ogni calcolo di probabilità, quota, valore o guadagno ha un test (anche casi limite trovati a mano, es. arrotondamenti).
+- **423 test backend** (pytest) e **28 test frontend** (Vitest): ogni calcolo di probabilità, quota, valore o guadagno ha un test (anche casi limite trovati a mano, es. arrotondamenti).
 - **Test delle API** con database in memoria e client autenticato; adattatori provati con risposte registrate, senza rete.
-- **CI** su GitHub Actions a ogni push (`.github/workflows/ci.yml`).
+- **CI** su GitHub Actions a ogni push (`.github/workflows/ci.yml`): test del backend, build e test del frontend, build delle immagini Docker.
+- **Docker**: `docker compose up --build` avvia backend (FastAPI) e frontend (build Angular servita da nginx, che inoltra `/api`), con un utente dimostrativo e lo storico gratuito di football-data, senza chiavi API.
 - **Migrazioni** Alembic per ogni cambio di schema; prove pesanti eseguite su una copia del database.
 - **Segreti** solo in `.env` (escluso da Git); nessun dato delle fonti nel repository.
 
