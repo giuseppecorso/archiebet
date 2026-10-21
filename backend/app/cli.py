@@ -1022,6 +1022,23 @@ def _style_test() -> int:
     return 0
 
 
+def _lineup_test() -> int:
+    """Prova D123: formazioni previste (metodo pesato) contro "stessi titolari dell'ultima partita"."""
+    from app.forecast.lineups import backtest
+    from app.ingest.af_stats import STATS_LEAGUES, load_player_games
+
+    cache = FileCache(get_settings().data_cache_dir, "api-football")
+    for league, name in STATS_LEAGUES.items():
+        for season in (2024, 2025, 2026):
+            t = backtest(load_player_games(cache, league, season))
+            if t is None:
+                print(f"{name} {season}: nessun dato")
+                continue
+            print(f"{name} {season}: {t.n} formazioni, indovinati su 11: Archie {t.archie:.2f}, ultima formazione {t.last:.2f},"
+                  f" differenza {t.gain.mean:+.3f} ± {t.gain.std_error:.3f} -> {'PASSA' if t.passes else 'non passa'}")
+    return 0
+
+
 def _player_test() -> int:
     """Prova D110: tiri dei giocatori, modello contro la media a presenza (solo dati già in cache)."""
     import math
@@ -1294,6 +1311,7 @@ def main() -> int:
     wt = commands.add_parser("weather-test", help="prova del nove del meteo (D76)")
     wt.add_argument("--fetch-only", action="store_true", help="scarica soltanto il meteo, senza la prova")
     wt.add_argument("--patient", action="store_true", help="se Open-Meteo limita, aspetta un'ora e riprende")
+    commands.add_parser("lineup-test", help="prova D123: formazioni previste contro l'ultima formazione")
     commands.add_parser("learning-refresh", help="Archie rifà le prove della Fase 7 e salva i risultati (come il lavoro settimanale)")
     commands.add_parser("timing-test", help="prova D119: quando giocare da Sisal ed Eurobet (archivio OddsPapi)")
     stg = commands.add_parser("strategy-search", help="prova D118: Archie cerca da solo le strategie")
@@ -1341,6 +1359,8 @@ def main() -> int:
         return _popularity_test()
     if args.command == "weather-test":
         return _weather_test(args.fetch_only, args.patient)
+    if args.command == "lineup-test":
+        return _lineup_test()
     if args.command == "learning-refresh":
         from app.forecast.learning_service import refresh_learning
 

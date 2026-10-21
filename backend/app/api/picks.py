@@ -1,8 +1,9 @@
 """Pronostici (D67): la stima migliore per ogni partita in programma, con le quote di Sisal ed Eurobet."""
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
-from typing import Literal
+from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException, Query
@@ -222,41 +223,165 @@ def news_absences(facts: Sequence) -> dict[str, str]:
     return out
 
 
-@router.get("/match/{match_id}/players")
-def match_players(match_id: int, _: CurrentUser, db: DbSession) -> list[PlayerOut]:
-    """Tiri attesi dei giocatori e probabilità di Over 0,5 / 1,5 tiri e Over 0,5 in porta (solo Serie A e B, dalla cache)."""
+@dataclass(frozen=True)
+class _AfContext:
+    """Partita di Serie A o B vista da API-Football: dati dei giocatori in cache e assenti secondo le notizie."""
+
+    fixture: Any  # AFFixture
+    league: int
+    season: int
+    games: list
+    absent: dict[str, dict[str, str]]  # "casa" / "ospite" → cognome → dettaglio
+
+
+def _af_context(db, match: Match) -> _AfContext | None:
     from sqlalchemy import select
 
     from app.adapters.cache import FileCache
-    from app.forecast.player_props import outlook
     from app.ingest.af_stats import STATS_LEAGUES, load_player_games, season_fixtures
     from app.ingest.news import FACTS_WINDOW
     from app.models import MatchSource, TeamFact
 
-    match = db.get(Match, match_id)
-    if match is None:
-        raise HTTPException(404, "Partita non trovata")
-    source = db.scalar(select(MatchSource).where(MatchSource.match_id == match_id, MatchSource.source == "api-football"))
-    if source is None or match.status != "scheduled":
-        return []
+    source = db.scalar(select(MatchSource).where(MatchSource.match_id == match.id, MatchSource.source == "api-football"))
+    if source is None:
+        return None
     cache = FileCache(get_settings().data_cache_dir, "api-football")
     season = int(match.season[:4])
     for league in STATS_LEAGUES:
         fx = next((f for f in season_fixtures(cache, league, season) if str(f.id) == source.external_id), None)
         if fx is None:
             continue
-        games = load_player_games(cache, league, season)
         facts = db.scalars(select(TeamFact).where(TeamFact.team_id.in_([match.home_team_id, match.away_team_id]),
                                                   TeamFact.published_at >= match.kickoff_at - FACTS_WINDOW)).all()  # fmt: skip
         absent = {side: news_absences([f for f in facts if f.team_id == team]) for side, team in (("casa", match.home_team_id), ("ospite", match.away_team_id))}
-        out = []
-        for o in outlook(games, fx.id, league, season, fx.kickoff_at, fx.home.id, fx.away.id):
-            side = "casa" if o.team == fx.home.id else "ospite"
-            note = next((d for k, d in absent[side].items() if k in o.name.lower().split()), None)
-            out.append(PlayerOut(side=side, name=o.name, position=o.position, exp_shots=o.exp_shots, exp_on=o.exp_on,
-                                 p_shot=o.p_shot, p_two=o.p_two, p_on=o.p_on, absent=note))  # fmt: skip
-        return sorted(out, key=lambda p: (p.absent is not None, -p.exp_shots))
-    return []
+        return _AfContext(fx, league, season, load_player_games(cache, league, season), absent)
+    return None
+
+
+def _absence_note(absent: dict[str, str], name: str) -> str | None:
+    return next((d for k, d in absent.items() if k in name.lower().split()), None)
+
+
+@router.get("/match/{match_id}/players")
+def match_players(match_id: int, _: CurrentUser, db: DbSession) -> list[PlayerOut]:
+    """Tiri attesi dei giocatori e probabilità di Over 0,5 / 1,5 tiri e Over 0,5 in porta (solo Serie A e B, dalla cache)."""
+    from app.forecast.player_props import outlook
+
+    match = db.get(Match, match_id)
+    if match is None:
+        raise HTTPException(404, "Partita non trovata")
+    ctx = _af_context(db, match) if match.status == "scheduled" else None
+    if ctx is None:
+        return []
+    fx = ctx.fixture
+    out = []
+    for o in outlook(ctx.games, fx.id, ctx.league, ctx.season, fx.kickoff_at, fx.home.id, fx.away.id):
+        side = "casa" if o.team == fx.home.id else "ospite"
+        out.append(PlayerOut(side=side, name=o.name, position=o.position, exp_shots=o.exp_shots, exp_on=o.exp_on,
+                             p_shot=o.p_shot, p_two=o.p_two, p_on=o.p_on, absent=_absence_note(ctx.absent[side], o.name)))  # fmt: skip
+    return sorted(out, key=lambda p: (p.absent is not None, -p.exp_shots))
+
+
+# ---------- Formazioni (D123) e piano partita live (D124) ----------
+
+OFFICIAL_BEFORE = timedelta(minutes=90)  # le formazioni ufficiali escono circa un'ora prima
+OFFICIAL_REFRESH = timedelta(minutes=10)
+
+
+class LineupPlayer(BaseModel):
+    name: str
+    position: str
+    p_start: float | None  # titolare (pesato) nelle ultime 5 partite
+    absent: str | None = None
+
+
+class TeamLineup(BaseModel):
+    side: str  # "casa" | "ospite"
+    official: bool
+    eleven: list[LineupPlayer]
+    doubtful: list[LineupPlayer]
+    out: list[LineupPlayer]  # assenti secondo le notizie tra i titolari abituali
+    based_on: int
+
+
+@router.get("/match/{match_id}/lineups")
+def match_lineups(match_id: int, _: CurrentUser, db: DbSession) -> list[TeamLineup]:
+    """Formazioni previste (l'ultima, senza gli assenti delle notizie: D123) o ufficiali se già uscite. Serie A e B."""
+    from app.adapters.api_football import ApiFootballAdapter
+    from app.adapters.cache import FileCache
+    from app.forecast.lineups import predicted_lineup, recent_starts
+
+    match = db.get(Match, match_id)
+    if match is None:
+        raise HTTPException(404, "Partita non trovata")
+    ctx = _af_context(db, match) if match.status == "scheduled" else None
+    if ctx is None:
+        return []
+    fx = ctx.fixture
+    now = datetime.now(UTC)
+    official = {}
+    settings = get_settings()
+    if settings.api_football_key and fx.kickoff_at - now <= OFFICIAL_BEFORE:
+        af = ApiFootballAdapter(FileCache(settings.data_cache_dir, "api-football"), settings.api_football_key)
+        try:
+            official = {lu.team_id: lu.starters for lu in af.lineups(fx.id, OFFICIAL_REFRESH)}
+        except Exception:  # API non raggiungibile: restano le previste
+            official = {}
+    out = []
+    for side, team in (("casa", fx.home.id), ("ospite", fx.away.id)):
+        ranked, recent = recent_starts(ctx.games, team, fx.kickoff_at)
+        info = {p.player: p for p in ranked}
+        absent_ids = {p.player for p in ranked if _absence_note(ctx.absent[side], p.name)}
+
+        def row(pid: int) -> LineupPlayer:
+            p = info.get(pid)
+            if p is None:
+                return LineupPlayer(name=f"giocatore {pid}", position="?", p_start=None)
+            return LineupPlayer(name=p.name, position=p.position, p_start=p.p_start, absent=_absence_note(ctx.absent[side], p.name))
+
+        missing = [row(pid) for pid in absent_ids if info[pid].p_start >= 0.3]
+        if team in official and official[team]:
+            order = {"G": 0, "D": 1, "M": 2, "F": 3}
+            eleven = sorted((row(pid) for pid in official[team]), key=lambda r: order.get(r.position, 9))
+            out.append(TeamLineup(side=side, official=True, eleven=eleven, doubtful=[], out=missing, based_on=len(recent)))
+            continue
+        lineup = predicted_lineup(ctx.games, team, fx.kickoff_at, absent_ids)
+        if lineup is None:
+            continue
+        out.append(TeamLineup(side=side, official=False, eleven=[row(p.player) for p in lineup.eleven],
+                              doubtful=[row(p.player) for p in lineup.doubtful], out=missing, based_on=lineup.based_on))  # fmt: skip
+    return out
+
+
+class PlanLineOut(BaseModel):
+    market: str
+    selection: str
+    probability: float
+    fair_odds: float
+    min_odds: float | None
+
+
+class PlanStateOut(BaseModel):
+    minute: int
+    home_goals: int
+    away_goals: int
+    remaining: tuple[float, float]
+    lines: list[PlanLineOut]
+
+
+@router.get("/match/{match_id}/plan")
+def match_plan(match_id: int, _: CurrentUser, db: DbSession) -> list[PlanStateOut]:
+    """Piano partita live (D124, sperimentale): quote minime da giocare nelle situazioni tipiche."""
+    from app.forecast.game_plan import plan
+    from app.forecast.live_service import match_rates
+
+    if db.get(Match, match_id) is None:
+        raise HTTPException(404, "Partita non trovata")
+    rates = match_rates(db, [match_id]).get(match_id)
+    if rates is None:
+        return []
+    return [PlanStateOut(minute=s.minute, home_goals=s.home_goals, away_goals=s.away_goals, remaining=s.remaining,
+                         lines=[PlanLineOut(**vars(x)) for x in s.lines]) for s in plan(rates)]  # fmt: skip
 
 
 # ---------- Multipla del giorno (D68) ----------

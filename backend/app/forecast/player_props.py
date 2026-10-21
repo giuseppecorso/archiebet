@@ -33,6 +33,7 @@ class PlayerGame:
     minutes: int
     shots: int
     on_target: int
+    substitute: bool = False  # entrato dalla panchina (False = titolare, se ha giocato)
 
 
 def parse_players(body: dict[str, Any], fixture_id: int, league: int, season: int, kickoff: datetime, home_team: int) -> list[PlayerGame]:
@@ -49,7 +50,8 @@ def parse_players(body: dict[str, Any], fixture_id: int, league: int, season: in
             games = st.get("games") or {}
             shots = st.get("shots") or {}
             out.append(PlayerGame(fixture_id, league, season, kickoff, team, opponent, team == home_team, p["player"]["id"], p["player"].get("name") or "",
-                                  games.get("position") or "?", int(games.get("minutes") or 0), int(shots.get("total") or 0), int(shots.get("on") or 0)))  # fmt: skip
+                                  games.get("position") or "?", int(games.get("minutes") or 0), int(shots.get("total") or 0), int(shots.get("on") or 0),
+                                  bool(games.get("substitute"))))  # fmt: skip
     return out
 
 
