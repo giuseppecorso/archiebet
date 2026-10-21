@@ -79,12 +79,12 @@ import { Crest } from './crest';
     .legs .match { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--text); }
     .legs .pick { grid-column: 1; font-size: 13px; color: var(--text-2); }
     .legs .nums { grid-column: 2; grid-row: 2 / span 2; align-self: center; text-align: right; }
-    .legs .led { margin-left: 6px; font-size: 18px; color: var(--amber); }
+    .legs .led { margin-left: 6px; font-size: 15px; color: var(--amber); }
     .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; margin: 10px 0 0; }
     .stats div { padding: 6px 8px; background: var(--bg-deep); border: 1px solid var(--line-strong); border-radius: 4px; }
     .stats dt { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
     .stats dd { margin: 2px 0 0; font-weight: 700; }
-    .stats .led { font-size: 18px; color: var(--amber); }
+    .stats .led { font-size: 15px; color: var(--amber); }
     .pos { color: var(--value); }
     .neg { color: var(--loss); }
     .note { margin: 10px 0 0; font-size: 12px; color: var(--text-2); }

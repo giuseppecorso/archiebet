@@ -4,11 +4,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 .page-title {
   margin: 0;
-  font-size: 28px;
+  font-size: 22px;
   color: var(--amber);
 }
 .seg {
@@ -59,7 +59,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 .country select {
   min-height: 36px;
@@ -152,9 +152,10 @@
 }
 .cell {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 5px 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 4px 8px;
   background: var(--bg-deep);
   border: 1px solid var(--line-strong);
   border-radius: 4px;
@@ -163,6 +164,8 @@
     border-color: var(--amber);
   }
   .sel {
+    min-width: 0;
+    max-width: 100%;
     font-size: 12px;
     font-weight: 700;
     color: var(--text-2);
@@ -171,14 +174,14 @@
     white-space: nowrap;
   }
   .prob {
-    font-size: 17px;
+    font-size: 15px;
   }
 }
 .offers {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 4px;
+  margin-left: auto;
 }
 .v {
   padding: 1px 6px;
@@ -211,12 +214,12 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 .more {
   margin-left: auto;
-  min-height: 28px;
-  padding: 2px 10px;
+  min-height: 24px;
+  padding: 1px 8px;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -265,10 +268,10 @@
   }
 }
 .explain {
-  padding: 16px 20px;
+  padding: 10px 14px;
   h2 {
     margin: 0 0 6px;
-    font-size: 19px;
+    font-size: 16px;
   }
   p {
     margin: 0;

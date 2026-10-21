@@ -2,7 +2,9 @@ import { httpResource } from '@angular/common/http';
 import { Component, WritableSignal, computed, signal } from '@angular/core';
 import { Competition } from '../../core/football';
 import { Horizon, MultiplesOut } from '../../core/multiple';
+import { Review } from '../../core/review';
 import { MultipleView } from '../../shared/multiple-view';
+import { RouterLink } from '@angular/router';
 
 type Profile = 'molto tranquilla' | 'tranquilla' | 'equilibrata' | 'coraggiosa' | 'spericolata' | 'personalizzata';
 
@@ -50,7 +52,7 @@ const MARKETS: [string, string][] = [
 /** "Archie, fammi una multipla" (specifiche sezione 5): varianti della multipla del giorno, calcolate dal codice. */
 @Component({
   selector: 'ab-generator',
-  imports: [MultipleView],
+  imports: [MultipleView, RouterLink],
   template: `
     <section class="panel box form" aria-labelledby="gen-title">
       <h2 id="gen-title" class="title">Archie, fammi una multipla</h2>
@@ -64,6 +66,12 @@ const MARKETS: [string, string][] = [
           }
         </div>
         <p class="hint muted small">{{ hint() }}</p>
+        @if (track(); as t) {
+          <p class="hint small track">
+            Pagella delle ultime 4 settimane: vinte <strong>{{ t.won }}</strong> su {{ t.played }} (Archie ne attendeva {{ t.expected.toFixed(1) }}).
+            <a [routerLink]="[]" [queryParams]="{ tab: 'pagella' }">Vedi la pagella</a>
+          </p>
+        }
         @if (profile() === 'personalizzata') {
           <div class="row custom">
             <label>Ogni partita almeno
@@ -146,23 +154,24 @@ const MARKETS: [string, string][] = [
     </section>
   `,
   styles: `
-    :host { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+    :host { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
     @media (max-width: 860px) { :host { grid-template-columns: 1fr; } }
-    .box { padding: 16px 20px; }
-    h2 { margin: 0 0 12px; font-size: 20px; color: var(--amber); }
-    fieldset { margin: 0 0 14px; padding: 0; border: 0; }
+    .box { padding: 10px 14px; }
+    h2 { margin: 0 0 12px; font-size: 16px; color: var(--amber); }
+    fieldset { margin: 0 0 10px; padding: 0; border: 0; }
     legend { margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
-    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 4px; }
     .chip {
-      min-height: 32px; padding: 2px 12px; font: inherit; font-size: 12px; font-weight: 600; color: var(--text-2);
-      background: transparent; border: 1px solid var(--line-strong); border-radius: 16px; cursor: pointer;
+      min-height: 26px; padding: 1px 10px; font: inherit; font-size: 11.5px; font-weight: 600; color: var(--text-2);
+      background: transparent; border: 1px solid var(--line-strong); border-radius: 13px; cursor: pointer;
     }
     .chip.on { color: var(--amber); background: var(--chip); border-color: var(--amber); }
     .hint { margin: 6px 0 0; }
+    .track { color: var(--text-2); }
     .row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
     label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
     select, input {
-      min-height: 34px; padding: 2px 8px; font: inherit; font-size: 14px; color: var(--text);
+      min-height: 30px; padding: 2px 8px; font: inherit; font-size: 13px; color: var(--text);
       background: var(--bg-deep); border: 1px solid var(--line-strong); border-radius: 4px;
     }
     input { width: 90px; }
@@ -195,6 +204,14 @@ export class Generator {
 
   protected readonly competitions = httpResource<Competition[]>(() => '/api/competitions', { defaultValue: [] });
   protected readonly hint = computed(() => PROFILES.find((p) => p.key === this.profile())!.hint);
+  /** Come è andato questo livello di rischio nelle ultime 4 settimane (pagella D132) */
+  private readonly review = httpResource<Review>(() => '/api/lab/review');
+  protected readonly track = computed(() => {
+    const weeks = this.review.value()?.weeks.slice(-4) ?? [];
+    const rows = weeks.map((w) => w.multiples.base[this.profile()]).filter((t) => !!t);
+    if (!rows.length) return null;
+    return rows.reduce((a, t) => ({ played: a.played + t.played, won: a.won + t.won, expected: a.expected + t.expected }), { played: 0, won: 0, expected: 0 });
+  });
 
   protected readonly result = httpResource<MultiplesOut>(() => {
     const params = new URLSearchParams({ horizon: this.horizon(), profile: this.profile(), legs: String(this.legs()) });

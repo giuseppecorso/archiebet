@@ -21,9 +21,9 @@ import { Subnav } from '../../shared/subnav';
   `,
   styles: `
     .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-bottom: 12px; }
-    h1 { margin: 0; font-size: 28px; color: var(--amber); }
+    h1 { margin: 0; font-size: 22px; color: var(--amber); }
     p { margin: 0; font-size: 13px; }
-    .tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 20px; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
     .tab {
       display: inline-flex; align-items: center; min-height: 40px; padding: 6px 14px;
       font-size: 16px; color: var(--text); text-decoration: none;

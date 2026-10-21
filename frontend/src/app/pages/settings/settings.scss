@@ -1,20 +1,20 @@
 .page-title {
   margin: 0 0 16px;
-  font-size: 28px;
+  font-size: 22px;
   color: var(--amber);
 }
 .stack {
   max-width: 720px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 .box {
-  padding: 16px 20px;
+  padding: 10px 14px;
 }
 .box-title {
   margin: 0;
-  font-size: 19px;
+  font-size: 16px;
 }
 p {
   margin: 4px 0 12px;
@@ -46,7 +46,7 @@ select {
 }
 input.led {
   width: 160px;
-  font-size: 20px;
+  font-size: 16px;
   color: var(--amber);
 }
 select {

@@ -1379,6 +1379,7 @@ def main() -> int:
     commands.add_parser("minor-test", help="prova D106 (b): Occasioni nelle serie minori contro Pinnacle")
     commands.add_parser("lineup-test", help="prova D123: formazioni previste contro l'ultima formazione")
     commands.add_parser("learning-refresh", help="Archie rifà le prove della Fase 7 e salva i risultati (come il lavoro settimanale)")
+    commands.add_parser("review-refresh", help="pagella settimanale di Archie e correzioni automatiche (D132)")
     commands.add_parser("timing-test", help="prova D119: quando giocare da Sisal ed Eurobet (archivio OddsPapi)")
     stg = commands.add_parser("strategy-search", help="prova D118: Archie cerca da solo le strategie")
     stg.add_argument("--first", default="2012/13")
@@ -1438,6 +1439,11 @@ def main() -> int:
         from app.forecast.learning_service import refresh_learning
 
         print(refresh_learning())
+        return 0
+    if args.command == "review-refresh":
+        from app.forecast.review_service import refresh_review
+
+        print(refresh_review())
         return 0
     if args.command == "timing-test":
         return _timing_test()

@@ -1,12 +1,12 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 .home-grid {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-  gap: 16px;
+  gap: 10px;
   align-items: start;
 }
 @media (max-width: 900px) {
@@ -17,7 +17,7 @@
 .side {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 .box {
   padding: 12px 14px;
@@ -31,7 +31,7 @@
 }
 .box-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 16px;
   color: var(--amber);
 }
 .occ,

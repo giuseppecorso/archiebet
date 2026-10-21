@@ -184,7 +184,9 @@ def learning_job() -> None:
     """Ogni settimana, dopo l'archivio: Archie rifà da solo le prove della Fase 7 (strategie, quando giocare, taratura)."""
 
     def work() -> str:
-        return refresh_learning(log=logger.debug)
+        from app.forecast.review_service import refresh_review
+
+        return refresh_learning(log=logger.debug) + "; " + refresh_review(log=logger.debug)  # pagella e correzioni (D132)
 
     _tracked("learning", work)
 

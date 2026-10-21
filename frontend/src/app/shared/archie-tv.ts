@@ -45,9 +45,9 @@ interface Video {
     </section>
   `,
   styles: `
-    .tv { padding: 14px 16px; }
+    .tv { padding: 10px 12px; }
     .tv-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-    .tv-title { margin: 0; font-size: 26px; }
+    .tv-title { margin: 0; font-size: 20px; }
     .tv-title .title { color: var(--text); }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .chip { padding: 4px 10px; font: inherit; font-size: 13px; color: var(--text-2); background: transparent; border: 1px solid var(--line-strong); border-radius: 999px; cursor: pointer; }

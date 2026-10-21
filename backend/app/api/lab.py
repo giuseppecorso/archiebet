@@ -280,6 +280,17 @@ def learning(_: CurrentUser) -> dict:
     return report
 
 
+@router.get("/review")
+def review(_: CurrentUser) -> dict:
+    """Pagella settimanale di Archie (D132): settimana per settimana Pronostici e multiple, tarature e panchina."""
+    from app.forecast.review_service import load_review
+
+    report = load_review()
+    if report is None:
+        raise HTTPException(404, "La prima pagella arriva con il lavoro settimanale (entro due ore dall'avvio)")
+    return report
+
+
 class TwinExample(BaseModel):
     match_id: int
     league: str

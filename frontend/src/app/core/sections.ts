@@ -120,6 +120,7 @@ export const PRONOSTICI_TABS: SubItem[] = [
   { label: 'Pronostici', link: '/pronostici' },
   { label: 'Occasioni', link: '/pronostici', query: { tab: 'occasioni' } },
   { label: 'Multipla', link: '/pronostici', query: { tab: 'multipla' } },
+  { label: 'Pagella', link: '/pronostici', query: { tab: 'pagella' } },
   { label: 'Statistiche', link: '/laboratorio', subtree: true },
   { label: 'Simulatore', link: '/simulatore' },
 ];

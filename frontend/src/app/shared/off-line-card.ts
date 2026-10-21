@@ -48,8 +48,8 @@ interface OffLine {
     </section>
   `,
   styles: `
-    .card { padding: 16px 20px; }
-    h2 { margin: 0 0 8px; font-size: 20px; color: var(--amber); }
+    .card { padding: 10px 14px; }
+    h2 { margin: 0 0 8px; font-size: 16px; color: var(--amber); }
     ul { margin: 0; padding: 0; list-style: none; }
     li { display: flex; flex-direction: column; gap: 1px; padding: 8px 0; border-top: 1px solid var(--line-row); }
     .match { font-weight: 700; color: var(--text); }

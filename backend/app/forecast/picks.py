@@ -45,6 +45,7 @@ class MarketPick:
     source: str  # da dove viene la probabilità
     probabilities: dict[str, float]
     offers: dict[str, list[Offer]]  # esito → quote dei bookmaker di Giuse
+    corrected: bool = False  # probabilità corrette dalla taratura che Archie ha imparato (D132)
 
 
 CONSENSUS_VALUE = "sopra la media"  # la quota batte la media dei bookmaker italiani: un'indicazione, non valore (D96)

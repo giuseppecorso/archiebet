@@ -11,14 +11,15 @@ import { MarketPick, Pick, PicksOut } from '../../core/picks';
 import { Crest, LeagueLogo } from '../../shared/crest';
 import { Radar } from '../radar/radar';
 import { Generator } from './generator';
+import { ReviewPage } from './review';
 
-type Tab = 'pronostici' | 'multipla' | 'occasioni';
+type Tab = 'pronostici' | 'multipla' | 'occasioni' | 'pagella';
 
 
 /** Pronostici (D67): la stima migliore per ogni partita, con le quote di Sisal ed Eurobet. Scheda "Occasioni" = radar. */
 @Component({
   selector: 'ab-picks',
-  imports: [RouterLink, Radar, Generator, Crest, LeagueLogo, OfferButton, Subnav, OffLineCard],
+  imports: [RouterLink, Radar, Generator, ReviewPage, Crest, LeagueLogo, OfferButton, Subnav, OffLineCard],
   templateUrl: './picks.html',
   styleUrl: './picks.scss',
 })
@@ -33,7 +34,7 @@ export class Picks {
   protected readonly tabs = PRONOSTICI_TABS;
   protected readonly tab = computed<Tab>(() => {
     const t = this.tabParam();
-    return t === 'occasioni' || t === 'multipla' ? t : 'pronostici';
+    return t === 'occasioni' || t === 'multipla' || t === 'pagella' ? t : 'pronostici';
   });
 
   protected readonly data = httpResource<PicksOut>(() => (this.tab() === 'pronostici' ? '/api/picks' : undefined));

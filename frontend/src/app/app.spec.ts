@@ -180,12 +180,16 @@ describe('ArchieBet: navigazione', () => {
     const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
     const premier = { code: 'ENG-1', name: 'Premier League', country: 'Inghilterra', tier: 1 };
     (await nextRequest('/api/competitions')).flush([serieA, premier]);
+    const tally = { played: 7, won: 2, expected: 2.1, profit: -1.5, clv: -0.03 };
+    const week = { week: '2026-10-12', matches: 90, families: [], multiples: { base: { equilibrata: tally }, impara: { equilibrata: tally } }, corrections: [], bench: [] };
+    (await nextRequest('/api/lab/review')).flush({ computed_at: '2026-10-21T10:00:00Z', weeks: [week], totals: week.multiples, state: { corrections: {}, bench: [], groups: [], bench_tests: [] } });
     const first = await nextRequest((r) => r.url.startsWith('/api/picks/multiple'));
     expect(first.request.url).toBe('/api/picks/multiple?horizon=week&profile=equilibrata&legs=4'); // tutti i mercati e campionati: niente filtri
     first.flush({ horizon: 'week', profile: 'equilibrata', legs: 4, multiples: [], missing: ['Sisal', 'Eurobet'] });
     await harness.fixture.whenStable();
     const page = harness.routeNativeElement!;
     expect(page.querySelector('ab-generator')!.textContent).toContain("non c'è una multipla sensata");
+    expect(page.querySelector('ab-generator .track')!.textContent).toContain('vinte 2 su 7 (Archie ne attendeva 2.1)');
 
     const click = (text: string) =>
       ([...page.querySelectorAll('ab-generator button')] as HTMLButtonElement[]).find((b) => b.textContent?.trim() === text)!.click();

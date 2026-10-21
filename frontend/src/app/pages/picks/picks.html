@@ -9,6 +9,8 @@
   <ab-radar [embedded]="true" />
 } @else if (tab() === 'multipla') {
   <ab-generator />
+} @else if (tab() === 'pagella') {
+  <ab-review />
 } @else {
   @if (data.error()) {
     <p class="warn">I pronostici non rispondono: controlla che il backend sia acceso.</p>

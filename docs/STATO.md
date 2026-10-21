@@ -2,6 +2,13 @@
 
 Ultimo aggiornamento: 2026-10-21
 
+## Più mercati, pagella settimanale, grafica minimal (2026-10-21, richieste di Giuse)
+
+- [x] **Più mercati** (D131): Under/Over 0.5 e 4.5; angoli e cartellini (totali e per squadra) nei 10 campionati con statistiche a fine partita, in Pronostici, pagina partita, multipla e schedina, con chiusura automatica quando arrivano le statistiche.
+- [x] **Pagella settimanale** (D132): scheda Pronostici → Pagella; Archie ricostruisce ogni settimana Pronostici e multiple con le quote delle 10 del mattino e decide da solo tarature e panchina (regole registrate). Primo giro: niente da correggere.
+- [x] **Grafica più minimal**: riquadri, spazi e numeri ridotti; Pronostici e "Gioca questa partita" con gli esiti su una riga.
+- Test: 442 backend + 29 frontend, tutti verdi.
+
 ## Grafica, navigazione e nuovi campionati (2026-10-21, richieste di Giuse)
 
 - [x] **Schedina sempre visibile** (D126): un clic su una quota in Pronostici, nella pagina partita o su una Multipla la mette in schedina; registra con il controllo del regolamento.

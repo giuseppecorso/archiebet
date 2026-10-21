@@ -89,7 +89,7 @@ def offer_out(o) -> OfferOut:
 def market_out(p: MarketPick) -> MarketOut:
     return MarketOut(
         market=p.market,
-        source=SOURCE_LABELS.get(p.source, p.source),
+        source=SOURCE_LABELS.get(p.source, p.source) + (" · corretta da Archie" if p.corrected else ""),
         from_model=p.source == MODEL_SOURCE,
         probabilities=p.probabilities,
         offers={sel: [offer_out(o) for o in offers] for sel, offers in p.offers.items()},
