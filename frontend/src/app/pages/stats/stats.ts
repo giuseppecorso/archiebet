@@ -1,3 +1,4 @@
+import { RulesPanel } from '../../shared/rules-panel';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -11,7 +12,7 @@ type Dim = 'by_size' | 'by_market' | 'by_competition' | 'by_bookmaker';
 /** Le mie statistiche: riepilogo, dove vinci e dove perdi, abitudini. Reali e simulate sempre separate. */
 @Component({
   selector: 'ab-stats',
-  imports: [RouterLink, ShowMore],
+  imports: [RouterLink, ShowMore, RulesPanel],
   templateUrl: './stats.html',
   styleUrl: './stats.scss',
 })

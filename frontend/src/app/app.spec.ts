@@ -24,6 +24,8 @@ describe('ArchieBet: navigazione', () => {
     http.match((r) => r.url.startsWith('/api/matches?view=live')).forEach((r) => r.flush([]));
     // ... e lo storico di Chiedi ad Archie (Fase 6)
     http.match((r) => r.url.startsWith('/api/ask')).forEach((r) => r.flush([]));
+    // ... e il regolamento nelle statistiche (Fase 6)
+    http.match((r) => r.url === '/api/rules').forEach((r) => r.flush({ rules: [], suggestions: [], style: null, style_at: null }));
     http.verify();
   });
 
@@ -234,6 +236,7 @@ describe('ArchieBet: navigazione', () => {
       agreed: { n: 25, won: 14, expected_wins: 12.1, roi: 0.08, avg_value: 0.04 },
       disagreed: { n: 15, won: 6, expected_wins: 6.7, roi: -0.12, avg_value: -0.07 },
     });
+    (await nextRequest('/api/rules')).flush({ rules: [], suggestions: [], style: null, style_at: null }); // regolamento (Fase 6)
     await harness.fixture.whenStable();
     const section = harness.routeNativeElement!.querySelector('[aria-labelledby="versus-title"]')!.textContent!;
     expect(section).toContain('+3,2');

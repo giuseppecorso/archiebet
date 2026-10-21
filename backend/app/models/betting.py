@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import JSON, ForeignKey, Index, Numeric, String
+from sqlalchemy import JSON, Boolean, ForeignKey, Index, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, UTCDateTime, utcnow
@@ -78,4 +78,21 @@ class UserSettings(Base):
     monthly_budget: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     favorite_team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id", ondelete="SET NULL"))
     bookmakers: Mapped[list[str]] = mapped_column(JSON, default=list)
+    style_text: Mapped[str | None] = mapped_column(Text)  # "Il tuo stile di gioco" scritto da Archie (D114)
+    style_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, onupdate=utcnow)
+
+
+class UserRule(Base):
+    """Una regola del regolamento personale (D114): scritta da Giuse o accettata dai suggerimenti di Archie."""
+
+    __tablename__ = "user_rules"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(30))
+    value: Mapped[str] = mapped_column(String(40), default="")
+    reason: Mapped[str] = mapped_column(String(300), default="")
+    source: Mapped[str] = mapped_column(String(10), default="mine")  # "mine" | "archie"
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)

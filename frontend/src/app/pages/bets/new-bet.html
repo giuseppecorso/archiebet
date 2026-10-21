@@ -99,11 +99,26 @@
       <input maxlength="300" [value]="note()" (input)="note.set($any($event.target).value)" placeholder="es. presa in pausa pranzo" />
     </label>
 
+    @if (ruleWarnings().length) {
+      <div class="rule-warn" role="alert">
+        <strong>Il tuo regolamento dice:</strong>
+        <ul>
+          @for (w of ruleWarnings(); track w) {
+            <li>{{ w }}</li>
+          }
+        </ul>
+        <span class="small">Sono solo avvisi: se vuoi, registra comunque.</span>
+      </div>
+    }
     @if (error(); as e) {
       <p class="error" role="alert">{{ e }}</p>
     }
     <button type="button" class="btn-primary submit" [disabled]="busy() || !summary().valid" (click)="submit()">
+      @if (ruleWarnings().length) {
+        Registra comunque
+      } @else {
       {{ kind() === 'real' ? "L'ho giocata" : 'Gioca simulata' }}
+    }
     </button>
     <p class="muted small">Archie salva anche una "fotografia" di quote e statistiche di adesso, e chiude la schedina da solo quando arrivano i risultati.</p>
   </aside>

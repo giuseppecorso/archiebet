@@ -140,6 +140,9 @@ export class NewBet {
     return value ? value.toFixed(2) : '';
   }
 
+  /** Avvisi del regolamento personale (D114): la prima volta si mostrano, al secondo clic si registra comunque */
+  protected readonly ruleWarnings = signal<string[]>([]);
+
   protected async submit(): Promise<void> {
     this.error.set(null);
     if (!this.summary().valid) {
@@ -148,6 +151,17 @@ export class NewBet {
     }
     this.busy.set(true);
     try {
+      if (!this.ruleWarnings().length) {
+        const draft = {
+          stake: parseDecimal(this.stake()).toFixed(2),
+          selections: this.rows().map((r) => ({ match_id: r.match.id, market: r.market, pick: r.pick, odds: parseDecimal(r.odds) })),
+        };
+        const check = await firstValueFrom(this.http.post<{ warnings: string[] }>('/api/rules/check', draft));
+        if (check.warnings.length) {
+          this.ruleWarnings.set(check.warnings);
+          return;
+        }
+      }
       const body = {
         kind: this.kind(),
         stake: parseDecimal(this.stake()).toFixed(2),
