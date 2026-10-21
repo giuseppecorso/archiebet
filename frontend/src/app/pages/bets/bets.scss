@@ -80,7 +80,9 @@
 
 .tiles {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Tante colonne quante sono le caselle (3, o 4 con il termometro), tutte sulla stessa riga */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 8px;
   margin: 14px 0;
 }
@@ -322,6 +324,12 @@
 }
 
 /* Termometro della speranza (D92) */
+@media (max-width: 600px) {
+  .tiles {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .hope .meter {
   display: block;
   height: 6px;
