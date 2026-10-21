@@ -1,4 +1,4 @@
-"""Archie tifoso (D101-D102): notizie, fatti delle squadre, giudizi sulle partite, spesa dell'AI. Nessun user_id."""
+"""Archie tifoso (D101-D102): notizie, fatti delle squadre, giudizi sulle partite. Nessun user_id."""
 
 from datetime import datetime
 
@@ -57,16 +57,3 @@ class MatchInsight(Base):
     close_draw: Mapped[float | None] = mapped_column(Float)
     close_away: Mapped[float | None] = mapped_column(Float)
 
-
-class AiUsage(Base):
-    """Una chiamata a Claude: token e costo, per il tetto di spesa mensile (D102)."""
-
-    __tablename__ = "ai_usage"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, index=True)
-    purpose: Mapped[str] = mapped_column(String(30))
-    model: Mapped[str] = mapped_column(String(40))
-    input_tokens: Mapped[int] = mapped_column(Integer)
-    output_tokens: Mapped[int] = mapped_column(Integer)
-    cost_usd: Mapped[float] = mapped_column(Float)

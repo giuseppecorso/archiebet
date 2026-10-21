@@ -8,10 +8,12 @@ import pytest
 
 from app.adapters.cache import FileCache
 from app.adapters.news import NewsAdapter, parse_rss
-from app.ai.client import Ai, BudgetExceeded, cost_usd, month_spent
+from app.ai.client import Ai, cost_usd
+from app.ai.gateway import AIGateway, BudgetExceeded
+from app.config import Settings
 from app.ai.news import Extraction, Fact, Judgment
 from app.ingest.news import fan_test, needs_judgment, run_news, signals, store_items
-from app.models import AiUsage, Competition, Match, MatchInsight, MatchOdds, NewsItem, Team, TeamFact
+from app.models import Competition, Match, MatchInsight, MatchOdds, NewsItem, Team, TeamFact, UsageEvent
 
 NOW = datetime(2026, 10, 21, 9, tzinfo=UTC)
 
@@ -61,15 +63,17 @@ class FakeClient:
 
 def test_budget_is_checked_before_every_call(db):
     assert cost_usd("claude-sonnet-5-5", 1_000_000, 100_000) == pytest.approx(2.0 + 1.0)
-    db.add(AiUsage(created_at=NOW - timedelta(days=1), purpose="x", model="claude-sonnet-5-5", input_tokens=0, output_tokens=0, cost_usd=9.99))
-    db.add(AiUsage(created_at=datetime(2026, 9, 30, tzinfo=UTC), purpose="x", model="claude-sonnet-5-5", input_tokens=0, output_tokens=0, cost_usd=50))
+    settings = Settings(ai_monthly_budget_eur=10)
+    db.add(UsageEvent(source="ai:x:sonnet-5-5", cost_eur=Decimal("9.99"), created_at=NOW - timedelta(days=1)))
+    db.add(UsageEvent(source="ai:x:sonnet-5-5", cost_eur=Decimal(50), created_at=datetime(2026, 9, 30, tzinfo=UTC)))  # settembre: non conta
     db.commit()
-    assert month_spent(db, NOW) == pytest.approx(9.99)  # settembre non conta
     client = FakeClient([Judgment(side="none", strength="nessuna", reason="-")])
-    ai = Ai(db, "k", 10.0, client=client, now=lambda: NOW)
+    ai = Ai(db, "k", settings, client=client, now=lambda: NOW)
     ai.parse("t", "claude-haiku-5-5", "s", "u", Judgment)  # 9,99 < 10: passa e registra il costo
-    assert month_spent(db, NOW) == pytest.approx(9.99 + cost_usd("claude-haiku-5-5", 1000, 200))
-    db.add(AiUsage(created_at=NOW, purpose="x", model="claude-sonnet-5-5", input_tokens=0, output_tokens=0, cost_usd=0.02))
+    spent = AIGateway(db, settings).global_status(NOW).spent_eur
+    assert float(spent) == pytest.approx(9.99 + cost_usd("claude-haiku-5-5", 1000, 200))
+    assert db.query(UsageEvent).filter(UsageEvent.source == "ai:t:haiku-5-5").one().units == 1200
+    db.add(UsageEvent(source="ai:x:sonnet-5-5", cost_eur=Decimal("0.02"), created_at=NOW))
     db.commit()
     with pytest.raises(BudgetExceeded):
         ai.parse("t", "claude-haiku-5-5", "s", "u", Judgment)
@@ -111,7 +115,7 @@ def test_full_round_extracts_facts_judges_and_records_consensus(db):
     ])  # fmt: skip
     judgment = Judgment(side="away", strength="netta", reason="Picerno senza allenatore")
     client = FakeClient([facts, judgment])
-    ai = Ai(db, "k", 10.0, client=client, now=lambda: NOW)
+    ai = Ai(db, "k", Settings(ai_monthly_budget_eur=10), client=client, now=lambda: NOW)
     report = run_news(db, FakeNews(), ai, "claude-haiku-5-5", "claude-sonnet-5-5", NOW)
     assert (report.new, report.processed, report.facts, report.judged) == (1, 1, 1, 1)
     assert len(report.errors) == 2  # Google News di Picerno e Barletta

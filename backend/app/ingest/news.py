@@ -10,7 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.adapters.news import FeedItem, NewsAdapter
-from app.ai.client import Ai, AiError, BudgetExceeded
+from app.ai.client import Ai, AiError
+from app.ai.gateway import BudgetExceeded
 from app.ai.news import FactText, NewsText, extract_facts, judge_match
 from app.forecast.history_sim import Estimate, clustered_mean
 from app.forecast.picks import italian_consensus

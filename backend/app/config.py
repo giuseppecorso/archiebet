@@ -44,13 +44,12 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     ai_model: str = "claude-opus-5-5"  # giudizi e domande: il migliore, ~0,01 $ a giudizio (D103)
     ai_extract_model: str = "claude-haiku-5-5"  # estrazione dei fatti dalle notizie: tante, semplici (D102)
-    ai_monthly_budget_usd: float = 10.0
 
     # Aggiornamento automatico dei dati mentre il backend è acceso
     sync_enabled: bool = True
     sync_interval_hours: int = 6
 
-    ai_monthly_budget_eur: float = 15.0
+    ai_monthly_budget_eur: float = 10.0  # tetto di Giuse: 10-15 € al mese (D97, D103)
     ai_user_monthly_quota_eur: float = 10.0
     ai_budget_warning_ratio: float = 0.8
 

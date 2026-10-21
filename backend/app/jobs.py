@@ -189,7 +189,7 @@ def news_job() -> None:
     def work() -> str:
         now = datetime.now(UTC)
         with SessionLocal() as db:
-            ai = Ai(db, settings.anthropic_api_key, settings.ai_monthly_budget_usd) if settings.anthropic_api_key else None
+            ai = Ai(db, settings.anthropic_api_key, settings) if settings.anthropic_api_key else None
             report = run_news(db, NewsAdapter(FileCache(settings.data_cache_dir, "news")), ai, settings.ai_extract_model, settings.ai_model, now)
         for error in report.errors:
             logger.warning("Notizie: %s", error)

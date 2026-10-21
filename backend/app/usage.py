@@ -16,8 +16,12 @@ def record_usage(
     units: int = 1,
     cost_eur: Decimal = Decimal(0),
     user_id: int | None = None,
+    created_at: datetime | None = None,
 ) -> None:
-    db.add(UsageEvent(source=source, units=units, cost_eur=cost_eur, user_id=user_id))
+    event = UsageEvent(source=source, units=units, cost_eur=cost_eur, user_id=user_id)
+    if created_at is not None:
+        event.created_at = created_at
+    db.add(event)
     db.commit()
 
 
