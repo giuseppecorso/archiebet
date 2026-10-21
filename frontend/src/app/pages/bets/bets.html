@@ -69,6 +69,11 @@
                   </span>
                 }
               </div>
+              @if (s.autopsy; as a) {
+                <p [class]="'autopsy ' + autopsyClass(a.verdict)">
+                  <strong>{{ a.verdict }}</strong> · {{ a.text }}
+                </p>
+              }
             </li>
           }
         </ul>

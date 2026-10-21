@@ -345,3 +345,19 @@
   font-weight: 700;
   color: var(--amber);
 }
+
+.autopsy {
+  flex-basis: 100%;
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-left: 3px solid #6b7a8c;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 3px;
+  &.good {
+    border-left-color: #4fd18b;
+  }
+  &.bad {
+    border-left-color: #e5534b;
+  }
+}

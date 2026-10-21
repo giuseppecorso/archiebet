@@ -16,6 +16,8 @@ export interface Selection {
   clv: string | null;
   /** Probabilità che vinca adesso (termometro, D92); solo schedine aperte */
   probability?: number | null;
+  /** Sfortuna o errore? (D113): solo a selezione chiusa */
+  autopsy?: { verdict: string; probability: number | null; text: string } | null;
 }
 
 export interface Bet {

@@ -92,6 +92,8 @@ def test_summary_and_delete(logged_client, db, matches):
     summary = logged_client.get("/api/bets/summary?period=all").json()
     assert summary["real"]["won"] == 1 and summary["real"]["profit"] == "10.00"
     assert summary["simulated"]["bets"] == 0
+    [sel] = logged_client.get(f"/api/bets/{first}").json()["selections"]
+    assert sel["autopsy"]["verdict"] in ("giocata giusta", "fortuna", "senza chiusura")  # vinta: niente sfortuna né errore
     assert logged_client.delete(f"/api/bets/{first}").status_code == 409  # chiusa: non si cancella
 
 

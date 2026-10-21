@@ -14,7 +14,7 @@ from app.betting.analysis import Breakdown, breakdown
 from app.betting.calc import LOST, MARKETS, WON, potential_payout
 from app.betting.service import BetError, BudgetStatus, BetSummary, SelectionInput, budget_status, create_bet, settle_open_bets, summarize
 from app.betting.versus import JudgedPick, Versus, archie_probability, versus
-from app.models import Bet, BetSnapshot, Match, MatchOdds, Team, UserSettings
+from app.models import Bet, BetSelection, BetSnapshot, Match, MatchOdds, Team, UserSettings
 from app.adapters.football_data import season_of
 
 router = APIRouter(prefix="/api", tags=["giocate"])
@@ -51,6 +51,13 @@ class SelectionOut(BaseModel):
     fair_closing_odds: Decimal | None
     clv: Decimal | None
     probability: float | None = None  # probabilità che vinca adesso (termometro, D92); solo per le schedine aperte
+    autopsy: "AutopsyOut | None" = None  # sfortuna o errore? (D113), solo a selezione chiusa
+
+
+class AutopsyOut(BaseModel):
+    verdict: str  # "giocata giusta" | "fortuna" | "sfortuna" | "ci sta" | "errore di prezzo" | "rimborsata" | "senza chiusura"
+    probability: float | None
+    text: str
 
 
 class BetOut(BaseModel):
@@ -133,10 +140,22 @@ def _bet_out(db, bet: Bet) -> BetOut:
                 fair_closing_odds=s.fair_closing_odds,
                 clv=s.clv,
                 probability=leg_probability(states[s.id]) if s.id in states else None,
+                autopsy=_autopsy(s),
             )
             for s in bet.selections
         ],
     )
+
+
+def _autopsy(s: BetSelection) -> AutopsyOut | None:
+    from app.betting.autopsy import SelectionFacts, autopsy
+
+    if s.status == "open":
+        return None
+    m = s.match
+    a = autopsy(SelectionFacts(s.market, s.pick, float(s.odds), s.status, float(s.fair_closing_odds) if s.fair_closing_odds else None,
+                               m.home_shots_on_target, m.away_shots_on_target, m.home_goals, m.away_goals))  # fmt: skip
+    return AutopsyOut(verdict=a.verdict, probability=a.probability, text=a.text)
 
 
 def _own_bet(db, user_id: int, bet_id: int) -> Bet:

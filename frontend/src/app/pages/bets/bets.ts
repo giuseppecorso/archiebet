@@ -57,6 +57,13 @@ export class Bets {
     return { open: all.filter((b) => b.status === 'open').length, closed: all.filter((b) => b.status !== 'open').length, all: all.length };
   });
 
+  /** Colore del giudizio "sfortuna o errore?" */
+  protected autopsyClass(verdict: string): string {
+    if (verdict === 'giocata giusta' || verdict === 'sfortuna') return 'good';
+    if (verdict === 'errore di prezzo' || verdict === 'fortuna') return 'bad';
+    return 'neutral';
+  }
+
   protected readonly selected = computed(() => {
     const all = this.bets.value();
     return all.find((b) => b.id === Number(this.id())) ?? this.filtered()[0] ?? null;
