@@ -71,16 +71,12 @@ export const SECTIONS: Section[] = [
     features: ['Numeri e classifica di ogni campionato e stagione', 'Storia di ogni squadra', 'Strategie provate sul passato (Fase 7)'],
   },
   {
-    path: 'gioca',
-    label: 'Gioca',
-    inMenu: true,
+    path: 'simulatore',
+    label: 'Simulatore',
+    inMenu: false,
     phase: 6,
-    summary: 'Solo crediti finti: per allenare il fiuto.',
-    features: [
-      'Simulatore partita con 10.000 simulazioni',
-      'Comandi "E se..."',
-      'Sfida contro Archie con classifica',
-    ],
+    summary: 'Una partita giocata 10.000 volte.',
+    features: ['Simulatore partita con 10.000 simulazioni', 'Comandi "E se..."'],
   },
   {
     path: 'impostazioni',
@@ -94,4 +90,41 @@ export const SECTIONS: Section[] = [
       'Soglie di valore e squadra del cuore',
     ],
   },
+];
+
+/** Menu principale (richiesta di Giuse, 2026-10-21): 4 voci; ognuna si accende anche sulle sue pagine interne. */
+export interface MenuItem {
+  label: string;
+  link: string;
+  prefixes: string[];
+}
+
+export const MENU: MenuItem[] = [
+  { label: 'Partite', link: '/partite', prefixes: ['/partite'] },
+  { label: 'Live', link: '/live', prefixes: ['/live'] },
+  { label: 'Pronostici', link: '/pronostici', prefixes: ['/pronostici', '/laboratorio', '/simulatore'] },
+  { label: 'Il mio Archie', link: '/schedine', prefixes: ['/schedine', '/statistiche', '/chiedi'] },
+];
+
+/** Schede interne di una voce del menu */
+export interface SubItem {
+  label: string;
+  link: string;
+  query?: Record<string, string>;
+  /** true: acceso anche sulle pagine sotto (es. /laboratorio/squadre) */
+  subtree?: boolean;
+}
+
+export const PRONOSTICI_TABS: SubItem[] = [
+  { label: 'Pronostici', link: '/pronostici' },
+  { label: 'Occasioni', link: '/pronostici', query: { tab: 'occasioni' } },
+  { label: 'Multipla', link: '/pronostici', query: { tab: 'multipla' } },
+  { label: 'Statistiche', link: '/laboratorio', subtree: true },
+  { label: 'Simulatore', link: '/simulatore' },
+];
+
+export const MIO_ARCHIE_TABS: SubItem[] = [
+  { label: 'Le mie schedine', link: '/schedine', subtree: true },
+  { label: 'Statistiche e regolamento', link: '/statistiche' },
+  { label: 'Chiedi ad Archie', link: '/chiedi' },
 ];

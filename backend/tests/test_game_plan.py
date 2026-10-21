@@ -54,3 +54,29 @@ def test_plan_and_lineups_api(logged_client, db):
     assert home["min_odds"] > home["fair_odds"]
     assert logged_client.get(f"/api/picks/match/{m.id}/lineups").json() == []  # senza dati API-Football
     assert logged_client.get("/api/picks/match/999999/plan").status_code == 404
+
+
+def test_live_now_api(logged_client, db):
+    from datetime import UTC, datetime, timedelta
+    from decimal import Decimal
+
+    from app.models import Competition, Match, MatchLive, MatchOdds, Team
+
+    comp = Competition(code="ITA-A", name="Serie A", country="Italia", tier=1)
+    a, b = Team(name="Inter", country="Italia"), Team(name="Milan", country="Italia")
+    db.add_all([comp, a, b])
+    db.flush()
+    m = Match(competition_id=comp.id, season="2026/27", kickoff_at=datetime.now(UTC) - timedelta(minutes=70), kickoff_has_time=True, home_team_id=a.id, away_team_id=b.id)
+    db.add(m)
+    db.flush()
+    for sel, price in (("1", "2.00"), ("X", "3.50"), ("2", "4.00")):
+        db.add(MatchOdds(match_id=m.id, source="oddspapi", bookmaker="pinnacle", market="1X2", selection=sel, price=Decimal(price), is_closing=False))
+    db.commit()
+    assert logged_client.get(f"/api/picks/match/{m.id}/live-now").json() is None  # niente dati live
+    db.add(MatchLive(match_id=m.id, status="2H", minute=60, home_goals=1, away_goals=0, updated_at=datetime.now(UTC)))
+    db.commit()
+    now = logged_client.get(f"/api/picks/match/{m.id}/live-now").json()
+    assert (now["minute"], now["home_goals"]) == (60, 1)
+    p1 = next(x for x in now["lines"] if x["selection"] == "1")["probability"]
+    pre = gp.plan((1.5, 1.0), ((60, 1, 0),))  # stesso calcolo del piano per 1-0 al 60'
+    assert p1 > 0.7 and pre[0].lines[0].probability > 0.7

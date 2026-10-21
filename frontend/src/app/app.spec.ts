@@ -61,8 +61,8 @@ describe('ArchieBet: navigazione', () => {
     const harness = await navigateAs('/', true);
     expect(TestBed.inject(Router).url).toBe('/partite');
 
-    const links = [...harness.routeNativeElement!.querySelectorAll('nav a')].map((a) => a.textContent?.trim());
-    expect(links).toEqual(['Partite', 'Pronostici', 'Le mie schedine', 'Le mie statistiche', 'Laboratorio', 'Gioca']);
+    const links = [...harness.routeNativeElement!.querySelectorAll('nav.nav a')].map((a) => a.textContent?.trim());
+    expect(links).toEqual(['Partite', 'Live', 'Pronostici', 'Il mio Archie']);
 
     const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
     const premier = { code: 'ENG-1', name: 'Premier League', country: 'Inghilterra', tier: 1 };
@@ -82,46 +82,12 @@ describe('ArchieBet: navigazione', () => {
         ],
       },
     ]);
-    (await nextRequest((r) => r.url.startsWith('/api/matches?view=results'))).flush([]);
-    (await nextRequest((r) => r.url.startsWith('/api/matches?view=live'))).flush([]); // nessuna partita in corso
     (await nextRequest('/api/status')).flush({
       now: '2026-10-10T12:00:00Z', syncing: false, upcoming: 5, upcoming_with_prediction: 3,
       sources: [{ source: 'football-data', label: 'Serie A e B', configured: true, last_ok_at: '2026-10-10T11:00:00Z', last_run_at: '2026-10-10T11:00:00Z', last_run_ok: true, message: 'ok' }],
       competitions: [{ competition: serieA, last_result_at: '2026-09-20T18:45:00Z', awaiting_results: 8, next_match_at: '2026-10-10T18:45:00Z' }],
     });
-    const legMatch = (id: number, home: string, away: string) => ({
-      id, competition: serieA, season: '2026/27', kickoff_at: '2026-10-10T18:45:00Z', kickoff_has_time: true,
-      status: 'scheduled', home: { id, name: home }, away: { id: id + 100, name: away }, home_goals: null, away_goals: null, odds_1x2: null,
-    });
-    (await nextRequest('/api/picks/multiple?horizon=today')).flush({
-      horizon: 'today', missing: ['Eurobet'],
-      multiples: [{
-        bookmaker: 'Sisal', with_value: false, price: 3.4, win_probability: 0.28, one_in: 3.57, alive_before_last: 0.4, expected_value: -0.048,
-        legs: [
-          { match: legMatch(7, 'Napoli', 'Frosinone'), market: '1X2', selection: '1', probability: 0.7, price: 1.38, value: -0.034 },
-          { match: legMatch(8, 'Roma', 'Lecce'), market: 'DC', selection: '1X', probability: 0.8, price: 1.2, value: -0.04 },
-        ],
-      }],
-    });
-    (await nextRequest('/api/picks/off-line')).flush([
-      {
-        match: legMatch(7, 'Napoli', 'Frosinone'), market: '1X2', selection: '2', probability: 0.18, bookmaker: 'Eurobet',
-        price: 7.0, value: 0.26, suspicious: true,
-      },
-    ]);
-    (await nextRequest((r) => r.url.startsWith('/api/ask'))).flush([]); // storico di Chiedi ad Archie: vuoto
     await harness.fixture.whenStable();
-    const offLine = harness.routeNativeElement!.querySelector('ab-off-line-card')!.textContent!;
-    expect(offLine).toContain('2 · Frosinone');
-    expect(offLine).toContain('+26,0%');
-    expect(offLine).toContain('Sospetta');
-    const card = harness.routeNativeElement!.querySelector('ab-multiple-card')!.textContent!;
-    expect(card).toContain('1 · Napoli');
-    expect(card).toContain('3.40'); // quota totale
-    expect(card).toContain('34,00 €'); // vincita con 10 €
-    expect(card).toContain('1 volta su 3,6');
-    expect(card).toContain('Nessuna multipla con valore'); // onestà: senza valore lo dice
-    expect(card).toContain('Su Eurobet non c');
 
     const bar = harness.routeNativeElement!.querySelector('ab-data-status')!.textContent!;
     expect(bar).toContain('previsioni 3/5');
@@ -143,23 +109,21 @@ describe('ArchieBet: navigazione', () => {
     expect(english.request.url).toContain('competitions=ENG-1');
     expect(english.request.url).not.toContain('ITA-A');
     english.flush([]);
-    (await nextRequest((r) => r.url.startsWith('/api/matches?view=results'))).flush([]);
-    (await nextRequest((r) => r.url.startsWith('/api/matches?view=live'))).flush([]); // nessuna partita in corso
     await harness.fixture.whenStable();
     const chips = [...harness.routeNativeElement!.querySelectorAll('.filters .chip')].map((b) => b.textContent?.trim());
     expect(chips).toEqual(['Premier League']);
     localStorage.removeItem('archiebet.matches.filters');
   });
 
-  it('la sezione Gioca (Fase 6) mostra simulatore e sfida', async () => {
-    const harness = await navigateAs('/gioca', true);
+  it('il simulatore sta dentro Pronostici, senza la sfida', async () => {
+    const harness = await navigateAs('/simulatore', true);
     (await nextRequest('/api/play/matches')).flush([]);
-    (await nextRequest((r) => r.url.startsWith('/api/play/challenge'))).flush({ stake: 10, rows: [], standings: [] });
     await harness.fixture.whenStable();
     const page = harness.routeNativeElement!;
-    expect(page.querySelector('h1')?.textContent).toContain('Gioca');
-    expect(page.textContent).toContain('Simulatore partita');
-    expect(page.querySelector('nav a[aria-current="page"]')?.textContent?.trim()).toBe('Gioca');
+    expect(page.textContent).toContain('A cosa serve');
+    expect(page.textContent).not.toContain('Sfida');
+    expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Pronostici');
+    expect(page.querySelector('.subnav a.on')?.textContent?.trim()).toBe('Simulatore');
   });
 
   it("i pronostici mostrano la stima migliore e le quote di Sisal ed Eurobet con l'etichetta", async () => {

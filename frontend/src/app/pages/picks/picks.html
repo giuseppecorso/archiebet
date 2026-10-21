@@ -1,15 +1,7 @@
-<div class="head">
-  <h1 class="title page-title">Pronostici</h1>
-  <div role="tablist" aria-label="Scheda" class="seg">
-    <button type="button" role="tab" [attr.aria-selected]="tab() === 'pronostici'" (click)="setTab('pronostici')">Tutti i pronostici</button>
-    <button type="button" role="tab" [attr.aria-selected]="tab() === 'multipla'" (click)="setTab('multipla')">Fammi una multipla</button>
-    <button type="button" role="tab" [attr.aria-selected]="tab() === 'occasioni'" (click)="setTab('occasioni')">
-      Occasioni <span class="trial">in prova</span>
-    </button>
-  </div>
-</div>
+<ab-subnav [items]="tabs" label="Pronostici" />
 
 @if (tab() === 'occasioni') {
+  <ab-off-line-card />
   <ab-radar [embedded]="true" />
 } @else if (tab() === 'multipla') {
   <ab-generator />

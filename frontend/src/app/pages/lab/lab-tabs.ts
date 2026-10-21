@@ -1,13 +1,16 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { PRONOSTICI_TABS } from '../../core/sections';
+import { Subnav } from '../../shared/subnav';
 
 /** Intestazione comune del Laboratorio con le schede. */
 @Component({
   selector: 'ab-lab-tabs',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, Subnav],
   template: `
+    <ab-subnav [items]="pronosticiTabs" label="Pronostici" />
     <div class="head">
-      <h1 class="title">Laboratorio</h1>
+      <h1 class="title">Statistiche</h1>
       <p class="muted">Il passato di campionati e squadre, e quello che Archie impara da solo. Solo numeri calcolati dal codice.</p>
     </div>
     <nav class="tabs" aria-label="Schede del Laboratorio">
@@ -29,4 +32,6 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     .tab.on { color: var(--bg); background: var(--amber); border-color: var(--amber); }
   `,
 })
-export class LabTabs {}
+export class LabTabs {
+  protected readonly pronosticiTabs = PRONOSTICI_TABS;
+}

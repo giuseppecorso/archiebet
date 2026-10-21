@@ -1,3 +1,6 @@
+import { Subnav } from '../../shared/subnav';
+import { OffLineCard } from '../../shared/off-line-card';
+import { PRONOSTICI_TABS } from '../../core/sections';
 import { httpResource } from '@angular/common/http';
 import { OfferButton } from '../../shared/offer-button';
 import { Component, computed, inject, input, signal } from '@angular/core';
@@ -17,7 +20,7 @@ const MARKET_LABEL: Record<MarketPick['market'], string> = { '1X2': 'Esito final
 /** Pronostici (D67): la stima migliore per ogni partita, con le quote di Sisal ed Eurobet. Scheda "Occasioni" = radar. */
 @Component({
   selector: 'ab-picks',
-  imports: [RouterLink, Radar, Generator, Crest, LeagueLogo, OfferButton],
+  imports: [RouterLink, Radar, Generator, Crest, LeagueLogo, OfferButton, Subnav, OffLineCard],
   templateUrl: './picks.html',
   styleUrl: './picks.scss',
 })
@@ -29,6 +32,7 @@ export class Picks {
 
   /** Dall'indirizzo: ?tab=occasioni */
   readonly tabParam = input<string | undefined>(undefined, { alias: 'tab' });
+  protected readonly tabs = PRONOSTICI_TABS;
   protected readonly tab = computed<Tab>(() => {
     const t = this.tabParam();
     return t === 'occasioni' || t === 'multipla' ? t : 'pronostici';

@@ -206,3 +206,22 @@
   background: var(--amber);
   border-radius: 9px;
 }
+.list {
+  flex: 1 1 100%;
+}
+.team-search {
+  margin-left: auto;
+  min-width: 200px;
+  padding: 6px 10px;
+  font: inherit;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+}
+.day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 4px;
+}

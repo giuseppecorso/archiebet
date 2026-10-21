@@ -1,3 +1,5 @@
+import { Subnav } from '../../shared/subnav';
+import { MIO_ARCHIE_TABS } from '../../core/sections';
 import { RulesPanel } from '../../shared/rules-panel';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, signal } from '@angular/core';
@@ -12,11 +14,12 @@ type Dim = 'by_size' | 'by_market' | 'by_competition' | 'by_bookmaker';
 /** Le mie statistiche: riepilogo, dove vinci e dove perdi, abitudini. Reali e simulate sempre separate. */
 @Component({
   selector: 'ab-stats',
-  imports: [RouterLink, ShowMore, RulesPanel],
+  imports: [RouterLink, ShowMore, RulesPanel, Subnav],
   templateUrl: './stats.html',
   styleUrl: './stats.scss',
 })
 export class Stats {
+  protected readonly tabs = MIO_ARCHIE_TABS;
   protected readonly periods: [Period, string][] = [
     ['week', 'Settimana'],
     ['30d', 'Ultimi 30 giorni'],

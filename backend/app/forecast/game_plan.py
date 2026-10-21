@@ -47,17 +47,23 @@ def min_odds(fair: float) -> float | None:
     return round(price, 2)
 
 
+def lines_at(rates: tuple[float, float], share: float, home_goals: int, away_goals: int) -> tuple[tuple[float, float], list[PlanLine]]:
+    """Gol attesi che restano e righe del piano per una situazione: parte di partita che resta e punteggio."""
+    rem = remaining_rates(rates, share, home_goals, away_goals)
+    probs = outcome_probabilities(rem[0], rem[1], home_goals, away_goals)
+    lines = []
+    for market, sel in SELECTIONS:
+        p = probs[sel] if sel in probs else 1.0 - probs["over" if sel == "under" else "yes"]
+        if p < 0.01 or p > 0.99:  # esito quasi deciso: niente quota sensata
+            continue
+        fair = 1 / p
+        lines.append(PlanLine(market, sel, p, round(fair, 2), min_odds(fair)))
+    return rem, lines
+
+
 def plan(rates: tuple[float, float], states: tuple[tuple[int, int, int], ...] = STATES) -> list[PlanState]:
     out = []
     for minute, h, a in states:
-        rem = remaining_rates(rates, state_share(minute), h, a)
-        probs = outcome_probabilities(rem[0], rem[1], h, a)
-        lines = []
-        for market, sel in SELECTIONS:
-            p = probs[sel] if sel in probs else 1.0 - probs["over" if sel == "under" else "yes"]
-            if p < 0.01 or p > 0.99:  # esito quasi deciso: niente quota sensata
-                continue
-            fair = 1 / p
-            lines.append(PlanLine(market, sel, p, round(fair, 2), min_odds(fair)))
+        rem, lines = lines_at(rates, state_share(minute), h, a)
         out.append(PlanState(minute, h, a, rem, lines))
     return out

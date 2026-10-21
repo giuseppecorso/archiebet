@@ -5,6 +5,8 @@ import { firstValueFrom } from 'rxjs';
 import { MatchCard } from '../../core/football';
 import { dayLabel, kickoffTime, num, odds, pct } from '../../core/format';
 import { Crest } from '../../shared/crest';
+import { Subnav } from '../../shared/subnav';
+import { PRONOSTICI_TABS } from '../../core/sections';
 
 /** Risposta di /api/play/simulate (D115) */
 export interface Simulation {
@@ -24,21 +26,7 @@ export interface Simulation {
   sample: { minute: number; side: 'home' | 'away' }[];
 }
 
-interface ChallengeRow {
-  match: MatchCard;
-  probabilities: Record<string, number> | null;
-  fair_odds: Record<string, number> | null;
-  my_pick: string | null;
-  archie_pick: string | null;
-  open: boolean;
-  credits: number | null;
-}
 
-interface ChallengeOut {
-  stake: number;
-  rows: ChallengeRow[];
-  standings: { name: string; picks: number; correct: number; hit_rate: number | null; credits: number }[];
-}
 
 /** Punteggio della partita "dal vivo" al minuto indicato, dai gol simulati */
 export function liveScore(sim: Pick<Simulation, 'score' | 'sample'>, minute: number): [number, number] {
@@ -46,21 +34,16 @@ export function liveScore(sim: Pick<Simulation, 'score' | 'sample'>, minute: num
   return [sim.score[0] + goals.filter((g) => g.side === 'home').length, sim.score[1] + goals.filter((g) => g.side === 'away').length];
 }
 
-const COMPETITIONS = [
-  ['ITA-A', 'Serie A'], ['ITA-B', 'Serie B'], ['ITA-C-A', 'Serie C · A'], ['ITA-C-B', 'Serie C · B'], ['ITA-C-C', 'Serie C · C'],
-  ['ENG-1', 'Premier League'], ['ESP-1', 'LaLiga'], ['GER-1', 'Bundesliga'], ['FRA-1', 'Ligue 1'],
-];
 
 @Component({
   selector: 'ab-play',
-  imports: [FormsModule, Crest],
+  imports: [FormsModule, Crest, Subnav],
   templateUrl: './play.html',
   styleUrl: './play.scss',
 })
 export class Play implements OnDestroy {
-  protected readonly tab = signal<'sim' | 'sfida'>('sim');
+  protected readonly tabs = PRONOSTICI_TABS;
   protected readonly fmt = { odds, num, pct, dayLabel, kickoffTime };
-  protected readonly competitions = COMPETITIONS;
   private readonly http = inject(HttpClient);
 
   // --- Simulatore ---
@@ -133,19 +116,4 @@ export class Play implements OnDestroy {
     this.stopLive();
   }
 
-  // --- Sfida contro Archie ---
-  protected readonly competition = signal('ITA-A');
-  protected readonly challenge = httpResource<ChallengeOut>(() => `/api/play/challenge?competition=${this.competition()}`);
-  protected readonly pickError = signal<string | null>(null);
-
-  protected async pick(row: ChallengeRow, selection: string): Promise<void> {
-    this.pickError.set(null);
-    try {
-      await firstValueFrom(this.http.post('/api/play/challenge', { match_id: row.match.id, selection }));
-      this.challenge.reload();
-    } catch (e) {
-      const detail = e instanceof HttpErrorResponse ? e.error?.detail : null;
-      this.pickError.set(typeof detail === 'string' ? detail : 'Scelta non salvata.');
-    }
-  }
 }

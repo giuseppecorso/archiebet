@@ -1,3 +1,5 @@
+import { Subnav } from '../../shared/subnav';
+import { MIO_ARCHIE_TABS } from '../../core/sections';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -13,11 +15,12 @@ type KindFilter = 'all' | 'real' | 'simulated';
 /** Le mie schedine: elenco a destra, dettaglio a sinistra (come nel mockup). */
 @Component({
   selector: 'ab-bets',
-  imports: [RouterLink, ShowMore],
+  imports: [RouterLink, ShowMore, Subnav],
   templateUrl: './bets.html',
   styleUrl: './bets.scss',
 })
 export class Bets {
+  protected readonly tabs = MIO_ARCHIE_TABS;
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 

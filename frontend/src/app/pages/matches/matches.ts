@@ -1,31 +1,32 @@
-import { AskArchie } from '../../shared/ask-archie';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, effect, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Competition, CompetitionGroup } from '../../core/football';
-import { LIVE_REFRESH_MS } from '../../core/live';
 import { DataStatusBar } from '../../shared/data-status';
 import { MatchRow } from '../../shared/match-row';
 import { LeagueLogo } from '../../shared/crest';
-import { MultipleCard } from '../../shared/multiple-card';
-import { OffLineCard } from '../../shared/off-line-card';
 import { ShowMore } from '../../shared/show-more';
 
-type Tab = 'tutte' | 'live' | 'prossime' | 'risultati';
+type Tab = 'prossime' | 'risultati';
+type Day = 'tutti' | 'oggi' | 'domani' | 'tre';
 /** Paese scelto nella tendina; '' = tutti i paesi */
 const ALL_COUNTRIES = '';
 const STORAGE_KEY = 'archiebet.matches.filters';
 
-/** Dashboard "Partite": elenco per campionato con filtri. Multipla, schedina e ArchieTV arrivano nelle fasi successive. */
+/** Partite: elenco per campionato con filtri per giorno, campionato e squadra. Le partite in corso sono nella sezione Live. */
 @Component({
   selector: 'ab-matches',
-  imports: [DataStatusBar, MatchRow, MultipleCard, OffLineCard, ShowMore, LeagueLogo, AskArchie],
+  imports: [DataStatusBar, MatchRow, ShowMore, LeagueLogo, FormsModule],
   templateUrl: './matches.html',
   styleUrl: './matches.scss',
 })
 export class Matches {
   private readonly saved = readSaved();
 
-  protected readonly tab = signal<Tab>(this.saved.tab ?? 'tutte');
+  protected readonly tab = signal<Tab>(this.saved.tab === 'risultati' ? 'risultati' : 'prossime');
+  protected readonly day = signal<Day>('tutti');
+  protected readonly team = signal('');
+  protected readonly days: [Day, string][] = [['tutti', 'Tutti'], ['oggi', 'Oggi'], ['domani', 'Domani'], ['tre', 'Prossimi 3 giorni']];
   /** Campionati esclusi dal filtro (così quelli nuovi compaiono da soli) */
   protected readonly hidden = signal<string[]>(this.saved.hidden ?? []);
 
@@ -47,30 +48,17 @@ export class Matches {
 
   protected readonly upcoming = httpResource<CompetitionGroup[]>(() => {
     const q = this.query();
-    return q && (this.tab() === 'tutte' || this.tab() === 'prossime') ? `/api/matches?view=upcoming${q}` : undefined;
+    return q && this.tab() === 'prossime' ? `/api/matches?view=upcoming${q}` : undefined;
   });
-  /** Partite in corso adesso (D92): sempre, per il contatore della scheda e per la vista Live */
-  protected readonly live = httpResource<CompetitionGroup[]>(() => {
-    const q = this.query();
-    return q ? `/api/matches?view=live${q}` : undefined;
-  }, { defaultValue: [] });
-  protected readonly liveCount = computed(() => this.live.value().reduce((n, g) => n + g.matches.length, 0));
   protected readonly results = httpResource<CompetitionGroup[]>(() => {
     const q = this.query();
-    const limit = this.tab() === 'tutte' ? 10 : 40;
-    return q && (this.tab() === 'tutte' || this.tab() === 'risultati') ? `/api/matches?view=results&limit=${limit}${q}` : undefined;
+    return q && this.tab() === 'risultati' ? `/api/matches?view=results&limit=40${q}` : undefined;
   });
+  /** Prossime partite dopo i filtri di giorno e squadra */
+  protected readonly upcomingShown = computed(() => this.filterGroups(this.upcoming.value() ?? [], true));
+  protected readonly resultsShown = computed(() => this.filterGroups(this.results.value() ?? [], false));
 
   constructor() {
-    // Mentre c'è qualcosa in corso si ricaricano partite e punteggi ogni 30 secondi
-    effect((onCleanup) => {
-      if (!this.liveCount()) return;
-      const timer = setInterval(() => {
-        this.live.reload();
-        if (this.tab() !== 'live') this.upcoming.reload();
-      }, LIVE_REFRESH_MS);
-      onCleanup(() => clearInterval(timer));
-    });
     effect(() => {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ tab: this.tab(), hidden: this.hidden(), country: this.country() }));
@@ -80,10 +68,26 @@ export class Matches {
     });
   }
 
+  private filterGroups(groups: CompetitionGroup[], byDay: boolean): CompetitionGroup[] {
+    const team = this.team().trim().toLowerCase();
+    const [from, to] = dayWindow(this.day());
+    return groups
+      .map((g) => ({
+        ...g,
+        matches: g.matches.filter((m) => {
+          const t = new Date(m.kickoff_at).getTime();
+          const dayOk = !byDay || (t >= from && t < to);
+          const teamOk = !team || `${m.home.name} ${m.away.name}`.toLowerCase().includes(team);
+          return dayOk && teamOk;
+        }),
+      }))
+      .filter((g) => g.matches.length);
+  }
+
   /** Gruppi aperti con "Mostra tutte", chiave "prossime-ITA-A" / "risultati-ITA-A" */
   protected readonly openGroups = signal<string[]>([]);
   /** Partite mostrate per campionato quando il gruppo è chiuso */
-  protected readonly groupLimit = computed(() => (this.tab() === 'tutte' ? 5 : 10));
+  protected readonly groupLimit = computed(() => (this.team() || this.day() !== 'tutti' ? 50 : 10));
 
   protected isGroupOpen(key: string): boolean {
     return this.openGroups().includes(key);
@@ -116,4 +120,14 @@ function readSaved(): { tab?: Tab; hidden?: string[]; country?: string } {
   } catch {
     return {};
   }
+}
+
+/** Finestra di tempo del filtro "giorno" (ora del browser) */
+export function dayWindow(day: Day, now: Date = new Date()): [number, number] {
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const DAY = 86_400_000;
+  if (day === 'oggi') return [midnight, midnight + DAY];
+  if (day === 'domani') return [midnight + DAY, midnight + 2 * DAY];
+  if (day === 'tre') return [midnight, midnight + 3 * DAY];
+  return [-Infinity, Infinity];
 }

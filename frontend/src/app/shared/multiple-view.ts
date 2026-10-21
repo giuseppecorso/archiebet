@@ -1,9 +1,10 @@
-import { Component, computed, effect, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Market, pickLabel } from '../core/bets';
 import { MatchCard } from '../core/football';
 import { dayLabel, kickoffTime, odds, pct, signedPct } from '../core/format';
 import { MultiplesOut } from '../core/multiple';
+import { SlipService } from '../core/slip';
 import { Crest } from './crest';
 
 /** Una multipla calcolata da Archie (D68): gambe, numeri e avviso onesto se non ha valore. */
@@ -40,6 +41,7 @@ import { Crest } from './crest';
         <div><dt>Vivo all'ultima</dt><dd>{{ pct(m.alive_before_last) }}</dd></div>
         <div><dt>Valore atteso</dt><dd [class]="m.expected_value >= 0 ? 'pos' : 'neg'">{{ signed(m.expected_value) }}</dd></div>
       </dl>
+      <button type="button" class="btn-primary to-slip" (click)="toSlip(m)">Metti nella schedina</button>
       @if (m.with_value) {
         <p class="note pos">Tutte le partite hanno valore: Archie la giocherebbe.</p>
       } @else {
@@ -64,6 +66,7 @@ import { Crest } from './crest';
     }
     .books button + button { border-left: 1px solid var(--line-strong); }
     .books button[aria-selected='true'] { color: var(--bg); background: var(--text); }
+    .to-slip { margin-top: 10px; }
     .legs { margin: 8px 0 0; padding: 0; list-style: none; }
     .legs li { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; padding: 8px 0; border-top: 1px solid var(--line-row); }
     .legs .when { grid-column: 1 / -1; }
@@ -89,6 +92,16 @@ export class MultipleView {
   readonly empty = input('Nessuna multipla sensata: meglio non giocare, o guardare le singole nei Pronostici.');
 
   protected readonly index = signal(0);
+  private readonly slip = inject(SlipService);
+
+  /** Sostituisce la schedina in costruzione con le partite di questa multipla, alle quote del bookmaker */
+  protected toSlip(m: MultiplesOut['multiples'][number]): void {
+    this.slip.clear();
+    for (const l of m.legs) {
+      this.slip.toggle({ match: l.match, market: l.market as Market, pick: l.selection, odds: l.price, bookmaker: m.bookmaker });
+    }
+    this.slip.open.set(true);
+  }
   protected readonly current = computed(() => {
     const list = this.data().multiples;
     return list[Math.min(this.index(), list.length - 1)];
