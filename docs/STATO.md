@@ -2,6 +2,19 @@
 
 Ultimo aggiornamento: 2026-10-21
 
+## Fase 7 – Apprendimento: CONCLUSA (2026-10-21)
+
+Rivista con Giuse (D117): le strategie le trova Archie da solo; tolti il Laboratorio strategie (regole scritte a mano) e il fiuto come fattore.
+- [x] **Archie cerca le strategie** (D118, `strategy-search`): 1.650 strategie su ~205.000 giocate possibili (bet365 d'apertura contro Pinnacle di chiusura), taratura 2012/13–2019/20, conferma dal 2020/21. **Nessuna passa**; le Occasioni restano sulla regola D72. Se un giorno una passa, entra da sola nelle Occasioni con l'etichetta "strategia di Archie" (`radar_signals.strategy`, API e lavoro radar).
+- [x] **Quando giocare** (D119, `timing-test`): sulle quote ora per ora di Sisal ed Eurobet (archivio OddsPapi, ~3.700 partite) l'orario sposta meno di mezzo punto di CLV: è indifferente. Il margine pesa 7-10%.
+- [x] **Autocorrezione** (D120): controllo settimanale della taratura sulle 2.000 partite più recenti per gruppo e mercato; una fascia fuori fa partire una prova, non una correzione. Prima segnalazione (Over 2.5 in A e B sotto il 40%) provata su dati indipendenti (D122): era caso.
+- [x] **Partite gemelle** nella pagina partita e **mappa del valore** (D121).
+- [x] Scheda **Laboratorio · Cosa impara Archie** con tutti i risultati; lavoro settimanale "learning" (`learning-refresh`) che rifà le prove da solo; archivio quote settimanale esteso a A, B ed estero (13 richieste a settimana).
+- [x] Simulatore: elenco a tendina leggibile, partite per campionato, spiegazione "a cosa serve". Quote 1X2 nelle righe delle partite in arrivo (media dei bookmaker italiani).
+- Nota dati: football-data non dà più Pinnacle da metà 2025/26; le prove storiche crescono ora con l'archivio OddsPapi.
+- [ ] **Serie minori** (D106): archivio in corso (`odds-archive --minor`); poi risultati da API-Football e prova. Già si vede che Sisal ed Eurobet hanno ~10% di margine nelle serie minori (D119).
+- Test: 406 backend + 24 frontend, tutti verdi.
+
 ## Battere il mercato in Serie C + Claude API (2026-10-21)
 
 - [x] **Claude API attiva** (D97): Sonnet 5.5, chiave nel `.env` (`ANTHROPIC_API_KEY`), tetto 10 €/mese (`ai_monthly_budget_eur`, gateway AI della Fase 0, D103), credito prepagato 5 $ senza ricarica. Chiamata di prova riuscita. Il modulo `app/ai` e il controllo della spesa nel codice sono ancora da scrivere (Fase 6).

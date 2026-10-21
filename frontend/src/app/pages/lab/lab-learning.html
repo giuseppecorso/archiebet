@@ -1,0 +1,155 @@
+<ab-lab-tabs />
+
+@if (report.error()) {
+  <p class="state" role="status">Archie non ha ancora fatto le prove di questa settimana: partono da sole entro due ore dall'avvio dell'app.</p>
+} @else if (report.value(); as r) {
+  <p class="intro muted">
+    Ogni settimana Archie rifà da solo queste prove sui dati nuovi (ultimo giro: {{ fmt.ago(r.computed_at) }}). Le regole per
+    dire "funziona" sono fissate prima di guardare i risultati, così non si scambia la fortuna per una strategia. Tu non devi
+    fare niente: quello che passa entra da solo nelle Occasioni.
+  </p>
+
+  <section class="panel box">
+    <h2 class="title box-title">Strategie trovate da Archie</h2>
+    @if (r.strategies.passed.length) {
+      <p class="verdict ok">{{ r.strategies.passed.length }} strategie battono il mercato: le trovi nelle Occasioni con l'etichetta "strategia di Archie".</p>
+      <ul class="list">
+        @for (s of r.strategies.passed; track s.strategy.name) {
+          <li><strong>{{ strategyName(s.strategy) }}</strong> · CLV in conferma {{ est(s.confirm) }}</li>
+        }
+      </ul>
+    } @else {
+      <p class="verdict">Nessuna strategia batte il mercato.</p>
+    }
+    <p class="small">
+      Archie ha provato {{ fmt.num(r.strategies.tested, 0) }} strategie (campionato × esito × fascia di quota × momento della stagione ×
+      con o senza valore) su {{ fmt.num(r.strategies.tuning_bets + r.strategies.confirm_bets, 0) }} giocate possibili alla quota bet365:
+      prima le stagioni {{ r.strategies.tuning_seasons[0] }}–{{ r.strategies.tuning_seasons[1] }} per trovarle, poi le stagioni
+      {{ r.strategies.confirm_seasons[0] }}–{{ r.strategies.confirm_seasons[1] }} per confermarle.
+      Finché nessuna passa, le Occasioni usano solo la regola del valore: quota del tuo bookmaker sopra la quota giusta di Pinnacle.
+    </p>
+    @if (r.strategies.closest.length) {
+      <details class="more">
+        <summary>Le più vicine a passare</summary>
+        <table class="tbl">
+          <thead><tr><th>Strategia</th><th>Per trovarla</th><th>Per confermarla</th></tr></thead>
+          <tbody>
+            @for (s of r.strategies.closest; track s.strategy.name) {
+              <tr>
+                <td>{{ strategyName(s.strategy) }}</td>
+                <td>{{ est(s.tuning) }} <span class="muted">({{ s.tuning?.n }})</span></td>
+                <td>{{ est(s.confirm) }} <span class="muted">({{ s.confirm?.n ?? 0 }})</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <p class="muted small">CLV = quanto la quota presa è migliore della quota giusta al fischio d'inizio (± errore). Per passare serve almeno +1% e un risultato solido sia per trovarla sia per confermarla.</p>
+      </details>
+    }
+  </section>
+
+  <section class="panel box">
+    <h2 class="title box-title">Quando giocare</h2>
+    <p class="small">
+      Conviene giocare appena escono le quote o aspettare il fischio d'inizio? Archie guarda come cambiano le quote di Sisal ed
+      Eurobet ora per ora in {{ fmt.num(r.timing.matches, 0) }} partite.
+    </p>
+    <div class="timing">
+      @for (g of r.timing.groups; track g.group) {
+        <div class="tile-t">
+          <span class="label">{{ g.group }}</span>
+          <strong [class.ok]="g.verdict === 'gioca prima'">{{ g.verdict }}{{ g.best ? ' (' + g.best + ')' : '' }}</strong>
+          <span class="muted small">{{ fmt.num(g.matches, 0) }} partite · CLV medio {{ fmt.signedPct(g.horizons[g.horizons.length - 1]?.clv?.mean) }}</span>
+        </div>
+      }
+    </div>
+    <p class="small">
+      In pratica l'orario sposta meno di mezzo punto: quello che pesa è il margine del bookmaker (il CLV medio negativo).
+      Un'occasione giocala quando la vedi: spesso sparisce prima del fischio.
+    </p>
+    <details class="more">
+      <summary>I numeri ora per ora</summary>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Momento</th>
+              @for (g of r.timing.groups; track g.group) { <th>{{ g.group }}</th> }
+            </tr>
+          </thead>
+          <tbody>
+            @for (h of r.timing.groups[0]?.horizons ?? []; track h.label; let i = $index) {
+              <tr>
+                <td>{{ h.label }}</td>
+                @for (g of r.timing.groups; track g.group) { <td>{{ fmt.signedPct(g.horizons[i]?.clv?.mean) }}</td> }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+
+  <section class="panel box">
+    <h2 class="title box-title">Le probabilità di Archie sono affidabili?</h2>
+    <p class="small">
+      Se Archie dice 40%, deve succedere circa 4 volte su 10. Archie lo controlla sulle {{ fmt.num(r.calibration.matches_per_group, 0) }}
+      partite più recenti di ogni gruppo. Una fascia segnata in rosso fa partire una nuova prova su altre partite, non una correzione
+      automatica: con tante fasce controllate, qualcuna esce per caso.
+    </p>
+    <div class="calib">
+      @for (row of r.calibration.rows; track row.group + row.market) {
+        <div class="calib-box">
+          <h3 class="label">{{ row.group }} · {{ row.market === '1X2' ? '1X2' : 'Under/Over 2.5' }}</h3>
+          <table class="tbl">
+            <thead><tr><th>Previsto</th><th>Uscito</th><th>Esiti</th></tr></thead>
+            <tbody>
+              @for (b of row.bins; track b.low) {
+                @if (b.n >= 30) {
+                  <tr [class.off]="b.off">
+                    <td>{{ fmt.pct(b.predicted) }}</td>
+                    <td>{{ fmt.pct(b.observed) }}{{ b.off ? ' ⚠' : '' }}</td>
+                    <td class="muted">{{ fmt.num(b.n, 0) }}</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="panel box">
+    <h2 class="title box-title">Mappa del valore</h2>
+    <p class="small">
+      Dove e quando escono le occasioni (quota bet365 sopra la quota giusta di Pinnacle), in media per stagione, su
+      {{ r.value_map.seasons }} stagioni: {{ fmt.num(r.value_map.plays, 0) }} occasioni con CLV {{ est(r.value_map.clv) }}.
+      Più scura la casella, più occasioni.
+    </p>
+    <div class="table-wrap">
+      <table class="tbl heat">
+        <thead>
+          <tr>
+            <th>Campionato</th>
+            @for (m of months; track m) { <th>{{ monthLabels[m] }}</th> }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of valueMap(); track row.code) {
+            <tr>
+              <td>{{ row.name }}</td>
+              @for (c of row.cells; track $index) {
+                <td [style.--heat]="c ? heat(c.per_season) : 0" [attr.title]="c ? fmt.num(c.per_season, 1) + ' a stagione, CLV ' + fmt.signedPct(c.clv) : 'nessuna'">
+                  {{ c ? fmt.num(c.per_season, 1) : '' }}
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+} @else {
+  <p class="state" role="status">Carico…</p>
+}

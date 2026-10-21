@@ -120,6 +120,9 @@
                   @if (s.secondary) {
                     <span class="trial-tag" title="Angoli e cartellini: superata la prova sullo storico (D82), ora in prova dal vivo con un conteggio a parte (D94)">in prova</span>
                   }
+                  @if (s.strategy) {
+                    <span class="trial-tag" [title]="'Strategia trovata da Archie e confermata sulle stagioni passate (D118): ' + s.strategy">strategia di Archie</span>
+                  }
                 </td>
                 <td><span class="led price">{{ fmt.odds(s.price) }}</span><span class="small book">{{ s.bookmaker }}</span></td>
                 <td>{{ fmt.fairOdds(s.fair_probability) }} <span class="muted small">{{ fmt.pct(s.fair_probability) }} · {{ s.fair_source }}</span></td>

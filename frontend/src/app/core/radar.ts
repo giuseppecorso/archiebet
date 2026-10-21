@@ -47,6 +47,8 @@ export interface Occasion {
   suspicious: boolean;
   /** Angoli o cartellini: "in prova", simulazione separata (D94) */
   secondary?: boolean;
+  /** Strategia trovata da Archie e confermata sul passato che gioca questo esito (D118) */
+  strategy?: string | null;
 }
 
 export interface RadarLive {

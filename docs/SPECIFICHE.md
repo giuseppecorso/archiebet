@@ -41,7 +41,7 @@ Colori con significato fisso: verde = valore/vinta, rosso = persa/valore negativ
 6. Laboratorio (aggiunto il 2026-10-11, idea di Giuse)
    - Campionati: per campionato e stagione, classifica finale e numeri del campionato (1/X/2 in casa e fuori, media gol, Over 2.5, Goal), confronto tra stagioni e tra gironi.
    - Squadre: storia stagione per stagione (categoria, posizione, punti, gol), tutte le partite, casa/trasferta, scontri diretti.
-   - Strategie: il "Laboratorio strategie" della sezione 6.5 (Fase 7).
+   - Cosa impara Archie (Fase 7, D117): strategie cercate da Archie da solo, quando giocare, taratura, mappa del valore.
    - Solo dati e numeri calcolati dal codice; niente pronostici.
 7. Impostazioni: limiti di gioco (budget settimanale/mensile), campionati seguiti, bookmaker (Sisal, Eurobet, bet365, Snai, Lottomatica, Goldbet, Betsson, Planetwin365), soglie di valore, squadra del cuore.
 
@@ -129,7 +129,7 @@ Forma squadra (xG, Elo, punti), forma e importanza dei giocatori, infortuni e sq
 - Fase 4 – Pronostici e valore (rivista con D67, conclusa il 2026-10-15): test OddsPapi, quote automatiche, **Pronostici** (la stima migliore per ogni partita, con le quote di Sisal ed Eurobet ed etichetta di valore), Occasioni sul tuo bookmaker (radar), quote fuori linea, Multipla del giorno, generatore, Io contro Archie. Parte il mese di simulazione (giudicato su CLV e calibrazione).
 - Fase 5 – Live: risultati in diretta, termometro della speranza, segui live.
 - Fase 6 – AI e Gioca: Chiedi ad Archie, autopsie "sfortuna o errore", notizie (anche locali Serie C), regolamento personale, simulatore, sfida contro Archie.
-- Fase 7 – Apprendimento: fiuto misurato, autocorrezione, quando giocare, partite gemelle, laboratorio strategie, mappa del valore.
+- Fase 7 – Apprendimento (rivista con D117): Archie cerca da solo le strategie, autocorrezione (controllo della taratura), quando giocare, partite gemelle, mappa del valore.
 - Fase 8 – Coppe europee e altri campionati; formazioni previste; piano partita live.
 - Soldi veri solo se backtest e simulazione mostrano CLV positivo.
 

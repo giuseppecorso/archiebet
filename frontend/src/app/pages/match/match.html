@@ -298,6 +298,45 @@
     </section>
   }
 
+  @if (twins.value(); as tw) {
+    <section class="panel box twins" aria-labelledby="tw-title">
+      <div class="box-head">
+        <h2 id="tw-title" class="title box-title">Partite gemelle</h2>
+      </div>
+      <p class="small">
+        Le {{ tw.n }} partite passate (Serie A, B e campionati esteri dal 2012) con le probabilità più simili a questa
+        ({{ tw.source }}): come sono finite davvero.
+      </p>
+      <div class="twin-grid">
+        @for (k of ['1', 'X', '2']; track k) {
+          <div class="tile">
+            <span class="label">{{ k === '1' ? '1 · casa' : k === 'X' ? 'X · pareggio' : '2 · trasferta' }}</span>
+            <span class="led">{{ fmt.pct(tw.observed[k]) }}</span>
+            <span class="muted small">previsto {{ fmt.pct(tw.expected[k]) }}</span>
+          </div>
+        }
+        @if (tw.over_observed != null) {
+          <div class="tile">
+            <span class="label">Over 2.5</span>
+            <span class="led">{{ fmt.pct(tw.over_observed) }}</span>
+            <span class="muted small">previsto {{ fmt.pct(tw.over_expected) }}</span>
+          </div>
+        }
+      </div>
+      <p class="small">
+        Gol medi {{ fmt.num(tw.avg_goals, 1) }} · risultati più frequenti:
+        @for (s of tw.top_scores; track s[0]) { <span class="chip">{{ s[0] }} · {{ fmt.pct(s[1]) }}</span> }
+      </p>
+      <p class="muted small">
+        Le più simili:
+        @for (e of tw.examples; track e.match_id; let last = $last) {
+          <a [routerLink]="['/partite', e.match_id]">{{ e.home }} – {{ e.away }} {{ e.score }}</a>{{ last ? '' : ' · ' }}
+        }
+      </p>
+      <p class="muted small">Serve a capire "partite così come finiscono"; se uscito e previsto si somigliano, le probabilità sono affidabili. Non entra nei calcoli (D121).</p>
+    </section>
+  }
+
   <div class="grid">
     <div class="main-col">
       <section class="panel box" aria-labelledby="cmp-title">

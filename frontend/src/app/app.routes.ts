@@ -36,6 +36,7 @@ export const routes: Routes = [
       { path: 'radar', redirectTo: () => '/pronostici?tab=occasioni' },
       { path: 'laboratorio', pathMatch: 'full', redirectTo: 'laboratorio/campionati' },
       { path: 'laboratorio/campionati', loadComponent: () => import('./pages/lab/lab-leagues').then((m) => m.LabLeagues), title: 'Laboratorio · Campionati · ArchieBet' },
+      { path: 'laboratorio/impara', loadComponent: () => import('./pages/lab/lab-learning').then((m) => m.LabLearning), title: 'Laboratorio · Cosa impara Archie · ArchieBet' },
       { path: 'laboratorio/squadre', loadComponent: labTeams, title: 'Laboratorio · Squadre · ArchieBet' },
       { path: 'laboratorio/squadre/:id', loadComponent: labTeams, title: 'Laboratorio · Squadra · ArchieBet' },
       ...SECTIONS.filter((section) => section.path !== 'laboratorio' && section.path !== 'partite').map((section) => ({

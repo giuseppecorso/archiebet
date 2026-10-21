@@ -8,12 +8,12 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   template: `
     <div class="head">
       <h1 class="title">Laboratorio</h1>
-      <p class="muted">Studia il passato di campionati e squadre. Solo numeri calcolati sui risultati: niente pronostici.</p>
+      <p class="muted">Il passato di campionati e squadre, e quello che Archie impara da solo. Solo numeri calcolati dal codice.</p>
     </div>
     <nav class="tabs" aria-label="Schede del Laboratorio">
       <a class="tab title" routerLink="/laboratorio/campionati" routerLinkActive="on" ariaCurrentWhenActive="page">Campionati</a>
       <a class="tab title" routerLink="/laboratorio/squadre" routerLinkActive="on" ariaCurrentWhenActive="page">Squadre</a>
-      <span class="tab title soon" title="Prova una regola sulle stagioni passate: arriva nella Fase 7">Strategie · Fase 7</span>
+      <a class="tab title" routerLink="/laboratorio/impara" routerLinkActive="on" ariaCurrentWhenActive="page">Cosa impara Archie</a>
     </nav>
   `,
   styles: `
@@ -27,7 +27,6 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       border: 1px solid var(--line-strong); border-radius: 4px;
     }
     .tab.on { color: var(--bg); background: var(--amber); border-color: var(--amber); }
-    .tab.soon { color: var(--dim); border-style: dashed; }
   `,
 })
 export class LabTabs {}

@@ -8,6 +8,7 @@ import { MatchAnalysis, MatchNumbers, MatchPicks, PlayerShots, verdictClass } fr
 import { RouterLink } from '@angular/router';
 import { FanFact, MatchFan, SOURCE_LABELS, factTone } from '../../core/fan';
 import { MatchDetail, OddsRow, TeamSummary } from '../../core/football';
+import { Twins } from '../../core/lab';
 import { dayLabel, fairOdds, kickoffTime, longDate, num, odds, pct } from '../../core/format';
 import { LIVE_REFRESH_MS, liveLabel } from '../../core/live';
 import { Crest, LeagueLogo } from '../../shared/crest';
@@ -92,6 +93,8 @@ export class MatchPage {
   protected readonly numbersSide = signal<'totale' | 'casa' | 'ospite'>('totale');
   /** Tiri dei giocatori (D111): i primi 6 per squadra, gli assenti secondo le notizie in fondo */
   protected readonly players = httpResource<PlayerShots[]>(() => `/api/picks/match/${this.id()}/players`);
+  /** Partite gemelle (D121): le 100 partite passate più simili e come sono finite */
+  protected readonly twins = httpResource<Twins>(() => `/api/lab/twins/${this.id()}`);
   protected readonly playersBySide = computed(() => {
     const all = this.players.value() ?? [];
     const pick = (side: 'casa' | 'ospite') => {
