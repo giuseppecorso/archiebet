@@ -917,6 +917,66 @@ def _odds_archive(since: str, minor: bool = False) -> int:
     return 0
 
 
+def _style_test() -> int:
+    """Prova D108: gli stili di gioco che si incastrano aggiungono qualcosa al modello "fatti × subiti"?"""
+    import numpy as np
+    from sqlalchemy import select
+
+    from app.forecast import counts as ct
+    from app.models import Match
+
+    leagues = ("ITA-A", "ITA-B", "ENG-1", "ENG-2", "ESP-1", "ESP-2", "GER-1", "GER-2", "FRA-1", "FRA-2")
+    with SessionLocal() as db:
+        rows = db.execute(
+            select(Match, Competition.code).join(Competition, Competition.id == Match.competition_id)
+            .where(Competition.code.in_(leagues), Match.status == "finished", Match.season >= "2009/10")
+        ).all()  # fmt: skip
+    games = []
+    for m, code in rows:
+        vals = (m.home_shots, m.away_shots, m.home_corners, m.away_corners, m.home_fouls, m.away_fouls, m.home_yellow, m.away_yellow, m.home_red, m.away_red)
+        if any(v is None for v in vals):
+            continue
+        games.append(ct.CountGame(m.id, code, m.season, m.kickoff_at, m.home_team_id, m.away_team_id, {
+            "shots": (m.home_shots, m.away_shots), "corners": (m.home_corners, m.away_corners), "fouls": (m.home_fouls, m.away_fouls),
+            "cards": (m.home_yellow + m.home_red, m.away_yellow + m.away_red)}))  # fmt: skip
+    print(f"Partite con tutti i numeri: {len(games)}")
+    last_tuning = "2021/22"
+    for label, target, driver in (("S1 angoli ← tiri", "corners", "shots"), ("S2 cartellini ← falli", "cards", "fouls"), ("S3 tiri ← tiri", "shots", "shots")):
+        best = None
+        for k in (2, 4, 8, 16):
+            rs = [r for r in ct.build_rows(games, target, driver, k) if r.season >= "2010/11"]
+            tune = [r for r in rs if r.season <= last_tuning]
+            size = ct.fit_size(tune)
+            y, b, s = ct.arrays(tune)
+            ll = ct.log_lik_vec(y, b, s, size).sum()
+            if best is None or ll > best[0]:
+                best = (ll, k, rs, size)
+        _, k, rs, size = best
+        tune = [r for r in rs if r.season <= last_tuning]
+        conf = [r for r in rs if r.season > last_tuning]
+        # Controllo: il modello base batte la sola media del campionato (forze tutte a 1)?
+        flat = {r.match_id: r for r in ct.build_rows(games, target, driver, 1e9)}
+        flat_conf = [flat[r.match_id] for r in conf]
+        flat_size = ct.fit_size([flat[r.match_id] for r in tune])
+        yc, bc, sc = ct.arrays(conf)
+        yf, bf, sf = ct.arrays(flat_conf)
+        base_vs_flat = ct.paired(ct.log_lik_vec(yc, bc, sc, size) - ct.log_lik_vec(yf, bf, sf, flat_size))
+        # Validazione incrociata in taratura (una stagione fuori alla volta) e conferma
+        cv = []
+        for season in sorted({r.season for r in tune}):
+            beta = ct.fit_beta([r for r in tune if r.season != season], size)
+            cv.append(ct.gain([r for r in tune if r.season == season], size, beta))
+        cv_est = ct.paired(np.concatenate(cv))
+        beta = ct.fit_beta(tune, size)
+        conf_est = ct.paired(ct.gain(conf, size, beta))
+        ok = cv_est[0] > 2 * cv_est[1] and conf_est[0] > 2 * conf_est[1]
+        print(f"\n({label}) k={k}, dispersione {size:.1f}; partite: taratura {len(tune)}, conferma {len(conf)}")
+        print(f"   controllo, modello base meno sola media (conferma): {base_vs_flat[0]:+.4f} ± {base_vs_flat[1]:.4f} per partita")
+        print(f"   coefficiente di stile {beta:+.3f}; guadagno taratura {cv_est[0]:+.5f} ± {cv_est[1]:.5f}, conferma {conf_est[0]:+.5f} ± {conf_est[1]:.5f}"
+              f" -> {'PASSA' if ok else 'non passa'}")  # fmt: skip
+    return 0
+
+
 def _af_stats(seasons: str) -> int:
     """Scarica tiri, angoli, falli e cartellini di squadre e giocatori (Serie A e B) per i modelli dei mercati secondari."""
     from app.adapters.api_football import ApiFootballAdapter
@@ -1131,6 +1191,7 @@ def main() -> int:
     commands.add_parser("live-check", help="verifica del termometro della speranza sul punteggio all'intervallo (D92)")
     commands.add_parser("secondary-test", help="prova D82 su angoli e cartellini (usare una copia del database)")
     commands.add_parser("d89-test", help="prova del nove dei fattori D89 (riposo, allenatore, sintetico, distanza, assenze)")
+    commands.add_parser("style-test", help="prova D108: stili di gioco che si incastrano (angoli, cartellini, tiri)")
     afs = commands.add_parser("af-stats", help="statistiche di squadre e giocatori da API-Football (Serie A e B)")
     afs.add_argument("--seasons", default="2026,2025,2024")
     commands.add_parser("af-history", help="storico API-Football per le prove dei fattori D89 (coppe, allenatori, formazioni)")
@@ -1173,6 +1234,8 @@ def main() -> int:
         return _secondary_test()
     if args.command == "d89-test":
         return _d89_test()
+    if args.command == "style-test":
+        return _style_test()
     if args.command == "af-stats":
         return _af_stats(args.seasons)
     if args.command == "af-history":
