@@ -12,6 +12,7 @@ Ultimo aggiornamento: 2026-10-21
 - [x] **Archie tifoso su Serie A, B e C** (D105): Google News mirata per chi gioca nei 7 giorni; giudizi solo con le quote (D104); prove separate C (D101) e A-B.
 - [x] **Pagina partita completa** (D107-D111): due pronostici (il più sicuro e il più spinto), analisi scritta da Opus su richiesta (~0,025 €), tiri/angoli/cartellini attesi con quote giuste (modello D108-D109) e confronto con le quote dei bookmaker, tiri dei giocatori con quote giuste e assenti dalle notizie (modello D110, verificato e calibrato).
 - [x] Prova stili D108: gli incastri di stile non aggiungono niente al modello "fatti × subiti".
+- [x] **Fase 6 – AI e Gioca: CONCLUSA (2026-10-21)**: Chiedi ad Archie con strumenti sui dati (D112), sfortuna o errore? (D113), regolamento personale con suggerimenti e stile di gioco (D114), simulatore partita con "E se..." (D115), sfida contro Archie a crediti finti (D116), notizie (D101-D105). Icona unica "ArchieBet (avvia o riavvia)".
 - [ ] **Serie minori di tutto il mondo** (D106): archivio quote di 23 campionati in corso (`odds-archive --minor`), poi risultati da API-Football e prova.
 - [ ] Da verificare dopo il riavvio: quote italiane collegate alle partite di Serie C (l'app accesa usava ancora il codice vecchio) e primi giudizi con il consenso registrato.
 - [ ] Poi: "Chiedi ad Archie" e il resto della Fase 6; Blocco 4 (valutazione dei giocatori) solo se servirà.

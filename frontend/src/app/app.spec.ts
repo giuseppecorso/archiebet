@@ -151,11 +151,14 @@ describe('ArchieBet: navigazione', () => {
     localStorage.removeItem('archiebet.matches.filters');
   });
 
-  it('ogni sezione mostra la sua pagina con la fase in cui arriva', async () => {
+  it('la sezione Gioca (Fase 6) mostra simulatore e sfida', async () => {
     const harness = await navigateAs('/gioca', true);
+    (await nextRequest('/api/play/matches')).flush([]);
+    (await nextRequest((r) => r.url.startsWith('/api/play/challenge'))).flush({ stake: 10, rows: [], standings: [] });
+    await harness.fixture.whenStable();
     const page = harness.routeNativeElement!;
     expect(page.querySelector('h1')?.textContent).toContain('Gioca');
-    expect(page.querySelector('.phase')?.textContent?.trim()).toBe('6');
+    expect(page.textContent).toContain('Simulatore partita');
     expect(page.querySelector('nav a[aria-current="page"]')?.textContent?.trim()).toBe('Gioca');
   });
 

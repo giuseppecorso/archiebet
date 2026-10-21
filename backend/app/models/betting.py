@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, ForeignKey, Index, Numeric, String, Text
+from sqlalchemy import JSON, Boolean, ForeignKey, Index, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, UTCDateTime, utcnow
@@ -96,3 +96,21 @@ class UserRule(Base):
     source: Mapped[str] = mapped_column(String(10), default="mine")  # "mine" | "archie"
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+
+
+class ChallengePick(Base):
+    """Sfida contro Archie (Fase 6, D116): pronostico 1X2 dell'utente con crediti finti alla quota giusta, e quello di Archie."""
+
+    __tablename__ = "challenge_picks"
+    __table_args__ = (UniqueConstraint("user_id", "match_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), index=True)
+    selection: Mapped[str] = mapped_column(String(2))  # "1" | "X" | "2"
+    fair_odds: Mapped[float] = mapped_column(Numeric(8, 3))  # quota giusta dell'esito scelto, al momento della scelta
+    archie_selection: Mapped[str] = mapped_column(String(2))  # l'esito più probabile in quel momento
+    archie_fair_odds: Mapped[float] = mapped_column(Numeric(8, 3))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+
+    match: Mapped[Match] = relationship(lazy="joined")

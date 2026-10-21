@@ -1,0 +1,138 @@
+<div class="play">
+  <header class="head">
+    <h1 class="title">Gioca</h1>
+    <span class="muted">Solo crediti finti: per allenare il fiuto, non per scommettere.</span>
+  </header>
+  <div class="seg" role="tablist">
+    <button type="button" role="tab" [attr.aria-selected]="tab() === 'sim'" [class.on]="tab() === 'sim'" (click)="tab.set('sim')">Simulatore partita</button>
+    <button type="button" role="tab" [attr.aria-selected]="tab() === 'sfida'" [class.on]="tab() === 'sfida'" (click)="tab.set('sfida')">Sfida contro Archie</button>
+  </div>
+
+  @if (tab() === 'sim') {
+    <section class="panel box">
+      <div class="sim-pick">
+        <select [(ngModel)]="matchId" name="match" aria-label="Partita da simulare">
+          <option [ngValue]="null">Scegli una partita dei prossimi 7 giorni…</option>
+          @for (m of matches.value(); track m.id) {
+            <option [ngValue]="m.id">{{ fmt.dayLabel(m.kickoff_at) }} · {{ m.home.name }} – {{ m.away.name }} ({{ m.competition.name }})</option>
+          }
+        </select>
+        <button type="button" class="btn-primary" [disabled]="!matchId || busy()" (click)="simulate()">Simula 10.000 volte</button>
+      </div>
+      @if (error(); as e) {
+        <p class="err">{{ e }}</p>
+      }
+    </section>
+
+    @if (sim(); as s) {
+      <section class="panel box scoreboard">
+        <div class="sb-teams">
+          <span class="sb-team"><ab-crest [team]="s.match.home" [size]="34" /> {{ s.match.home.name }}</span>
+          <span class="led sb-score">
+            @if (board(); as b) { {{ b[0] }} – {{ b[1] }} } @else { {{ s.score[0] }} – {{ s.score[1] }} }
+          </span>
+          <span class="sb-team away">{{ s.match.away.name }} <ab-crest [team]="s.match.away" [size]="34" /></span>
+        </div>
+        <div class="sb-clock">
+          @if (clock() != null) {
+            <span class="led">{{ clock() }}'</span>
+            @for (g of goalsUpTo(clock()!); track $index) {
+              <span class="goal">⚽ {{ g.minute }}' {{ g.side === 'home' ? s.match.home.name : s.match.away.name }}</span>
+            }
+          } @else {
+            <span class="muted small">dal minuto {{ s.minute }}' · gol attesi da qui {{ fmt.num(s.remaining[0], 2) }} – {{ fmt.num(s.remaining[1], 2) }}</span>
+          }
+        </div>
+        <button type="button" class="btn-primary" (click)="clock() == null ? playLive() : stopLive()">
+          {{ clock() == null ? 'Guarda una partita dal vivo' : 'Ferma' }}
+        </button>
+      </section>
+
+      <section class="panel box">
+        <h2 class="title box-title">Su {{ s.n.toLocaleString('it-IT') }} partite simulate</h2>
+        <div class="sim-grid">
+          <div class="tile"><span class="label">1 · {{ s.match.home.name }}</span><span class="led">{{ fmt.pct(s.p_home) }}</span></div>
+          <div class="tile"><span class="label">X · Pareggio</span><span class="led">{{ fmt.pct(s.p_draw) }}</span></div>
+          <div class="tile"><span class="label">2 · {{ s.match.away.name }}</span><span class="led">{{ fmt.pct(s.p_away) }}</span></div>
+          <div class="tile"><span class="label">Over 2.5</span><span class="led">{{ fmt.pct(s.p_over25) }}</span></div>
+          <div class="tile"><span class="label">Gol (segnano entrambe)</span><span class="led">{{ fmt.pct(s.p_gg) }}</span></div>
+        </div>
+        <p class="small">
+          Risultati più frequenti:
+          @for (t of s.top_scores; track $index) {
+            <span class="chip">{{ t[0] }}-{{ t[1] }} · {{ fmt.pct(t[2]) }}</span>
+          }
+        </p>
+        <p class="muted small">Gol medi {{ fmt.num(s.avg_goals[0], 2) }} – {{ fmt.num(s.avg_goals[1], 2) }}. Gol attesi dalle probabilità migliori prima della partita (come il termometro live, verificato: D92).</p>
+      </section>
+
+      <section class="panel box">
+        <h2 class="title box-title">E se...</h2>
+        <form class="whatif" (ngSubmit)="whatIf()">
+          <label>al minuto <input type="number" name="min" min="0" max="90" [(ngModel)]="whatIfMinute" /></label>
+          <label>{{ s.match.home.name }} <input type="number" name="h" min="0" max="15" [(ngModel)]="whatIfHome" /></label>
+          <label>{{ s.match.away.name }} <input type="number" name="a" min="0" max="15" [(ngModel)]="whatIfAway" /></label>
+          <button type="submit" class="btn-primary" [disabled]="busy()">Ricalcola</button>
+        </form>
+        <p class="muted small">Es. "e se al 30' segna la squadra di casa?": minuto 30, 1 a 0. Le probabilità ripartono da lì con i gol attesi che restano.</p>
+      </section>
+    }
+  } @else {
+    <section class="panel box">
+      <div class="sim-pick">
+        <select [ngModel]="competition()" (ngModelChange)="competition.set($event)" name="comp" aria-label="Campionato">
+          @for (c of competitions; track c[0]) {
+            <option [value]="c[0]">{{ c[1] }}</option>
+          }
+        </select>
+        <span class="muted small">Ogni pronostico vale {{ challenge.value()?.stake ?? 10 }} crediti finti alla quota giusta (senza margine): seguire il mercato in media dà zero, i crediti salgono solo se hai fiuto.</span>
+      </div>
+      @if (pickError(); as e) {
+        <p class="err">{{ e }}</p>
+      }
+      <table class="ch-table">
+        <thead><tr><th>Partita</th><th>1</th><th>X</th><th>2</th><th>Archie</th><th>Crediti</th></tr></thead>
+        <tbody>
+          @for (r of challenge.value()?.rows ?? []; track r.match.id) {
+            <tr>
+              <td>
+                <span class="muted small">{{ fmt.dayLabel(r.match.kickoff_at) }}</span>
+                {{ r.match.home.name }} – {{ r.match.away.name }}
+                @if (r.match.home_goals != null) { <strong>{{ r.match.home_goals }}-{{ r.match.away_goals }}</strong> }
+              </td>
+              @for (sel of ['1', 'X', '2']; track sel) {
+                <td>
+                  <button type="button" class="pick" [class.on]="r.my_pick === sel" [disabled]="!r.open || !r.fair_odds" (click)="pick(r, sel)">
+                    {{ r.fair_odds ? fmt.odds(r.fair_odds[sel]) : '–' }}
+                  </button>
+                </td>
+              }
+              <td>{{ r.archie_pick ?? '–' }}</td>
+              <td [class.pos]="(r.credits ?? 0) > 0" [class.neg]="(r.credits ?? 0) < 0">{{ r.credits != null ? fmt.num(r.credits, 1) : '' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="muted">Nessuna partita nei prossimi 7 giorni per questo campionato.</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+    <section class="panel box">
+      <h2 class="title box-title">Classifica</h2>
+      <table class="ch-table">
+        <thead><tr><th></th><th>Pronostici</th><th>Indovinati</th><th>Crediti</th></tr></thead>
+        <tbody>
+          @for (s of challenge.value()?.standings ?? []; track s.name) {
+            <tr>
+              <td>{{ s.name }}</td>
+              <td>{{ s.picks }}</td>
+              <td>{{ s.correct }} ({{ fmt.pct(s.hit_rate) }})</td>
+              <td [class.pos]="s.credits > 0" [class.neg]="s.credits < 0">{{ fmt.num(s.credits, 1) }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="muted">La classifica parte dopo le prime partite finite. Archie gioca le stesse partite tue, scegliendo sempre l'esito più probabile.</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+</div>

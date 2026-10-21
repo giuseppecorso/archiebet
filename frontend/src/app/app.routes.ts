@@ -16,6 +16,7 @@ const BUILT: Record<string, LoadComponent> = {
   schedine: () => import('./pages/bets/bets').then((m) => m.Bets),
   statistiche: () => import('./pages/stats/stats').then((m) => m.Stats),
   impostazioni: () => import('./pages/settings/settings').then((m) => m.SettingsPage),
+  gioca: () => import('./pages/play/play').then((m) => m.Play),
 };
 const placeholder: LoadComponent = () => import('./pages/section-placeholder/section-placeholder').then((m) => m.SectionPlaceholder);
 const labTeams: LoadComponent = () => import('./pages/lab/lab-teams').then((m) => m.LabTeams);
