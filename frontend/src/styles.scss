@@ -42,6 +42,16 @@
   box-sizing: border-box;
 }
 
+/* Elenchi a tendina: senza questo Edge/Chrome mostrano le voci chiare su fondo bianco */
+select option,
+select optgroup {
+  color: var(--text);
+  background: var(--panel);
+}
+optgroup {
+  color: var(--amber);
+}
+
 html,
 body {
   margin: 0;

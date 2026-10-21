@@ -65,6 +65,12 @@ export class Play implements OnDestroy {
 
   // --- Simulatore ---
   protected readonly matches = httpResource<MatchCard[]>(() => '/api/play/matches', { defaultValue: [] });
+  /** Partite raggruppate per campionato, nell'ordine in cui arrivano (per data) */
+  protected readonly matchGroups = computed(() => {
+    const groups = new Map<string, MatchCard[]>();
+    for (const m of this.matches.value()) groups.set(m.competition.name, [...(groups.get(m.competition.name) ?? []), m]);
+    return [...groups].map(([name, matches]) => ({ name, matches }));
+  });
   protected matchId: number | null = null;
   protected whatIfMinute = 0;
   protected whatIfHome = 0;

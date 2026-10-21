@@ -150,3 +150,11 @@ input[type='number'] {
     opacity: 0.6;
   }
 }
+.intro {
+  margin: 0 0 12px;
+  color: var(--text-2);
+  line-height: 1.5;
+  strong {
+    color: var(--text);
+  }
+}

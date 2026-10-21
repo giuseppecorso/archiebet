@@ -10,11 +10,21 @@
 
   @if (tab() === 'sim') {
     <section class="panel box">
+      <p class="intro">
+        <strong>A cosa serve:</strong> scegli una partita e Archie la gioca 10.000 volte con i gol attesi dalle quote.
+        Vedi quanto spesso finisce 1, X o 2, i risultati più probabili e una partita "dal vivo" sul tabellone.
+        Con <strong>"E se..."</strong> scopri come cambiano le probabilità se, per esempio, al 30' la squadra di casa segna.
+        Serve a capire la partita, non a scommettere.
+      </p>
       <div class="sim-pick">
         <select [(ngModel)]="matchId" name="match" aria-label="Partita da simulare">
           <option [ngValue]="null">Scegli una partita dei prossimi 7 giorni…</option>
-          @for (m of matches.value(); track m.id) {
-            <option [ngValue]="m.id">{{ fmt.dayLabel(m.kickoff_at) }} · {{ m.home.name }} – {{ m.away.name }} ({{ m.competition.name }})</option>
+          @for (g of matchGroups(); track g.name) {
+            <optgroup [label]="g.name">
+              @for (m of g.matches; track m.id) {
+                <option [ngValue]="m.id">{{ fmt.dayLabel(m.kickoff_at) }} {{ fmt.kickoffTime(m.kickoff_at, m.kickoff_has_time) }} · {{ m.home.name }} – {{ m.away.name }}</option>
+              }
+            </optgroup>
           }
         </select>
         <button type="button" class="btn-primary" [disabled]="!matchId || busy()" (click)="simulate()">Simula 10.000 volte</button>
