@@ -22,6 +22,7 @@ SOURCES = [
     ("oddspapi", "Quote dei bookmaker italiani e Pinnacle"),
     ("predictions", "Previsioni di Archie"),
     ("radar", "Radar delle quote"),
+    ("news", "Archie tifoso: notizie della Serie C"),
 ]
 
 
@@ -54,7 +55,7 @@ class StatusOut(BaseModel):
 @router.get("")
 def data_status(_: CurrentUser, db: DbSession) -> StatusOut:
     now = datetime.now(UTC)
-    configured = {"football-data": True, "api-football": bool(get_settings().api_football_key), "oddspapi": bool(get_settings().oddspapi_key), "predictions": True, "radar": True}
+    configured = {"football-data": True, "api-football": bool(get_settings().api_football_key), "oddspapi": bool(get_settings().oddspapi_key), "predictions": True, "radar": True, "news": True}
     sources = []
     for source, label in SOURCES:
         last = db.scalar(select(SyncRun).where(SyncRun.source == source).order_by(SyncRun.finished_at.desc()).limit(1))

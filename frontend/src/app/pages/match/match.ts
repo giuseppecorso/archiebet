@@ -1,6 +1,7 @@
 import { httpResource } from '@angular/common/http';
 import { Component, computed, effect, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { FanFact, MatchFan, SOURCE_LABELS, factTone } from '../../core/fan';
 import { MatchDetail, OddsRow, TeamSummary } from '../../core/football';
 import { dayLabel, fairOdds, kickoffTime, longDate, num, odds, pct } from '../../core/format';
 import { LIVE_REFRESH_MS, liveLabel } from '../../core/live';
@@ -75,6 +76,18 @@ export class MatchPage {
   readonly id = input.required<string>();
 
   protected readonly detail = httpResource<MatchDetail>(() => `/api/matches/${this.id()}`);
+  /** Archie tifoso (D102): fatti delle due squadre dalle notizie e giudizio di Archie */
+  protected readonly fan = httpResource<MatchFan>(() => `/api/fan/match/${this.id()}`);
+  protected readonly factTone = factTone;
+  protected readonly sourceLabels = SOURCE_LABELS;
+
+  /** I fatti divisi per squadra: [casa, ospite] */
+  protected readonly fanFacts = computed<[FanFact[], FanFact[]]>(() => {
+    const d = this.detail.value();
+    const facts = this.fan.value()?.facts ?? [];
+    if (!d) return [[], []];
+    return [facts.filter((f) => f.team_id === d.match.home.id), facts.filter((f) => f.team_id === d.match.away.id)];
+  });
 
   constructor() {
     // A partita in corso minuto, punteggio e probabilità si aggiornano da soli ogni 30 secondi

@@ -42,7 +42,8 @@ class Settings(BaseSettings):
 
     # Claude API (Fase 6): un solo modulo per l'AI (app/ai); tetto di spesa mensile controllato dal codice
     anthropic_api_key: str | None = None
-    ai_model: str = "claude-sonnet-5-5"
+    ai_model: str = "claude-opus-5-5"  # giudizi e domande: il migliore, ~0,01 $ a giudizio (D103)
+    ai_extract_model: str = "claude-haiku-5-5"  # estrazione dei fatti dalle notizie: tante, semplici (D102)
     ai_monthly_budget_usd: float = 10.0
 
     # Aggiornamento automatico dei dati mentre il backend è acceso

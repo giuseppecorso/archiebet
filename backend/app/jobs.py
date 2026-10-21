@@ -20,6 +20,7 @@ from app.forecast.service import refresh_predictions
 from app.ingest.api_football import sync_api_football
 from app.ingest.football_data import ImportReport, sync_football_data
 from app.ingest.live import needs_live, sync_live
+from app.ingest.news import run_news
 from app.ingest.odds_archive import archive_history
 from app.ingest.oddspapi import sync_oddspapi
 from app.models.sync import SyncRun
@@ -178,6 +179,26 @@ def archive_job() -> None:
     _tracked("oddspapi", work)
 
 
+def news_job() -> None:
+    """Ogni 2 ore: Archie tifoso (D101-D102). Notizie, fatti, giudizi, chiusure; senza chiave Claude solo raccolta."""
+    from app.adapters.news import NewsAdapter
+    from app.ai.client import Ai
+
+    settings = get_settings()
+
+    def work() -> str:
+        now = datetime.now(UTC)
+        with SessionLocal() as db:
+            ai = Ai(db, settings.anthropic_api_key, settings.ai_monthly_budget_usd) if settings.anthropic_api_key else None
+            report = run_news(db, NewsAdapter(FileCache(settings.data_cache_dir, "news")), ai, settings.ai_extract_model, settings.ai_model, now)
+        for error in report.errors:
+            logger.warning("Notizie: %s", error)
+        return (f"{report.new} notizie nuove, {report.facts} fatti da {report.processed} lette, {report.judged} partite giudicate,"
+                f" {report.settled} chiusure")  # fmt: skip
+
+    _tracked("news", work)
+
+
 _live_lock = threading.Lock()
 
 
@@ -240,6 +261,8 @@ def start_scheduler(settings: Settings) -> BackgroundScheduler | None:
     scheduler.add_job(live_job, "interval", seconds=60, id="live", max_instances=1, coalesce=True)
     scheduler.add_job(archive_job, "interval", days=7, next_run_time=datetime.now(UTC) + timedelta(minutes=30),
                       id="odds-archive", max_instances=1, coalesce=True)  # fmt: skip
+    scheduler.add_job(news_job, "interval", hours=2, next_run_time=datetime.now(UTC) + timedelta(minutes=3),
+                      id="news", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.start()
     logger.info("Aggiornamento automatico attivo ogni %s ore", settings.sync_interval_hours)
     return scheduler

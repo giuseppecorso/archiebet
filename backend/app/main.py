@@ -8,6 +8,7 @@ from app.api.football import router as football_router
 from app.api.lab import router as lab_router
 from app.api.status import router as status_router
 from app.api.media import router as media_router
+from app.api.fan import router as fan_router
 from app.api.picks import router as picks_router
 from app.api.radar import router as radar_router
 from app.auth.router import router as auth_router
@@ -34,6 +35,7 @@ app.include_router(status_router)
 app.include_router(radar_router)
 app.include_router(picks_router)
 app.include_router(media_router)
+app.include_router(fan_router)
 
 
 @app.get("/api/health", tags=["system"])

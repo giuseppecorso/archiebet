@@ -85,8 +85,8 @@
         }
       </div>
       <p class="muted small archie-note">
-        Modello verificato sulla stagione 2025/26 (ben calibrato). In Serie A e B però il mercato è più preciso di Archie:
-        dove non sono d'accordo, di solito ha ragione il mercato.
+        Modello verificato sulla stagione 2025/26 (ben calibrato). In Serie A, B e C però il mercato è più preciso di Archie:
+        dove non sono d'accordo, di solito ha ragione il mercato (D95, D99).
         @if (p.market['1X2']; as ref) {
           Mercato: {{ ref.source }}, senza margine.
         }
@@ -99,6 +99,52 @@
         <span>Il modello di Archie per i campionati esteri arriva in Fase 8. Il radar invece funziona già: le quote di valore sono nella sezione Radar.</span>
       } @else {
         <span>Nessuna previsione per questa partita: Archie calcola solo le partite in programma, prima del calcio d'inizio.</span>
+      }
+    </section>
+  }
+
+  @if (d.match.competition.code.startsWith('ITA-C') || fan.value()?.facts?.length) {
+    <section class="panel box fan" aria-labelledby="fan-title">
+      <div class="box-head">
+        <h2 id="fan-title" class="title box-title">Cosa sa il tifoso</h2>
+        <span class="trial-tag" title="Archie legge le notizie della Serie C e giudica chi favoriscono. Si misura se poi le quote si muovono verso il suo giudizio: verdetto a 150 partite (D101)">in prova</span>
+      </div>
+      @if (fan.value(); as f) {
+        @if (f.insight; as ins) {
+          <p class="fan-verdict" [class.none]="ins.side === 'none'">
+            @if (ins.side === 'none') {
+              <strong>Le notizie non spostano gli equilibri.</strong>
+            } @else {
+              <strong>Le notizie favoriscono {{ ins.side === 'home' ? d.match.home.name : d.match.away.name }}</strong>
+              <span class="strength">({{ ins.strength }})</span>
+            }
+            {{ ins.reason }}
+            <span class="muted small">· giudizio del {{ fmt.dayLabel(ins.created_at) }} {{ fmt.kickoffTime(ins.created_at) }}</span>
+          </p>
+        }
+        <div class="fan-cols">
+          @for (side of [0, 1]; track side) {
+            <div class="fan-col">
+              <h3 class="title fan-team">{{ side === 0 ? d.match.home.name : d.match.away.name }}</h3>
+              @for (fact of fanFacts()[side]; track $index) {
+                <a [class]="'fan-fact ' + factTone(fact.kind)" [href]="fact.url" target="_blank" rel="noopener noreferrer">
+                  <span class="fact-kind">{{ fact.label }}</span>
+                  <span class="fact-detail">{{ fact.detail }}</span>
+                  <span class="muted small">{{ fmt.dayLabel(fact.published_at) }} · {{ sourceLabels[fact.source] ?? fact.source }}</span>
+                </a>
+              } @empty {
+                <p class="muted small">Nessuna notizia rilevante negli ultimi 10 giorni.</p>
+              }
+            </div>
+          }
+        </div>
+        <p class="muted small fan-note">
+          Archie legge ogni 2 ore le notizie della Serie C (TuttoC.com e Google News) e ne estrae i fatti con l'AI.
+          È "in prova": vale solo se le quote, dopo il suo giudizio, si muovono nella direzione che indica
+          ({{ f.test.signals }}/{{ f.test.target }} partite misurate).
+        </p>
+      } @else if (fan.isLoading()) {
+        <p class="muted small">Carico le notizie…</p>
       }
     </section>
   }

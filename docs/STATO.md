@@ -8,8 +8,10 @@ Ultimo aggiornamento: 2026-10-21
 - [x] **Prova D98** (`seriec-edge`, 374 partite di Serie C): il consenso dei bookmaker italiani in chiusura è più preciso dell'apertura (il mercato impara in settimana) e non si batte con formazioni, Archie, ricalibrazione o quote fuori linea.
 - [x] **Prova D99**: Archie non aggiunge niente nemmeno in apertura; le quote "sopra Archie" hanno CLV −6/−7% → etichetta tolta (D100).
 - [x] Archivio settimanale delle quote di Serie C (`archive_job`): la prova D98 si ripete a fine stagione con più partite.
-- [ ] **Prossimo: Blocco 2 "il pronostico del tifoso"** (Giuse inserisce le sue percentuali prima della partita; si misura se il mercato poi si muove verso di lui, partite della sua squadra a parte), poi **Blocco 3 notizie lette da Claude** (assenti, squalifiche, stipendi, allenatori; prova solo in avanti), Blocco 4 valutazione dei giocatori solo se servirà.
-- Test: 345 backend + 21 frontend, tutti verdi.
+- [x] **Archie tifoso** (D101-D103): notizie della Serie C ogni 2 ore (TuttoC.com + Google News per chi gioca nei 3 giorni), fatti estratti con Haiku 5.5, giudizio sulla partita con Opus 5.5, consenso dei bookmaker salvato a ogni giudizio e in chiusura; riquadro "Cosa sa il tifoso" (in prova) nella pagina partita; stato della prova in `/api/fan/test`. Costo misurato ~3 $/mese. Prova D101: verdetto a 150 segnali (spostamento delle quote verso il lato indicato).
+- [ ] Da verificare dopo il riavvio: quote italiane collegate alle partite di Serie C (l'app accesa usava ancora il codice vecchio) e primi giudizi con il consenso registrato.
+- [ ] Poi: "Chiedi ad Archie" e il resto della Fase 6; Blocco 4 (valutazione dei giocatori) solo se servirà.
+- Test: 353 backend + 22 frontend, tutti verdi.
 
 ## Fase 1.5 – Laboratorio (base): CONCLUSA (2026-10-12)
 
