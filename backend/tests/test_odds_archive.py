@@ -92,3 +92,10 @@ def test_rate_limit_is_retried_then_skipped(tmp_path):
                           {"a": [limited, limited, limited], "b": {"bookmakers": {}}})
     report = archive_history(adapter, FileCache(tmp_path, "odds-archive"), datetime(2026, 4, 1, tzinfo=UTC), log=lambda _: None, sleep=lambda s: None)
     assert report.failed == 1 and report.saved == 1  # "a" si riprova al prossimo lancio, "b" va avanti
+
+
+def test_prefix_limits_the_archive_to_serie_c(tmp_path):
+    adapter = FakeAdapter([fixture("a", "2026-05-01T15:00:00.000Z")], {"a": None})  # torneo 23: non è Serie C
+    report = archive_history(adapter, FileCache(tmp_path, "odds-archive"), datetime(2026, 4, 1, tzinfo=UTC),
+                             log=lambda _: None, sleep=lambda s: None, prefix="ITA-C")  # fmt: skip
+    assert adapter.calls == [] and report.already + report.saved + report.missing == 0

@@ -710,6 +710,155 @@ def _seriec_test() -> int:
     return 0
 
 
+def _seriec_edge() -> int:
+    """Prova D98: battere il consenso dei bookmaker italiani in Serie C (usare una copia del database)."""
+    import json
+    from collections import defaultdict
+    from datetime import timedelta
+
+    from sqlalchemy import select
+
+    from app.adapters.api_football import ApiFootballAdapter
+    from app.adapters.oddspapi import MARKETS, TOURNAMENTS, OddsPapiAdapter, OPFixture
+    from app.forecast import seriec_edge as se
+    from app.forecast.factors_d89 import Fixture, absence_features
+    from app.ingest.af_history import SERIE_C_LEAGUES
+    from app.ingest.oddspapi import OddsPapiReport, link_fixtures
+    from app.models import MatchSource, TeamAlias
+
+    settings = get_settings()
+    adapter = OddsPapiAdapter(FileCache(settings.data_cache_dir, "oddspapi"), settings.oddspapi_key)
+    af = ApiFootballAdapter(FileCache(settings.data_cache_dir, "api-football"), settings.api_football_key)
+    records = []
+    for path in (settings.data_cache_dir / "odds-archive").glob("*.json"):
+        data = json.loads(path.read_text(encoding="utf-8"))["data"]
+        if data["bookmakers"] and TOURNAMENTS.get(data["fixture"]["tournamentId"], "").startswith("ITA-C"):
+            records.append(data)
+    fixtures = [OPFixture(r["fixture"]["fixtureId"], r["fixture"]["tournamentId"], datetime.fromisoformat(r["fixture"]["startTime"].replace("Z", "+00:00")),
+                          r["fixture"]["participant1Id"], r["fixture"]["participant2Id"], 2) for r in records]  # fmt: skip
+    names = {str(r["fixture"][f"participant{k}Id"]): r["fixture"][f"participant{k}Name"] for r in records for k in (1, 2)}
+    with SessionLocal() as db:
+        links = link_fixtures(db, fixtures, adapter.participants() | names, OddsPapiReport(), datetime.now(UTC))
+        db.commit()
+        linked = {fid: (m.id, m.home_goals, m.away_goals) for fid, m in links.items() if m.home_goals is not None and m.away_goals is not None}
+        af_team = {int(a.alias): a.team_id for a in db.scalars(select(TeamAlias).where(TeamAlias.source == "api-football")) if a.alias.isdigit()}
+        af_match = {int(m.external_id): m.match_id for m in db.scalars(select(MatchSource).where(MatchSource.source == "api-football"))}
+        games = load_games(db)
+
+    # Storia delle quote per partita (bookmaker → mercato → esito → serie)
+    def ts(text: str) -> datetime:
+        return datetime.fromisoformat(text.replace("Z", "+00:00"))
+
+    books = []
+    for r, fx in zip(records, fixtures):
+        if fx.id not in linked:
+            continue
+        prices: dict = {}
+        for slug, book in r["bookmakers"].items():
+            for market_id, market in (book.get("markets") or {}).items():
+                if market_id not in MARKETS or MARKETS[market_id][0] not in se.SELECTIONS:
+                    continue
+                name, outcomes = MARKETS[market_id]
+                for oid, outcome in (market.get("outcomes") or {}).items():
+                    if oid in outcomes:
+                        series = sorted((ts(p["createdAt"]), float(p["price"]) if p.get("active", True) and p.get("price") else None)
+                                        for p in (outcome.get("players") or {}).get("0") or [])  # fmt: skip
+                        prices.setdefault(slug.split(".")[0], {}).setdefault(name, {})[outcomes[oid]] = series
+        mid, hg, ag = linked[fx.id]
+        books.append(se.MatchBook(mid, fx.start_time, hg, ag, prices))
+    tuning = [m for m in books if m.kickoff < se.SPLIT]
+    confirm = [m for m in books if m.kickoff >= se.SPLIT]
+    print(f"Serie C nell'archivio: {len(records)} partite, con risultato e quote {len(books)} (taratura {len(tuning)}, conferma {len(confirm)})")
+
+    # (T0) il consenso in chiusura è un riferimento migliore dell'apertura?
+    diffs, ids = [], []
+    for m in books:
+        close, open_ = se.consensus(m.snapshot("1X2"), "1X2"), se.opening_consensus(m)
+        if close and open_:
+            w = m.winner("1X2")
+            diffs.append(se.log_loss(close[w]) - se.log_loss(open_[w]))
+            ids.append(m.match_id)
+    t0 = se.paired(diffs, ids)
+    t0_ok = t0.mean <= 0
+    print(f"\n(T0) chiusura meno apertura, log loss 1X2: {t0.mean:+.5f} ± {t0.std_error:.5f} su {t0.n} partite -> {'passa' if t0_ok else 'NON passa'}")
+
+    # Righe per T1-T3: consenso in chiusura e informazioni in più
+    base = {}
+    for m in books:
+        c = se.consensus(m.snapshot("1X2"), "1X2")
+        if c:
+            base[m.match_id] = (m.kickoff, "1X2".index(m.winner("1X2")), (c["1"], c["X"], c["2"]))
+
+    # T1: formazioni ufficiali (titolari abituali dalle 5 partite precedenti della stessa stagione)
+    starters: dict[tuple[int, int], tuple] = {}
+    for league in SERIE_C_LEAGUES:
+        for season in (2025, 2026):
+            age = timedelta(days=36500) if season == 2025 else timedelta(hours=12)
+            for fx in af.fixtures(league, season, age):
+                mid = af_match.get(fx.id)
+                if mid is None or fx.status != "finished":
+                    continue
+                for lu in af.lineups(fx.id, timedelta(days=36500)):
+                    team = af_team.get(lu.team_id)
+                    if team is not None and lu.starters:
+                        starters[(mid, team)] = lu.starters
+    absence: dict[int, list[float]] = {}
+    serie_c = [g for g in games if g.tier == 3 and g.season in ("2025/26", "2026/27")]
+    for season in ("2025/26", "2026/27"):
+        absence |= absence_features([Fixture(g.match_id, g.kickoff_at, g.home_id, g.away_id) for g in serie_c if g.season == season], starters)
+    print(f"Formazioni: {len({m for m, _ in starters})} partite di Serie C; con assenze calcolabili tra quelle in prova: {sum(1 for m in base if m in absence)}")
+
+    # T2: modello di Archie in walk-forward
+    res = walk_forward(games, ["2025/26", "2026/27"], ModelConfig())
+    archie = {p.match_id: tuple(p.p_1x2) for p in res.predictions}
+
+    extras = {
+        "T1 formazioni": {m: tuple(a) for m, a in absence.items()},
+        "T2 combinazione con Archie": archie,
+        "T3 calibrazione (pareggi, sfavoriti)": defaultdict(tuple),
+    }
+    results = {}
+    for label, spec in se.SPECS.items():
+        rows = [se.Row(mid, k, o, c, extras[label][mid]) for mid, (k, o, c) in sorted(base.items(), key=lambda x: x[1][0])
+                if label.startswith("T3") or mid in extras[label]]  # fmt: skip
+        tune = [r for r in rows if r.kickoff < se.SPLIT]
+        conf = [r for r in rows if r.kickoff >= se.SPLIT]
+        cv = se.improvement(tune, se.cross_validated(tune, spec))
+        params = se.fit(tune, spec)
+        out = se.improvement(conf, [spec.correction(r, params) for r in conf])
+        ok = se.passes(cv) and se.passes(out)
+        results[label] = ok
+        print(f"\n({label}) partite: taratura {len(tune)}, conferma {len(conf)}; parametri stimati sulla taratura {tuple(round(p, 3) for p in params)}")
+        print(f"   taratura (validazione incrociata): {cv.mean:+.5f} ± {cv.std_error:.5f}   conferma: {out.mean:+.5f} ± {out.std_error:.5f}"
+              f"   -> {'PASSA' if ok else 'non passa'}  (negativo = meglio del consenso)")  # fmt: skip
+
+    # (T4) Occasioni contro il consenso degli altri due bookmaker
+    plays = se.kaunitz_occasions(books)
+    print(f"\n(T4) Occasioni contro il consenso degli altri bookmaker: {len(plays)} giocate")
+    t4 = {}
+    for label, part in (("taratura", [p for p in plays if p.kickoff < se.SPLIT]), ("conferma", [p for p in plays if p.kickoff >= se.SPLIT])):
+        est = se.clv_of(part)
+        if est is None:
+            print(f"   {label}: nessuna giocata")
+            t4[label] = False
+            continue
+        t4[label] = est.mean > 2 * est.std_error
+        profit = sum(p.price - 1 if p.won else -1 for p in part) / len(part)
+        hits, expected = sum(p.won for p in part), sum(p.p_close for p in part)
+        print(f"   {label}: {est.n} giocate in {est.clusters} partite, CLV {est.mean:+.2%} ± {est.std_error:.2%} (t {est.t:.1f});"
+              f" controllo: rendimento {profit:+.1%}, vinte {hits} contro {expected:.1f} attese")  # fmt: skip
+        by_market = defaultdict(list)
+        for p in part:
+            by_market[(p.market, p.selection)].append(p)
+        for key, ps in sorted(by_market.items()):
+            e = se.clv_of(ps)
+            print(f"      {key[0]} {key[1]}: {len(ps)} giocate, CLV {e.mean:+.2%}")
+    t4_ok = t0_ok and all(t4.values())
+    print(f"   -> {'PASSA' if t4_ok else 'non passa'}" + ("" if t0_ok else " (T0 non superato: non si giudica)"))
+    passed = [k for k, v in results.items() if v] + (["T4 occasioni contro il consenso"] if t4_ok else [])
+    print(f"\nVerdetto D98: {', '.join(passed) if passed else 'nessuna prova superata'}")
+    return 0
+
 def _odds_archive(since: str) -> int:
     """Salva lo storico quote di OddsPapi (gratuito, ma solo ~6 mesi) per le prove sui mercati (D82)."""
     from app.adapters.cache import FileCache
@@ -920,6 +1069,7 @@ def main() -> int:
     oa = commands.add_parser("odds-archive", help="salva lo storico quote OddsPapi (angoli, cartellini, principali)")
     oa.add_argument("--since", default="2026-04-01", help="data di inizio, AAAA-MM-GG")
     commands.add_parser("seriec-test", help="prova D95: modello di Archie contro i bookmaker italiani in Serie C (copia del DB)")
+    commands.add_parser("seriec-edge", help="prova D98: battere il consenso dei bookmaker italiani in Serie C (copia del DB)")
     commands.add_parser("live-check", help="verifica del termometro della speranza sul punteggio all'intervallo (D92)")
     commands.add_parser("secondary-test", help="prova D82 su angoli e cartellini (usare una copia del database)")
     commands.add_parser("d89-test", help="prova del nove dei fattori D89 (riposo, allenatore, sintetico, distanza, assenze)")
@@ -955,6 +1105,8 @@ def main() -> int:
         return _odds_archive(args.since)
     if args.command == "seriec-test":
         return _seriec_test()
+    if args.command == "seriec-edge":
+        return _seriec_edge()
     if args.command == "live-check":
         return _live_check()
     if args.command == "secondary-test":

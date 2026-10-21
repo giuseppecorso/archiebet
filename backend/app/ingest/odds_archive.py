@@ -53,8 +53,11 @@ def archive_history(
     since: datetime,
     log: Callable[[str], None] = print,
     sleep: Callable[[float], None] = time.sleep,
+    prefix: str = "",
 ) -> ArchiveReport:
     """Scarica e salva lo storico delle partite finite dei campionati seguiti, dalla data since in poi.
+
+    prefix limita ai campionati il cui codice comincia così ("ITA-C": solo Serie C, una richiesta per girone).
 
     Riprendibile: le partite già in archivio (anche quelle senza storico) si saltano.
     """
@@ -63,7 +66,7 @@ def archive_history(
     # Prima le partite più vecchie di tutti i campionati: sono quelle che escono per prime dalla finestra di ~6 mesi
     todo = []
     for tournament_id, code in TOURNAMENTS.items():
-        if code.startswith("EU-"):
+        if code.startswith("EU-") or not code.startswith(prefix):
             continue  # coppe escluse: per angoli e cartellini servono i risultati di football-data, che non le copre
         fixtures = [f for f in adapter.finished_fixtures(tournament_id, max_age=timedelta(days=1)) if f["startTime"] >= since.isoformat()[:19]]
         log(f"{code}: {len(fixtures)} partite dal {since.date()}")

@@ -20,6 +20,7 @@ from app.forecast.service import refresh_predictions
 from app.ingest.api_football import sync_api_football
 from app.ingest.football_data import ImportReport, sync_football_data
 from app.ingest.live import needs_live, sync_live
+from app.ingest.odds_archive import archive_history
 from app.ingest.oddspapi import sync_oddspapi
 from app.models.sync import SyncRun
 from app.usage import record_usage
@@ -157,6 +158,26 @@ def refresh_radar_job() -> None:
     _tracked("radar", work)
 
 
+def archive_job() -> None:
+    """Ogni settimana: storico quote della Serie C delle ultime 3 settimane, per ripetere la prova D98 a fine stagione.
+
+    Lo storico è gratuito; costa una richiesta per girone (3 a settimana sulle 250 del mese).
+    """
+    settings = get_settings()
+    if not settings.oddspapi_key:
+        return
+
+    def work() -> str:
+        with SessionLocal() as db:
+            adapter = OddsPapiAdapter(FileCache(settings.data_cache_dir, "oddspapi"), settings.oddspapi_key,
+                                      on_call=lambda source: record_usage(db, source), monthly_reserve=settings.oddspapi_monthly_reserve)
+            report = archive_history(adapter, FileCache(settings.data_cache_dir, "odds-archive"), datetime.now(UTC) - timedelta(days=21),
+                                     log=logger.debug, prefix="ITA-C")  # fmt: skip
+        return f"archivio Serie C: {report.saved} salvate, {report.missing} senza storico, {report.already} già presenti"
+
+    _tracked("oddspapi", work)
+
+
 _live_lock = threading.Lock()
 
 
@@ -217,6 +238,8 @@ def start_scheduler(settings: Settings) -> BackgroundScheduler | None:
         coalesce=True,
     )
     scheduler.add_job(live_job, "interval", seconds=60, id="live", max_instances=1, coalesce=True)
+    scheduler.add_job(archive_job, "interval", days=7, next_run_time=datetime.now(UTC) + timedelta(minutes=30),
+                      id="odds-archive", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.start()
     logger.info("Aggiornamento automatico attivo ogni %s ore", settings.sync_interval_hours)
     return scheduler
