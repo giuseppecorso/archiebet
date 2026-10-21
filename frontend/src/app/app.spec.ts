@@ -191,7 +191,7 @@ describe('ArchieBet: navigazione', () => {
     expect(page.querySelector('.fav')?.textContent).toContain('2 · Inter');
     expect(page.querySelector('.fav')?.textContent).toContain('40%');
     expect(page.querySelector('.cells .v.valore')?.textContent?.trim()).toBe('+ Sisal 3.40');
-    expect(page.querySelector('.cells .v.poco')?.textContent?.trim()).toBe('Eurobet 2.30');
+    expect(page.querySelector('.cells .v.poco')?.textContent?.trim()).toBe('+ Eurobet 2.30');
     expect(page.querySelector('.occ')?.textContent?.trim()).toBe('1 occasione');
     expect(page.querySelector('.source')?.textContent).toContain('Pinnacle');
   });
