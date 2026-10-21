@@ -257,6 +257,26 @@ def live_job() -> None:
         _live_lock.release()
 
 
+def events_job() -> None:
+    """Ogni 20 minuti: cronaca (marcatori, cartellini) delle partite finite che non l'hanno ancora (D133)."""
+    from app.ingest.live import sync_missing_events
+
+    settings = get_settings()
+    if not settings.api_football_key:
+        return
+    try:
+        now = datetime.now(UTC)
+        with SessionLocal() as db:
+            done = sync_missing_events(db, api_football_adapter(db, settings), now)
+            if done:
+                settle_radar(db, now)
+        if done:
+            settle_bets_job()  # risultati arrivati in ritardo: si chiudono anche schedine e occasioni
+            logger.info("Cronaca e risultati recuperati per %s partite", done)
+    except Exception:
+        logger.exception("Cronaca delle partite finite non riuscita: riprovo più tardi")
+
+
 def sync_all_job() -> bool:
     """Aggiorna tutto. Se un aggiornamento è già in corso non ne parte un secondo (restituisce False)."""
     if not _sync_lock.acquire(blocking=False):
@@ -294,6 +314,8 @@ def start_scheduler(settings: Settings) -> BackgroundScheduler | None:
                       id="learning", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.add_job(player_stats_job, "interval", hours=12, next_run_time=datetime.now(UTC) + timedelta(minutes=20),
                       id="player-stats", max_instances=1, coalesce=True)  # fmt: skip
+    scheduler.add_job(events_job, "interval", minutes=20, next_run_time=datetime.now(UTC) + timedelta(minutes=1),
+                      id="events", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.add_job(news_job, "interval", hours=2, next_run_time=datetime.now(UTC) + timedelta(minutes=3),
                       id="news", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.start()

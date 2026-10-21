@@ -1,6 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MatchCard } from '../core/football';
+import { MatchCard, eventMinute, shortName } from '../core/football';
 import { dayLabel, kickoffTime, odds } from '../core/format';
 import { Crest } from './crest';
 import { liveShort } from '../core/live';
@@ -25,7 +25,7 @@ import { liveShort } from '../core/live';
       <div class="teams">
         <div class="team">
           <ab-crest [team]="m.home" [size]="20" />
-          <span class="name" [class.winner]="winner() === 'home'">{{ m.home.name }}</span>
+          <span class="name" [class.winner]="winner() === 'home'">{{ m.home.name }}@for (r of reds('home'); track $index) { <span class="red-card" title="Espulsione" aria-label="espulsione"></span> }</span>
           @if (m.live; as l) {
             <span class="led score live">{{ l.home_goals }}</span>
           } @else if (m.status === 'finished') {
@@ -34,7 +34,7 @@ import { liveShort } from '../core/live';
         </div>
         <div class="team">
           <ab-crest [team]="m.away" [size]="20" />
-          <span class="name" [class.winner]="winner() === 'away'">{{ m.away.name }}</span>
+          <span class="name" [class.winner]="winner() === 'away'">{{ m.away.name }}@for (r of reds('away'); track $index) { <span class="red-card" title="Espulsione" aria-label="espulsione"></span> }</span>
           @if (m.live; as l) {
             <span class="led score live">{{ l.away_goals }}</span>
           } @else if (m.status === 'finished') {
@@ -43,20 +43,28 @@ import { liveShort } from '../core/live';
         </div>
       </div>
 
-      <div class="odds" [attr.aria-label]="oddsLabel()">
-        @for (sel of selections; track sel) {
-          <div class="odd" aria-hidden="true">
-            <div class="sel">{{ sel }}</div>
-            <div class="led price">{{ format(m.odds_1x2?.[sel]) }}</div>
-          </div>
-        }
-      </div>
+      @if (started()) {
+        <div class="scorers" aria-label="Marcatori">
+          <div class="line">{{ scorers('home') }}</div>
+          <div class="line">{{ scorers('away') }}</div>
+        </div>
+      } @else {
+        <div class="odds" [attr.aria-label]="oddsLabel()">
+          @for (sel of selections; track sel) {
+            <div class="odd" aria-hidden="true">
+              <div class="sel">{{ sel }}</div>
+              <div class="led price">{{ format(m.odds_1x2?.[sel]) }}</div>
+            </div>
+          }
+        </div>
+      }
 
       <div class="tag">
         @if (m.status === 'awaiting_result') {
           <span class="badge awaiting">Risultato in arrivo</span>
         } @else if (m.status === 'finished') {
           <span class="badge final">Finale</span>
+          @if (m.ht_home_goals != null) { <span class="ht muted small">pt {{ m.ht_home_goals }}-{{ m.ht_away_goals }}</span> }
         }
       </div>
     </a>
@@ -68,6 +76,21 @@ export class MatchRow {
   readonly match = input.required<MatchCard>();
   protected readonly selections = ['1', 'X', '2'] as const;
   protected readonly format = odds;
+
+  /** In corso o finita: al posto delle quote, i marcatori (D133) */
+  protected readonly started = computed(() => this.match().status === 'finished' || !!this.match().live);
+
+  protected scorers(side: 'home' | 'away'): string {
+    const notes: Record<string, string> = { penalty: ' (rig.)', own_goal: ' (aut.)' };
+    return (this.match().highlights ?? [])
+      .filter((e) => e.side === side && (e.kind === 'goal' || e.kind === 'penalty' || e.kind === 'own_goal'))
+      .map((e) => `${shortName(e.player)} ${eventMinute(e)}${notes[e.kind] ?? ''}`)
+      .join(', ');
+  }
+
+  protected reds(side: 'home' | 'away'): unknown[] {
+    return (this.match().highlights ?? []).filter((e) => e.side === side && (e.kind === 'red' || e.kind === 'second_yellow'));
+  }
 
   protected readonly day = computed(() => dayLabel(this.match().kickoff_at));
   protected readonly time = computed(() => kickoffTime(this.match().kickoff_at, this.match().kickoff_has_time));

@@ -738,26 +738,6 @@ tr.absent td {
   color: var(--muted);
   font-size: 12px;
 }
-.plan-states {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0;
-  .chip {
-    padding: 4px 10px;
-    font: inherit;
-    color: var(--text);
-    background: transparent;
-    border: 1px solid var(--line-strong);
-    border-radius: 4px;
-    cursor: pointer;
-    &.on {
-      color: var(--bg);
-      background: var(--amber);
-      border-color: var(--amber);
-    }
-  }
-}
 .po-market {
   display: grid;
   grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
@@ -798,4 +778,13 @@ tr.absent td {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+/* Cronaca (D133) */
+.cr-teams {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0 4px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--line);
 }

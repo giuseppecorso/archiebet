@@ -54,6 +54,36 @@
   display: flex;
   gap: 6px;
 }
+/* Marcatori al posto delle quote (D133): una riga per squadra, allineata ai nomi */
+.scorers {
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--muted);
+
+  .line {
+    min-height: 20px;
+    line-height: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+.red-card {
+  display: inline-block;
+  width: 8px;
+  height: 11px;
+  margin-left: 6px;
+  vertical-align: -1px;
+  background: var(--loss);
+  border-radius: 1px;
+}
+.ht {
+  margin-left: 6px;
+  align-self: center;
+}
 .odd {
   width: 56px;
   padding: 4px 0;
@@ -76,6 +106,7 @@
 .tag {
   width: 150px;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
 }
 .awaiting {
@@ -93,6 +124,10 @@
   }
   .tag {
     width: auto;
+  }
+  .scorers {
+    width: 100%;
+    order: 5;
   }
 }
 

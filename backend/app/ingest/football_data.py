@@ -61,6 +61,9 @@ def import_matches(db: Session, rows: Iterable[FDMatch], season: str | None = No
         elif key not in touched:
             report.updated += 1
 
+        touched[key] = (match, row)
+        if match.status == MatchStatus.FINISHED and not row.finished:
+            continue  # file delle prossime partite non ancora aggiornato: il risultato (da API-Football) resta (D133)
         match.kickoff_at = row.kickoff_at
         match.kickoff_has_time = row.kickoff_has_time
         match.status = MatchStatus.FINISHED if row.finished else MatchStatus.SCHEDULED
@@ -70,7 +73,6 @@ def import_matches(db: Session, rows: Iterable[FDMatch], season: str | None = No
         for name, value in row.stats.items():
             setattr(match, name, value)
         match.referee = row.referee
-        touched[key] = (match, row)
 
     db.flush()  # assegna gli id alle partite nuove
     ids = [match.id for match, _ in touched.values()]

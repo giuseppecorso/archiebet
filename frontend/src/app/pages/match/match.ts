@@ -5,16 +5,17 @@ import { Component, computed, effect, inject, input, signal } from '@angular/cor
 import { KeyValuePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { Market, marketLabel, marketSelections, pickLabel } from '../../core/bets';
-import { MatchAnalysis, MatchNumbers, MatchPicks, PlanState, PlayerShots, TeamLineup, verdictClass } from '../../core/picks';
+import { MatchAnalysis, MatchNumbers, MatchPicks, PlayerShots, TeamLineup, verdictClass } from '../../core/picks';
 import { RouterLink } from '@angular/router';
 import { FanFact, MatchFan, SOURCE_LABELS, factTone } from '../../core/fan';
-import { MatchDetail, OddsRow, TeamSummary } from '../../core/football';
+import { MatchDetail, MatchEvent, OddsRow, TeamSummary } from '../../core/football';
 import { Twins } from '../../core/lab';
 import { dayLabel, fairOdds, kickoffTime, longDate, num, odds, pct } from '../../core/format';
 import { LIVE_REFRESH_MS, liveLabel } from '../../core/live';
 import { Crest, LeagueLogo } from '../../shared/crest';
 import { FormBadges } from '../../shared/form-badges';
 import { ShowMore } from '../../shared/show-more';
+import { MatchEvents } from '../../shared/match-events';
 
 interface StatLine {
   label: string;
@@ -74,7 +75,7 @@ const ARCHIE_MARKETS: [string, string, string][] = [
 
 @Component({
   selector: 'ab-match',
-  imports: [RouterLink, FormBadges, ShowMore, Crest, LeagueLogo, KeyValuePipe, AskArchie, OfferButton],
+  imports: [RouterLink, FormBadges, ShowMore, Crest, LeagueLogo, KeyValuePipe, AskArchie, OfferButton, MatchEvents],
   templateUrl: './match.html',
   styleUrl: './match.scss',
 })
@@ -98,12 +99,11 @@ export class MatchPage {
   /** Formazioni previste o ufficiali (D123) */
   protected readonly lineups = httpResource<TeamLineup[]>(() => `/api/picks/match/${this.id()}/lineups`);
   protected readonly roleLabels: Record<string, string> = { G: 'Portiere', D: 'Difesa', M: 'Centrocampo', F: 'Attacco' };
-  /** Piano partita live (D124): situazioni tipiche e quote minime */
-  protected readonly plan = httpResource<PlanState[]>(() => `/api/picks/match/${this.id()}/plan`);
-  protected readonly planIndex = signal(0);
-  protected readonly planLabels: Record<string, string> = {
-    '1X2:1': '1', '1X2:X': 'X', '1X2:2': '2', 'OU2.5:over': 'Over 2.5', 'OU2.5:under': 'Under 2.5', 'GG:yes': 'Goal', 'GG:no': 'No goal',
-  };
+  /** Cronaca (D133): gol, cartellini, cambi; si ricarica con la partita mentre è in corso */
+  protected readonly events = httpResource<MatchEvent[]>(() => {
+    const m = this.detail.value()?.match;
+    return m && (m.status === 'finished' || m.live) ? `/api/matches/${this.id()}/events?t=${m.live ? `${m.live.minute}-${m.live.home_goals}-${m.live.away_goals}` : 'fine'}` : undefined;
+  });
   /** Partite gemelle (D121): le 100 partite passate più simili e come sono finite */
   protected readonly twins = httpResource<Twins>(() => `/api/lab/twins/${this.id()}`);
   protected readonly playersBySide = computed(() => {

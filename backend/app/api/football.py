@@ -1,8 +1,9 @@
 """API di campionati e partite (dati per partita, letti da tutti gli utenti)."""
 
 from collections import defaultdict
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Literal
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -12,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.auth.deps import CurrentUser, DbSession
 from app.forecast.demargin import shin
 from app.ingest.teams import competition_sort_key
-from app.models import Competition, Match, MatchOdds, MatchPrediction, MatchStatus
+from app.models import Competition, Match, MatchEvent, MatchOdds, MatchPrediction, MatchStatus
 from app.stats.team_stats import Result, TeamSummary, form, head_to_head, standings, summary
 
 router = APIRouter(prefix="/api", tags=["football"])
@@ -61,6 +62,21 @@ class LiveOut(BaseModel):
     away_goals: int
 
 
+class EventOut(BaseModel):
+    """Un evento della cronaca (D133)."""
+
+    minute: int | None
+    extra: int | None
+    side: Literal["home", "away"]
+    kind: str  # goal | penalty | own_goal | missed_penalty | yellow | second_yellow | red | subst | var
+    player: str | None
+    other: str | None
+    detail: str | None
+
+
+HIGHLIGHTS = ("goal", "penalty", "own_goal", "red", "second_yellow")  # nell'elenco: gol ed espulsioni
+
+
 class MatchCard(BaseModel):
     id: int
     competition: CompetitionOut
@@ -74,6 +90,9 @@ class MatchCard(BaseModel):
     away_goals: int | None
     odds_1x2: dict[str, float] | None  # media di mercato: apertura per le prossime, chiusura per le giocate
     live: LiveOut | None = None  # solo mentre la partita è in corso
+    ht_home_goals: int | None = None
+    ht_away_goals: int | None = None
+    highlights: list[EventOut] = []  # gol ed espulsioni, per le partite in corso o finite (D133)
 
 
 class CompetitionGroup(BaseModel):
@@ -198,6 +217,11 @@ def match_cards(db: Session, matches: list[Match], now: datetime) -> list[MatchC
 
     odds = _odds_1x2(db, matches)
     live = live_rows(db, [m.id for m in matches if m.status != MatchStatus.FINISHED], now)
+    highlights: dict[int, list[EventOut]] = defaultdict(list)
+    started = [m.id for m in matches if m.status == MatchStatus.FINISHED or m.id in live]
+    if started:
+        for e in db.scalars(select(MatchEvent).where(MatchEvent.match_id.in_(started), MatchEvent.kind.in_(HIGHLIGHTS)).order_by(MatchEvent.match_id, MatchEvent.seq)):
+            highlights[e.match_id].append(event_out(e))
     return [
         MatchCard(
             id=m.id,
@@ -212,9 +236,16 @@ def match_cards(db: Session, matches: list[Match], now: datetime) -> list[MatchC
             away_goals=m.away_goals,
             odds_1x2=odds.get(m.id),
             live=LiveOut(status=r.status, minute=r.minute, home_goals=r.home_goals, away_goals=r.away_goals) if (r := live.get(m.id)) else None,
+            ht_home_goals=m.ht_home_goals,
+            ht_away_goals=m.ht_away_goals,
+            highlights=highlights.get(m.id, []),
         )
         for m in matches
     ]
+
+
+def event_out(e: MatchEvent) -> EventOut:
+    return EventOut(minute=e.minute, extra=e.extra, side=e.side, kind=e.kind, player=e.player, other=e.other, detail=e.detail)
 
 
 def to_result(m: Match) -> Result:
@@ -248,7 +279,8 @@ def list_competitions(_: CurrentUser, db: DbSession) -> list[CompetitionOut]:
 def list_matches(
     _: CurrentUser,
     db: DbSession,
-    view: Literal["upcoming", "results", "live"] = "upcoming",
+    view: Literal["upcoming", "results", "live", "day"] = "upcoming",
+    day: date | None = Query(None, description="con view=day: il giorno (ora italiana), AAAA-MM-GG; oggi se manca"),
     competitions: str | None = Query(None, description="codici separati da virgola, es. ITA-A,ITA-B"),
     limit: int = Query(40, ge=1, le=200, description="partite massime per campionato"),
 ) -> list[CompetitionGroup]:
@@ -261,6 +293,11 @@ def list_matches(
         from app.models import MatchLive
 
         query = query.join(MatchLive, MatchLive.match_id == Match.id).where(MatchLive.updated_at >= now - FRESH).order_by(Match.kickoff_at)
+    elif view == "day":
+        # Diretta (D133): tutte le partite del giorno italiano, finite, in corso e da giocare
+        rome = ZoneInfo("Europe/Rome")
+        start = datetime.combine(day or now.astimezone(rome).date(), time(0), rome).astimezone(UTC)
+        query = query.where(Match.kickoff_at >= start, Match.kickoff_at < start + timedelta(days=1)).order_by(Match.kickoff_at, Match.id)
     elif view == "upcoming":
         query = query.where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at >= now - RESULT_GRACE)
         query = query.order_by(Match.kickoff_at)
@@ -280,6 +317,12 @@ def list_matches(
 
     ordered = sorted(groups.values(), key=lambda ms: competition_sort_key(ms[0].competition))
     return [CompetitionGroup(competition=competition_out(ms[0].competition), matches=match_cards(db, ms, now)) for ms in ordered]
+
+
+@router.get("/matches/{match_id}/events")
+def match_events(match_id: int, _: CurrentUser, db: DbSession) -> list[EventOut]:
+    """Cronaca completa della partita: gol, rigori, cartellini, cambi, VAR (D133)."""
+    return [event_out(e) for e in db.scalars(select(MatchEvent).where(MatchEvent.match_id == match_id).order_by(MatchEvent.seq))]
 
 
 @router.get("/matches/{match_id}")

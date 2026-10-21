@@ -160,3 +160,23 @@ def test_summary(db, world):
     assert (s.staked, s.returned, s.profit) == (D("20"), D("22.00"), D("2.00"))
     assert s.roi == 0.1 and s.win_rate == 0.5
     assert s.avg_clv == 0.0621 and s.clv_count == 1
+
+
+def test_clv_filled_when_closing_arrives_later(db, world):
+    """La schedina si chiude a fine partita; la chiusura di Pinnacle arriva al giro dopo: il CLV si riempie allora."""
+    from app.betting.service import fill_missing_clv
+
+    user, m = world
+    bet = create_bet(db, user.id, "simulated", D("10"), [SelectionInput(m["Milan"].id, "GG", "yes", D("2.00"))], now=NOW)
+    finish(db, m["Milan"], 1, 1)
+    after = datetime(2026, 10, 17, 20, 0, tzinfo=UTC)
+    assert settle_open_bets(db, after) == 1
+    db.refresh(bet)
+    assert bet.selections[0].clv is None  # chiusura non ancora arrivata
+    for sel, price in {"yes": "1.90", "no": "1.90"}.items():
+        db.add(MatchOdds(match_id=m["Milan"].id, source="oddspapi", bookmaker="pinnacle", market="GG", selection=sel, price=D(price), is_closing=True))
+    db.commit()
+    assert fill_missing_clv(db, after) == 1
+    db.commit()
+    db.refresh(bet)
+    assert bet.selections[0].clv == D("0.0000")  # 2,00 contro la quota giusta 2,00

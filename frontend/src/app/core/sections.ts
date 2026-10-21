@@ -102,7 +102,7 @@ export interface MenuItem {
 export const MENU: MenuItem[] = [
   { label: 'Home', link: '/', prefixes: ['/'] },
   { label: 'Partite', link: '/partite', prefixes: ['/partite'] },
-  { label: 'Live', link: '/live', prefixes: ['/live'] },
+  { label: 'Diretta', link: '/diretta', prefixes: ['/diretta'] },
   { label: 'Pronostici', link: '/pronostici', prefixes: ['/pronostici', '/laboratorio', '/simulatore'] },
   { label: 'Il mio Archie', link: '/schedine', prefixes: ['/schedine', '/statistiche', '/chiedi'] },
 ];

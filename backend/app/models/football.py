@@ -93,6 +93,7 @@ class Match(Base):
     home_red: Mapped[int | None] = mapped_column(Integer)
     away_red: Mapped[int | None] = mapped_column(Integer)
     referee: Mapped[str | None] = mapped_column(String(80))
+    events_synced_at: Mapped[datetime | None] = mapped_column(UTCDateTime)  # cronaca scaricata a partita finita (D133)
 
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, onupdate=utcnow)
 
@@ -112,6 +113,24 @@ class MatchLive(Base):
     home_goals: Mapped[int] = mapped_column(Integer)
     away_goals: Mapped[int] = mapped_column(Integer)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+
+
+class MatchEvent(Base):
+    """Un evento della cronaca (D133): gol, rigore, autogol, rigore sbagliato, cartellino, cambio, VAR."""
+
+    __tablename__ = "match_events"
+    __table_args__ = (Index("ix_match_events_match", "match_id", "seq"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"))
+    seq: Mapped[int] = mapped_column(Integer)  # ordine nella cronaca
+    minute: Mapped[int | None] = mapped_column(Integer)
+    extra: Mapped[int | None] = mapped_column(Integer)  # minuti di recupero (45+2 → minute 45, extra 2)
+    side: Mapped[str] = mapped_column(String(4))  # "home" | "away"
+    kind: Mapped[str] = mapped_column(String(20))  # goal | penalty | own_goal | missed_penalty | yellow | second_yellow | red | subst | var
+    player: Mapped[str | None] = mapped_column(String(80))
+    other: Mapped[str | None] = mapped_column(String(80))  # assist del gol o l'altro giocatore del cambio
+    detail: Mapped[str | None] = mapped_column(String(80))  # testo originale (es. "Goal cancelled")
 
 
 class MatchSource(Base):

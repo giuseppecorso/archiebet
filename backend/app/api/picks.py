@@ -353,67 +353,6 @@ def match_lineups(match_id: int, _: CurrentUser, db: DbSession) -> list[TeamLine
     return out
 
 
-class PlanLineOut(BaseModel):
-    market: str
-    selection: str
-    probability: float
-    fair_odds: float
-    min_odds: float | None
-
-
-class PlanStateOut(BaseModel):
-    minute: int
-    home_goals: int
-    away_goals: int
-    remaining: tuple[float, float]
-    lines: list[PlanLineOut]
-
-
-@router.get("/match/{match_id}/plan")
-def match_plan(match_id: int, _: CurrentUser, db: DbSession) -> list[PlanStateOut]:
-    """Piano partita live (D124, sperimentale): quote minime da giocare nelle situazioni tipiche."""
-    from app.forecast.game_plan import plan
-    from app.forecast.live_service import match_rates
-
-    if db.get(Match, match_id) is None:
-        raise HTTPException(404, "Partita non trovata")
-    rates = match_rates(db, [match_id]).get(match_id)
-    if rates is None:
-        return []
-    return [PlanStateOut(minute=s.minute, home_goals=s.home_goals, away_goals=s.away_goals, remaining=s.remaining,
-                         lines=[PlanLineOut(**vars(x)) for x in s.lines]) for s in plan(rates)]  # fmt: skip
-
-
-class LiveNowOut(BaseModel):
-    status: str
-    minute: int | None
-    home_goals: int
-    away_goals: int
-    remaining: tuple[float, float]
-    lines: list[PlanLineOut]
-
-
-@router.get("/match/{match_id}/live-now")
-def match_live_now(match_id: int, _: CurrentUser, db: DbSession) -> LiveNowOut | None:
-    """Live (D125, sperimentale): quote giuste e quota minima da giocare adesso, dal punteggio e dal minuto reali."""
-    from app.forecast.game_plan import lines_at
-    from app.forecast.live import remaining_share
-    from app.forecast.live_service import live_rows, match_rates
-
-    if db.get(Match, match_id) is None:
-        raise HTTPException(404, "Partita non trovata")
-    row = live_rows(db, [match_id], datetime.now(UTC)).get(match_id)
-    rates = match_rates(db, [match_id]).get(match_id)
-    if row is None or rates is None:
-        return None
-    share = remaining_share(row.status, row.minute)
-    if share <= 0:
-        return None
-    rem, lines = lines_at(rates, share, row.home_goals, row.away_goals)
-    return LiveNowOut(status=row.status, minute=row.minute, home_goals=row.home_goals, away_goals=row.away_goals, remaining=rem,
-                      lines=[PlanLineOut(**vars(x)) for x in lines])  # fmt: skip
-
-
 # ---------- Multipla del giorno (D68) ----------
 
 ROME = ZoneInfo("Europe/Rome")

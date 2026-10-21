@@ -106,6 +106,7 @@ class AFFixture:
     elapsed: int | None = None  # minuto di gioco (solo dal vivo)
     live_home_goals: int | None = None  # punteggio di adesso (anche a partita in corso)
     live_away_goals: int | None = None
+    events: tuple["AFEvent", ...] = ()  # cronaca: c'è solo nelle risposte per id (/fixtures?ids=...)
 
     @property
     def is_live(self) -> bool:
@@ -194,6 +195,53 @@ def parse_matchday(round_name: str | None) -> int | None:
     return int(last) if last.isdigit() else None
 
 
+@dataclass(frozen=True)
+class AFEvent:
+    """Un evento della cronaca (D133)."""
+
+    minute: int | None
+    extra: int | None
+    side: str  # "home" | "away"
+    kind: str  # goal | penalty | own_goal | missed_penalty | yellow | second_yellow | red | subst | var
+    player: str | None
+    other: str | None  # assist del gol, o l'altro giocatore del cambio
+    detail: str | None
+
+
+GOAL_KINDS = {"Normal Goal": "goal", "Own Goal": "own_goal", "Penalty": "penalty", "Missed Penalty": "missed_penalty"}
+CARD_KINDS = {"Yellow Card": "yellow", "Second Yellow card": "second_yellow", "Red Card": "red"}
+
+
+def event_kind(type_: str, detail: str | None) -> str | None:
+    """Tipo di evento di API-Football → il nostro (None = da ignorare)."""
+    t = (type_ or "").lower()
+    if t == "goal":
+        return GOAL_KINDS.get(detail or "", "goal")
+    if t == "card":
+        return CARD_KINDS.get(detail or "", "yellow" if "yellow" in (detail or "").lower() else "red")
+    if t == "subst":
+        return "subst"
+    if t == "var":
+        return "var"
+    return None
+
+
+def parse_events(item: dict[str, Any]) -> tuple[AFEvent, ...]:
+    home_id = item["teams"]["home"]["id"]
+    out = []
+    for e in item.get("events") or []:
+        kind = event_kind(e.get("type", ""), e.get("detail"))
+        if kind is None:
+            continue
+        time_ = e.get("time") or {}
+        out.append(AFEvent(
+            time_.get("elapsed"), time_.get("extra"),
+            "home" if (e.get("team") or {}).get("id") == home_id else "away",
+            kind, (e.get("player") or {}).get("name"), (e.get("assist") or {}).get("name"), e.get("detail"),
+        ))  # fmt: skip
+    return tuple(out)
+
+
 def parse_fixtures(body: dict[str, Any]) -> list[AFFixture]:
     fixtures = []
     for item in body.get("response", []):
@@ -222,6 +270,7 @@ def parse_fixtures(body: dict[str, Any]) -> list[AFFixture]:
                 elapsed=fx["status"].get("elapsed"),
                 live_home_goals=item["goals"]["home"],
                 live_away_goals=item["goals"]["away"],
+                events=parse_events(item),
             )
         )
     return fixtures

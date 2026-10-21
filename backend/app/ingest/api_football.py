@@ -10,7 +10,7 @@ from app.adapters.api_football import LEAGUES, SOURCE, AFFixture, ApiFootballAda
 from app.adapters.football_data import season_label, season_of
 from app.ingest.football_data import ImportReport
 from app.ingest.teams import COUNTRY_NAMES, CUP_COUNTRY, TeamResolver, ensure_competitions
-from app.models import Match, MatchSource, Team, TeamAlias
+from app.models import Match, MatchSource, MatchStatus, Team, TeamAlias
 
 
 def import_fixtures(db: Session, fixtures: Iterable[AFFixture], team_countries: dict[int, str] | None = None) -> ImportReport:
@@ -57,6 +57,8 @@ def import_fixtures(db: Session, fixtures: Iterable[AFFixture], team_countries: 
         else:
             report.updated += 1
 
+        if match.status == MatchStatus.FINISHED and fx.status == MatchStatus.SCHEDULED:
+            continue  # dato vecchio (elenco in cache di prima della partita): un risultato non torna mai "da giocare" (D133)
         match.kickoff_at = fx.kickoff_at
         match.kickoff_has_time = True
         match.status = fx.status

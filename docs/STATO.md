@@ -2,6 +2,13 @@
 
 Ultimo aggiornamento: 2026-10-21
 
+## Diretta al posto del Live (2026-10-21, richiesta di Giuse)
+
+- [x] **Diretta** (D133): risultati in tempo reale con cronaca (gol, assist, cartellini, cambi, VAR); giocate live tolte (piano partita e quote del momento).
+- [x] Partite iniziate o finite: marcatori ed espulsioni al posto delle quote; cronaca nella pagina partita.
+- [x] Corretti: risultati che tornavano "da giocare" (elenchi vecchi) e CLV mai ricalcolato quando la chiusura arriva dopo.
+- Test: 446 backend + 30 frontend, tutti verdi.
+
 ## Più mercati, pagella settimanale, grafica minimal (2026-10-21, richieste di Giuse)
 
 - [x] **Più mercati** (D131): Under/Over 0.5 e 4.5; angoli e cartellini (totali e per squadra) nei 10 campionati con statistiche a fine partita, in Pronostici, pagina partita, multipla e schedina, con chiusura automatica quando arrivano le statistiche.

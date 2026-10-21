@@ -168,6 +168,28 @@ def _aware(dt: datetime) -> datetime:
 STATS_WAIT = timedelta(days=14)  # angoli e cartellini: se le statistiche non arrivano entro 14 giorni la selezione si annulla
 
 
+CLV_WAIT = timedelta(days=7)  # la chiusura di Pinnacle arriva al giro di aggiornamento dopo la partita: si riprova per 7 giorni
+
+
+def _set_clv(db: Session, sel: BetSelection) -> None:
+    other = "OU2.5" if sel.market in ("1X2", "DC") else sel.market
+    fair = fair_closing_odds(sel.market, sel.pick, _closing_prices(db, sel.match_id, "1X2"), _closing_prices(db, sel.match_id, other))
+    sel.fair_closing_odds = fair.quantize(Decimal("0.001")) if fair is not None else None
+    sel.clv = clv(sel.odds, fair)
+
+
+def fill_missing_clv(db: Session, now: datetime) -> int:
+    """Selezioni chiuse senza CLV perché la quota di chiusura non c'era ancora: si ricalcola appena arriva."""
+    pending = db.scalars(
+        select(BetSelection).join(Match, Match.id == BetSelection.match_id).where(
+            BetSelection.status.in_((WON, LOST)), BetSelection.clv.is_(None), Match.kickoff_at >= now - CLV_WAIT
+        )
+    ).all()
+    for sel in pending:
+        _set_clv(db, sel)
+    return sum(1 for sel in pending if sel.clv is not None)
+
+
 def settle_open_bets(db: Session, now: datetime | None = None) -> int:
     """Chiude le selezioni delle partite finite (o annullate) e poi le schedine. Restituisce le schedine chiuse."""
     now = now or datetime.now(UTC)
@@ -189,13 +211,10 @@ def settle_open_bets(db: Session, now: datetime | None = None) -> int:
             sel.status = VOID
         else:
             continue
-        fair = fair_closing_odds(
-            sel.market, sel.pick, _closing_prices(db, match.id, "1X2"), _closing_prices(db, match.id, sel.market if sel.market not in ("1X2", "DC", "GG") else "OU2.5")
-        )
-        sel.fair_closing_odds = fair.quantize(Decimal("0.001")) if fair is not None else None
-        sel.clv = clv(sel.odds, fair)
+        _set_clv(db, sel)
         touched.add(sel.bet_id)
 
+    fill_missing_clv(db, now)
     closed = 0
     for bet_id in touched:
         bet = db.get(Bet, bet_id)

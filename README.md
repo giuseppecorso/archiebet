@@ -7,7 +7,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.143-009688?logo=fastapi&logoColor=white)
 ![Angular](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
-![Test](https://img.shields.io/badge/test-442%20backend%20%2B%2029%20frontend-brightgreen)
+![Test](https://img.shields.io/badge/test-446%20backend%20%2B%2030%20frontend-brightgreen)
 
 🇬🇧 [English version](README.en.md)
 
@@ -26,9 +26,9 @@ sempre il codice**.
 |---|---|
 | **Problema** | Capire, con metodo, se e dove un modello o un'informazione batte le quote di un mercato molto efficiente |
 | **Soluzione** | Backend FastAPI con 6 fonti dati, modelli statistici (Dixon-Coles, Elo, Shin, binomiale negativa, Poisson live, Monte Carlo), frontend Angular 22 |
-| **Metodo** | 136 decisioni documentate; ogni ipotesi provata con regole scritte prima di vedere i dati, taratura e conferma su periodi separati, errori standard per partita |
+| **Metodo** | 137 decisioni documentate; ogni ipotesi provata con regole scritte prima di vedere i dati, taratura e conferma su periodi separati, errori standard per partita |
 | **Risultato** | Un solo vantaggio confermato sullo storico (CLV +2,5% ± 0,3 su 734 casi), in verifica dal vivo; decine di ipotesi scartate e documentate |
-| **Qualità** | 471 test automatici, CI su GitHub Actions, migrazioni Alembic, avvio con Docker in un comando |
+| **Qualità** | 476 test automatici, CI su GitHub Actions, migrazioni Alembic, avvio con Docker in un comando |
 
 ## Provalo in 2 minuti (Docker)
 
@@ -47,7 +47,7 @@ simulatore. Quote attuali, live, notizie e AI si attivano aggiungendo le chiavi 
 - **Metodo prima dei risultati.** Un fattore entra nel modello solo se una prova *scritta prima di guardare i dati* dimostra che migliora le previsioni. Le prove con molte ipotesi (es. 1.650 strategie generate in automatico) usano una soglia più severa in taratura e una conferma su stagioni separate, per non scambiare il caso per una scoperta.
 - **Risultati negativi dichiarati.** Meteo, riposo, cambio allenatore, formazioni, "incastri di stile", strategie automatiche, serie minori di 23 paesi: non battono il mercato, ed è scritto nel [registro delle decisioni](docs/DECISIONI.md) con i numeri.
 - **Misure corrette.** Calibrazione delle probabilità, log loss appaiata, **CLV** (quota presa rispetto alla quota giusta di chiusura). I soldi vinti in una settimana non sono una misura.
-- **Ingegneria completa.** Adattatori con cache e quote di richieste, job pianificati, 53 endpoint REST, 24 tabelle, autenticazione a sessione, AI con tetto di spesa controllato dal codice, frontend a signal con caricamento pigro delle pagine.
+- **Ingegneria completa.** Adattatori con cache e quote di richieste, job pianificati, 52 endpoint REST, 25 tabelle, autenticazione a sessione, AI con tetto di spesa controllato dal codice, frontend a signal con caricamento pigro delle pagine.
 
 ## Schermate
 
@@ -63,7 +63,7 @@ simulatore. Quote attuali, live, notizie e AI si attivano aggiungendo le chiavi 
 |---|---|
 | **Home "Oggi"** | Partite di oggi, occasioni del momento, giocate in corso, ArchieTV (video ufficiali delle leghe dai feed RSS di YouTube) |
 | **Partite** | Serie A, B, C, top 5 europei con seconde divisioni, coppe UEFA, 17 campionati dell'Est e del Nord; pagina partita con statistiche, formazioni previste, numeri attesi (tiri, angoli, cartellini), analisi scritta dall'AI, partite "gemelle" |
-| **Live** | Risultati in diretta e quote giuste del momento dal punteggio e dal minuto (modello di Poisson verificato all'intervallo) |
+| **Diretta** | Risultati in tempo reale come su un sito di risultati: minuto, punteggio, primo tempo e cronaca (gol con assist, rigori, autogol, cartellini, cambi, VAR) da API-Football |
 | **Pronostici** | Stima migliore per ogni partita (1X2, doppia chance, Under/Over 0.5–4.5, Goal, angoli e cartellini), Occasioni, generatore di multiple con 5 livelli di rischio e profilo personalizzato, **pagella settimanale** con cui Archie si corregge da solo (solo se una prova walk-forward lo giustifica), statistiche, simulatore Monte Carlo |
 | **Il mio Archie** | Schedine reali e simulate chiuse in automatico, CLV, "sfortuna o errore?", regolamento personale, domande in linguaggio naturale (Claude con strumenti sui dati dell'app) |
 | **Schedina** | Sempre visibile: un clic su una quota la aggiunge; controllo del regolamento prima di registrare |
@@ -85,7 +85,7 @@ flowchart LR
     DB[(SQLite / PostgreSQL<br/>SQLAlchemy + Alembic)]
     FC[Previsioni e prove<br/>Dixon-Coles, Elo, Shin,<br/>binomiale negativa, Poisson]
     AI[Modulo AI unico<br/>Claude, tetto di spesa]
-    API[API REST · 53 endpoint]
+    API[API REST · 52 endpoint]
   end
   FE[Frontend · Angular 22]
   Fonti --> AD --> JOB --> DB
@@ -136,7 +136,7 @@ sviluppatore che implementa sotto regole precise.
 
 - **Cosa ho fatto io:** requisiti e specifiche ([SPECIFICHE.md](docs/SPECIFICHE.md)), scelte di prodotto e priorità, principi statistici non negoziabili, approvazione delle decisioni, verifica dell'app in uso, revisione dei risultati delle prove.
 - **Regole date all'assistente** ([CLAUDE.md](CLAUDE.md)): ogni calcolo ha un test; niente dati dal futuro; un fattore entra solo se una prova sul passato lo giustifica; i numeri li calcola il codice, mai l'AI; chiavi solo in `.env`; commit piccoli e documentati.
-- **Controlli:** 471 test automatici e CI a ogni push; ogni decisione registrata con motivazione ([DECISIONI.md](docs/DECISIONI.md)); prove pesanti eseguite su copie del database; avanzamento tracciato fase per fase ([STATO.md](docs/STATO.md)).
+- **Controlli:** 476 test automatici e CI a ogni push; ogni decisione registrata con motivazione ([DECISIONI.md](docs/DECISIONI.md)); prove pesanti eseguite su copie del database; avanzamento tracciato fase per fase ([STATO.md](docs/STATO.md)).
 - **Commit:** quelli scritti con l'assistente riportano il trailer `Co-Authored-By: Claude`.
 
 L'obiettivo era anche imparare a guidare in modo professionale uno sviluppo assistito dall'AI: definire bene il problema, fissare criteri di accettazione verificabili e non accettare un risultato senza test e senza prove.

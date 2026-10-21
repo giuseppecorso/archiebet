@@ -73,10 +73,10 @@ def test_horizon_end_is_italian_midnight():
 
 def test_multiple_api_per_bookmaker(logged_client, seeded, db):  # noqa: F811
     rows = "Div,Date,Time,HomeTeam,AwayTeam,AvgH,AvgD,AvgA\n" + "".join(
-        f"I1,{day(2)},{h}:00,{a},{b},1.5,4,6\n" for h, a, b in [(12, "Roma", "Lazio"), (15, "Napoli", "Genoa"), (18, "Juventus", "Lecce"), (20, "Atalanta", "Cagliari")]
+        f"I1,{day(2)},{h}:00,{a},{b},1.5,4,6\n" for h, a, b in [(12, "Torino", "Monza"), (15, "Napoli", "Genoa"), (18, "Juventus", "Lecce"), (20, "Atalanta", "Cagliari")]
     )
     import_matches(db, parse_csv(rows), season="2026/27")
-    for home, away in [("Roma", "Lazio"), ("Napoli", "Genoa"), ("Juventus", "Lecce"), ("Atalanta", "Cagliari")]:
+    for home, away in [("Torino", "Monza"), ("Napoli", "Genoa"), ("Juventus", "Lecce"), ("Atalanta", "Cagliari")]:
         m = match_id(db, home, away)
         set_odds(db, m, "pinnacle", {"1": 1.38, "X": 5.0, "2": 9.0})  # 1 giusto ≈ 0,707
         set_odds(db, m, "sisal", {"1": 1.45, "X": 4.5, "2": 8.0})  # 0,707 × 1,45 − 1 ≈ +2,5%
@@ -84,7 +84,7 @@ def test_multiple_api_per_bookmaker(logged_client, seeded, db):  # noqa: F811
     assert body["missing"] == ["Eurobet"]  # su Eurobet niente quote: nessuna multipla
     [sisal] = body["multiples"]
     assert sisal["bookmaker"] == "Sisal" and sisal["with_value"] is True
-    assert [leg["match"]["home"]["name"] for leg in sisal["legs"]] == ["Roma", "Napoli", "Juventus", "Atalanta"]
+    assert [leg["match"]["home"]["name"] for leg in sisal["legs"]] == ["Torino", "Napoli", "Juventus", "Atalanta"]
     assert sisal["price"] == pytest.approx(1.45**4)
     p = sisal["legs"][0]["probability"]
     assert sisal["win_probability"] == pytest.approx(p**4)
@@ -122,10 +122,10 @@ def test_search_stays_fast_with_six_legs():
 
 def test_generator_filters(logged_client, seeded, db):  # noqa: F811
     rows = "Div,Date,Time,HomeTeam,AwayTeam,AvgH,AvgD,AvgA\n" + "".join(
-        f"I1,{day(2)},{h}:00,{a},{b},1.5,4,6\n" for h, a, b in [(12, "Roma", "Lazio"), (15, "Napoli", "Genoa"), (18, "Juventus", "Lecce")]
+        f"I1,{day(2)},{h}:00,{a},{b},1.5,4,6\n" for h, a, b in [(12, "Torino", "Monza"), (15, "Napoli", "Genoa"), (18, "Juventus", "Lecce")]
     )
     import_matches(db, parse_csv(rows), season="2026/27")
-    for home, away in [("Roma", "Lazio"), ("Napoli", "Genoa"), ("Juventus", "Lecce")]:
+    for home, away in [("Torino", "Monza"), ("Napoli", "Genoa"), ("Juventus", "Lecce")]:
         m = match_id(db, home, away)
         set_odds(db, m, "pinnacle", {"1": 1.35, "X": 5.0, "2": 9.0})  # 1 giusto ≈ 0,704
         set_odds(db, m, "sisal", {"1": 1.45, "X": 4.5, "2": 8.0})

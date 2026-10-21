@@ -12,7 +12,7 @@ from app.models.betting import Bet, BetKind, BetSelection, BetSnapshot, Challeng
 from app.models.forecast import MatchPrediction, RadarSignal
 from app.models.sync import SyncRun
 from app.models.news import MatchAnalysis, MatchInsight, NewsItem, TeamFact
-from app.models.football import Competition, Match, MatchLive, MatchOdds, MatchSource, MatchStatus, Team, TeamAlias
+from app.models.football import Competition, Match, MatchEvent, MatchLive, MatchOdds, MatchSource, MatchStatus, Team, TeamAlias
 from app.models.usage import UsageEvent
 from app.models.user import User, UserSession
 
@@ -28,6 +28,7 @@ __all__ = [
     "Match",
     "MatchAnalysis",
     "MatchInsight",
+    "MatchEvent",
     "MatchLive",
     "MatchOdds",
     "MatchPrediction",

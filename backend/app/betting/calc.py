@@ -154,7 +154,7 @@ def fair_closing_odds(market: str, pick: str, closing_1x2: dict[str, Decimal] | 
             return fair[pick]
         probability = sum(1 / fair[p] for p in pick)  # es. "1X" = P(1) + P(X)
         return 1 / probability
-    if (ou_line(market) is not None or is_secondary(market)) and closing_ou and len(closing_ou) == 2:  # closing_ou: chiusura della stessa linea
+    if (ou_line(market) is not None or is_secondary(market) or market == "GG") and closing_ou and len(closing_ou) == 2:  # closing_ou: chiusura dello stesso mercato
         return fair_odds(closing_ou)[pick]
     return None
 

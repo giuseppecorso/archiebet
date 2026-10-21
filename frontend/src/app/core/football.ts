@@ -36,6 +36,36 @@ export interface MatchCard {
   away_goals: number | null;
   odds_1x2: Odds1x2 | null;
   live?: LiveState | null;
+  ht_home_goals?: number | null;
+  ht_away_goals?: number | null;
+  /** Gol ed espulsioni (D133), per le partite in corso o finite */
+  highlights?: MatchEvent[];
+}
+
+export type EventKind = 'goal' | 'penalty' | 'own_goal' | 'missed_penalty' | 'yellow' | 'second_yellow' | 'red' | 'subst' | 'var';
+
+/** Un evento della cronaca (D133) */
+export interface MatchEvent {
+  minute: number | null;
+  extra: number | null;
+  side: 'home' | 'away';
+  kind: EventKind;
+  player: string | null;
+  other: string | null;
+  detail: string | null;
+}
+
+/** "45+2'" */
+export function eventMinute(e: Pick<MatchEvent, 'minute' | 'extra'>): string {
+  if (e.minute == null) return '';
+  return e.extra ? `${e.minute}+${e.extra}'` : `${e.minute}'`;
+}
+
+/** Il cognome (o il nome se è uno solo): "Lautaro Martínez" → "Martínez", "R. Leão" → "Leão" */
+export function shortName(name: string | null): string {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  return parts.length > 1 ? parts.slice(1).join(' ') : parts[0];
 }
 
 export interface CompetitionGroup {

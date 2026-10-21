@@ -156,9 +156,15 @@ def _autopsy(s: BetSelection) -> AutopsyOut | None:
 
     if s.status == "open":
         return None
+    from app.betting.service import CLV_WAIT
+
     m = s.match
+    note = None
+    if not s.fair_closing_odds:
+        kickoff = m.kickoff_at if m.kickoff_at.tzinfo else m.kickoff_at.replace(tzinfo=UTC)
+        note = "senza riferimento" if m.competition.code.startswith("ITA-C") else "in arrivo" if datetime.now(UTC) - kickoff < CLV_WAIT else None
     a = autopsy(SelectionFacts(s.market, s.pick, float(s.odds), s.status, float(s.fair_closing_odds) if s.fair_closing_odds else None,
-                               m.home_shots_on_target, m.away_shots_on_target, m.home_goals, m.away_goals))  # fmt: skip
+                               m.home_shots_on_target, m.away_shots_on_target, m.home_goals, m.away_goals, note))  # fmt: skip
     return AutopsyOut(verdict=a.verdict, probability=a.probability, text=a.text)
 
 

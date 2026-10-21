@@ -25,6 +25,7 @@ class SelectionFacts:
     away_sot: int | None
     home_goals: int | None
     away_goals: int | None
+    closing_note: str | None = None  # perché manca la chiusura: "in arrivo" o "senza riferimento"
 
 
 @dataclass(frozen=True)
@@ -56,7 +57,11 @@ def autopsy(f: SelectionFacts) -> Autopsy:
         return Autopsy(VOID, None, None, "Partita annullata o rinviata: la giocata è stata rimborsata.")
     if not f.fair_closing_odds:
         won = f.status == "won"
-        return Autopsy(UNKNOWN, None, None, ("Vinta" if won else "Persa") + ": manca la quota di chiusura, quindi non si può dire se il prezzo era buono.")
+        why = {
+            "in arrivo": "la quota di chiusura arriva qualche ora dopo la partita: il giudizio sul prezzo comparirà da solo.",
+            "senza riferimento": "per questo campionato non c'è una quota di chiusura affidabile (Pinnacle non lo quota), quindi non si può dire se il prezzo era buono.",
+        }.get(f.closing_note or "", "manca la quota di chiusura, quindi non si può dire se il prezzo era buono.")
+        return Autopsy(UNKNOWN, None, None, ("Vinta" if won else "Persa") + ": " + why)
     p = 1 / f.fair_closing_odds
     clv = f.odds / f.fair_closing_odds - 1
     shots = f" Tiri in porta {f.home_sot}-{f.away_sot}." if f.home_sot is not None and f.away_sot is not None else ""
