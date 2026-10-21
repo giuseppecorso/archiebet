@@ -14,7 +14,9 @@ interface Row {
   prefill: Prefill['odds'];
 }
 
-const MARKETS: Record<Market, string[]> = { '1X2': ['1', 'X', '2'], DC: ['1X', 'X2', '12'], 'OU2.5': ['over', 'under'], GG: ['yes', 'no'] };
+const MARKETS: Record<Market, string[]> = {
+  '1X2': ['1', 'X', '2'], DC: ['1X', 'X2', '12'], 'OU1.5': ['over', 'under'], 'OU2.5': ['over', 'under'], 'OU3.5': ['over', 'under'], GG: ['yes', 'no'],
+};
 
 /** "1,85" o "1.85" → 1.85 (NaN se non è un numero) */
 export function parseDecimal(text: string): number {

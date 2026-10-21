@@ -14,8 +14,12 @@ import { Generator } from './generator';
 
 type Tab = 'pronostici' | 'multipla' | 'occasioni';
 
-const SELECTIONS: Record<MarketPick['market'], string[]> = { '1X2': ['1', 'X', '2'], DC: ['1X', 'X2', '12'], 'OU2.5': ['over', 'under'], GG: ['yes', 'no'] };
-const MARKET_LABEL: Record<MarketPick['market'], string> = { '1X2': 'Esito finale', DC: 'Doppia chance', 'OU2.5': 'Under / Over 2.5', GG: 'Goal / NoGoal' };
+const SELECTIONS: Record<MarketPick['market'], string[]> = {
+  '1X2': ['1', 'X', '2'], DC: ['1X', 'X2', '12'], 'OU1.5': ['over', 'under'], 'OU2.5': ['over', 'under'], 'OU3.5': ['over', 'under'], GG: ['yes', 'no'],
+};
+const MARKET_LABEL: Record<MarketPick['market'], string> = {
+  '1X2': 'Esito finale', DC: 'Doppia chance', 'OU1.5': 'Under / Over 1.5', 'OU2.5': 'Under / Over 2.5', 'OU3.5': 'Under / Over 3.5', GG: 'Goal / NoGoal',
+};
 
 /** Pronostici (D67): la stima migliore per ogni partita, con le quote di Sisal ed Eurobet. Scheda "Occasioni" = radar. */
 @Component({

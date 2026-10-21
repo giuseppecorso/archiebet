@@ -13,7 +13,7 @@ from app.models import AiQuestion, Bet, Match, MatchStatus, Team, TeamFact
 router = APIRouter(prefix="/api/ask", tags=["chiedi ad archie"])
 
 HISTORY = 3  # domande precedenti passate come contesto (per le domande di seguito)
-MARKET_NAMES = {"1X2": "1X2", "DC": "doppia chance", "OU2.5": "Under/Over 2.5", "GG": "Gol/No gol"}
+MARKET_NAMES = {"1X2": "1X2", "DC": "doppia chance", "OU1.5": "Under/Over 1.5", "OU2.5": "Under/Over 2.5", "OU3.5": "Under/Over 3.5", "GG": "Gol/No gol"}
 
 
 class AskIn(BaseModel):

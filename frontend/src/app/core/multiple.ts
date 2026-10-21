@@ -11,6 +11,8 @@ export interface MultipleLeg {
   probability: number;
   price: number;
   value: number;
+  /** Da dove viene la probabilità: "consenso" = media dei bookmaker italiani (Serie C, D130) */
+  source?: string;
 }
 
 export interface Multiple {
@@ -18,6 +20,8 @@ export interface Multiple {
   legs: MultipleLeg[];
   /** true = ogni gamba con valore ≥ 0; false = quote "nella norma" */
   with_value: boolean;
+  /** "valore" | "nella norma" | "paga poco" (D130) */
+  quality?: string;
   price: number;
   win_probability: number;
   one_in: number;

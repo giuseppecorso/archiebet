@@ -189,16 +189,27 @@ describe('ArchieBet: navigazione', () => {
 
     const click = (text: string) =>
       ([...page.querySelectorAll('ab-generator button')] as HTMLButtonElement[]).find((b) => b.textContent?.trim() === text)!.click();
-    click('Più coraggiosa');
+    click('Coraggiosa');
     click('Goal/NoGoal'); // tolto dai mercati
     click('Premier League'); // solo Premier
     harness.fixture.detectChanges();
     const second = await nextRequest((r) => r.url.startsWith('/api/picks/multiple'));
     const url = new URL(second.request.url, 'http://x');
     expect(url.searchParams.get('profile')).toBe('coraggiosa');
-    expect(url.searchParams.get('markets')).toBe('1X2,DC,OU2.5');
+    expect(url.searchParams.get('markets')).toBe('1X2,DC,OU1.5,OU2.5,OU3.5');
     expect(url.searchParams.get('competitions')).toBe('ENG-1');
     second.flush({ horizon: 'week', profile: 'coraggiosa', legs: 4, missing: [], multiples: [] });
+    await harness.fixture.whenStable();
+
+    // Profilo personalizzato (D130): probabilità minima, quota totale e cosa privilegiare vanno al backend
+    click('Personalizzata');
+    harness.fixture.detectChanges();
+    const third = await nextRequest((r) => r.url.startsWith('/api/picks/multiple'));
+    const custom = new URL(third.request.url, 'http://x');
+    expect(custom.searchParams.get('profile')).toBe('personalizzata');
+    expect(custom.searchParams.get('min_probability')).toBe('0.6');
+    expect(custom.searchParams.get('max_total')).toBe('6');
+    third.flush({ horizon: 'week', profile: 'personalizzata', legs: 4, missing: [], multiples: [] });
     await harness.fixture.whenStable();
   });
 

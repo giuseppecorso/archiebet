@@ -13,7 +13,7 @@ from decimal import Decimal
 from app.models import Bet, Match
 
 KINDS = ("max_legs", "max_total_odds", "max_stake", "avoid_market", "avoid_competition", "avoid_team", "no_low_price")
-MARKET_NAMES = {"1X2": "1X2", "DC": "doppia chance", "OU2.5": "Under/Over 2.5", "GG": "Gol/No gol"}
+MARKET_NAMES = {"1X2": "1X2", "DC": "doppia chance", "OU1.5": "Under/Over 1.5", "OU2.5": "Under/Over 2.5", "OU3.5": "Under/Over 3.5", "GG": "Gol/No gol"}
 MIN_SELECTIONS = 10  # un gruppo si giudica da almeno 10 selezioni chiuse con CLV
 MIN_LONG_BETS = 8
 BAD_CLV = -0.02  # CLV medio sotto -2%: si perde valore

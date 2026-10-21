@@ -53,6 +53,8 @@ REFERENCE_BOOKMAKERS = ("pinnacle", "betfair_ex")
 ODDS_MARKETS = {"1X2": ("1", "X", "2"), "OU2.5": ("over", "under"), "GG": ("yes", "no")}
 # La doppia chance ha esiti che si sovrappongono: la sua probabilità giusta si ricava dall'1X2, mai dalle sue quote
 OVERLAPPING_MARKETS = {"DC": ("1X", "12", "X2")}
+# Altre linee Under/Over (D130): in Pronostici, multipla e schedina, ma non nel radar (non provate sullo storico)
+EXTRA_GOAL_MARKETS = {"OU1.5": ("over", "under"), "OU3.5": ("over", "under")}
 
 Odds = dict[int, dict[str, dict[str, float]]]  # partita → mercato → esito → quota
 

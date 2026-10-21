@@ -3,7 +3,7 @@ import { MatchCard } from './football';
 
 export type BetKind = 'real' | 'simulated';
 export type BetStatus = 'open' | 'won' | 'lost' | 'void';
-export type Market = '1X2' | 'DC' | 'OU2.5' | 'GG';
+export type Market = '1X2' | 'DC' | 'OU1.5' | 'OU2.5' | 'OU3.5' | 'GG';
 
 export interface Selection {
   id: number;
@@ -131,7 +131,9 @@ export interface Prefill {
 export const MARKET_LABEL: Record<Market, string> = {
   '1X2': 'Esito finale',
   DC: 'Doppia chance',
+  'OU1.5': 'Under / Over 1.5',
   'OU2.5': 'Under / Over 2.5',
+  'OU3.5': 'Under / Over 3.5',
   GG: 'Goal / NoGoal',
 };
 
@@ -145,8 +147,12 @@ export function pickLabel(market: Market, pick: string, match?: Pick<MatchCard, 
     'DC:1X': '1X',
     'DC:X2': 'X2',
     'DC:12': '12',
+    'OU1.5:over': 'Over 1.5',
+    'OU1.5:under': 'Under 1.5',
     'OU2.5:over': 'Over 2.5',
     'OU2.5:under': 'Under 2.5',
+    'OU3.5:over': 'Over 3.5',
+    'OU3.5:under': 'Under 3.5',
     'GG:yes': 'Goal',
     'GG:no': 'NoGoal',
   };

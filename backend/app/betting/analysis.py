@@ -14,7 +14,7 @@ from decimal import Decimal
 from app.betting.calc import LOST, VOID, WON
 from app.models import Bet, BetSelection
 
-MARKET_NAMES = {"1X2": "Esito finale", "DC": "Doppia chance", "OU2.5": "Under / Over 2.5", "GG": "Goal / NoGoal"}
+MARKET_NAMES = {"1X2": "Esito finale", "DC": "Doppia chance", "OU1.5": "Under / Over 1.5", "OU2.5": "Under / Over 2.5", "OU3.5": "Under / Over 3.5", "GG": "Goal / NoGoal"}
 
 
 @dataclass(frozen=True)

@@ -4,12 +4,16 @@ import { Competition } from '../../core/football';
 import { Horizon, MultiplesOut } from '../../core/multiple';
 import { MultipleView } from '../../shared/multiple-view';
 
-type Profile = 'tranquilla' | 'equilibrata' | 'coraggiosa';
+type Profile = 'molto tranquilla' | 'tranquilla' | 'equilibrata' | 'coraggiosa' | 'spericolata' | 'personalizzata';
 
+/** Livelli di rischio (D130), dal più prudente al più spinto, più quello personalizzato */
 const PROFILES: { key: Profile; label: string; hint: string }[] = [
-  { key: 'tranquilla', label: 'Più tranquilla', hint: 'partite al 70% o più, quota 2–3,5' },
+  { key: 'molto tranquilla', label: 'Molto tranquilla', hint: "partite all'80% o più, quota totale 1,5–2,5" },
+  { key: 'tranquilla', label: 'Tranquilla', hint: 'partite al 70% o più, quota 2–3,5' },
   { key: 'equilibrata', label: 'Equilibrata', hint: 'partite al 65% o più, quota 3–5' },
-  { key: 'coraggiosa', label: 'Più coraggiosa', hint: 'partite al 45% o più, quota 5–15, scelta per valore' },
+  { key: 'coraggiosa', label: 'Coraggiosa', hint: 'partite al 45% o più, quota 5–15, scelta per valore' },
+  { key: 'spericolata', label: 'Spericolata', hint: 'partite al 30% o più, quota 15–60, scelta per valore: vince raramente' },
+  { key: 'personalizzata', label: 'Personalizzata', hint: 'scegli tu probabilità minima per partita, quota totale e cosa privilegiare' },
 ];
 const HORIZONS: [Horizon, string][] = [
   ['today', 'Oggi'],
@@ -32,7 +36,9 @@ function isoDay(offset = 0): string {
 const MARKETS: [string, string][] = [
   ['1X2', '1X2'],
   ['DC', 'Doppia chance'],
+  ['OU1.5', 'Under/Over 1.5'],
   ['OU2.5', 'Under/Over 2.5'],
+  ['OU3.5', 'Under/Over 3.5'],
   ['GG', 'Goal/NoGoal'],
 ];
 
@@ -53,6 +59,26 @@ const MARKETS: [string, string][] = [
           }
         </div>
         <p class="hint muted small">{{ hint() }}</p>
+        @if (profile() === 'personalizzata') {
+          <div class="row custom">
+            <label>Ogni partita almeno
+              <span class="inline"><input type="range" min="20" max="95" step="5" [value]="minProb()" (input)="minProb.set(+$any($event.target).value)" />
+                <strong class="led">{{ minProb() }}%</strong></span>
+            </label>
+            <label>Quota totale da
+              <input type="number" min="1.2" max="200" step="0.5" [value]="minTotal()" (change)="minTotal.set(+$any($event.target).value || 2)" />
+            </label>
+            <label>a
+              <input type="number" min="1.2" max="200" step="0.5" [value]="maxTotal()" (change)="maxTotal.set(+$any($event.target).value || 6)" />
+            </label>
+            <label>Privilegia
+              <select [value]="by()" (change)="by.set($any($event.target).value)">
+                <option value="probabilita" [selected]="by() === 'probabilita'">vincere più spesso</option>
+                <option value="valore" [selected]="by() === 'valore'">il valore atteso</option>
+              </select>
+            </label>
+          </div>
+        }
       </fieldset>
 
       <div class="row">
@@ -135,6 +161,9 @@ const MARKETS: [string, string][] = [
       background: var(--bg-deep); border: 1px solid var(--line-strong); border-radius: 4px;
     }
     input { width: 90px; }
+    .custom { margin: 10px 0 0; }
+    .inline { display: flex; align-items: center; gap: 8px; }
+    input[type='range'] { width: 150px; accent-color: var(--amber); }
     input.day { width: 150px; color-scheme: dark; }
     .warn { color: var(--loss); }
   `,
@@ -146,6 +175,11 @@ export class Generator {
   protected readonly firstDay = isoDay();
   protected readonly lastDay = isoDay(MAX_DAYS_AHEAD);
   protected readonly profile = signal<Profile>('equilibrata');
+  /** Profilo personalizzato */
+  protected readonly minProb = signal(60);
+  protected readonly minTotal = signal(2);
+  protected readonly maxTotal = signal(6);
+  protected readonly by = signal<'probabilita' | 'valore'>('probabilita');
   protected readonly legs = signal(4);
   protected readonly horizon = signal<Horizon>('week');
   protected readonly dateFrom = signal(isoDay());
@@ -164,6 +198,12 @@ export class Generator {
       params.set('date_to', this.dateTo());
     }
     if (this.selectedMarkets().length < MARKETS.length) params.set('markets', this.selectedMarkets().join(','));
+    if (this.profile() === 'personalizzata') {
+      params.set('min_probability', String(this.minProb() / 100));
+      params.set('min_total', String(this.minTotal()));
+      params.set('max_total', String(this.maxTotal()));
+      params.set('by', this.by());
+    }
     if (this.selectedComps().length) params.set('competitions', this.selectedComps().join(','));
     return this.selectedMarkets().length ? `/api/picks/multiple?${params}` : undefined;
   });

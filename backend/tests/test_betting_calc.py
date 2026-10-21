@@ -99,3 +99,16 @@ def test_clv():
     assert clv(D("2.10"), D("2.00")) == D("0.0500")  # presa a 2,10, giusta a 2,00: +5%
     assert clv(D("1.90"), D("2.00")) == D("-0.0500")
     assert clv(D("1.90"), None) is None
+
+
+def test_other_goal_lines_settle_and_clv():
+    from decimal import Decimal
+
+    from app.betting.calc import LOST, WON, fair_closing_odds, ou_line, selection_outcome
+
+    assert ou_line("OU1.5") == 1.5 and ou_line("1X2") is None
+    assert selection_outcome("OU1.5", "over", 1, 1) == WON and selection_outcome("OU1.5", "over", 1, 0) == LOST
+    assert selection_outcome("OU3.5", "under", 2, 1) == WON and selection_outcome("OU3.5", "under", 3, 1) == LOST
+    # chiusura 1,40 / 2,90 senza margine (proporzionale): (1/1,40 + 1/2,90) / (1/1,40) ≈ 1,483
+    fair = fair_closing_odds("OU1.5", "over", None, {"over": Decimal("1.40"), "under": Decimal("2.90")})
+    assert Decimal("1.48") < fair < Decimal("1.49")

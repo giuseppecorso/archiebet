@@ -29,7 +29,7 @@ import { Crest } from './crest';
           <li>
             <span class="when muted small">{{ day(l.match.kickoff_at) }} {{ time(l.match.kickoff_at) }} · {{ l.match.competition.name }}</span>
             <a [routerLink]="['/partite', l.match.id]" class="match"><ab-crest [team]="l.match.home" [size]="18" /> {{ l.match.home.name }} – {{ l.match.away.name }} <ab-crest [team]="l.match.away" [size]="18" /></a>
-            <span class="pick">{{ label(l.market, l.selection, l.match) }}</span>
+            <span class="pick">{{ label(l.market, l.selection, l.match) }}@if (l.source === 'consenso') { <span class="muted small" title="Probabilità dalla media dei bookmaker italiani senza margine: in Serie C Pinnacle non c'è (D130)">· consenso italiano</span> }</span>
             <span class="nums"><span class="muted small">{{ pct(l.probability) }}</span><span class="led">{{ odds(l.price) }}</span></span>
           </li>
         }
@@ -44,6 +44,11 @@ import { Crest } from './crest';
       <button type="button" class="btn-primary to-slip" (click)="toSlip(m)">Metti nella schedina</button>
       @if (m.with_value) {
         <p class="note pos">Tutte le partite hanno valore: Archie la giocherebbe.</p>
+      } @else if (m.quality === 'paga poco') {
+        <p class="note warn">
+          Paga poco: con queste scelte le quote hanno dentro tutto il margine del bookmaker (succede in Serie C, dove si
+          confrontano con la media dei bookmaker italiani). Giocata sempre fa perdere circa il {{ loss(m.expected_value) }} di quanto giochi.
+        </p>
       } @else {
         <p class="note">
           Nessuna multipla con valore: questa è la migliore con quote nella norma. Il margine dei bookmaker si moltiplica:
@@ -59,6 +64,7 @@ import { Crest } from './crest';
     }
   `,
   styles: `
+    .note.warn { color: var(--amber); }
     .books { display: flex; width: fit-content; margin-bottom: 8px; border: 1px solid var(--line-strong); border-radius: 4px; overflow: hidden; }
     .books button {
       min-height: 30px; padding: 2px 10px; font: inherit; font-size: 12px; font-weight: 600;

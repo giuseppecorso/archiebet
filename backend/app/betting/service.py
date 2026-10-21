@@ -169,7 +169,7 @@ def settle_open_bets(db: Session, now: datetime | None = None) -> int:
         else:
             continue
         fair = fair_closing_odds(
-            sel.market, sel.pick, _closing_prices(db, match.id, "1X2"), _closing_prices(db, match.id, "OU2.5")
+            sel.market, sel.pick, _closing_prices(db, match.id, "1X2"), _closing_prices(db, match.id, sel.market if sel.market.startswith("OU") else "OU2.5")
         )
         sel.fair_closing_odds = fair.quantize(Decimal("0.001")) if fair is not None else None
         sel.clv = clv(sel.odds, fair)

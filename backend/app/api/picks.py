@@ -14,7 +14,7 @@ from app.auth.deps import CurrentUser, DbSession
 from app.config import get_settings
 from app.forecast.clv import SUSPICIOUS_VALUE
 from app.forecast.data import ODDS_MARKETS
-from app.forecast.multiple import LEGS, PROFILES, build_multiple
+from app.forecast.multiple import LEGS, PROFILES, build_multiple, custom_profile
 from app.forecast.picks import MODEL_SOURCE, PICK_MARKETS, MarketPick, favorite, off_line
 from app.forecast.picks_service import legs_for, match_market_picks, upcoming_picks
 from app.forecast.suggestions import suggestions
@@ -426,12 +426,14 @@ class LegOut(BaseModel):
     probability: float
     price: float
     value: float
+    source: str = "pinnacle"  # da dove viene la probabilità: "consenso" = media dei bookmaker italiani (Serie C, D130)
 
 
 class MultipleOut(BaseModel):
     bookmaker: str
     legs: list[LegOut]
     with_value: bool
+    quality: str = "valore"  # "valore" | "nella norma" | "paga poco" (D130)
     price: float
     win_probability: float
     one_in: float
@@ -484,8 +486,12 @@ def multiple(
     horizon: Horizon = "today",
     date_from: date | None = Query(None, description="Con horizon=range: primo giorno, AAAA-MM-GG"),
     date_to: date | None = Query(None, description="Con horizon=range: ultimo giorno, AAAA-MM-GG"),
-    profile: Literal["tranquilla", "equilibrata", "coraggiosa"] = "equilibrata",
+    profile: Literal["molto tranquilla", "tranquilla", "equilibrata", "coraggiosa", "spericolata", "personalizzata"] = "equilibrata",
     legs: int = Query(LEGS, ge=2, le=6),
+    min_probability: float = Query(0.6, ge=0.2, le=0.95, description="Profilo personalizzato: probabilità minima di ogni partita"),
+    min_total: float = Query(2.0, ge=1.2, le=200, description="Profilo personalizzato: quota totale minima"),
+    max_total: float = Query(6.0, ge=1.2, le=200, description="Profilo personalizzato: quota totale massima"),
+    by: Literal["probabilita", "valore"] = Query("probabilita", description="Profilo personalizzato: cosa privilegiare"),
     markets: str | None = Query(None, description="Mercati separati da virgola, es. 1X2,DC"),
     competitions: str | None = Query(None, description="Codici dei campionati separati da virgola, es. ITA-A,ENG-1"),
 ) -> MultiplesOut:
@@ -507,7 +513,8 @@ def multiple(
     multiples, missing = [], []
     for bm in bookmakers:
         label = BOOKMAKER_LABELS.get(bm, bm)
-        best = build_multiple(legs_for(upcoming, bm), legs, PROFILES[profile])
+        chosen = custom_profile(min_probability, min_total, max_total, by == "valore") if profile == "personalizzata" else PROFILES[profile]
+        best = build_multiple(legs_for(upcoming, bm), legs, chosen)
         if best is None:
             missing.append(label)
             continue
@@ -516,10 +523,11 @@ def multiple(
                 bookmaker=label,
                 legs=[
                     LegOut(match=cards[leg.match_id], market=leg.market, selection=leg.selection,
-                           probability=leg.probability, price=leg.price, value=leg.value)
+                           probability=leg.probability, price=leg.price, value=leg.value, source=leg.source)
                     for leg in best.legs
                 ],
                 with_value=best.with_value,
+                quality=best.quality,
                 price=best.price,
                 win_probability=best.win_probability,
                 one_in=best.one_in,

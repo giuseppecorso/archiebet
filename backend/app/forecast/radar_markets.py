@@ -6,7 +6,7 @@ Nomi dei mercati secondari: famiglia + lato + soglia. "COR9.5" = angoli totali s
 
 import re
 
-from app.forecast.data import ODDS_MARKETS
+from app.forecast.data import EXTRA_GOAL_MARKETS, ODDS_MARKETS
 
 FAMILIES = {"COR": "angoli", "CRD": "cartellini"}
 SIDES = {"": "totale", "H": "casa", "A": "ospite"}
@@ -35,6 +35,8 @@ def selections(market: str) -> tuple[str, ...]:
     """Esiti di un mercato del radar (vuoto se il mercato non è seguito)."""
     if market in ODDS_MARKETS:
         return tuple(ODDS_MARKETS[market])
+    if market in EXTRA_GOAL_MARKETS:
+        return tuple(EXTRA_GOAL_MARKETS[market])
     return OVER_UNDER if is_secondary(market) else ()
 
 

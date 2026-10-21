@@ -95,7 +95,7 @@ def match_fan(match_id: int, _: CurrentUser, db: DbSession) -> MatchFanOut:
 ANALYSIS_FRESH = timedelta(hours=3)  # una nuova analisi al massimo ogni 3 ore per partita (tetto di spesa)
 SELECTION_NAMES = {
     ("1X2", "1"): "1 (vince la squadra di casa)", ("1X2", "X"): "X (pareggio)", ("1X2", "2"): "2 (vince la squadra ospite)",
-    ("DC", "1X"): "1X", ("DC", "X2"): "X2", ("DC", "12"): "12", ("OU2.5", "over"): "Over 2.5", ("OU2.5", "under"): "Under 2.5",
+    ("DC", "1X"): "1X", ("DC", "X2"): "X2", ("DC", "12"): "12", ("OU2.5", "over"): "Over 2.5", ("OU2.5", "under"): "Under 2.5", ("OU1.5", "over"): "Over 1.5", ("OU1.5", "under"): "Under 1.5", ("OU3.5", "over"): "Over 3.5", ("OU3.5", "under"): "Under 3.5",
     ("GG", "yes"): "Gol (segnano entrambe)", ("GG", "no"): "No gol",
 }  # fmt: skip
 

@@ -23,9 +23,9 @@ MODEL_SOURCE = "archie"
 # modello di Archie nella prova D95. Almeno 2 bookmaker per fare una media.
 CONSENSUS_SOURCE = "consenso"
 CONSENSUS_MIN_BOOKMAKERS = 2
-ESTIMATE_ONLY = (MODEL_SOURCE, CONSENSUS_SOURCE)  # stime senza riferimento sharp: niente "valore", niente multiple
+ESTIMATE_ONLY = (MODEL_SOURCE, CONSENSUS_SOURCE)  # stime senza riferimento sharp: niente "valore" (nelle multiple il consenso sì, D130)
 LOW_PRICE = -0.05  # sotto questo valore il bookmaker "paga poco" (margine più alto del solito)
-PICK_MARKETS = ("1X2", "DC", "OU2.5", "GG")
+PICK_MARKETS = ("1X2", "DC", "OU1.5", "OU2.5", "OU3.5", "GG")  # OU1.5 e OU3.5 dal D130
 
 
 @dataclass(frozen=True)
@@ -80,7 +80,7 @@ def double_chance(p1x2: dict[str, float]) -> dict[str, float]:
 def best_probabilities(book: BookOdds, model: dict[str, Any] | None) -> dict[str, tuple[str, dict[str, float]]]:
     """Mercato → (fonte, probabilità). La doppia chance segue la fonte dell'1X2."""
     out: dict[str, tuple[str, dict[str, float]]] = {}
-    for market in ("1X2", "OU2.5", "GG"):
+    for market in ("1X2", "OU1.5", "OU2.5", "OU3.5", "GG"):
         ref = fair_reference(book, market, MARKET_SOURCES)
         if ref is not None:
             out[market] = ref

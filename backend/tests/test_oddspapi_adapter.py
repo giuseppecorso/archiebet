@@ -51,7 +51,7 @@ def test_parse_fixtures_and_current_prices():
     assert fx.start_time == datetime(2026, 10, 16, 18, 30, tzinfo=UTC)
     current = parse_current(ODDS_BODY)
     # Under non attivo → scartato; Over 3.5 e bookmaker sconosciuti ignorati
-    assert current == {"id1": {"pinnacle": {"1X2": {"1": 2.05, "X": 3.6, "2": 3.94}, "OU2.5": {"over": 1.95}}}}
+    assert current == {"id1": {"pinnacle": {"1X2": {"1": 2.05, "X": 3.6, "2": 3.94}, "OU2.5": {"over": 1.95}, "OU3.5": {"over": 3.2}}}}  # OU3.5 letta dal D130
 
 
 def test_history_sorted_and_prices_at_a_moment():

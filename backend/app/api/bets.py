@@ -28,7 +28,7 @@ BOOKMAKERS = ["Sisal", "Eurobet", "bet365", "Snai", "Lottomatica", "Goldbet", "B
 
 class SelectionIn(BaseModel):
     match_id: int
-    market: Literal["1X2", "DC", "OU2.5", "GG"]
+    market: Literal["1X2", "DC", "OU1.5", "OU2.5", "OU3.5", "GG"]
     pick: str
     odds: Decimal = Field(gt=1, max_digits=8, decimal_places=3)
 

@@ -56,6 +56,8 @@ BOOKMAKERS = SHARP | ITALIAN
 MARKETS = {
     "101": ("1X2", {"101": "1", "102": "X", "103": "2"}),
     "1010": ("OU2.5", {"1010": "over", "1011": "under"}),
+    "108": ("OU1.5", {"108": "over", "109": "under"}),  # D130: solo Pronostici, multipla e schedina, non il radar
+    "1012": ("OU3.5", {"1012": "over", "1013": "under"}),
     "101902": ("DC", {"101902": "1X", "101903": "12", "101904": "X2"}),  # Pinnacle non la quota
     "104": ("GG", {"104": "yes", "105": "no"}),
 }

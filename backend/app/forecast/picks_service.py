@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.adapters.api_football import EAST_NORTH
 from app.forecast.multiple import Leg
-from app.forecast.picks import ESTIMATE_ONLY, MarketPick, match_picks
+from app.forecast.picks import MODEL_SOURCE, MarketPick, match_picks
 from app.forecast.radar_service import load_book_odds
 from app.models import Competition, Match, MatchPrediction, MatchStatus
 
@@ -42,10 +42,10 @@ def legs_for(picks: Sequence[tuple[Match, list[MarketPick]]], bookmaker: str) ->
     legs = []
     for match, markets in picks:
         for mp in markets:
-            if mp.source in ESTIMATE_ONLY:
-                continue  # niente gambe senza riferimento sharp: modello (D88) o media dei bookmaker italiani (D96)
+            if mp.source == MODEL_SOURCE:
+                continue  # niente gambe dal solo modello (D88); il consenso dei bookmaker italiani sì (Serie C, D130)
             for selection, offers in mp.offers.items():
                 for offer in offers:
                     if offer.bookmaker == bookmaker:
-                        legs.append(Leg(match.id, match.kickoff_at, mp.market, selection, mp.probabilities[selection], offer.price))
+                        legs.append(Leg(match.id, match.kickoff_at, mp.market, selection, mp.probabilities[selection], offer.price, mp.source))
     return legs

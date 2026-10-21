@@ -12,7 +12,7 @@ export interface Offer {
 }
 
 export interface MarketPick {
-  market: '1X2' | 'DC' | 'OU2.5' | 'GG';
+  market: '1X2' | 'DC' | 'OU1.5' | 'OU2.5' | 'OU3.5' | 'GG';
   /** Da dove viene la probabilità: Pinnacle, Betfair Exchange, Media mercato o Modello di Archie */
   source: string;
   from_model: boolean;

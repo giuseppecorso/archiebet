@@ -3,7 +3,7 @@
 Mercati gestiti e loro esiti:
 - "1X2": "1", "X", "2"
 - "DC" (doppia chance): "1X", "X2", "12"
-- "OU2.5": "over", "under"
+- "OU1.5", "OU2.5", "OU3.5": "over", "under" (Under/Over sulla linea dei gol indicata, D130)
 - "GG" (Goal/NoGoal): "yes", "no"
 """
 
@@ -13,9 +13,16 @@ from decimal import ROUND_HALF_UP, Decimal
 MARKETS: dict[str, tuple[str, ...]] = {
     "1X2": ("1", "X", "2"),
     "DC": ("1X", "X2", "12"),
+    "OU1.5": ("over", "under"),
     "OU2.5": ("over", "under"),
+    "OU3.5": ("over", "under"),
     "GG": ("yes", "no"),
 }
+
+
+def ou_line(market: str) -> float | None:
+    """Linea dei gol di un mercato Under/Over ("OU2.5" → 2.5), None per gli altri mercati."""
+    return float(market[2:]) if market.startswith("OU") else None
 
 WON, LOST, VOID, OPEN = "won", "lost", "void", "open"
 CENT = Decimal("0.01")
@@ -34,8 +41,8 @@ def selection_outcome(market: str, pick: str, home_goals: int, away_goals: int) 
         hit = pick == result
     elif market == "DC":
         hit = result in pick
-    elif market == "OU2.5":
-        hit = (home_goals + away_goals >= 3) == (pick == "over")
+    elif (line := ou_line(market)) is not None:
+        hit = (home_goals + away_goals > line) == (pick == "over")
     else:  # GG
         hit = (home_goals > 0 and away_goals > 0) == (pick == "yes")
     return WON if hit else LOST
@@ -109,7 +116,7 @@ def fair_closing_odds(market: str, pick: str, closing_1x2: dict[str, Decimal] | 
             return fair[pick]
         probability = sum(1 / fair[p] for p in pick)  # es. "1X" = P(1) + P(X)
         return 1 / probability
-    if market == "OU2.5" and closing_ou and len(closing_ou) == 2:
+    if ou_line(market) is not None and closing_ou and len(closing_ou) == 2:  # closing_ou: chiusura della stessa linea
         return fair_odds(closing_ou)[pick]
     return None
 

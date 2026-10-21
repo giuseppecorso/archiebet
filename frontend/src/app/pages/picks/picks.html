@@ -75,7 +75,7 @@
             }
 
             @if (isOpen(p.match.id)) {
-              @for (mk of ['DC', 'OU2.5', 'GG']; track mk) {
+              @for (mk of ['DC', 'OU1.5', 'OU2.5', 'OU3.5', 'GG']; track mk) {
                 @let m = market(p, $any(mk));
                 @if (m) {
                   <div class="extra">

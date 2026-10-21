@@ -153,3 +153,19 @@ def test_horizon_windows_follow_italian_days():
 
 def test_multiple_range_needs_both_dates(logged_client):
     assert logged_client.get("/api/picks/multiple?horizon=range&date_from=2026-10-19").status_code == 422
+
+
+def test_custom_profile_and_quality_tiers():
+    from app.forecast.multiple import NORMAL, PAYS_LITTLE, VALUE, custom_profile
+
+    p = custom_profile(0.05, 500, 1.0, by_value=True)  # valori fuori scala: riportati nei limiti
+    assert (p.min_probability, p.min_total, p.max_total, p.by_value) == (0.20, 1.2, 200.0, True)
+    good = [leg(i, 0.75, 1.40) for i in range(4)]  # valore +5% ciascuna
+    assert build_multiple(good, 4, custom_profile(0.7, 2.0, 5.0, False)).quality == VALUE
+    normal = [leg(i, 0.70, 1.40) for i in range(4)]  # −2%: nella norma
+    assert build_multiple(normal, 4, custom_profile(0.6, 2.0, 5.0, False)).quality == NORMAL
+    # Serie C: consenso italiano, quote con tutto il margine (−7%): solo nella fascia "paga poco", dichiarata
+    serie_c = [Leg(i, datetime(2026, 10, 25, tzinfo=UTC), "1X2", "1", 0.70, 1.33, "consenso") for i in range(4)]
+    m = build_multiple(serie_c, 4, custom_profile(0.6, 2.0, 5.0, False))
+    assert m is not None and m.quality == PAYS_LITTLE and not m.with_value and m.legs[0].source == "consenso"
+    assert set(PROFILES) == {"molto tranquilla", "tranquilla", "equilibrata", "coraggiosa", "spericolata"}
