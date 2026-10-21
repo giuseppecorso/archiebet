@@ -61,8 +61,7 @@
                     <span class="muted small">giusta {{ fmt.fairOdds(one.probabilities[sel]) }}</span>
                     <span class="offers">
                       @for (o of one.offers[sel] ?? []; track o.bookmaker) {
-                        <span [class]="'v ' + verdictClass(o.verdict)"
-                              [title]="o.bookmaker + ': valore ' + fmt.signedPct(o.value)">{{ o.bookmaker }} {{ fmt.odds(o.price) }}</span>
+                        <ab-offer [match]="p.match" market="1X2" [pick]="sel" [offer]="o" />
                       }
                     </span>
                   </div>
@@ -94,7 +93,7 @@
                           <span class="muted small">giusta {{ fmt.fairOdds(m.probabilities[sel]) }}</span>
                           <span class="offers">
                             @for (o of m.offers[sel] ?? []; track o.bookmaker) {
-                              <span [class]="'v ' + verdictClass(o.verdict)">{{ o.bookmaker }} {{ fmt.odds(o.price) }}</span>
+                              <ab-offer [match]="p.match" [market]="m.market" [pick]="sel" [offer]="o" />
                             }
                           </span>
                         </div>

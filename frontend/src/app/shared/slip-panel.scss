@@ -1,0 +1,135 @@
+.slip {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
+  width: min(340px, calc(100vw - 32px));
+  background: var(--panel);
+  border: 1px solid var(--amber);
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+.slip-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  .title {
+    font-size: 18px;
+    color: var(--amber);
+  }
+  .count {
+    min-width: 22px;
+    padding: 0 6px;
+    color: var(--bg);
+    background: var(--amber);
+    border-radius: 11px;
+    text-align: center;
+  }
+  .total {
+    margin-left: auto;
+  }
+}
+.slip-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0 14px 14px;
+}
+.leg {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-row);
+}
+.leg-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  a {
+    color: var(--text);
+  }
+}
+.x {
+  font-size: 18px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.leg-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.odds {
+  width: 64px;
+  margin-left: auto;
+  padding: 3px 6px;
+  font: inherit;
+  color: var(--amber);
+  text-align: right;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+}
+.kind {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 8px;
+  button {
+    flex: 1;
+    padding: 5px;
+    font: inherit;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    cursor: pointer;
+    &.on {
+      color: var(--bg);
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+  }
+}
+.stake input {
+  width: 80px;
+  margin-left: 6px;
+  padding: 4px 6px;
+  font: inherit;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+}
+.sum {
+  margin: 8px 0;
+}
+.warn {
+  margin: 6px 0;
+  padding-left: 18px;
+  color: var(--amber);
+  font-size: 13px;
+}
+.err {
+  color: var(--loss);
+  font-size: 13px;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+}
+.ghost {
+  padding: 6px 12px;
+  font: inherit;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  cursor: pointer;
+}

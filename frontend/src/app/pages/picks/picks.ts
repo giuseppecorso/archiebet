@@ -1,4 +1,5 @@
 import { httpResource } from '@angular/common/http';
+import { OfferButton } from '../../shared/offer-button';
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Market, pickLabel } from '../../core/bets';
@@ -16,7 +17,7 @@ const MARKET_LABEL: Record<MarketPick['market'], string> = { '1X2': 'Esito final
 /** Pronostici (D67): la stima migliore per ogni partita, con le quote di Sisal ed Eurobet. Scheda "Occasioni" = radar. */
 @Component({
   selector: 'ab-picks',
-  imports: [RouterLink, Radar, Generator, Crest, LeagueLogo],
+  imports: [RouterLink, Radar, Generator, Crest, LeagueLogo, OfferButton],
   templateUrl: './picks.html',
   styleUrl: './picks.scss',
 })

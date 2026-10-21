@@ -157,6 +157,35 @@
     </section>
   }
 
+  @if (d.match.status === 'scheduled' && matchPicks.value()?.markets?.length) {
+    <section class="panel box play-odds" aria-labelledby="po-title">
+      <div class="box-head">
+        <h2 id="po-title" class="title box-title">Gioca questa partita</h2>
+        <span class="muted small">clicca una quota: va nella tua schedina</span>
+      </div>
+      @for (mk of matchPicks.value()!.markets; track mk.market) {
+        <div class="po-market">
+          <span class="title po-title">{{ marketNames[mk.market] }}</span>
+          <div class="po-cells">
+            @for (sel of marketSelections[mk.market]; track sel) {
+              <div class="po-cell">
+                <span class="po-sel">{{ pickName(mk.market, sel) }}</span>
+                <span class="led">{{ fmt.pct(mk.probabilities[sel]) }}</span>
+                <span class="po-offers">
+                  @for (o of mk.offers[sel] ?? []; track o.bookmaker) {
+                    <ab-offer [match]="d.match" [market]="mk.market" [pick]="sel" [offer]="o" />
+                  } @empty {
+                    <span class="muted small">nessuna quota</span>
+                  }
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </section>
+  }
+
   @if (d.match.status === 'scheduled' && numbers.value()?.length) {
     <section class="panel box numbers" aria-labelledby="num-title">
       <div class="box-head">

@@ -1,0 +1,57 @@
+@if (slip.legs().length || slip.open()) {
+  <aside class="slip" [class.open]="slip.open()" aria-label="La tua schedina">
+    <button type="button" class="slip-bar" (click)="slip.open.set(!slip.open())" [attr.aria-expanded]="slip.open()">
+      <span class="title">Schedina</span>
+      <span class="count">{{ slip.legs().length }}</span>
+      @if (slip.legs().length) {
+        <span class="led total">{{ fmt.odds(slip.totalOdds()) }}</span>
+      }
+      <span class="chev" aria-hidden="true">{{ slip.open() ? '▾' : '▴' }}</span>
+    </button>
+
+    @if (slip.open()) {
+      <div class="slip-body">
+        @for (l of slip.legs(); track l.match.id) {
+          <div class="leg">
+            <div class="leg-head">
+              <a [routerLink]="['/partite', l.match.id]">{{ l.match.home.name }} – {{ l.match.away.name }}</a>
+              <button type="button" class="x" (click)="slip.remove(l.match.id)" aria-label="Togli dalla schedina">×</button>
+            </div>
+            <div class="leg-line">
+              <strong>{{ fmt.pickLabel(l.market, l.pick) }}</strong>
+              <span class="muted small">{{ fmt.dayLabel(l.match.kickoff_at) }} {{ fmt.kickoffTime(l.match.kickoff_at) }}{{ l.bookmaker ? ' · ' + l.bookmaker : '' }}</span>
+              <input class="odds" inputmode="decimal" [value]="fmt.odds(l.odds)" (change)="setOdds(l.match.id, $any($event.target).value)" aria-label="Quota" />
+            </div>
+          </div>
+        } @empty {
+          <p class="muted small">Vuota. Clicca su una quota (es. "+ Sisal 2.15") in Pronostici o nella pagina di una partita.</p>
+        }
+
+        @if (slip.legs().length) {
+          <div class="kind" role="group" aria-label="Tipo di giocata">
+            <button type="button" [class.on]="slip.kind() === 'simulated'" (click)="slip.kind.set('simulated')">Simulata</button>
+            <button type="button" [class.on]="slip.kind() === 'real'" (click)="slip.kind.set('real')">Reale</button>
+          </div>
+          <label class="stake">Importo € <input inputmode="decimal" [ngModel]="slip.stake()" (ngModelChange)="slip.stake.set($event)" name="stake" /></label>
+          <p class="sum">Quota <strong class="led">{{ fmt.odds(slip.summary().total) }}</strong> · vincita {{ fmt.euro(slip.summary().payout) }}</p>
+          @if (warnings().length) {
+            <ul class="warn">
+              @for (w of warnings(); track w) {
+                <li>{{ w }}</li>
+              }
+            </ul>
+          }
+          @if (error(); as e) {
+            <p class="err">{{ e }}</p>
+          }
+          <div class="actions">
+            <button type="button" class="btn-primary" (click)="register()" [disabled]="busy()">
+              {{ warnings().length ? 'Registra comunque' : 'Registra' }}
+            </button>
+            <button type="button" class="ghost" (click)="clear()">Svuota</button>
+          </div>
+        }
+      </div>
+    }
+  </aside>
+}
