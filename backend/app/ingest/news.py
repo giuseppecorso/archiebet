@@ -145,11 +145,13 @@ def refresh_insights(db: Session, ai: Ai, model: str, now: datetime, report: New
         last = db.scalars(select(MatchInsight).where(MatchInsight.match_id == m.id).order_by(MatchInsight.created_at.desc())).first()
         if not needs_judgment(last, home + away, now):
             continue
+        c = consensus_now(db, m.id, closing=False)
+        if c is None:
+            continue  # senza quote il giudizio non si può misurare (D101): si aspetta che arrivino, e non si spende
         as_text = lambda facts: [FactText(f.published_at, f.kind, f.player, f.detail) for f in facts]  # noqa: E731
         j = judge_match(ai, model, m.home_team.name, m.away_team.name, m.kickoff_at, as_text(home), as_text(away))
-        c = consensus_now(db, m.id, closing=False) or {}
         db.add(MatchInsight(match_id=m.id, created_at=now, side=j.side, strength="" if j.side == "none" else j.strength, reason=j.reason,
-                            facts=len(home) + len(away), p_home=c.get("1"), p_draw=c.get("X"), p_away=c.get("2")))  # fmt: skip
+                            facts=len(home) + len(away), p_home=c["1"], p_draw=c["X"], p_away=c["2"]))  # fmt: skip
         db.commit()
         report.judged += 1
 

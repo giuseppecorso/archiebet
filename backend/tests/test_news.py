@@ -181,3 +181,13 @@ def test_match_fan_endpoint(logged_client, db):
     assert (fact["label"], fact["player"], fact["url"]) == ("Squalifica", "Rossi", "https://www.tuttoc.com/a")
     assert body["insight"]["side"] == "away" and body["test"]["target"] == 150
     assert logged_client.get("/api/fan/match/9999").status_code == 404
+
+
+def test_no_judgment_without_odds(db):
+    m = setup_match(db)
+    db.query(MatchOdds).delete()
+    db.commit()
+    client = FakeClient([Extraction(facts=[Fact(item=1, team="Picerno", kind="squalifica", player="Rossi", detail="fuori un turno")])])
+    report = run_news(db, FakeNews(), Ai(db, "k", Settings(ai_monthly_budget_eur=10), client=client, now=lambda: NOW),
+                      "claude-haiku-5-5", "claude-opus-5-5", NOW)  # fmt: skip
+    assert report.facts == 1 and report.judged == 0 and len(client.calls) == 1  # i fatti sì, il giudizio aspetta le quote
