@@ -21,9 +21,9 @@ const MARKET_LABEL: Record<MarketPick['market'], string> = { '1X2': 'Esito final
   styleUrl: './picks.scss',
 })
 export class Picks {
-  /** Classe del riquadro della quota: verde valore, azzurro tratteggiato "sopra Archie", grigio nella norma, rosso paga poco */
+  /** Classe del riquadro della quota: verde valore, azzurro tratteggiato "sopra la media", grigio nella norma, rosso paga poco */
   protected verdictClass(v: string): string {
-    return v === 'valore' ? 'valore' : v === 'sopra Archie' || v === 'sopra la media' ? 'archie' : v === 'paga poco' ? 'poco' : 'norma';
+    return v === 'valore' ? 'valore' : v === 'sopra la media' ? 'archie' : v === 'paga poco' ? 'poco' : 'norma';
   }
 
   /** Dall'indirizzo: ?tab=occasioni */

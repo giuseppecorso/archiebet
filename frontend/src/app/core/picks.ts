@@ -1,8 +1,8 @@
 import { MatchCard } from './football';
 
 /** Tipi dell'API /api/picks (vedi backend/app/api/picks.py, D67). */
-/** "sopra Archie": la quota batte solo il modello di Archie (es. Serie C, niente Pinnacle), non un valore dimostrato (D88) */
-export type Verdict = 'valore' | 'sopra Archie' | 'sopra la media' | 'nella norma' | 'paga poco';
+/** "sopra la media": la quota batte la media dei bookmaker italiani (Serie C, niente Pinnacle), un'indicazione (D96) */
+export type Verdict = 'valore' | 'sopra la media' | 'nella norma' | 'paga poco';
 
 export interface Offer {
   bookmaker: string;

@@ -1,6 +1,15 @@
 # ArchieBet — Stato del progetto
 
-Ultimo aggiornamento: 2026-10-15
+Ultimo aggiornamento: 2026-10-21
+
+## Battere il mercato in Serie C + Claude API (2026-10-21)
+
+- [x] **Claude API attiva** (D97): Sonnet 5.5, chiave nel `.env` (`ANTHROPIC_API_KEY`), tetto 10 $/mese in configurazione (`ai_monthly_budget_usd`), credito prepagato 5 $ senza ricarica. Chiamata di prova riuscita. Il modulo `app/ai` e il controllo della spesa nel codice sono ancora da scrivere (Fase 6).
+- [x] **Prova D98** (`seriec-edge`, 374 partite di Serie C): il consenso dei bookmaker italiani in chiusura è più preciso dell'apertura (il mercato impara in settimana) e non si batte con formazioni, Archie, ricalibrazione o quote fuori linea.
+- [x] **Prova D99**: Archie non aggiunge niente nemmeno in apertura; le quote "sopra Archie" hanno CLV −6/−7% → etichetta tolta (D100).
+- [x] Archivio settimanale delle quote di Serie C (`archive_job`): la prova D98 si ripete a fine stagione con più partite.
+- [ ] **Prossimo: Blocco 2 "il pronostico del tifoso"** (Giuse inserisce le sue percentuali prima della partita; si misura se il mercato poi si muove verso di lui, partite della sua squadra a parte), poi **Blocco 3 notizie lette da Claude** (assenti, squalifiche, stipendi, allenatori; prova solo in avanti), Blocco 4 valutazione dei giocatori solo se servirà.
+- Test: 345 backend + 21 frontend, tutti verdi.
 
 ## Fase 1.5 – Laboratorio (base): CONCLUSA (2026-10-12)
 

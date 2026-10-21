@@ -44,18 +44,19 @@ class MarketPick:
     offers: dict[str, list[Offer]]  # esito → quote dei bookmaker di Giuse
 
 
-MODEL_VALUE = "sopra Archie"  # la quota batte solo il modello, non ancora messo alla prova contro i bookmaker (D88)
 CONSENSUS_VALUE = "sopra la media"  # la quota batte la media dei bookmaker italiani: un'indicazione, non valore (D96)
 
 
 def price_verdict(v: float, price: float, source: str = "pinnacle") -> str:
     """Etichetta di una quota rispetto alla probabilità giusta: "valore" con la stessa regola delle Occasioni (D72).
 
-    Se la probabilità viene dal solo modello di Archie (es. Serie C, dove Pinnacle non c'è) la quota alta si chiama
-    "sopra Archie": è un'indicazione, non un valore dimostrato.
+    Contro la media dei bookmaker italiani la quota alta si chiama "sopra la media" (indicazione, D96). Contro il solo
+    modello di Archie non si segnala mai: in Serie C quelle quote hanno avuto CLV −6/−7% (D99), il mercato va contro.
     """
     if qualifies(price, v):
-        return MODEL_VALUE if source == MODEL_SOURCE else CONSENSUS_VALUE if source == CONSENSUS_SOURCE else "valore"
+        if source == MODEL_SOURCE:
+            return "nella norma"
+        return CONSENSUS_VALUE if source == CONSENSUS_SOURCE else "valore"
     return "nella norma" if v >= LOW_PRICE else "paga poco"
 
 

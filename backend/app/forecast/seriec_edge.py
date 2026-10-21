@@ -197,15 +197,20 @@ class EdgePlay:
     won: bool
 
 
-def kaunitz_occasions(books: Sequence[MatchBook], playable: Sequence[str] = PLAYABLE) -> list[EdgePlay]:
-    """Ogni 6 ore negli ultimi 7 giorni: quota giocabile contro il consenso degli altri bookmaker, regola D72.
+Fair = Callable[["MatchBook", str, Prices, str], Mapping[str, float] | None]  # partita, mercato, quote del momento, bookmaker
+
+
+def occasions(books: Sequence[MatchBook], fair: Fair, playable: Sequence[str] = PLAYABLE,
+              markets: Sequence[str] = tuple(SELECTIONS)) -> list[EdgePlay]:  # fmt: skip
+    """Ogni 6 ore negli ultimi 7 giorni: quota giocabile contro una probabilità giusta, regola D72.
 
     La prima rilevazione per partita, mercato ed esito è la giocata (a parità di momento la quota più alta);
-    CLV contro il consenso in chiusura di tutti i bookmaker.
+    CLV contro il consenso in chiusura di tutti i bookmaker (D98 T0: riferimento valido).
     """
     plays = []
     for m in books:
-        for market, sels in SELECTIONS.items():
+        for market in markets:
+            sels = SELECTIONS[market]
             close = consensus(m.snapshot(market), market)
             if close is None:
                 continue
@@ -217,12 +222,12 @@ def kaunitz_occasions(books: Sequence[MatchBook], playable: Sequence[str] = PLAY
                 for bm in playable:
                     if bm not in book:
                         continue
-                    fair = consensus(book, market, exclude=(bm,))
-                    if fair is None:
+                    probs = fair(m, market, book, bm)
+                    if probs is None:
                         continue
                     for s in sels:
                         price = book[bm][s]
-                        value = fair[s] * price - 1
+                        value = probs[s] * price - 1
                         if s not in taken and qualifies(price, value) and price > best.get(s, (0.0, 0.0, ""))[0]:
                             best[s] = (price, value, bm)
                 for s, (price, value, bm) in best.items():
@@ -230,6 +235,17 @@ def kaunitz_occasions(books: Sequence[MatchBook], playable: Sequence[str] = PLAY
                     plays.append(EdgePlay(m.match_id, m.kickoff, market, s, bm, price, value, close[s] * price - 1, close[s], m.winner(market) == s))
                 t += CHECK_EVERY
     return plays
+
+
+def kaunitz_occasions(books: Sequence[MatchBook], playable: Sequence[str] = PLAYABLE) -> list[EdgePlay]:
+    """D98 T4: probabilità giusta = consenso degli altri bookmaker (metodo Kaunitz)."""
+    return occasions(books, lambda m, market, book, bm: consensus(book, market, exclude=(bm,)), playable)
+
+
+def model_occasions(books: Sequence[MatchBook], model: Mapping[tuple[int, str], Mapping[str, float]],
+                    playable: Sequence[str] = PLAYABLE) -> list[EdgePlay]:  # fmt: skip
+    """D99 (b): probabilità giusta = Archie ((partita, mercato) → esito → probabilità), solo 1X2 e Under/Over 2.5."""
+    return occasions(books, lambda m, market, book, bm: model.get((m.match_id, market)), playable, ("1X2", "OU2.5"))
 
 
 def clv_of(plays: Sequence[EdgePlay]) -> Estimate | None:

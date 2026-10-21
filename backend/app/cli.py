@@ -857,6 +857,44 @@ def _seriec_edge() -> int:
     print(f"   -> {'PASSA' if t4_ok else 'non passa'}" + ("" if t0_ok else " (T0 non superato: non si giudica)"))
     passed = [k for k, v in results.items() if v] + (["T4 occasioni contro il consenso"] if t4_ok else [])
     print(f"\nVerdetto D98: {', '.join(passed) if passed else 'nessuna prova superata'}")
+    # --- D99: Archie contro le quote d'apertura ---
+    print("\n=== D99: Archie contro le quote d'apertura ===")
+    spec = se.SPECS["T2 combinazione con Archie"]
+    rows = []
+    for m in sorted(books, key=lambda x: x.kickoff):
+        o = se.opening_consensus(m)
+        if o and m.match_id in archie:
+            rows.append(se.Row(m.match_id, m.kickoff, "1X2".index(m.winner("1X2")), (o["1"], o["X"], o["2"]), archie[m.match_id]))
+    tune = [r for r in rows if r.kickoff < se.SPLIT]
+    conf = [r for r in rows if r.kickoff >= se.SPLIT]
+    cv = se.improvement(tune, se.cross_validated(tune, spec))
+    params = se.fit(tune, spec)
+    out = se.improvement(conf, [spec.correction(r, params) for r in conf])
+    a_ok = se.passes(cv) and se.passes(out)
+    print(f"(a) combinazione in apertura: taratura {len(tune)}, conferma {len(conf)}; peso di Archie {params[0]:.3f}")
+    print(f"   taratura (validazione incrociata): {cv.mean:+.5f} ± {cv.std_error:.5f}   conferma: {out.mean:+.5f} ± {out.std_error:.5f}"
+          f"   -> {'PASSA' if a_ok else 'non passa'}")  # fmt: skip
+    model = {}
+    for pr in res.predictions:
+        model[(pr.match_id, "1X2")] = dict(zip(("1", "X", "2"), pr.p_1x2))
+        model[(pr.match_id, "OU2.5")] = {"over": pr.p_over25, "under": 1 - pr.p_over25}
+    plays = se.model_occasions(books, model)
+    b = {}
+    print(f"(b) occasioni 'sopra Archie' (Sisal, Eurobet): {len(plays)} giocate")
+    for label, part in (("taratura", [p for p in plays if p.kickoff < se.SPLIT]), ("conferma", [p for p in plays if p.kickoff >= se.SPLIT])):
+        est = se.clv_of(part)
+        if est is None:
+            print(f"   {label}: nessuna giocata")
+            b[label] = False
+            continue
+        b[label] = est.mean > 2 * est.std_error
+        profit = sum(p.price - 1 if p.won else -1 for p in part) / len(part)
+        hits, expected = sum(p.won for p in part), sum(p.p_close for p in part)
+        print(f"   {label}: {est.n} giocate in {est.clusters} partite, CLV {est.mean:+.2%} ± {est.std_error:.2%} (t {est.t:.1f});"
+              f" controllo: rendimento {profit:+.1%}, vinte {hits} contro {expected:.1f} attese")  # fmt: skip
+    b_ok = all(b.values())
+    print(f"   -> {'PASSA' if b_ok else 'non passa'}")
+    print(f"Verdetto D99: (a) {'passa' if a_ok else 'non passa'}, (b) {'passa' if b_ok else 'non passa'}")
     return 0
 
 def _odds_archive(since: str) -> int:

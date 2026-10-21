@@ -14,6 +14,7 @@ from app.forecast.seriec_edge import (
     fit,
     improvement,
     kaunitz_occasions,
+    model_occasions,
     lineup_correction,
     opening_consensus,
     pool_correction,
@@ -93,3 +94,12 @@ def test_kaunitz_occasion_against_the_other_two_bookmakers():
     assert plays[0].clv == pytest.approx(plays[0].p_close * 3.6 - 1)  # chiusura: consenso di tutti e tre
     assert plays[0].won  # finita 0-1
     assert len({(p.selection, p.market) for p in plays}) == len(plays)  # una sola giocata per esito
+
+
+def test_model_occasions_use_archie_probabilities():
+    prices = book_1x2(sisal=(2.2, 3.3, 3.6), eurobet=(2.4, 3.3, 3.0), snai=(2.4, 3.3, 3.0))
+    m = MatchBook(7, KO, 2, 0, prices)
+    plays = model_occasions([m], {(7, "1X2"): {"1": 0.50, "X": 0.27, "2": 0.23}})
+    assert [(p.selection, p.bookmaker, p.price) for p in plays] == [("1", "eurobet", 2.4)]  # 0,50 × 2,4 − 1 = +20%
+    assert plays[0].won and plays[0].clv == pytest.approx(plays[0].p_close * 2.4 - 1)
+    assert model_occasions([m], {}) == []  # senza previsione di Archie niente occasioni

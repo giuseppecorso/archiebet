@@ -120,10 +120,10 @@ def test_off_line_api_only_today(logged_client, seeded, db):  # noqa: F811
 
 
 def test_model_only_estimates_never_say_value():
-    from app.forecast.picks import MODEL_SOURCE, MODEL_VALUE, price_verdict
+    from app.forecast.picks import MODEL_SOURCE, price_verdict
 
     assert price_verdict(0.10, 2.0) == "valore"
-    assert price_verdict(0.10, 2.0, MODEL_SOURCE) == MODEL_VALUE  # Serie C: batte solo il modello
+    assert price_verdict(0.10, 2.0, MODEL_SOURCE) == "nella norma"  # batte solo il modello: niente segnale (D99)
     assert price_verdict(-0.10, 2.0, MODEL_SOURCE) == "paga poco"
 
 
@@ -136,7 +136,7 @@ def test_multiple_skips_model_only_legs():
     class M:
         id, kickoff_at = 1, datetime(2026, 10, 24, tzinfo=UTC)
 
-    model = MarketPick("1X2", MODEL_SOURCE, {"1": 0.5}, {"1": [Offer("sisal", 2.2, 0.1, "sopra Archie")]})
+    model = MarketPick("1X2", MODEL_SOURCE, {"1": 0.5}, {"1": [Offer("sisal", 2.2, 0.1, "nella norma")]})
     market = MarketPick("OU2.5", "pinnacle", {"over": 0.5}, {"over": [Offer("sisal", 2.0, 0.0, "nella norma")]})
     assert [(leg.market, leg.selection) for leg in legs_for([(M, [model, market])], "sisal")] == [("OU2.5", "over")]
 
