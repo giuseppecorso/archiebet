@@ -17,7 +17,9 @@ from app.betting.calc import (
     bet_status,
     clv,
     fair_closing_odds,
+    is_settled_by_goals,
     is_valid_pick,
+    secondary_outcome,
     selection_outcome,
     settled_payout,
     total_odds,
@@ -144,15 +146,26 @@ def budget_status(db: Session, user_id: int, now: datetime | None = None) -> Bud
 
 
 def _closing_prices(db: Session, match_id: int, market: str) -> dict[str, Decimal] | None:
-    rows = db.execute(
-        select(MatchOdds.selection, MatchOdds.price).where(
-            MatchOdds.match_id == match_id,
-            MatchOdds.bookmaker == "market_avg",
-            MatchOdds.market == market,
-            MatchOdds.is_closing.is_(True),
-        )
-    ).all()
-    return {sel: price for sel, price in rows} or None
+    """Chiusura del mercato: media dei bookmaker (football-data) o, dove manca, Pinnacle (OddsPapi)."""
+    for bookmaker in ("market_avg", "pinnacle"):
+        rows = db.execute(
+            select(MatchOdds.selection, MatchOdds.price).where(
+                MatchOdds.match_id == match_id,
+                MatchOdds.bookmaker == bookmaker,
+                MatchOdds.market == market,
+                MatchOdds.is_closing.is_(True),
+            )
+        ).all()
+        if rows:
+            return {sel: price for sel, price in rows}
+    return None
+
+
+def _aware(dt: datetime) -> datetime:
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+
+
+STATS_WAIT = timedelta(days=14)  # angoli e cartellini: se le statistiche non arrivano entro 14 giorni la selezione si annulla
 
 
 def settle_open_bets(db: Session, now: datetime | None = None) -> int:
@@ -162,14 +175,22 @@ def settle_open_bets(db: Session, now: datetime | None = None) -> int:
     touched: set[int] = set()
     for sel in open_selections:
         match = sel.match
-        if match.status == MatchStatus.FINISHED and match.home_goals is not None:
+        if match.status == MatchStatus.FINISHED and match.home_goals is not None and not is_settled_by_goals(sel.market):
+            status = secondary_outcome(sel.market, sel.pick, (match.home_corners, match.away_corners),
+                                       (match.home_yellow, match.away_yellow), (match.home_red, match.away_red))
+            if status is None:
+                if now - _aware(match.kickoff_at) < STATS_WAIT:
+                    continue  # statistiche di angoli e cartellini non ancora arrivate (football-data, qualche giorno)
+                status = VOID
+            sel.status = status
+        elif match.status == MatchStatus.FINISHED and match.home_goals is not None:
             sel.status = selection_outcome(sel.market, sel.pick, match.home_goals, match.away_goals)
         elif match.status == MatchStatus.CANCELLED:
             sel.status = VOID
         else:
             continue
         fair = fair_closing_odds(
-            sel.market, sel.pick, _closing_prices(db, match.id, "1X2"), _closing_prices(db, match.id, sel.market if sel.market.startswith("OU") else "OU2.5")
+            sel.market, sel.pick, _closing_prices(db, match.id, "1X2"), _closing_prices(db, match.id, sel.market if sel.market not in ("1X2", "DC", "GG") else "OU2.5")
         )
         sel.fair_closing_odds = fair.quantize(Decimal("0.001")) if fair is not None else None
         sel.clv = clv(sel.odds, fair)

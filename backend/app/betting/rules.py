@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from app.models import Bet, Match
+from app.betting.calc import market_name
 
 KINDS = ("max_legs", "max_total_odds", "max_stake", "avoid_market", "avoid_competition", "avoid_team", "no_low_price")
 MARKET_NAMES = {"1X2": "1X2", "DC": "doppia chance", "OU1.5": "Under/Over 1.5", "OU2.5": "Under/Over 2.5", "OU3.5": "Under/Over 3.5", "GG": "Gol/No gol"}
@@ -41,7 +42,7 @@ def describe(rule: Rule, team_names: dict[int, str] | None = None) -> str:
         "max_legs": f"Al massimo {v} partite per schedina",
         "max_total_odds": f"Quota totale al massimo {v}",
         "max_stake": f"Puntata al massimo {v} €",
-        "avoid_market": f"Evita il mercato {MARKET_NAMES.get(v, v)}",
+        "avoid_market": f"Evita il mercato {(MARKET_NAMES.get(v) or market_name(v))}",
         "avoid_competition": f"Evita il campionato {v}",
         "avoid_team": f"Niente partite di {(team_names or {}).get(int(v), 'questa squadra') if v.isdigit() else v}",
         "no_low_price": "Solo quote non sotto il giusto",

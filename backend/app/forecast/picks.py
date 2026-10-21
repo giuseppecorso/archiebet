@@ -15,7 +15,7 @@ from typing import Any
 from app.forecast.markets import value
 from app.forecast.demargin import proportional
 from app.forecast.radar import SIMULATION_BOOKMAKERS, BookOdds, fair_reference, qualifies
-from app.forecast.radar_markets import selections
+from app.forecast.radar_markets import is_secondary, parse_secondary, selections
 
 MARKET_SOURCES = ("pinnacle", "betfair_ex", "market_avg")  # dal più preciso al meno preciso
 MODEL_SOURCE = "archie"
@@ -25,7 +25,10 @@ CONSENSUS_SOURCE = "consenso"
 CONSENSUS_MIN_BOOKMAKERS = 2
 ESTIMATE_ONLY = (MODEL_SOURCE, CONSENSUS_SOURCE)  # stime senza riferimento sharp: niente "valore" (nelle multiple il consenso sì, D130)
 LOW_PRICE = -0.05  # sotto questo valore il bookmaker "paga poco" (margine più alto del solito)
-PICK_MARKETS = ("1X2", "DC", "OU1.5", "OU2.5", "OU3.5", "GG")  # OU1.5 e OU3.5 dal D130
+GOAL_MARKETS = ("OU0.5", "OU1.5", "OU2.5", "OU3.5", "OU4.5", "GG")
+PICK_MARKETS = ("1X2", "DC", *GOAL_MARKETS)  # OU1.5 e OU3.5 dal D130, OU0.5 e OU4.5 dal D131
+SECONDARY_SHARP = ("pinnacle",)
+SECONDARY_RANGE = (0.12, 0.88)  # angoli e cartellini: solo linee "giocabili", non Over 5.5 angoli a 1,02 (D131)
 
 
 @dataclass(frozen=True)
@@ -77,10 +80,35 @@ def double_chance(p1x2: dict[str, float]) -> dict[str, float]:
     return {"1X": p1x2["1"] + p1x2["X"], "X2": p1x2["X"] + p1x2["2"], "12": p1x2["1"] + p1x2["2"]}
 
 
-def best_probabilities(book: BookOdds, model: dict[str, Any] | None) -> dict[str, tuple[str, dict[str, float]]]:
-    """Mercato → (fonte, probabilità). La doppia chance segue la fonte dell'1X2."""
+def market_family(market: str) -> str:
+    """"esito" (1X2, doppia chance), "gol" (Under/Over, Gol/No gol), "angoli" o "cartellini"."""
+    if (parsed := parse_secondary(market)) is not None:
+        return parsed[0]
+    return "esito" if market in ("1X2", "DC") else "gol"
+
+
+def secondary_markets(book: BookOdds) -> list[str]:
+    """Angoli e cartellini presenti nelle quote, in ordine: famiglia, totale/casa/ospite, linea."""
+    found = {m for markets in book.values() for m in markets if is_secondary(m)}
+    order = {"angoli": 0, "cartellini": 1, "totale": 0, "casa": 1, "ospite": 2}
+    return sorted(found, key=lambda m: (order[parse_secondary(m)[0]], order[parse_secondary(m)[1]], parse_secondary(m)[2]))
+
+
+def best_probabilities(book: BookOdds, model: dict[str, Any] | None, secondary: bool = False) -> dict[str, tuple[str, dict[str, float]]]:
+    """Mercato → (fonte, probabilità). La doppia chance segue la fonte dell'1X2.
+
+    Con secondary=True anche angoli e cartellini (D131): Pinnacle senza margine, altrimenti il consenso di Sisal ed
+    Eurobet; mai il modello. Solo le linee con probabilità tra 12% e 88%.
+    """
     out: dict[str, tuple[str, dict[str, float]]] = {}
-    for market in ("1X2", "OU1.5", "OU2.5", "OU3.5", "GG"):
+    if secondary:
+        for market in secondary_markets(book):
+            ref = fair_reference(book, market, SECONDARY_SHARP) or (
+                (CONSENSUS_SOURCE, c) if (c := italian_consensus(book, market)) is not None else None
+            )
+            if ref is not None and SECONDARY_RANGE[0] <= ref[1]["over"] <= SECONDARY_RANGE[1]:
+                out[market] = ref
+    for market in ("1X2", *GOAL_MARKETS):
         ref = fair_reference(book, market, MARKET_SOURCES)
         if ref is not None:
             out[market] = ref
@@ -108,12 +136,14 @@ def offers_for(
     return out
 
 
-def match_picks(book: BookOdds, model: dict[str, Any] | None, bookmakers: Sequence[str]) -> list[MarketPick]:
-    """Tutti i mercati di una partita con la loro fonte, probabilità e quote dei bookmaker di Giuse."""
-    probs = best_probabilities(book, model)
+def match_picks(book: BookOdds, model: dict[str, Any] | None, bookmakers: Sequence[str], secondary: bool = False) -> list[MarketPick]:
+    """Tutti i mercati di una partita con la loro fonte, probabilità e quote dei bookmaker di Giuse
+    (angoli e cartellini solo con secondary=True: campionati dove si possono chiudere, D131)."""
+    probs = best_probabilities(book, model, secondary)
+    order = [*PICK_MARKETS, *(m for m in probs if is_secondary(m))]
     return [
         MarketPick(market, source, p, offers_for(book, market, p, bookmakers, source))
-        for market in PICK_MARKETS
+        for market in order
         if market in probs
         for source, p in [probs[market]]
     ]

@@ -50,7 +50,7 @@
 
             @if (one) {
               <div class="cells three">
-                @for (sel of selections['1X2']; track sel) {
+                @for (sel of selections('1X2'); track sel) {
                   <div class="cell" [class.best]="sel === p.favorite">
                     <span class="sel">{{ label(p, '1X2', sel) }}</span>
                     <span class="led prob">{{ fmt.pct(one.probabilities[sel]) }}</span>
@@ -75,29 +75,24 @@
             }
 
             @if (isOpen(p.match.id)) {
-              @for (mk of ['DC', 'OU1.5', 'OU2.5', 'OU3.5', 'GG']; track mk) {
-                @let m = market(p, $any(mk));
-                @if (m) {
+              <div class="extras">
+                @for (m of others(p); track m.market) {
                   <div class="extra">
-                    <span class="title extra-title">{{ marketLabel[m.market] }}</span>
-                    <span class="muted small">{{ m.source }}</span>
-                    <div class="cells" [class.three]="m.market === 'DC'" [class.two]="m.market !== 'DC'">
-                      @for (sel of selections[m.market]; track sel) {
-                        <div class="cell">
+                    <span class="extra-title">{{ marketLabel(p, m.market) }} <span class="muted">· {{ m.source }}</span></span>
+                    <div class="extra-cells">
+                      @for (sel of selections(m.market); track sel) {
+                        <div class="mini">
                           <span class="sel">{{ label(p, m.market, sel) }}</span>
                           <span class="led prob">{{ fmt.pct(m.probabilities[sel]) }}</span>
-                          <span class="muted small">giusta {{ fmt.fairOdds(m.probabilities[sel]) }}</span>
-                          <span class="offers">
-                            @for (o of m.offers[sel] ?? []; track o.bookmaker) {
-                              <ab-offer [match]="p.match" [market]="m.market" [pick]="sel" [offer]="o" />
-                            }
-                          </span>
+                          @for (o of m.offers[sel] ?? []; track o.bookmaker) {
+                            <ab-offer [match]="p.match" [market]="m.market" [pick]="sel" [offer]="o" />
+                          }
                         </div>
                       }
                     </div>
                   </div>
                 }
-              }
+              </div>
             }
           </article>
         }

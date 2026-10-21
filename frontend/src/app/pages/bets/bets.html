@@ -62,7 +62,7 @@
                     · finita {{ s.match.home_goals }}-{{ s.match.away_goals }}
                   }
                 </span>
-                <span class="sel-pick">{{ labels.MARKET_LABEL[s.market] }}: <strong>{{ fmt.pickLabel(s.market, s.pick, s.match) }}</strong></span>
+                <span class="sel-pick">{{ fmt.marketLabel(s.market, s.match) }}: <strong>{{ fmt.pickLabel(s.market, s.pick, s.match) }}</strong></span>
               </div>
               <div class="sel-numbers">
                 <span class="led sel-odds">{{ fmt.odds(+s.odds) }}</span>

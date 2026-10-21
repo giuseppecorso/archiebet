@@ -5,7 +5,7 @@ import { httpResource } from '@angular/common/http';
 import { OfferButton } from '../../shared/offer-button';
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { Market, pickLabel } from '../../core/bets';
+import { Market, marketLabel, marketSelections, pickLabel } from '../../core/bets';
 import { dayLabel, fairOdds, kickoffTime, odds, pct, signedPct } from '../../core/format';
 import { MarketPick, Pick, PicksOut } from '../../core/picks';
 import { Crest, LeagueLogo } from '../../shared/crest';
@@ -14,12 +14,6 @@ import { Generator } from './generator';
 
 type Tab = 'pronostici' | 'multipla' | 'occasioni';
 
-const SELECTIONS: Record<MarketPick['market'], string[]> = {
-  '1X2': ['1', 'X', '2'], DC: ['1X', 'X2', '12'], 'OU1.5': ['over', 'under'], 'OU2.5': ['over', 'under'], 'OU3.5': ['over', 'under'], GG: ['yes', 'no'],
-};
-const MARKET_LABEL: Record<MarketPick['market'], string> = {
-  '1X2': 'Esito finale', DC: 'Doppia chance', 'OU1.5': 'Under / Over 1.5', 'OU2.5': 'Under / Over 2.5', 'OU3.5': 'Under / Over 3.5', GG: 'Goal / NoGoal',
-};
 
 /** Pronostici (D67): la stima migliore per ogni partita, con le quote di Sisal ed Eurobet. Scheda "Occasioni" = radar. */
 @Component({
@@ -61,8 +55,16 @@ export class Picks {
   });
 
   protected readonly fmt = { kickoffTime, odds, fairOdds, pct, signedPct };
-  protected readonly selections = SELECTIONS;
-  protected readonly marketLabel = MARKET_LABEL;
+  protected readonly selections = marketSelections;
+
+  protected marketLabel(p: Pick, market: string): string {
+    return marketLabel(market, p.match);
+  }
+
+  /** Tutti i mercati tranne l'1X2 (già in evidenza): doppia chance, gol, angoli e cartellini */
+  protected others(p: Pick): MarketPick[] {
+    return p.markets.filter((m) => m.market !== '1X2');
+  }
 
   private readonly router = inject(Router);
 

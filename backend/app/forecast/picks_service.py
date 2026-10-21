@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.adapters.api_football import EAST_NORTH
+from app.forecast.data import STATS_LEAGUES
 from app.forecast.multiple import Leg
 from app.forecast.picks import MODEL_SOURCE, MarketPick, match_picks
 from app.forecast.radar_service import load_book_odds
@@ -27,14 +28,19 @@ def upcoming_picks(db: Session, now: datetime, until: datetime, bookmakers: Sequ
     ids = [m.id for m in matches]
     books = load_book_odds(db, ids, closing=False)
     models = {p.match_id: p.markets for p in db.scalars(select(MatchPrediction).where(MatchPrediction.match_id.in_(ids)))}
-    return [(m, match_picks(books.get(m.id, {}), models.get(m.id), bookmakers)) for m in matches]
+    return [(m, match_picks(books.get(m.id, {}), models.get(m.id), bookmakers, has_stats(m))) for m in matches]
+
+
+def has_stats(match: Match) -> bool:
+    """Angoli e cartellini si chiudono solo dove arrivano le statistiche a fine partita (D131)."""
+    return match.competition.code in STATS_LEAGUES
 
 
 def match_market_picks(db: Session, match: Match, bookmakers: Sequence[str]) -> list[MarketPick]:
     """I Pronostici di una sola partita (pagina partita, D107)."""
     book = load_book_odds(db, [match.id], closing=False).get(match.id, {})
     prediction = db.scalar(select(MatchPrediction).where(MatchPrediction.match_id == match.id))
-    return match_picks(book, prediction.markets if prediction else None, bookmakers)
+    return match_picks(book, prediction.markets if prediction else None, bookmakers, has_stats(match))
 
 
 def legs_for(picks: Sequence[tuple[Match, list[MarketPick]]], bookmaker: str) -> list[Leg]:

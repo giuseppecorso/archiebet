@@ -15,6 +15,8 @@ from dataclasses import dataclass
 
 from scipy.optimize import minimize
 
+from app.forecast.radar_markets import is_secondary
+
 MAX_GOALS = 12
 FIRST_HALF_SHARE = 0.45  # quota dei gol segnati nel primo tempo: stimata con `python -m app.cli live-check` (D92)
 STOPPAGE_MINUTES = 3.0  # recupero medio che resta quando il cronometro segna 90'
@@ -35,9 +37,9 @@ def score_matrix(lam_home: float, lam_away: float, n: int = MAX_GOALS) -> list[l
 
 
 def outcome_probabilities(lam_home: float, lam_away: float, home_goals: int = 0, away_goals: int = 0) -> dict[str, float]:
-    """Probabilità finali di 1, X, 2, Over 2.5 ("over"), Over 1.5 e 3.5 ("over1.5", "over3.5") e Goal
+    """Probabilità finali di 1, X, 2, Over 2.5 ("over"), Over 0.5, 1.5, 3.5 e 4.5 ("over0.5", ...) e Goal
     partendo dal punteggio attuale e dai gol che restano."""
-    out = {"1": 0.0, "X": 0.0, "2": 0.0, "over": 0.0, "over1.5": 0.0, "over3.5": 0.0, "yes": 0.0}
+    out = {"1": 0.0, "X": 0.0, "2": 0.0, "over": 0.0, **{f"over{n}.5": 0.0 for n in (0, 1, 3, 4)}, "yes": 0.0}
     matrix = score_matrix(lam_home, lam_away)
     total = sum(map(sum, matrix))  # oltre 12 gol resta una probabilità minuscola: si rinormalizza
     for i, row in enumerate(matrix):
@@ -46,8 +48,8 @@ def outcome_probabilities(lam_home: float, lam_away: float, home_goals: int = 0,
             h, a = home_goals + i, away_goals + j
             out["1" if h > a else "X" if h == a else "2"] += p
             out["over"] += p if h + a >= 3 else 0.0
-            out["over1.5"] += p if h + a >= 2 else 0.0
-            out["over3.5"] += p if h + a >= 4 else 0.0
+            for n in (0, 1, 3, 4):
+                out[f"over{n}.5"] += p if h + a > n else 0.0
             out["yes"] += p if h > 0 and a > 0 else 0.0
     return out
 
@@ -97,7 +99,7 @@ def selection_probability(market: str, pick: str, probs: Mapping[str, float]) ->
         return probs[pick]
     if market == "DC":
         return sum(probs[s] for s in pick if s in ("1", "X", "2")) if pick in ("1X", "12", "X2") else 0.0
-    if market in ("OU1.5", "OU2.5", "OU3.5"):
+    if market in ("OU0.5", "OU1.5", "OU2.5", "OU3.5", "OU4.5"):
         key = "over" if market == "OU2.5" else f"over{market[2:]}"
         return probs[key] if pick == "over" else 1.0 - probs[key]
     if market == "GG":
@@ -121,8 +123,8 @@ def leg_probability(leg: LegState) -> float | None:
     """Probabilità che la gamba vinca adesso; None se mancano i gol attesi (niente quote prima della partita)."""
     if leg.settled is not None:
         return 1.0 if leg.settled else 0.0
-    if leg.rates is None:
-        return None
+    if leg.rates is None or is_secondary(leg.market):
+        return None  # angoli e cartellini: niente modello dal vivo
     share = remaining_share(leg.status, leg.minute)
     lh, la = remaining_rates(leg.rates, share, leg.home_goals, leg.away_goals)
     probs = outcome_probabilities(lh, la, leg.home_goals, leg.away_goals)

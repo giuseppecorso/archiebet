@@ -77,18 +77,18 @@
 }
 
 .day {
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   padding: 4px 0 0;
 }
 .day-title {
   margin: 0;
-  padding: 10px 20px;
-  font-size: 18px;
+  padding: 8px 14px;
+  font-size: 15px;
   color: var(--amber);
   border-bottom: 1px solid var(--line);
 }
 .pick {
-  padding: 14px 20px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--line-row);
 
   &:last-child {
@@ -100,10 +100,11 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 12px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
+  font-size: 14px;
 
   .time {
-    font-size: 18px;
+    font-size: 15px;
     color: var(--amber);
   }
   .teams {
@@ -124,7 +125,7 @@
     color: var(--text-2);
     .led {
       margin-left: 4px;
-      font-size: 17px;
+      font-size: 15px;
       color: var(--amber);
     }
   }
@@ -140,7 +141,7 @@
 }
 .cells {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 
   &.three {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -152,8 +153,8 @@
 .cell {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px;
+  gap: 1px;
+  padding: 5px 8px;
   background: var(--bg-deep);
   border: 1px solid var(--line-strong);
   border-radius: 4px;
@@ -170,7 +171,7 @@
     white-space: nowrap;
   }
   .prob {
-    font-size: 22px;
+    font-size: 17px;
   }
 }
 .offers {
@@ -210,7 +211,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 .more {
   margin-left: auto;
@@ -225,15 +226,42 @@
   border-radius: 4px;
   cursor: pointer;
 }
+.extras {
+  margin-top: 8px;
+  border-top: 1px solid var(--line-row);
+}
 .extra {
-  margin-top: 12px;
+  display: grid;
+  grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-row);
 
   .extra-title {
-    margin-right: 8px;
-    font-size: 15px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-2);
   }
-  .cells {
-    margin-top: 6px;
+}
+.extra-cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+.mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+
+  .sel {
+    color: var(--text-2);
+  }
+  .prob {
+    min-width: 34px;
+    font-size: 13px;
+    color: var(--text);
   }
 }
 .explain {
@@ -268,6 +296,9 @@
     margin-left: 0;
   }
   .cell .prob {
-    font-size: 18px;
+    font-size: 15px;
+  }
+  .extra {
+    grid-template-columns: 1fr;
   }
 }

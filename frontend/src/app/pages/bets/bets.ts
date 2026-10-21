@@ -4,7 +4,7 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { Bet, BudgetStatus, KIND_LABEL, MARKET_LABEL, STATUS_LABEL, euro, pickLabel } from '../../core/bets';
+import { Bet, BudgetStatus, KIND_LABEL, STATUS_LABEL, euro, marketLabel, pickLabel } from '../../core/bets';
 import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
 import { LIVE_REFRESH_MS, liveLabel } from '../../core/live';
 import { ShowMore } from '../../shared/show-more';
@@ -34,7 +34,7 @@ export class Bets {
   protected readonly listOpen = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  protected readonly fmt = { euro, odds, dayLabel, kickoffTime, pickLabel, pct, liveLabel };
+  protected readonly fmt = { euro, odds, dayLabel, kickoffTime, marketLabel, pickLabel, pct, liveLabel };
   /** "Segui live": la pagina si aggiorna da sola ogni 30 secondi (D92). Si accende da sola se una partita è in corso */
   protected readonly follow = signal(true);
   protected readonly anyLive = computed(() => this.bets.value().some((b) => b.live));
@@ -46,7 +46,7 @@ export class Bets {
       onCleanup(() => clearInterval(timer));
     });
   }
-  protected readonly labels = { KIND_LABEL, MARKET_LABEL, STATUS_LABEL };
+  protected readonly labels = { KIND_LABEL, STATUS_LABEL };
 
   protected readonly filtered = computed(() =>
     this.bets.value().filter(

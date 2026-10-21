@@ -11,7 +11,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 
-from app.betting.calc import LOST, VOID, WON
+from app.betting.calc import LOST, VOID, WON, market_name
 from app.models import Bet, BetSelection
 
 MARKET_NAMES = {"1X2": "Esito finale", "DC": "Doppia chance", "OU1.5": "Under / Over 1.5", "OU2.5": "Under / Over 2.5", "OU3.5": "Under / Over 3.5", "GG": "Goal / NoGoal"}
@@ -118,7 +118,7 @@ def habits(bets: Sequence[Bet], top: int = 5) -> Habits:
     for s in selections:
         teams[s.match.home_team.name] += 1
         teams[s.match.away_team.name] += 1
-    markets = Counter(MARKET_NAMES.get(s.market, s.market) for s in selections)
+    markets = Counter((MARKET_NAMES.get(s.market) or market_name(s.market)) for s in selections)
     books = Counter(b.bookmaker for b in bets if b.bookmaker)
     return Habits(
         bets=n,
@@ -146,7 +146,7 @@ def breakdown(bets: Sequence[Bet]) -> Breakdown:
     return Breakdown(
         by_size=bet_groups(bets, lambda b: size_label(len(b.selections))),
         by_bookmaker=bet_groups(bets, lambda b: b.bookmaker or "Non indicato"),
-        by_market=selection_groups(selections, lambda s: MARKET_NAMES.get(s.market, s.market)),
+        by_market=selection_groups(selections, lambda s: (MARKET_NAMES.get(s.market) or market_name(s.market))),
         by_competition=selection_groups(selections, lambda s: s.match.competition.name),
         habits=habits(bets),
     )

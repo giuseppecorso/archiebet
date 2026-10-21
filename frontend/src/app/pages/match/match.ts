@@ -4,7 +4,7 @@ import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/htt
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { KeyValuePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
-import { Market, pickLabel } from '../../core/bets';
+import { Market, marketLabel, marketSelections, pickLabel } from '../../core/bets';
 import { MatchAnalysis, MatchNumbers, MatchPicks, PlanState, PlayerShots, TeamLineup, verdictClass } from '../../core/picks';
 import { RouterLink } from '@angular/router';
 import { FanFact, MatchFan, SOURCE_LABELS, factTone } from '../../core/fan';
@@ -94,8 +94,7 @@ export class MatchPage {
   protected readonly numbersSide = signal<'totale' | 'casa' | 'ospite'>('totale');
   /** Tiri dei giocatori (D111): i primi 6 per squadra, gli assenti secondo le notizie in fondo */
   protected readonly players = httpResource<PlayerShots[]>(() => `/api/picks/match/${this.id()}/players`);
-  protected readonly marketNames: Record<string, string> = { '1X2': 'Esito finale', DC: 'Doppia chance', 'OU1.5': 'Under/Over 1.5', 'OU2.5': 'Under/Over 2.5', 'OU3.5': 'Under/Over 3.5', GG: 'Goal/No goal' };
-  protected readonly marketSelections: Record<string, string[]> = { '1X2': ['1', 'X', '2'], DC: ['1X', '12', 'X2'], 'OU1.5': ['over', 'under'], 'OU2.5': ['over', 'under'], 'OU3.5': ['over', 'under'], GG: ['yes', 'no'] };
+  protected readonly marketSelections = marketSelections;
   /** Formazioni previste o ufficiali (D123) */
   protected readonly lineups = httpResource<TeamLineup[]>(() => `/api/picks/match/${this.id()}/lineups`);
   protected readonly roleLabels: Record<string, string> = { G: 'Portiere', D: 'Difesa', M: 'Centrocampo', F: 'Attacco' };
@@ -119,6 +118,10 @@ export class MatchPage {
   protected readonly analysisError = signal<string | null>(null);
   protected readonly verdictClass = verdictClass;
   private readonly http = inject(HttpClient);
+
+  protected marketName(market: string): string {
+    return marketLabel(market, this.detail.value()?.match);
+  }
 
   protected pickName(market: string, selection: string): string {
     return pickLabel(market as Market, selection, this.detail.value()?.match);

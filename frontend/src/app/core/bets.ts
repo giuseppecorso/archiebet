@@ -3,7 +3,8 @@ import { MatchCard } from './football';
 
 export type BetKind = 'real' | 'simulated';
 export type BetStatus = 'open' | 'won' | 'lost' | 'void';
-export type Market = '1X2' | 'DC' | 'OU1.5' | 'OU2.5' | 'OU3.5' | 'GG';
+/** 1X2, DC, GG, Under/Over dei gol ('OU2.5') e, dal D131, angoli e cartellini ('COR9.5', 'CORH4.5', 'CRDA1.5'…) */
+export type Market = string;
 
 export interface Selection {
   id: number;
@@ -128,18 +129,53 @@ export interface Prefill {
   odds: Partial<Record<Market, Record<string, number>>>;
 }
 
-export const MARKET_LABEL: Record<Market, string> = {
-  '1X2': 'Esito finale',
-  DC: 'Doppia chance',
-  'OU1.5': 'Under / Over 1.5',
-  'OU2.5': 'Under / Over 2.5',
-  'OU3.5': 'Under / Over 3.5',
-  GG: 'Goal / NoGoal',
-};
+const SECONDARY = /^(COR|CRD)([HA]?)(\d+\.5)$/;
+const FAMILY: Record<string, string> = { COR: 'angoli', CRD: 'cartellini' };
 
-/** "1" → "1 · Inter", "over" → "Over 2.5", "yes" → "Goal"… */
+/** Angoli e cartellini: famiglia, lato ('' = totale, H = casa, A = ospite) e linea; null per gli altri mercati */
+export function parseSecondary(market: string): { family: string; side: '' | 'H' | 'A'; line: string } | null {
+  const m = SECONDARY.exec(market);
+  return m ? { family: FAMILY[m[1]], side: m[2] as '' | 'H' | 'A', line: m[3] } : null;
+}
+
+/** Famiglia di mercati per i filtri: esito, gol, angoli, cartellini */
+export function marketFamily(market: string): 'esito' | 'gol' | 'angoli' | 'cartellini' {
+  const sec = parseSecondary(market);
+  if (sec) return sec.family as 'angoli' | 'cartellini';
+  return market === '1X2' || market === 'DC' ? 'esito' : 'gol';
+}
+
+const BASE_LABEL: Record<string, string> = { '1X2': 'Esito finale', DC: 'Doppia chance', GG: 'Goal / NoGoal' };
+
+/** "OU2.5" → "Under / Over 2.5", "CORH4.5" → "Angoli Inter U/O 4.5" (con la partita) o "Angoli casa U/O 4.5" */
+export function marketLabel(market: Market, match?: Pick<MatchCard, 'home' | 'away'>): string {
+  if (market.startsWith('OU')) return `Under / Over ${market.slice(2)}`;
+  const sec = parseSecondary(market);
+  if (sec) {
+    const who = sec.side === '' ? 'totali' : match ? (sec.side === 'H' ? match.home.name : match.away.name) : sec.side === 'H' ? 'casa' : 'ospite';
+    return `${sec.family === 'angoli' ? 'Angoli' : 'Cartellini'} ${who} U/O ${sec.line}`;
+  }
+  return BASE_LABEL[market] ?? market;
+}
+
+/** Esiti di un mercato, nell'ordine in cui si mostrano */
+export function marketSelections(market: Market): string[] {
+  if (market === '1X2') return ['1', 'X', '2'];
+  if (market === 'DC') return ['1X', 'X2', '12'];
+  if (market === 'GG') return ['yes', 'no'];
+  return ['over', 'under'];
+}
+
+/** "1" → "1 · Inter", "over" → "Over 2.5", "yes" → "Goal", angoli → "Over 9.5 angoli"… */
 export function pickLabel(market: Market, pick: string, match?: Pick<MatchCard, 'home' | 'away'>): string {
   const team = (side: 'home' | 'away') => (match ? ` · ${match[side].name}` : '');
+  const ou = pick === 'over' ? 'Over' : 'Under';
+  if (market.startsWith('OU')) return `${ou} ${market.slice(2)}`;
+  const sec = parseSecondary(market);
+  if (sec) {
+    const who = sec.side === '' ? '' : sec.side === 'H' ? team('home') : team('away');
+    return `${ou} ${sec.line} ${sec.family}${who}`;
+  }
   const labels: Record<string, string> = {
     '1X2:1': `1${team('home')}`,
     '1X2:X': 'X · Pareggio',
@@ -147,12 +183,6 @@ export function pickLabel(market: Market, pick: string, match?: Pick<MatchCard, 
     'DC:1X': '1X',
     'DC:X2': 'X2',
     'DC:12': '12',
-    'OU1.5:over': 'Over 1.5',
-    'OU1.5:under': 'Under 1.5',
-    'OU2.5:over': 'Over 2.5',
-    'OU2.5:under': 'Under 2.5',
-    'OU3.5:over': 'Over 3.5',
-    'OU3.5:under': 'Under 3.5',
     'GG:yes': 'Goal',
     'GG:no': 'NoGoal',
   };

@@ -165,9 +165,9 @@
       </div>
       @for (mk of matchPicks.value()!.markets; track mk.market) {
         <div class="po-market">
-          <span class="title po-title">{{ marketNames[mk.market] }}</span>
+          <span class="title po-title">{{ marketName(mk.market) }}</span>
           <div class="po-cells">
-            @for (sel of marketSelections[mk.market]; track sel) {
+            @for (sel of marketSelections(mk.market); track sel) {
               <div class="po-cell">
                 <span class="po-sel">{{ pickName(mk.market, sel) }}</span>
                 <span class="led">{{ fmt.pct(mk.probabilities[sel]) }}</span>

@@ -196,7 +196,7 @@ describe('ArchieBet: navigazione', () => {
     const second = await nextRequest((r) => r.url.startsWith('/api/picks/multiple'));
     const url = new URL(second.request.url, 'http://x');
     expect(url.searchParams.get('profile')).toBe('coraggiosa');
-    expect(url.searchParams.get('markets')).toBe('1X2,DC,OU1.5,OU2.5,OU3.5');
+    expect(url.searchParams.get('markets')).toBe('1X2,DC,OU0.5,OU1.5,OU2.5,OU3.5,OU4.5,angoli,cartellini');
     expect(url.searchParams.get('competitions')).toBe('ENG-1');
     second.flush({ horizon: 'week', profile: 'coraggiosa', legs: 4, missing: [], multiples: [] });
     await harness.fixture.whenStable();

@@ -15,7 +15,7 @@ from app.config import get_settings
 from app.forecast.clv import SUSPICIOUS_VALUE
 from app.forecast.data import ODDS_MARKETS
 from app.forecast.multiple import LEGS, PROFILES, build_multiple, custom_profile
-from app.forecast.picks import MODEL_SOURCE, PICK_MARKETS, MarketPick, favorite, off_line
+from app.forecast.picks import MODEL_SOURCE, MarketPick, favorite, market_family, off_line
 from app.forecast.picks_service import legs_for, match_market_picks, upcoming_picks
 from app.forecast.suggestions import suggestions
 from app.models import Match
@@ -492,7 +492,7 @@ def multiple(
     min_total: float = Query(2.0, ge=1.2, le=200, description="Profilo personalizzato: quota totale minima"),
     max_total: float = Query(6.0, ge=1.2, le=200, description="Profilo personalizzato: quota totale massima"),
     by: Literal["probabilita", "valore"] = Query("probabilita", description="Profilo personalizzato: cosa privilegiare"),
-    markets: str | None = Query(None, description="Mercati separati da virgola, es. 1X2,DC"),
+    markets: str | None = Query(None, description="Mercati separati da virgola, es. 1X2,DC,OU2.5,angoli,cartellini"),
     competitions: str | None = Query(None, description="Codici dei campionati separati da virgola, es. ITA-A,ENG-1"),
 ) -> MultiplesOut:
     """Multipla del giorno (senza parametri) o generatore "Archie, fammi una multipla"."""
@@ -507,8 +507,8 @@ def multiple(
         wanted = set(competitions.split(","))
         upcoming = [(m, mp) for m, mp in upcoming if m.competition.code in wanted]
     if markets:
-        allowed = set(markets.split(",")) & set(PICK_MARKETS)
-        upcoming = [(m, [p for p in mp if p.market in allowed]) for m, mp in upcoming]
+        allowed = set(markets.split(","))
+        upcoming = [(m, [p for p in mp if p.market in allowed or market_family(p.market) in allowed]) for m, mp in upcoming]
     cards = {c.id: c for c in match_cards(db, [m for m, _ in upcoming], now)}
     multiples, missing = [], []
     for bm in bookmakers:

@@ -3,19 +3,24 @@
 Mercati gestiti e loro esiti:
 - "1X2": "1", "X", "2"
 - "DC" (doppia chance): "1X", "X2", "12"
-- "OU1.5", "OU2.5", "OU3.5": "over", "under" (Under/Over sulla linea dei gol indicata, D130)
+- "OU0.5" … "OU4.5": "over", "under" (Under/Over sulla linea dei gol indicata, D130-D131)
 - "GG" (Goal/NoGoal): "yes", "no"
+- angoli e cartellini (D131): "COR9.5", "CORH4.5", "CRDA1.5", ... con "over", "under" (nomi in radar_markets)
 """
 
 from collections.abc import Iterable, Sequence
 from decimal import ROUND_HALF_UP, Decimal
 
+from app.forecast.radar_markets import OVER_UNDER, is_secondary, parse_secondary, secondary_won
+
 MARKETS: dict[str, tuple[str, ...]] = {
     "1X2": ("1", "X", "2"),
     "DC": ("1X", "X2", "12"),
+    "OU0.5": ("over", "under"),
     "OU1.5": ("over", "under"),
     "OU2.5": ("over", "under"),
     "OU3.5": ("over", "under"),
+    "OU4.5": ("over", "under"),
     "GG": ("yes", "no"),
 }
 
@@ -28,13 +33,46 @@ WON, LOST, VOID, OPEN = "won", "lost", "void", "open"
 CENT = Decimal("0.01")
 
 
+def selections_of(market: str) -> tuple[str, ...]:
+    """Esiti ammessi di un mercato (vuoto se il mercato non è gestito)."""
+    return MARKETS.get(market) or (OVER_UNDER if is_secondary(market) else ())
+
+
 def is_valid_pick(market: str, pick: str) -> bool:
-    return pick in MARKETS.get(market, ())
+    return pick in selections_of(market)
+
+
+SHORT_NAMES = {"1X2": "1X2", "DC": "doppia chance", "GG": "Gol/No gol"}
+
+
+def market_name(market: str) -> str:
+    """Nome breve in italiano: "Under/Over 2.5", "angoli casa Under/Over 4.5", ..."""
+    if (line := ou_line(market)) is not None:
+        return f"Under/Over {line:g}"
+    if (parsed := parse_secondary(market)) is not None:
+        family, side, line = parsed
+        who = "" if side == "totale" else f" {side}"
+        return f"{family}{who} Under/Over {line:g}"
+    return SHORT_NAMES.get(market, market)
+
+
+def is_settled_by_goals(market: str) -> bool:
+    """True se basta il risultato per chiudere la selezione (angoli e cartellini aspettano le statistiche)."""
+    return not is_secondary(market)
+
+
+def secondary_outcome(market: str, pick: str, corners: tuple[int | None, int | None],
+                      yellow: tuple[int | None, int | None], red: tuple[int | None, int | None]) -> str | None:
+    """Vinta o persa una selezione di angoli o cartellini; None se le statistiche della partita non ci sono ancora."""
+    if not is_valid_pick(market, pick):
+        raise ValueError(f"Esito '{pick}' non valido per il mercato '{market}'")
+    hit = secondary_won(market, pick, corners, yellow, red)
+    return None if hit is None else WON if hit else LOST
 
 
 def selection_outcome(market: str, pick: str, home_goals: int, away_goals: int) -> str:
     """Vinta o persa una selezione, dato il risultato finale."""
-    if not is_valid_pick(market, pick):
+    if not is_valid_pick(market, pick) or is_secondary(market):  # angoli e cartellini: secondary_outcome
         raise ValueError(f"Esito '{pick}' non valido per il mercato '{market}'")
     result = "1" if home_goals > away_goals else "X" if home_goals == away_goals else "2"
     if market == "1X2":
@@ -116,7 +154,7 @@ def fair_closing_odds(market: str, pick: str, closing_1x2: dict[str, Decimal] | 
             return fair[pick]
         probability = sum(1 / fair[p] for p in pick)  # es. "1X" = P(1) + P(X)
         return 1 / probability
-    if ou_line(market) is not None and closing_ou and len(closing_ou) == 2:  # closing_ou: chiusura della stessa linea
+    if (ou_line(market) is not None or is_secondary(market)) and closing_ou and len(closing_ou) == 2:  # closing_ou: chiusura della stessa linea
         return fair_odds(closing_ou)[pick]
     return None
 

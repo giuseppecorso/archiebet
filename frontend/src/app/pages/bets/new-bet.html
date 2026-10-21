@@ -30,7 +30,7 @@
             <span class="label">Mercato</span>
             <select (change)="setMarket(i, $any($event.target).value)">
               @for (mk of marketList; track mk) {
-                <option [value]="mk" [selected]="mk === row.market">{{ fmt.MARKET_LABEL[mk] }}</option>
+                <option [value]="mk" [selected]="mk === row.market">{{ fmt.marketLabel(mk) }}</option>
               }
             </select>
           </label>

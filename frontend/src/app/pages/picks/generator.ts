@@ -33,13 +33,18 @@ function isoDay(offset = 0): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** Mercati e famiglie (angoli e cartellini con tutte le linee, D131) */
 const MARKETS: [string, string][] = [
   ['1X2', '1X2'],
   ['DC', 'Doppia chance'],
-  ['OU1.5', 'Under/Over 1.5'],
-  ['OU2.5', 'Under/Over 2.5'],
-  ['OU3.5', 'Under/Over 3.5'],
+  ['OU0.5', 'U/O 0.5'],
+  ['OU1.5', 'U/O 1.5'],
+  ['OU2.5', 'U/O 2.5'],
+  ['OU3.5', 'U/O 3.5'],
+  ['OU4.5', 'U/O 4.5'],
   ['GG', 'Goal/NoGoal'],
+  ['angoli', 'Angoli'],
+  ['cartellini', 'Cartellini'],
 ];
 
 /** "Archie, fammi una multipla" (specifiche sezione 5): varianti della multipla del giorno, calcolate dal codice. */

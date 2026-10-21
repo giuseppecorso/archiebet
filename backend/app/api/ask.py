@@ -9,6 +9,7 @@ from sqlalchemy import or_, select
 from app.auth.deps import CurrentUser, DbSession
 from app.config import get_settings
 from app.models import AiQuestion, Bet, Match, MatchStatus, Team, TeamFact
+from app.betting.calc import market_name
 
 router = APIRouter(prefix="/api/ask", tags=["chiedi ad archie"])
 
@@ -95,7 +96,7 @@ def build_tools(db, user_id: int):
                     for o in offers:
                         if o.verdict in ("valore", "sopra la media"):
                             kind = "valore" if o.verdict == "valore" else "sopra la media italiana (solo indicazione)"
-                            found.append((o.value, f"id {m.id} {m.home_team.name}-{m.away_team.name} ({_when(m)}): {MARKET_NAMES.get(p.market, p.market)} {sel} "
+                            found.append((o.value, f"id {m.id} {m.home_team.name}-{m.away_team.name} ({_when(m)}): {(MARKET_NAMES.get(p.market) or market_name(p.market))} {sel} "
                                                    f"a {o.price:.2f} su {o.bookmaker}, probabilità {p.probabilities[sel]:.0%}, valore {o.value:+.1%}, {kind}"))  # fmt: skip
         if not found:
             return "Nessuna quota con valore nei prossimi 4 giorni sui bookmaker dell'utente."
@@ -124,7 +125,7 @@ def build_tools(db, user_id: int):
                 lines.append(f"{label}: {s.bets} schedine ({s.open} aperte), vinte {s.won}/{s.settled}, giocato {s.staked} €, tornato {s.returned} €, "
                              f"saldo {s.profit} €, rendimento {'n.d.' if s.roi is None else f'{s.roi:+.1%}'}, CLV medio {'n.d.' if s.avg_clv is None else f'{s.avg_clv:+.1%}'}")  # fmt: skip
         for b in bets[:8]:
-            legs = ", ".join(f"{sel.match.home_team.name}-{sel.match.away_team.name} {MARKET_NAMES.get(sel.market, sel.market)} {sel.pick} @{sel.odds}" for sel in b.selections)
+            legs = ", ".join(f"{sel.match.home_team.name}-{sel.match.away_team.name} {(MARKET_NAMES.get(sel.market) or market_name(sel.market))} {sel.pick} @{sel.odds}" for sel in b.selections)
             lines.append(f"  {b.placed_at:%d/%m} {b.kind} {b.stake} € quota {b.total_odds:.2f} [{b.status}]: {legs}")
         return "\n".join(lines)
 

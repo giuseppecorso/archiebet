@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/htt
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { BetCreated, BetKind, MARKET_LABEL, Market, Prefill, UserSettings, euro, pickLabel, preview } from '../../core/bets';
+import { BetCreated, BetKind, Market, Prefill, UserSettings, euro, marketLabel, marketSelections, pickLabel, preview } from '../../core/bets';
 import { CompetitionGroup, MatchCard } from '../../core/football';
 import { dayLabel, kickoffTime, odds } from '../../core/format';
 
@@ -14,9 +14,10 @@ interface Row {
   prefill: Prefill['odds'];
 }
 
-const MARKETS: Record<Market, string[]> = {
-  '1X2': ['1', 'X', '2'], DC: ['1X', 'X2', '12'], 'OU1.5': ['over', 'under'], 'OU2.5': ['over', 'under'], 'OU3.5': ['over', 'under'], GG: ['yes', 'no'],
-};
+/** Mercati inseribili a mano (angoli e cartellini arrivano dalla schedina, con la linea già scelta) */
+const MARKETS: Record<Market, string[]> = Object.fromEntries(
+  ['1X2', 'DC', 'OU0.5', 'OU1.5', 'OU2.5', 'OU3.5', 'OU4.5', 'GG'].map((m) => [m, marketSelections(m)]),
+);
 
 /** "1,85" o "1.85" → 1.85 (NaN se non è un numero) */
 export function parseDecimal(text: string): number {
@@ -38,7 +39,7 @@ export class NewBet {
 
   protected readonly markets = MARKETS;
   protected readonly marketList = Object.keys(MARKETS) as Market[];
-  protected readonly fmt = { odds, euro, dayLabel, kickoffTime, pickLabel, MARKET_LABEL };
+  protected readonly fmt = { odds, euro, dayLabel, kickoffTime, pickLabel, marketLabel };
 
   protected readonly upcoming = httpResource<CompetitionGroup[]>(() => '/api/matches?view=upcoming&limit=200', { defaultValue: [] });
   protected readonly settings = httpResource<UserSettings>(() => '/api/settings');

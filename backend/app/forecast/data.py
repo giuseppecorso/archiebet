@@ -54,7 +54,9 @@ ODDS_MARKETS = {"1X2": ("1", "X", "2"), "OU2.5": ("over", "under"), "GG": ("yes"
 # La doppia chance ha esiti che si sovrappongono: la sua probabilità giusta si ricava dall'1X2, mai dalle sue quote
 OVERLAPPING_MARKETS = {"DC": ("1X", "12", "X2")}
 # Altre linee Under/Over (D130): in Pronostici, multipla e schedina, ma non nel radar (non provate sullo storico)
-EXTRA_GOAL_MARKETS = {"OU1.5": ("over", "under"), "OU3.5": ("over", "under")}
+EXTRA_GOAL_MARKETS = {f"OU{n}.5": ("over", "under") for n in (0, 1, 3, 4)}  # Pronostici e multiple, non il radar (D130-D131)
+# Campionati con angoli e cartellini a fine partita (football-data): solo qui si propongono quei mercati (D131)
+STATS_LEAGUES = ("ITA-A", "ITA-B", "ENG-1", "ENG-2", "ESP-1", "ESP-2", "GER-1", "GER-2", "FRA-1", "FRA-2")
 
 Odds = dict[int, dict[str, dict[str, float]]]  # partita → mercato → esito → quota
 
