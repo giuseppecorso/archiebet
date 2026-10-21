@@ -36,3 +36,28 @@ def test_numbers_endpoint(logged_client, db):
     line = next(x for x in corners["lines"] if x["side"] == "totale" and x["line"] == 9.5)
     assert line["offers"] == {"Sisal": {"over": 1.9, "under": 1.85}}
     assert abs(1 / line["fair_over"] + 1 / line["fair_under"] - 1) < 1e-9
+
+
+def test_players_endpoint_without_api_football_source(logged_client, db):
+    comp = Competition(code="ITA-C-A", name="Serie C", country="Italia", tier=3)
+    a, b = Team(name="A", country="Italia"), Team(name="B", country="Italia")
+    db.add_all([comp, a, b])
+    db.flush()
+    m = Match(competition_id=comp.id, season="2026/27", kickoff_at=datetime(2026, 11, 1, tzinfo=UTC), kickoff_has_time=True, home_team_id=a.id, away_team_id=b.id)
+    db.add(m)
+    db.commit()
+    assert logged_client.get(f"/api/picks/match/{m.id}/players").json() == []
+    assert logged_client.get(f"/api/picks/match/{m.id}/numbers").json() == []  # Serie C: niente statistiche
+
+
+def test_news_absences_until_the_player_is_back():
+    from types import SimpleNamespace as F
+
+    from app.api.picks import news_absences
+
+    t = datetime(2026, 10, 1, tzinfo=UTC)
+    facts = [F(player="Paulo Dybala", kind="assente", detail="infortunio", published_at=t),
+             F(player="Vergara", kind="assente", detail="fuori", published_at=t),
+             F(player="Vergara", kind="rientro", detail="torna", published_at=t + timedelta(days=1)),
+             F(player=None, kind="clima_negativo", detail="x", published_at=t)]  # fmt: skip
+    assert news_absences(facts) == {"dybala": "infortunio"}

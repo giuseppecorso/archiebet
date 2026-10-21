@@ -42,3 +42,13 @@ def test_probabilities_and_log_loss():
     assert prob_at_least(2, 2.0, 5.0) < prob_at_least(1, 2.0, 5.0)
     row = build_player_rows(season_games(), m=360)[0]
     assert row_log_loss(row, 10.0, 10.0) > 0 and row_log_loss(row, None, None, naive=True) > 0
+
+
+def test_outlook_for_an_upcoming_match():
+    from app.forecast.player_props import outlook
+
+    gs = season_games()
+    nxt = gs[-1].kickoff + timedelta(days=7)
+    out = outlook(gs, 999, 135, 2025, nxt, home=1, away=2)
+    assert [o.player for o in out] == [101, 102]  # prima chi tira di più
+    assert out[0].p_shot > out[0].p_two and 0 < out[0].p_on < 1

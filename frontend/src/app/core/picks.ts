@@ -82,3 +82,17 @@ export interface MatchNumbers {
   away: number;
   lines: CountLine[];
 }
+
+/** Tiri attesi di un giocatore (D110-D111): probabilità e quote giuste di Over 0,5 / 1,5 tiri e Over 0,5 in porta */
+export interface PlayerShots {
+  side: 'casa' | 'ospite';
+  name: string;
+  position: string;
+  exp_shots: number;
+  exp_on: number;
+  p_shot: number;
+  p_two: number;
+  p_on: number;
+  /** Assente o squalificato secondo le notizie (Archie tifoso) */
+  absent: string | null;
+}

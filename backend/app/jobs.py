@@ -199,6 +199,23 @@ def news_job() -> None:
     _tracked("news", work)
 
 
+def player_stats_job() -> None:
+    """Ogni 12 ore: statistiche di squadre e giocatori delle partite nuove di Serie A e B (D111)."""
+    from app.adapters.football_data import season_of
+    from app.ingest.af_stats import STATS_LEAGUES, download_match_stats
+
+    settings = get_settings()
+    if not settings.api_football_key:
+        return
+
+    def work() -> str:
+        with SessionLocal() as db:
+            report = download_match_stats(api_football_adapter(db, settings), STATS_LEAGUES, [season_of(datetime.now(UTC).date())], log=logger.debug)
+        return f"statistiche giocatori: {report.done} partite in cache su {report.fixtures}" + (f" ({report.stopped})" if report.stopped else "")
+
+    _tracked("api-football", work)
+
+
 _live_lock = threading.Lock()
 
 
@@ -261,6 +278,8 @@ def start_scheduler(settings: Settings) -> BackgroundScheduler | None:
     scheduler.add_job(live_job, "interval", seconds=60, id="live", max_instances=1, coalesce=True)
     scheduler.add_job(archive_job, "interval", days=7, next_run_time=datetime.now(UTC) + timedelta(minutes=30),
                       id="odds-archive", max_instances=1, coalesce=True)  # fmt: skip
+    scheduler.add_job(player_stats_job, "interval", hours=12, next_run_time=datetime.now(UTC) + timedelta(minutes=20),
+                      id="player-stats", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.add_job(news_job, "interval", hours=2, next_run_time=datetime.now(UTC) + timedelta(minutes=3),
                       id="news", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.start()

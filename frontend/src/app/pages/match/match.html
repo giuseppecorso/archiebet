@@ -213,6 +213,43 @@
     </section>
   }
 
+  @if (d.match.status === 'scheduled' && players.value()?.length) {
+    <section class="panel box players" aria-labelledby="pl-title">
+      <div class="box-head">
+        <h2 id="pl-title" class="title box-title">Tiri dei giocatori</h2>
+        <span class="muted small">quote giuste di Archie: confrontale con l'app del bookmaker</span>
+      </div>
+      <div class="num-grid">
+        @for (list of playersBySide(); track $index) {
+          <div>
+            <h3 class="title fan-team">{{ $index === 0 ? d.match.home.name : d.match.away.name }}</h3>
+            <table class="num-table">
+              <thead>
+                <tr><th>Giocatore</th><th>Tiri attesi</th><th>Over 0,5</th><th>Over 1,5</th><th>In porta 0,5</th></tr>
+              </thead>
+              <tbody>
+                @for (p of list; track p.name) {
+                  <tr [class.absent]="p.absent" [attr.title]="p.absent ?? null">
+                    <td>{{ p.name }} @if (p.absent) {<span class="v poco">assente?</span>}</td>
+                    <td>{{ fmt.num(p.exp_shots, 1) }} <span class="muted small">({{ fmt.num(p.exp_on, 1) }} in porta)</span></td>
+                    <td>{{ fmt.odds(1 / p.p_shot) }}</td>
+                    <td>{{ fmt.odds(1 / p.p_two) }}</td>
+                    <td>{{ fmt.odds(1 / p.p_on) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+      <p class="muted small">
+        Tiri a 90 minuti del giocatore in questa stagione, minuti delle ultime 5 presenze, tiri concessi dall'avversaria. Verificato
+        su 22.800 presenze di Serie A e B: quando dice 50% succede il 48-49% delle volte (D110). La quota giusta è il minimo
+        sotto cui non conviene: se il bookmaker paga di più, è un'indicazione. "assente?" = le notizie lo danno fuori.
+      </p>
+    </section>
+  }
+
   @if (d.match.competition.code.startsWith('ITA-') || fan.value()?.facts?.length) {
     <section class="panel box fan" aria-labelledby="fan-title">
       <div class="box-head">

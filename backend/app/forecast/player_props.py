@@ -161,3 +161,46 @@ def row_log_loss(row: PlayerRow, size_shots: float | None, size_on: float | None
         p = prob_at_least(n, max(mean, 1e-6), size)
         total -= math.log(p if y >= n else 1 - p)
     return total
+
+
+# --- Pagina partita (D111) -----------------------------------------------------------------------------------------
+
+RECENT_MATCHES = 3  # il giocatore deve essere sceso in campo in almeno una delle ultime 3 partite della squadra
+
+
+@dataclass(frozen=True)
+class PlayerOutlook:
+    team: int
+    player: int
+    name: str
+    position: str
+    exp_shots: float
+    exp_on: float
+    p_shot: float  # almeno 1 tiro
+    p_two: float  # almeno 2 tiri
+    p_on: float  # almeno 1 tiro in porta
+
+
+def outlook(games: Sequence[PlayerGame], fixture_id: int, league: int, season: int, kickoff: datetime, home: int, away: int,
+            m: float = 720, size_shots: float = 4.0, size_on: float = 4.1) -> list[PlayerOutlook]:  # fmt: skip
+    """Previsioni per una partita da giocare: si aggiunge la partita con un minuto fittizio per ogni giocatore recente
+    della squadra (serve solo a chiedere la previsione: le previsioni usano solo le partite di prima)."""
+    season_games = [g for g in games if g.league == league and g.season == season and g.kickoff < kickoff]
+    recent: dict[int, set[int]] = {}
+    for team in (home, away):
+        fixtures = sorted({(g.kickoff, g.fixture_id) for g in season_games if g.team == team})[-RECENT_MATCHES:]
+        ids = {f for _, f in fixtures}
+        recent[team] = {g.player for g in season_games if g.fixture_id in ids and g.team == team and g.minutes > 0}
+    last = {}
+    for g in sorted(season_games, key=lambda x: x.kickoff):
+        last[g.player] = g
+    probes = [PlayerGame(fixture_id, league, season, kickoff, g.team, away if g.team == home else home, g.team == home, g.player, g.name, g.position, 1, 0, 0)
+              for g in last.values() if g.team in recent and g.player in recent[g.team]]  # fmt: skip
+    rows = [r for r in build_player_rows([*season_games, *probes], m) if r.fixture_id == fixture_id]
+    team_of = {p.player: (p.team, p.position) for p in probes}
+    return sorted(
+        (PlayerOutlook(team_of[r.player][0], r.player, r.name, team_of[r.player][1], r.mean_shots, r.mean_on,
+                       prob_at_least(1, r.mean_shots, size_shots), prob_at_least(2, r.mean_shots, size_shots), prob_at_least(1, r.mean_on, size_on))
+         for r in rows),
+        key=lambda o: -o.exp_shots,
+    )  # fmt: skip

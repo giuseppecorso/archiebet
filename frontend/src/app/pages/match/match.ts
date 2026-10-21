@@ -3,7 +3,7 @@ import { Component, computed, effect, inject, input, signal } from '@angular/cor
 import { KeyValuePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { Market, pickLabel } from '../../core/bets';
-import { MatchAnalysis, MatchNumbers, MatchPicks, verdictClass } from '../../core/picks';
+import { MatchAnalysis, MatchNumbers, MatchPicks, PlayerShots, verdictClass } from '../../core/picks';
 import { RouterLink } from '@angular/router';
 import { FanFact, MatchFan, SOURCE_LABELS, factTone } from '../../core/fan';
 import { MatchDetail, OddsRow, TeamSummary } from '../../core/football';
@@ -89,6 +89,16 @@ export class MatchPage {
   /** Tiri, angoli e cartellini attesi (D109) */
   protected readonly numbers = httpResource<MatchNumbers[]>(() => `/api/picks/match/${this.id()}/numbers`);
   protected readonly numbersSide = signal<'totale' | 'casa' | 'ospite'>('totale');
+  /** Tiri dei giocatori (D111): i primi 6 per squadra, gli assenti secondo le notizie in fondo */
+  protected readonly players = httpResource<PlayerShots[]>(() => `/api/picks/match/${this.id()}/players`);
+  protected readonly playersBySide = computed(() => {
+    const all = this.players.value() ?? [];
+    const pick = (side: 'casa' | 'ospite') => {
+      const list = all.filter((p) => p.side === side);
+      return [...list.filter((p) => !p.absent).slice(0, 6), ...list.filter((p) => p.absent)];
+    };
+    return [pick('casa'), pick('ospite')];
+  });
   protected readonly writing = signal(false);
   protected readonly analysisError = signal<string | null>(null);
   protected readonly verdictClass = verdictClass;

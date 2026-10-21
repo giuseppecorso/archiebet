@@ -1,5 +1,6 @@
 """Pronostici (D67): la stima migliore per ogni partita in programma, con le quote di Sisal ed Eurobet."""
 
+from collections.abc import Sequence
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Literal
 from zoneinfo import ZoneInfo
@@ -190,6 +191,72 @@ def match_numbers(match_id: int, _: CurrentUser, db: DbSession) -> list[NumbersO
                 lines.append(LineOut(side=side, line=line, p_over=p, fair_over=1 / max(p, 1e-6), fair_under=1 / max(1 - p, 1e-6), offers=offers))
         out.append(NumbersOut(stat=e.stat, label=STAT_LABELS[e.stat], home=e.home, away=e.away, lines=lines))
     return out
+
+
+# ---------- Tiri dei giocatori (D110-D111) ----------
+
+
+class PlayerOut(BaseModel):
+    side: str  # "casa" | "ospite"
+    name: str
+    position: str
+    exp_shots: float
+    exp_on: float
+    p_shot: float
+    p_two: float
+    p_on: float
+    absent: str | None = None  # assente o squalificato secondo le notizie (Archie tifoso): il dettaglio
+
+
+def news_absences(facts: Sequence) -> dict[str, str]:
+    """Cognome (minuscolo) → dettaglio, per i giocatori con un'assenza o squalifica non seguita da un rientro."""
+    out: dict[str, str] = {}
+    for f in sorted(facts, key=lambda x: x.published_at):
+        if not f.player:
+            continue
+        key = f.player.split()[-1].lower()
+        if f.kind in ("assente", "squalifica"):
+            out[key] = f.detail
+        elif f.kind == "rientro":
+            out.pop(key, None)
+    return out
+
+
+@router.get("/match/{match_id}/players")
+def match_players(match_id: int, _: CurrentUser, db: DbSession) -> list[PlayerOut]:
+    """Tiri attesi dei giocatori e probabilità di Over 0,5 / 1,5 tiri e Over 0,5 in porta (solo Serie A e B, dalla cache)."""
+    from sqlalchemy import select
+
+    from app.adapters.cache import FileCache
+    from app.forecast.player_props import outlook
+    from app.ingest.af_stats import STATS_LEAGUES, load_player_games, season_fixtures
+    from app.ingest.news import FACTS_WINDOW
+    from app.models import MatchSource, TeamFact
+
+    match = db.get(Match, match_id)
+    if match is None:
+        raise HTTPException(404, "Partita non trovata")
+    source = db.scalar(select(MatchSource).where(MatchSource.match_id == match_id, MatchSource.source == "api-football"))
+    if source is None or match.status != "scheduled":
+        return []
+    cache = FileCache(get_settings().data_cache_dir, "api-football")
+    season = int(match.season[:4])
+    for league in STATS_LEAGUES:
+        fx = next((f for f in season_fixtures(cache, league, season) if str(f.id) == source.external_id), None)
+        if fx is None:
+            continue
+        games = load_player_games(cache, league, season)
+        facts = db.scalars(select(TeamFact).where(TeamFact.team_id.in_([match.home_team_id, match.away_team_id]),
+                                                  TeamFact.published_at >= match.kickoff_at - FACTS_WINDOW)).all()  # fmt: skip
+        absent = {side: news_absences([f for f in facts if f.team_id == team]) for side, team in (("casa", match.home_team_id), ("ospite", match.away_team_id))}
+        out = []
+        for o in outlook(games, fx.id, league, season, fx.kickoff_at, fx.home.id, fx.away.id):
+            side = "casa" if o.team == fx.home.id else "ospite"
+            note = next((d for k, d in absent[side].items() if k in o.name.lower().split()), None)
+            out.append(PlayerOut(side=side, name=o.name, position=o.position, exp_shots=o.exp_shots, exp_on=o.exp_on,
+                                 p_shot=o.p_shot, p_two=o.p_two, p_on=o.p_on, absent=note))  # fmt: skip
+        return sorted(out, key=lambda p: (p.absent is not None, -p.exp_shots))
+    return []
 
 
 # ---------- Multipla del giorno (D68) ----------
