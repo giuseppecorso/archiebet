@@ -9,6 +9,10 @@ Ultimo aggiornamento: 2026-10-21
 - [x] **Prova D99**: Archie non aggiunge niente nemmeno in apertura; le quote "sopra Archie" hanno CLV −6/−7% → etichetta tolta (D100).
 - [x] Archivio settimanale delle quote di Serie C (`archive_job`): la prova D98 si ripete a fine stagione con più partite.
 - [x] **Archie tifoso** (D101-D103): notizie della Serie C ogni 2 ore (TuttoC.com + Google News per chi gioca nei 3 giorni), fatti estratti con Haiku 5.5, giudizio sulla partita con Opus 5.5, consenso dei bookmaker salvato a ogni giudizio e in chiusura; riquadro "Cosa sa il tifoso" (in prova) nella pagina partita; stato della prova in `/api/fan/test`. Costo misurato ~3 $/mese. Prova D101: verdetto a 150 segnali (spostamento delle quote verso il lato indicato).
+- [x] **Archie tifoso su Serie A, B e C** (D105): Google News mirata per chi gioca nei 7 giorni; giudizi solo con le quote (D104); prove separate C (D101) e A-B.
+- [x] **Pagina partita completa** (D107-D111): due pronostici (il più sicuro e il più spinto), analisi scritta da Opus su richiesta (~0,025 €), tiri/angoli/cartellini attesi con quote giuste (modello D108-D109) e confronto con le quote dei bookmaker, tiri dei giocatori con quote giuste e assenti dalle notizie (modello D110, verificato e calibrato).
+- [x] Prova stili D108: gli incastri di stile non aggiungono niente al modello "fatti × subiti".
+- [ ] **Serie minori di tutto il mondo** (D106): archivio quote di 23 campionati in corso (`odds-archive --minor`), poi risultati da API-Football e prova.
 - [ ] Da verificare dopo il riavvio: quote italiane collegate alle partite di Serie C (l'app accesa usava ancora il codice vecchio) e primi giudizi con il consenso registrato.
 - [ ] Poi: "Chiedi ad Archie" e il resto della Fase 6; Blocco 4 (valutazione dei giocatori) solo se servirà.
 - Test: 353 backend + 22 frontend, tutti verdi.
