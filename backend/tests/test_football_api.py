@@ -106,3 +106,26 @@ def test_finished_match_has_stats_and_pre_match_table(logged_client, seeded, db)
 
 def test_unknown_match(logged_client, seeded):
     assert logged_client.get("/api/matches/99999").status_code == 404
+
+
+def test_card_odds_fall_back_to_bookmaker_average(db):
+    from decimal import Decimal
+
+    from app.api.football import match_cards
+    from app.models import Competition, MatchOdds, Team
+
+    comp = Competition(code="ITA-A", name="Serie A", country="Italia", tier=1)
+    a, b = Team(name="Torino", country="Italia"), Team(name="Monza", country="Italia")
+    db.add_all([comp, a, b])
+    db.flush()
+    now = datetime.now(UTC)
+    m = Match(competition_id=comp.id, season="2026/27", kickoff_at=now + timedelta(days=2), kickoff_has_time=True, home_team_id=a.id, away_team_id=b.id)
+    db.add(m)
+    db.flush()
+    for book, prices in (("sisal", ("2.10", "3.30", "3.40")), ("snai", ("2.20", "3.20", "3.50"))):
+        for sel, price in zip(("1", "X", "2"), prices):
+            db.add(MatchOdds(match_id=m.id, source="oddspapi", bookmaker=book, market="1X2", selection=sel, price=Decimal(price), is_closing=False))
+    db.add(MatchOdds(match_id=m.id, source="oddspapi", bookmaker="goldbet", market="1X2", selection="1", price=Decimal("9.00"), is_closing=False))
+    db.commit()
+    [card] = match_cards(db, [m], now)
+    assert card.odds_1x2 == pytest.approx({"1": 2.15, "X": 3.25, "2": 3.45})

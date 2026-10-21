@@ -161,25 +161,34 @@ def _status(m: Match, now: datetime) -> str:
 
 
 def _odds_1x2(db: Session, matches: list[Match]) -> dict[int, dict[str, float]]:
-    """Quota media di mercato 1X2: chiusura se la partita è finita (e c'è), altrimenti apertura."""
+    """Quota media di mercato 1X2: chiusura se la partita è finita (e c'è), altrimenti apertura.
+
+    La media di football-data ("market_avg") c'è solo per le partite giocate: per le prossime si usa la media dei
+    bookmaker con la riga 1X2 completa (es. quelli italiani da OddsPapi).
+    """
     if not matches:
         return {}
     rows = db.execute(
-        select(MatchOdds.match_id, MatchOdds.selection, MatchOdds.price, MatchOdds.is_closing).where(
+        select(MatchOdds.match_id, MatchOdds.bookmaker, MatchOdds.selection, MatchOdds.price, MatchOdds.is_closing).where(
             MatchOdds.match_id.in_([m.id for m in matches]),
-            MatchOdds.bookmaker == "market_avg",
             MatchOdds.market == "1X2",
+            MatchOdds.bookmaker != "market_max",
         )
     ).all()
-    by_kind: dict[tuple[int, bool], dict[str, float]] = defaultdict(dict)
-    for match_id, selection, price, closing in rows:
-        by_kind[(match_id, closing)][selection] = float(price)
+    lines: dict[tuple[int, bool], dict[str, dict[str, float]]] = defaultdict(lambda: defaultdict(dict))
+    for match_id, bookmaker, selection, price, closing in rows:
+        lines[(match_id, closing)][bookmaker][selection] = float(price)
     result = {}
     for m in matches:
         prefer = [True, False] if m.status == MatchStatus.FINISHED else [False, True]
         for closing in prefer:
-            if len(by_kind.get((m.id, closing), {})) == 3:
-                result[m.id] = by_kind[(m.id, closing)]
+            books = lines.get((m.id, closing), {})
+            if len(books.get("market_avg", {})) == 3:
+                result[m.id] = books["market_avg"]
+                break
+            full = [b for b in books.values() if len(b) == 3]
+            if full:
+                result[m.id] = {k: round(sum(b[k] for b in full) / len(full), 3) for k in ("1", "X", "2")}
                 break
     return result
 
