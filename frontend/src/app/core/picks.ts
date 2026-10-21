@@ -63,3 +63,22 @@ export interface MatchAnalysis {
 export function verdictClass(v: Verdict): string {
   return v === 'valore' ? 'valore' : v === 'sopra la media' ? 'archie' : v === 'paga poco' ? 'poco' : 'norma';
 }
+
+/** Numeri attesi di una partita (D109): tiri, angoli, cartellini con le quote giuste di Archie */
+export interface CountLine {
+  side: 'totale' | 'casa' | 'ospite';
+  line: number;
+  p_over: number;
+  fair_over: number;
+  fair_under: number;
+  /** bookmaker → { over, under }, dove quotato */
+  offers: Record<string, { over?: number; under?: number }>;
+}
+
+export interface MatchNumbers {
+  stat: 'shots' | 'corners' | 'cards';
+  label: string;
+  home: number;
+  away: number;
+  lines: CountLine[];
+}

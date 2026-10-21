@@ -179,3 +179,44 @@ def build_rows(games: Sequence[CountGame], target: str, driver: str, k: float) -
 def paired(diffs: np.ndarray) -> tuple[float, float]:
     """Media e errore standard delle differenze per partita."""
     return float(diffs.mean()), float(diffs.std(ddof=1) / math.sqrt(len(diffs)))
+
+
+# --- Numeri attesi per la pagina partita (D109) ---------------------------------------------------------------------
+
+# Parametri scelti dalla prova D108 in taratura: restringimento k e dispersione della binomiale negativa
+MODEL_PARAMS = {"shots": (8, 24.6), "corners": (16, 12.1), "cards": (16, 1000.0)}
+LINES = {"shots": (20.5, 22.5, 24.5, 26.5), "corners": (8.5, 9.5, 10.5, 11.5), "cards": (3.5, 4.5, 5.5)}
+TEAM_LINES = {"shots": (9.5, 11.5, 13.5), "corners": (3.5, 4.5, 5.5), "cards": (1.5, 2.5)}
+
+
+@dataclass(frozen=True)
+class ExpectedCount:
+    stat: str
+    home: float
+    away: float
+    total_over: dict[float, float]  # linea → probabilità Over del totale
+    home_over: dict[float, float]
+    away_over: dict[float, float]
+
+
+def total_size(means: Sequence[float], size: float) -> float:
+    """Dispersione del totale di due binomiali negative indipendenti, per momenti: var = Σμ + Σμ²/size."""
+    return sum(means) ** 2 / (sum(m * m for m in means) / size)
+
+
+def expected_counts(games: Sequence[CountGame], target: CountGame) -> list[ExpectedCount]:
+    """Numeri attesi di una partita da giocare: target va passata con valori qualsiasi, conta solo il passato."""
+    out = []
+    for stat, (k, size) in MODEL_PARAMS.items():
+        ratios = pre_match_ratios([*games, target], stat, k).get(target.match_id)
+        if ratios is None:
+            continue
+        mh, ma = expected(ratios)
+        st = total_size((mh, ma), size)
+        out.append(ExpectedCount(
+            stat, mh, ma,
+            {line: nb_over(line, mh + ma, st) for line in LINES[stat]},
+            {line: nb_over(line, mh, size) for line in TEAM_LINES[stat]},
+            {line: nb_over(line, ma, size) for line in TEAM_LINES[stat]},
+        ))  # fmt: skip
+    return out

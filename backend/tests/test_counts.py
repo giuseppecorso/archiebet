@@ -60,3 +60,16 @@ def test_build_rows_pairs_target_and_driver():
     rows = build_rows(games(), "corners", "shots", k=4)
     assert rows and all(len(r.style) == 2 for r in rows)
     assert rows[0].style == (0.0, 0.0)  # a inizio stagione nessuna forza: nessun incastro
+
+
+def test_expected_counts_for_an_upcoming_match():
+    from app.forecast.counts import expected_counts, total_size
+
+    gs = games()
+    # i giochi di prova hanno solo angoli e tiri: aggiungo i cartellini
+    gs = [CountGame(g.match_id, g.league, g.season, g.kickoff, g.home, g.away, {**g.values, "cards": (2, 2)}) for g in gs]
+    target = CountGame(999, "X", "2021", gs[-1].kickoff + timedelta(days=1), 1, 2, {"corners": (0, 0), "shots": (0, 0), "cards": (0, 0)})
+    out = {e.stat: e for e in expected_counts(gs, target)}
+    assert out["corners"].home > out["corners"].away  # la squadra 1 in casa fa tanti angoli
+    assert 0 < out["corners"].total_over[9.5] < out["corners"].total_over[8.5] < 1
+    assert total_size((5.0, 5.0), 10.0) == pytest.approx(20.0)  # due uguali: dispersione doppia

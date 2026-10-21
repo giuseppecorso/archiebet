@@ -126,6 +126,72 @@ def match_picks_out(match_id: int, _: CurrentUser, db: DbSession) -> MatchPicksO
     )
 
 
+# ---------- Numeri attesi della partita: tiri, angoli, cartellini (D109) ----------
+
+STAT_LABELS = {"shots": "Tiri", "corners": "Angoli", "cards": "Cartellini"}
+STAT_MARKETS = {"corners": "COR", "cards": "CRD"}  # mercati del radar con le quote vere (D94); i tiri non li quota nessuno
+
+
+class LineOut(BaseModel):
+    side: str  # "totale" | "casa" | "ospite"
+    line: float
+    p_over: float
+    fair_over: float
+    fair_under: float
+    offers: dict[str, dict[str, float]]  # bookmaker → {"over": quota, "under": quota}, se quotato
+
+
+class NumbersOut(BaseModel):
+    stat: str
+    label: str
+    home: float
+    away: float
+    lines: list[LineOut]
+
+
+@router.get("/match/{match_id}/numbers")
+def match_numbers(match_id: int, _: CurrentUser, db: DbSession) -> list[NumbersOut]:
+    """Tiri, angoli e cartellini attesi con le quote giuste di Archie (modello D108-D109, non messo alla prova contro il mercato)."""
+    from sqlalchemy import select
+
+    from app.forecast.counts import CountGame, expected_counts
+    from app.forecast.radar_markets import secondary_name
+    from app.forecast.radar_service import load_book_odds
+
+    match = db.get(Match, match_id)
+    if match is None:
+        raise HTTPException(404, "Partita non trovata")
+    start_year = int(match.season[:4])
+    seasons = [match.season, f"{start_year - 1}/{str(start_year)[-2:]}"]
+    past = db.scalars(select(Match).where(Match.competition_id == match.competition_id, Match.season.in_(seasons),
+                                          Match.status == "finished", Match.kickoff_at < match.kickoff_at)).all()  # fmt: skip
+    games = []
+    for m in past:
+        vals = (m.home_shots, m.away_shots, m.home_corners, m.away_corners, m.home_yellow, m.away_yellow, m.home_red, m.away_red)
+        if all(v is not None for v in vals):
+            games.append(CountGame(m.id, match.competition.code, m.season, m.kickoff_at, m.home_team_id, m.away_team_id,
+                                   {"shots": (m.home_shots, m.away_shots), "corners": (m.home_corners, m.away_corners),
+                                    "cards": (m.home_yellow + m.home_red, m.away_yellow + m.away_red)}))  # fmt: skip
+    if not any(g.season == match.season for g in games):
+        return []  # niente statistiche nel campionato (es. Serie C): nessun numero
+    target = CountGame(match.id, match.competition.code, match.season, match.kickoff_at, match.home_team_id, match.away_team_id,
+                       {"shots": (0, 0), "corners": (0, 0), "cards": (0, 0)})  # fmt: skip
+    book = load_book_odds(db, [match.id], closing=False).get(match.id, {})
+    out = []
+    for e in expected_counts(games, target):
+        lines = []
+        for side, probs in (("totale", e.total_over), ("casa", e.home_over), ("ospite", e.away_over)):
+            for line, p in probs.items():
+                offers = {}
+                if e.stat in STAT_MARKETS:
+                    family = "angoli" if e.stat == "corners" else "cartellini"
+                    market = secondary_name(family, side, line)
+                    offers = {BOOKMAKER_LABELS.get(bm, bm): prices[market] for bm, prices in book.items() if market in prices}
+                lines.append(LineOut(side=side, line=line, p_over=p, fair_over=1 / max(p, 1e-6), fair_under=1 / max(1 - p, 1e-6), offers=offers))
+        out.append(NumbersOut(stat=e.stat, label=STAT_LABELS[e.stat], home=e.home, away=e.away, lines=lines))
+    return out
+
+
 # ---------- Multipla del giorno (D68) ----------
 
 ROME = ZoneInfo("Europe/Rome")

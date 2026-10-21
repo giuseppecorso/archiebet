@@ -977,6 +977,75 @@ def _style_test() -> int:
     return 0
 
 
+def _player_test() -> int:
+    """Prova D110: tiri dei giocatori, modello contro la media a presenza (solo dati già in cache)."""
+    import math
+    from datetime import timedelta
+
+    import numpy as np
+    from scipy.optimize import minimize_scalar
+    from scipy.special import gammaln
+
+    from app.adapters.api_football import ApiFootballAdapter
+    from app.adapters.cache import MISSING
+    from app.forecast import player_props as pp
+    from app.forecast.history_sim import clustered_mean
+    from app.ingest.af_stats import STATS_LEAGUES
+
+    settings = get_settings()
+    af = ApiFootballAdapter(FileCache(settings.data_cache_dir, "api-football"), settings.api_football_key)
+    forever = timedelta(days=36500)
+    games = []
+    for league in STATS_LEAGUES:
+        for season in (2024, 2025, 2026):
+            body = af.cache.get(f"fixtures?league={league}&season={season}", forever)
+            if body is MISSING:
+                continue
+            from app.adapters.api_football import parse_fixtures
+
+            for fx in parse_fixtures(body):
+                if fx.status != "finished":
+                    continue
+                players = af.cache.get(f"fixtures/players?fixture={fx.id}", forever)
+                if players is not MISSING:
+                    games += pp.parse_players(players, fx.id, league, season, fx.kickoff_at, fx.home.id)
+    print(f"Righe giocatore-partita: {len(games)} in {len({g.fixture_id for g in games})} partite")
+
+    def fit_size(y, mean):
+        res = minimize_scalar(lambda ls: -(gammaln(y + math.exp(ls)) - gammaln(math.exp(ls)) - gammaln(y + 1)
+                                           + math.exp(ls) * np.log(math.exp(ls) / (math.exp(ls) + mean)) + y * np.log(mean / (math.exp(ls) + mean))).sum(),
+                              bounds=(math.log(0.3), math.log(1000)), method="bounded")  # fmt: skip
+        return float(math.exp(res.x))
+
+    best = None
+    for m in (180, 360, 720, 1440):
+        rows = pp.build_player_rows(games, m)
+        tune = [r for r in rows if r.season == 2024]
+        ys, ms = np.array([r.shots for r in tune], float), np.maximum(np.array([r.mean_shots for r in tune]), 1e-6)
+        yo, mo = np.array([r.on_target for r in tune], float), np.maximum(np.array([r.mean_on for r in tune]), 1e-6)
+        size_s, size_o = fit_size(ys, ms), fit_size(yo, mo)
+        loss = sum(pp.row_log_loss(r, size_s, size_o) for r in tune)
+        print(f"   m={m}: log loss taratura {loss / max(len(tune), 1):.4f} per riga (dispersione tiri {size_s:.1f}, in porta {size_o:.1f})")
+        if best is None or loss < best[0]:
+            best = (loss, m, rows, size_s, size_o)
+    _, m, rows, size_s, size_o = best
+    tune = [r for r in rows if r.season == 2024]
+    conf = [r for r in rows if r.season >= 2025]
+    diffs = [pp.row_log_loss(r, size_s, size_o) - pp.row_log_loss(r, None, None, naive=True) for r in conf]
+    est = clustered_mean(diffs, [r.fixture_id for r in conf])
+    ok = est.mean < -2 * est.std_error
+    print(f"\nScelto m={m}. Righe: taratura {len(tune)}, conferma {len(conf)}")
+    print(f"Conferma, log loss modello meno confronto: {est.mean:+.4f} ± {est.std_error:.4f} per riga -> {'PASSA' if ok else 'non passa'}")
+    print("Calibrazione in conferma, 'almeno 1 tiro' (prevista → vera):")
+    bins = [(0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.01)]
+    for low, high in bins:
+        sel = [(pp.prob_at_least(1, r.mean_shots, size_s), r.shots >= 1) for r in conf]
+        sel = [(p, y) for p, y in sel if low <= p < high]
+        if sel:
+            print(f"   {low:.0%}-{min(high, 1):.0%}: {len(sel)} righe, prevista {sum(p for p, _ in sel) / len(sel):.1%}, vera {sum(y for _, y in sel) / len(sel):.1%}")
+    return 0
+
+
 def _af_stats(seasons: str) -> int:
     """Scarica tiri, angoli, falli e cartellini di squadre e giocatori (Serie A e B) per i modelli dei mercati secondari."""
     from app.adapters.api_football import ApiFootballAdapter
@@ -1192,6 +1261,7 @@ def main() -> int:
     commands.add_parser("secondary-test", help="prova D82 su angoli e cartellini (usare una copia del database)")
     commands.add_parser("d89-test", help="prova del nove dei fattori D89 (riposo, allenatore, sintetico, distanza, assenze)")
     commands.add_parser("style-test", help="prova D108: stili di gioco che si incastrano (angoli, cartellini, tiri)")
+    commands.add_parser("player-test", help="prova D110: tiri dei giocatori (dati di API-Football in cache)")
     afs = commands.add_parser("af-stats", help="statistiche di squadre e giocatori da API-Football (Serie A e B)")
     afs.add_argument("--seasons", default="2026,2025,2024")
     commands.add_parser("af-history", help="storico API-Football per le prove dei fattori D89 (coppe, allenatori, formazioni)")
@@ -1236,6 +1306,8 @@ def main() -> int:
         return _d89_test()
     if args.command == "style-test":
         return _style_test()
+    if args.command == "player-test":
+        return _player_test()
     if args.command == "af-stats":
         return _af_stats(args.seasons)
     if args.command == "af-history":

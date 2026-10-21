@@ -1,8 +1,9 @@
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { KeyValuePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { Market, pickLabel } from '../../core/bets';
-import { MatchAnalysis, MatchPicks, verdictClass } from '../../core/picks';
+import { MatchAnalysis, MatchNumbers, MatchPicks, verdictClass } from '../../core/picks';
 import { RouterLink } from '@angular/router';
 import { FanFact, MatchFan, SOURCE_LABELS, factTone } from '../../core/fan';
 import { MatchDetail, OddsRow, TeamSummary } from '../../core/football';
@@ -70,7 +71,7 @@ const ARCHIE_MARKETS: [string, string, string][] = [
 
 @Component({
   selector: 'ab-match',
-  imports: [RouterLink, FormBadges, ShowMore, Crest, LeagueLogo],
+  imports: [RouterLink, FormBadges, ShowMore, Crest, LeagueLogo, KeyValuePipe],
   templateUrl: './match.html',
   styleUrl: './match.scss',
 })
@@ -85,6 +86,9 @@ export class MatchPage {
   /** I due pronostici (D107) e l'analisi scritta da Archie */
   protected readonly matchPicks = httpResource<MatchPicks>(() => `/api/picks/match/${this.id()}`);
   protected readonly analysis = httpResource<MatchAnalysis | null>(() => `/api/fan/match/${this.id()}/analysis`);
+  /** Tiri, angoli e cartellini attesi (D109) */
+  protected readonly numbers = httpResource<MatchNumbers[]>(() => `/api/picks/match/${this.id()}/numbers`);
+  protected readonly numbersSide = signal<'totale' | 'casa' | 'ospite'>('totale');
   protected readonly writing = signal(false);
   protected readonly analysisError = signal<string | null>(null);
   protected readonly verdictClass = verdictClass;

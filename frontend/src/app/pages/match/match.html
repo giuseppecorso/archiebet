@@ -157,6 +157,62 @@
     </section>
   }
 
+  @if (d.match.status === 'scheduled' && numbers.value()?.length) {
+    <section class="panel box numbers" aria-labelledby="num-title">
+      <div class="box-head">
+        <h2 id="num-title" class="title box-title">Tiri, angoli e cartellini attesi</h2>
+        <div class="seg" role="group" aria-label="Linee">
+          @for (s of ['totale', 'casa', 'ospite']; track s) {
+            <button type="button" [class.on]="numbersSide() === s" (click)="numbersSide.set($any(s))">
+              {{ s === 'totale' ? 'Totale' : s === 'casa' ? d.match.home.name : d.match.away.name }}
+            </button>
+          }
+        </div>
+      </div>
+      <div class="num-grid">
+        @for (n of numbers.value(); track n.stat) {
+          <div class="num-card">
+            <span class="title num-label">{{ n.label }}</span>
+            <span class="num-exp">
+              <span class="led">{{ fmt.num(n.home, 1) }}</span> – <span class="led">{{ fmt.num(n.away, 1) }}</span>
+              <span class="muted small">attesi ({{ fmt.num(n.home + n.away, 1) }} in tutto)</span>
+            </span>
+            <table class="num-table">
+              <thead>
+                <tr><th>Linea</th><th>Over giusta</th><th>Under giusta</th><th>Bookmaker</th></tr>
+              </thead>
+              <tbody>
+                @for (l of n.lines; track l.side + l.line) {
+                  @if (l.side === numbersSide()) {
+                    <tr>
+                      <td>{{ fmt.num(l.line, 1) }}</td>
+                      <td>{{ fmt.odds(l.fair_over) }} <span class="muted small">({{ fmt.pct(l.p_over) }})</span></td>
+                      <td>{{ fmt.odds(l.fair_under) }}</td>
+                      <td class="small">
+                        @for (o of l.offers | keyvalue; track o.key) {
+                          <span class="num-offer"
+                            >{{ o.key }}: O {{ o.value.over ? fmt.odds(o.value.over) : '–' }} · U {{ o.value.under ? fmt.odds(o.value.under) : '–' }}</span
+                          >
+                        } @empty {
+                          <span class="muted">non quotata</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+      <p class="muted small">
+        Quote giuste di Archie dal modello "fatti × subiti" (medie della stagione di ciascuna squadra e dell'avversaria, verificato
+        su 54.000 partite: D108). Non è ancora messo alla prova contro le quote dei bookmaker: se l'app del bookmaker paga molto
+        più della quota giusta, è un'indicazione, non una certezza. Le occasioni verificate su angoli e cartellini restano quelle del Radar.
+      </p>
+    </section>
+  }
+
   @if (d.match.competition.code.startsWith('ITA-') || fan.value()?.facts?.length) {
     <section class="panel box fan" aria-labelledby="fan-title">
       <div class="box-head">

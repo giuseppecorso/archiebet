@@ -668,3 +668,32 @@
 .an-error {
   color: var(--loss);
 }
+.numbers {
+  margin: 20px 0;
+}
+.num-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.num-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.num-exp .led {
+  font-size: 20px;
+}
+.num-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  th, td {
+    padding: 3px 4px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+}
+.num-offer {
+  display: block;
+}
