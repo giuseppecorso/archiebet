@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="Definitions_ArchieBet" targetNamespace="https://github.com/giuseppecorso/archiebet"
+                  exporter="ArchieBet" exporterVersion="1.0">
+  <bpmn:collaboration id="Collaboration_Ciclo">
+    <bpmn:participant id="Participant_ArchieBet" name="ArchieBet · ciclo di una previsione" processRef="Process_Ciclo" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="Process_Ciclo" name="Ciclo di una previsione" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Sistema" name="Sistema (job pianificati)">
+        <bpmn:flowNodeRef>Start_Timer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Sync</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Odds</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Catch_FullTime</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Settle</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Learn</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Verdict</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Archie" name="Archie (modelli e regole)">
+        <bpmn:flowNodeRef>Task_Prob</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Value</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_NoValue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Signal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Rules</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Utente" name="Utente">
+        <bpmn:flowNodeRef>Task_Slip</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Register</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="Start_Timer" name="Ogni 6 ore">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="Timer_6h">
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/PT6H</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_Sync" name="Scarica calendario e risultati (football-data, API-Football)">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Odds" name="Aggiorna quote Pinnacle e bookmaker italiani (OddsPapi)">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:businessRuleTask id="Task_Prob" name="Probabilità giuste: Pinnacle senza margine (Shin)">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:exclusiveGateway id="Gateway_Value" name="Valore oltre la soglia D72?">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_Yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_No</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_NoValue" name="Nessuna occasione">
+      <bpmn:incoming>Flow_No</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Task_Signal" name="Registra l'occasione (giocata simulata per il verdetto)">
+      <bpmn:incoming>Flow_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_Slip" name="Aggiunge la quota alla schedina">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:businessRuleTask id="Task_Rules" name="Controlla regolamento e limiti di spesa">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:userTask id="Task_Register" name="Registra la giocata (reale o simulata)">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:intermediateCatchEvent id="Catch_FullTime" name="Fischio finale">
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="Message_FullTime" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="Task_Settle" name="Chiude la schedina, calcola CLV e autopsia">
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Learn" name="Ogni settimana: rifà le prove (strategie, taratura, quando giocare)">
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_Verdict" name="Verdetto aggiornato (CLV dal vivo)">
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_Timer" targetRef="Task_Sync" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Sync" targetRef="Task_Odds" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_Odds" targetRef="Task_Prob" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_Prob" targetRef="Gateway_Value" />
+    <bpmn:sequenceFlow id="Flow_Yes" name="sì" sourceRef="Gateway_Value" targetRef="Task_Signal" />
+    <bpmn:sequenceFlow id="Flow_No" name="no" sourceRef="Gateway_Value" targetRef="End_NoValue" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_Signal" targetRef="Task_Slip" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_Slip" targetRef="Task_Rules" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_Rules" targetRef="Task_Register" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_Register" targetRef="Catch_FullTime" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Catch_FullTime" targetRef="Task_Settle" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_Settle" targetRef="Task_Learn" />
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="Task_Learn" targetRef="End_Verdict" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Collaboration_Ciclo">
+      <bpmndi:BPMNShape id="Participant_shape" bpmnElement="Participant_ArchieBet" isHorizontal="true">
+        <dc:Bounds x="100" y="100" width="1820" height="600" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Sistema_shape" bpmnElement="Lane_Sistema" isHorizontal="true">
+        <dc:Bounds x="130" y="100" width="1790" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Archie_shape" bpmnElement="Lane_Archie" isHorizontal="true">
+        <dc:Bounds x="130" y="300" width="1790" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Utente_shape" bpmnElement="Lane_Utente" isHorizontal="true">
+        <dc:Bounds x="130" y="500" width="1790" height="200" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Start_Timer_shape" bpmnElement="Start_Timer"><dc:Bounds x="170" y="182" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Sync_shape" bpmnElement="Task_Sync"><dc:Bounds x="240" y="160" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Odds_shape" bpmnElement="Task_Odds"><dc:Bounds x="400" y="160" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Prob_shape" bpmnElement="Task_Prob"><dc:Bounds x="560" y="360" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Value_shape" bpmnElement="Gateway_Value" isMarkerVisible="true"><dc:Bounds x="720" y="375" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="690" y="330" width="110" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_NoValue_shape" bpmnElement="End_NoValue"><dc:Bounds x="727" y="452" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="775" y="463" width="100" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Signal_shape" bpmnElement="Task_Signal"><dc:Bounds x="810" y="360" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Slip_shape" bpmnElement="Task_Slip"><dc:Bounds x="970" y="560" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Rules_shape" bpmnElement="Task_Rules"><dc:Bounds x="1130" y="360" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Register_shape" bpmnElement="Task_Register"><dc:Bounds x="1290" y="560" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Catch_FullTime_shape" bpmnElement="Catch_FullTime"><dc:Bounds x="1450" y="182" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1430" y="150" width="76" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Settle_shape" bpmnElement="Task_Settle"><dc:Bounds x="1520" y="160" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Learn_shape" bpmnElement="Task_Learn"><dc:Bounds x="1680" y="160" width="120" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Verdict_shape" bpmnElement="End_Verdict"><dc:Bounds x="1840" y="182" width="36" height="36" /></bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_1_edge" bpmnElement="Flow_1"><di:waypoint x="206" y="200" /><di:waypoint x="240" y="200" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_edge" bpmnElement="Flow_2"><di:waypoint x="360" y="200" /><di:waypoint x="400" y="200" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_edge" bpmnElement="Flow_3"><di:waypoint x="460" y="240" /><di:waypoint x="460" y="400" /><di:waypoint x="560" y="400" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_edge" bpmnElement="Flow_4"><di:waypoint x="680" y="400" /><di:waypoint x="720" y="400" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Yes_edge" bpmnElement="Flow_Yes"><di:waypoint x="770" y="400" /><di:waypoint x="810" y="400" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_No_edge" bpmnElement="Flow_No"><di:waypoint x="745" y="425" /><di:waypoint x="745" y="452" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_edge" bpmnElement="Flow_7"><di:waypoint x="870" y="440" /><di:waypoint x="870" y="600" /><di:waypoint x="970" y="600" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_edge" bpmnElement="Flow_8"><di:waypoint x="1090" y="600" /><di:waypoint x="1110" y="600" /><di:waypoint x="1110" y="400" /><di:waypoint x="1130" y="400" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_edge" bpmnElement="Flow_9"><di:waypoint x="1250" y="400" /><di:waypoint x="1270" y="400" /><di:waypoint x="1270" y="600" /><di:waypoint x="1290" y="600" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_edge" bpmnElement="Flow_10"><di:waypoint x="1410" y="600" /><di:waypoint x="1468" y="600" /><di:waypoint x="1468" y="218" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_edge" bpmnElement="Flow_11"><di:waypoint x="1486" y="200" /><di:waypoint x="1520" y="200" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_edge" bpmnElement="Flow_12"><di:waypoint x="1640" y="200" /><di:waypoint x="1680" y="200" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_edge" bpmnElement="Flow_13"><di:waypoint x="1800" y="200" /><di:waypoint x="1840" y="200" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
