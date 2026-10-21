@@ -28,7 +28,7 @@ export const routes: Routes = [
     component: Shell,
     canActivate: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'partite' },
+      { path: '', pathMatch: 'full', loadComponent: () => import('./pages/home/home').then((m) => m.Home), title: 'Oggi · ArchieBet' },
       { path: 'partite', component: Matches, title: 'Partite · ArchieBet', data: { section: SECTIONS[0] } },
       { path: 'partite/:id', loadComponent: () => import('./pages/match/match').then((m) => m.MatchPage), title: 'Partita · ArchieBet' },
       { path: 'schedine/nuova', loadComponent: () => import('./pages/bets/new-bet').then((m) => m.NewBet), title: 'Registra una giocata · ArchieBet' },

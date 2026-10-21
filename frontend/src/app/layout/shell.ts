@@ -28,7 +28,7 @@ export class Shell {
   /** Una voce è accesa anche sulle sue pagine interne (es. Pronostici su /laboratorio) */
   protected isActive(item: MenuItem): boolean {
     const path = this.url().split('?')[0];
-    return item.prefixes.some((p) => path === p || path.startsWith(p + '/'));
+    return item.prefixes.some((p) => path === p || (p !== '/' && path.startsWith(p + '/')));
   }
 
   protected async logout(): Promise<void> {

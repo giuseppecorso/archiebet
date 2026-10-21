@@ -1,0 +1,56 @@
+<header class="hero">
+  <h1>Oggi</h1>
+  <p>{{ fmt.longDate(today) }} · le partite di oggi, le occasioni del momento, le tue giocate in corso e ArchieTV.</p>
+</header>
+
+<div class="home-grid">
+  <section class="panel box" aria-labelledby="h-today">
+    <div class="box-head">
+      <h2 id="h-today" class="title box-title">Partite di oggi</h2>
+      <a routerLink="/partite" class="small">Tutte le partite</a>
+    </div>
+    @for (m of todayMatches(); track m.id) {
+      <ab-match-row [match]="m" />
+    } @empty {
+      <p class="muted small">{{ upcoming.isLoading() ? 'Carico…' : 'Oggi niente partite nei campionati seguiti.' }} <a routerLink="/partite">Guarda i prossimi giorni</a></p>
+    }
+  </section>
+
+  <div class="side">
+    <section class="panel box" aria-labelledby="h-occ">
+      <div class="box-head">
+        <h2 id="h-occ" class="title box-title">Occasioni adesso</h2>
+        <a routerLink="/pronostici" [queryParams]="{ tab: 'occasioni' }" class="small">Tutte</a>
+      </div>
+      @for (o of occasions(); track o.match_id + o.market + o.selection) {
+        <a class="occ" [routerLink]="['/partite', o.match_id]">
+          <span class="occ-match">{{ o.home.name }} – {{ o.away.name }}</span>
+          <span class="muted small">{{ fmt.kickoffTime(o.kickoff_at) }} · {{ fmt.pickLabel($any(o.market), o.selection) }}</span>
+          <span class="occ-nums"><span class="led">{{ fmt.odds(o.price) }}</span> <span class="small">{{ o.bookmaker }}</span> <span class="pos small">{{ fmt.signedPct(o.value) }}</span></span>
+        </a>
+      } @empty {
+        <p class="muted small">Nessuna quota adesso batte la quota giusta di Pinnacle. Succede spesso: è normale.</p>
+      }
+    </section>
+
+    <section class="panel box" aria-labelledby="h-bets">
+      <div class="box-head">
+        <h2 id="h-bets" class="title box-title">Le tue giocate in corso</h2>
+        <a routerLink="/schedine" class="small">Il mio Archie</a>
+      </div>
+      @for (b of openBets(); track b.id) {
+        <a class="bet" [routerLink]="['/schedine', b.id]">
+          <span>{{ b.selections.length === 1 ? b.selections[0].match.home.name + ' – ' + b.selections[0].match.away.name : b.selections.length + ' partite' }}</span>
+          <span class="muted small">{{ b.kind === 'real' ? 'reale' : 'simulata' }} · {{ fmt.euro(b.stake) }} a quota {{ b.total_odds }}</span>
+          @if (b.hope != null) {
+            <span class="small">speranza <span class="led">{{ fmt.pct(b.hope) }}</span>{{ b.live ? ' · live' : '' }}</span>
+          }
+        </a>
+      } @empty {
+        <p class="muted small">Nessuna giocata aperta. Clicca una quota in Pronostici per riempire la schedina.</p>
+      }
+    </section>
+  </div>
+</div>
+
+<ab-archie-tv [limit]="8" />

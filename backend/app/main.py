@@ -11,6 +11,7 @@ from app.api.media import router as media_router
 from app.api.ask import router as ask_router
 from app.api.fan import router as fan_router
 from app.api.play import router as play_router
+from app.api.tv import router as tv_router
 from app.api.rules import router as rules_router
 from app.api.picks import router as picks_router
 from app.api.radar import router as radar_router
@@ -42,6 +43,7 @@ app.include_router(fan_router)
 app.include_router(ask_router)
 app.include_router(rules_router)
 app.include_router(play_router)
+app.include_router(tv_router)
 
 
 @app.get("/api/health", tags=["system"])

@@ -58,11 +58,10 @@ describe('ArchieBet: navigazione', () => {
   });
 
   it('dopo il login mostra il menu e le partite della dashboard', async () => {
-    const harness = await navigateAs('/', true);
-    expect(TestBed.inject(Router).url).toBe('/partite');
+    const harness = await navigateAs('/partite', true);
 
     const links = [...harness.routeNativeElement!.querySelectorAll('nav.nav a')].map((a) => a.textContent?.trim());
-    expect(links).toEqual(['Partite', 'Live', 'Pronostici', 'Il mio Archie']);
+    expect(links).toEqual(['Home', 'Partite', 'Live', 'Pronostici', 'Il mio Archie']);
 
     const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
     const premier = { code: 'ENG-1', name: 'Premier League', country: 'Inghilterra', tier: 1 };
@@ -113,6 +112,22 @@ describe('ArchieBet: navigazione', () => {
     const chips = [...harness.routeNativeElement!.querySelectorAll('.filters .chip')].map((b) => b.textContent?.trim());
     expect(chips).toEqual(['Premier League']);
     localStorage.removeItem('archiebet.matches.filters');
+  });
+
+  it('la home mostra le partite di oggi, le occasioni e ArchieTV', async () => {
+    const harness = await navigateAs('/', true);
+    expect(TestBed.inject(Router).url).toBe('/');
+    (await nextRequest((r) => r.url.startsWith('/api/matches?view=upcoming'))).flush([]);
+    (await nextRequest('/api/radar')).flush({ threshold: 0.02, max_price: 4, playable: [], simulation_bookmakers: [], upcoming: [], recent: [], live: null, live_secondary: null });
+    (await nextRequest('/api/bets')).flush([]);
+    (await nextRequest('/api/tv')).flush([
+      { video_id: 'abc', title: 'Highlights Inter-Milan', channel: 'Serie A', published: '2026-10-20T21:00:00+00:00', thumbnail: 'https://i.ytimg.com/vi/abc/hqdefault.jpg' },
+    ]);
+    await harness.fixture.whenStable();
+    const page = harness.routeNativeElement!;
+    expect(page.querySelector('.hero h1')?.textContent).toContain('Oggi');
+    expect(page.querySelector('ab-archie-tv')?.textContent).toContain('Highlights Inter-Milan');
+    expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Home');
   });
 
   it('il simulatore sta dentro Pronostici, senza la sfida', async () => {
