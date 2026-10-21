@@ -2,6 +2,16 @@
 
 Ultimo aggiornamento: 2026-10-21
 
+## Grafica, navigazione e nuovi campionati (2026-10-21, richieste di Giuse)
+
+- [x] **Schedina sempre visibile** (D126): un clic su una quota in Pronostici, nella pagina partita o su una Multipla la mette in schedina; registra con il controllo del regolamento.
+- [x] **Menu a 4 voci** (D126): Partite (filtri per giorno, campionato, squadra), Live, Pronostici (Pronostici, Occasioni, Multipla, Statistiche, Simulatore), Il mio Archie (schedine, statistiche e regolamento, Chiedi ad Archie). Sfida contro Archie tolta.
+- [x] **Live** (D125, sperimentale): partite in corso con quota giusta e quota minima da giocare adesso.
+- [x] **Grafica "stadio di sera"** (D127): colori più vivi, foto di stadio e prato (Unsplash, in `frontend/public/img`).
+- [x] **Est e Nord Europa** (D128): 17 massime serie con calendario e risultati in Partite; restano fuori da Pronostici e Occasioni finché la prova non passa. Archivio quote in corso (`odds-archive --east`), poi `east-test`.
+- Nota: le Occasioni dal vivo sono a 1 giocata su 300 (ne escono poche): proposto a Giuse un verdetto sequenziale e più bookmaker giocabili.
+- Test: 417 backend + 27 frontend, tutti verdi.
+
 ## Fase 8 – Coppe, altri campionati, formazioni, piano live: CONCLUSA (2026-10-21)
 
 - [x] Coppe europee già attive da D85 (calendario, risultati, quote).

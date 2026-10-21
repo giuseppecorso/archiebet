@@ -40,6 +40,28 @@ LEAGUES = {
     848: "EU-ECL",
 }
 
+# Massime serie dell'Est e del Nord Europa (D128): solo calendario e risultati della stagione in corso, finché la prova non passa
+EAST_NORTH = {
+    103: "NOR-1",
+    119: "DEN-1",
+    113: "SWE-1",
+    244: "FIN-1",
+    164: "ISL-1",
+    106: "POL-1",
+    345: "CZE-1",
+    210: "CRO-1",
+    286: "SRB-1",
+    283: "ROU-1",
+    271: "HUN-1",
+    333: "UKR-1",
+    197: "GRE-1",
+    172: "BUL-1",
+    332: "SVK-1",
+    373: "SVN-1",
+    203: "TUR-1",
+}  # fmt: skip
+LEAGUES.update(EAST_NORTH)
+
 # Stati API-Football → stato in ArchieBet. Gli stati "in corso" restano "scheduled" finché non c'è il live (Fase 5).
 FINISHED = {"FT", "AET", "PEN", "AWD", "WO"}
 POSTPONED = {"PST", "TBD"}

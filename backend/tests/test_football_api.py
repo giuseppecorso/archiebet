@@ -50,7 +50,9 @@ def test_requires_login(client):
 
 def test_competitions(logged_client, seeded):
     codes = [c["code"] for c in logged_client.get("/api/competitions").json()]
-    assert codes == ["ITA-A", "ITA-B", "ITA-C-A", "ITA-C-B", "ITA-C-C", "EU-CL", "EU-EL", "EU-ECL", "ENG-1", "ENG-2", "ESP-1", "ESP-2", "GER-1", "GER-2", "FRA-1", "FRA-2"]  # Italia in testa, poi le coppe, poi paese per paese
+    main = ["ITA-A", "ITA-B", "ITA-C-A", "ITA-C-B", "ITA-C-C", "EU-CL", "EU-EL", "EU-ECL", "ENG-1", "ENG-2", "ESP-1", "ESP-2", "GER-1", "GER-2", "FRA-1", "FRA-2"]
+    assert codes[: len(main)] == main  # Italia in testa, poi le coppe, poi paese per paese
+    assert codes[len(main) : len(main) + 3] == ["BUL-1", "CZE-1", "CRO-1"]  # poi Est e Nord (D128) per paese: Bulgaria, Cechia, Croazia...
 
 
 def test_upcoming_grouped_by_competition(logged_client, seeded):

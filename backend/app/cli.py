@@ -942,7 +942,7 @@ def _seriec_edge() -> int:
     print(f"Verdetto D99: (a) {'passa' if a_ok else 'non passa'}, (b) {'passa' if b_ok else 'non passa'}")
     return 0
 
-def _odds_archive(since: str, minor: bool = False) -> int:
+def _odds_archive(since: str, minor: bool = False, east: bool = False) -> int:
     """Salva lo storico quote di OddsPapi (gratuito, ma solo ~6 mesi) per le prove sui mercati (D82)."""
     from app.adapters.cache import FileCache
     from app.adapters.oddspapi import OddsPapiAdapter
@@ -957,6 +957,10 @@ def _odds_archive(since: str, minor: bool = False) -> int:
         from app.ingest.odds_archive import MINOR_TOURNAMENTS
 
         tournaments = MINOR_TOURNAMENTS
+    if east:
+        from app.ingest.odds_archive import EAST_NORTH_TOURNAMENTS
+
+        tournaments = EAST_NORTH_TOURNAMENTS
     report = archive_history(adapter, FileCache(settings.data_cache_dir, "odds-archive"), start, tournaments=tournaments)
     print(f"Archivio: {report.saved} salvate, {report.missing} senza storico, {report.already} già presenti, {report.failed} da riprovare")
     return 0
@@ -1022,8 +1026,8 @@ def _style_test() -> int:
     return 0
 
 
-def _minor_test() -> int:
-    """Prova D106 (b): Occasioni D72 su Sisal ed Eurobet contro Pinnacle nelle serie minori, CLV contro la chiusura Pinnacle.
+def _minor_test(group: str = "serie minori") -> int:
+    """Prove D106 / D128 (b): Occasioni D72 su Sisal ed Eurobet contro Pinnacle, CLV contro la chiusura Pinnacle.
 
     La prova passa solo se passano (a) e (b): si comincia da (b), che non ha bisogno dei risultati."""
     from collections import defaultdict
@@ -1031,12 +1035,12 @@ def _minor_test() -> int:
     from app.forecast import seriec_edge as se
     from app.forecast.learning_service import load_timing_books
 
-    minor = [b for b in load_timing_books() if b.group == "serie minori"]
+    minor = [b for b in load_timing_books() if b.group == group]
     books = [se.MatchBook(i, b.kickoff, 0, 0, b.prices) for i, b in enumerate(minor)]
     with_pin = [m for m in books if "pinnacle" in m.prices]
     times = sorted(m.kickoff for m in with_pin)
     split = times[len(times) // 2]
-    print(f"Serie minori nell'archivio: {len(books)} partite, con Pinnacle {len(with_pin)}; divisione al {split:%d/%m/%Y}")
+    print(f"{group.capitalize()} nell'archivio: {len(books)} partite, con Pinnacle {len(with_pin)}; divisione al {split:%d/%m/%Y}")
     plays = se.pinnacle_occasions(with_pin)
     ok = True
     for label, part in (("taratura", [p for p in plays if p.kickoff < split]), ("conferma", [p for p in plays if p.kickoff >= split])):
@@ -1347,6 +1351,7 @@ def main() -> int:
     wt = commands.add_parser("weather-test", help="prova del nove del meteo (D76)")
     wt.add_argument("--fetch-only", action="store_true", help="scarica soltanto il meteo, senza la prova")
     wt.add_argument("--patient", action="store_true", help="se Open-Meteo limita, aspetta un'ora e riprende")
+    commands.add_parser("east-test", help="prova D128 (b): Occasioni nell'Est e nel Nord Europa contro Pinnacle")
     commands.add_parser("minor-test", help="prova D106 (b): Occasioni nelle serie minori contro Pinnacle")
     commands.add_parser("lineup-test", help="prova D123: formazioni previste contro l'ultima formazione")
     commands.add_parser("learning-refresh", help="Archie rifà le prove della Fase 7 e salva i risultati (come il lavoro settimanale)")
@@ -1361,6 +1366,7 @@ def main() -> int:
     oa = commands.add_parser("odds-archive", help="salva lo storico quote OddsPapi (angoli, cartellini, principali)")
     oa.add_argument("--since", default="2026-04-01", help="data di inizio, AAAA-MM-GG")
     oa.add_argument("--minor", action="store_true", help="serie minori di tutto il mondo (prova D106)")
+    oa.add_argument("--east", action="store_true", help="massime serie dell'Est e del Nord Europa (prova D128)")
     commands.add_parser("seriec-test", help="prova D95: modello di Archie contro i bookmaker italiani in Serie C (copia del DB)")
     commands.add_parser("seriec-edge", help="prova D98: battere il consenso dei bookmaker italiani in Serie C (copia del DB)")
     commands.add_parser("live-check", help="verifica del termometro della speranza sul punteggio all'intervallo (D92)")
@@ -1396,6 +1402,8 @@ def main() -> int:
         return _popularity_test()
     if args.command == "weather-test":
         return _weather_test(args.fetch_only, args.patient)
+    if args.command == "east-test":
+        return _minor_test("est e nord")
     if args.command == "minor-test":
         return _minor_test()
     if args.command == "lineup-test":
@@ -1412,7 +1420,7 @@ def main() -> int:
     if args.command == "history-sim":
         return _history_sim(args.first, args.last)
     if args.command == "odds-archive":
-        return _odds_archive(args.since, args.minor)
+        return _odds_archive(args.since, args.minor, args.east)
     if args.command == "seriec-test":
         return _seriec_test()
     if args.command == "seriec-edge":

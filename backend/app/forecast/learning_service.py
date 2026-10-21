@@ -23,7 +23,7 @@ from app.forecast import strategy_search as ss
 from app.forecast import timing as tm
 from app.forecast.data import load_odds
 from app.forecast.demargin import shin
-from app.ingest.odds_archive import MINOR_TOURNAMENTS
+from app.ingest.odds_archive import EAST_NORTH_TOURNAMENTS, MINOR_TOURNAMENTS
 from app.models import Competition, Match, MatchStatus
 
 ROME = ZoneInfo("Europe/Rome")
@@ -44,7 +44,7 @@ def _ts(text: str) -> datetime:
 
 def load_timing_books() -> list[tm.Book]:
     """Storia delle quote dall'archivio OddsPapi, per la prova D119 (solo partite finite, coppe escluse)."""
-    codes = {**TOURNAMENTS, **MINOR_TOURNAMENTS}
+    codes = {**TOURNAMENTS, **MINOR_TOURNAMENTS, **EAST_NORTH_TOURNAMENTS}
     books = []
     for path in (get_settings().data_cache_dir / "odds-archive").glob("*.json"):
         record = json.loads(path.read_text(encoding="utf-8"))["data"]
@@ -52,7 +52,8 @@ def load_timing_books() -> list[tm.Book]:
         code = codes.get(fx.get("tournamentId"))
         if code is None or code.startswith("EU-") or not record.get("bookmakers"):
             continue
-        group = TIMING_GROUPS.get(code) or ("serie minori" if fx["tournamentId"] in MINOR_TOURNAMENTS else "estero")
+        tid = fx["tournamentId"]
+        group = TIMING_GROUPS.get(code) or ("serie minori" if tid in MINOR_TOURNAMENTS else "est e nord" if tid in EAST_NORTH_TOURNAMENTS else "estero")
         prices: dict = {}
         for slug, book in record["bookmakers"].items():
             for market_id, market in (book.get("markets") or {}).items():
@@ -143,7 +144,7 @@ def strategy_report(sims: Sequence[hs.SimMatch], fixtures: Sequence[ss.Fixture])
 def timing_report(books: Sequence[tm.Book]) -> dict:
     obs = tm.observations(books, lambda b: "consensus" if b.group == "Serie C" else "pinnacle")
     groups = []
-    for group in ("Serie A e B", "Serie C", "estero", "serie minori"):
+    for group in ("Serie A e B", "Serie C", "estero", "est e nord", "serie minori"):
         sel = [o for o in obs if o.group == group]
         if not sel:
             continue

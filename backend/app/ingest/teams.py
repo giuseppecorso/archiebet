@@ -26,19 +26,39 @@ COMPETITIONS = {
     "EU-CL": {"name": "Champions League", "country": "Europa", "tier": 1},
     "EU-EL": {"name": "Europa League", "country": "Europa", "tier": 2},
     "EU-ECL": {"name": "Conference League", "country": "Europa", "tier": 3},
+    # Est e Nord Europa (D128)
+    "NOR-1": {"name": "Eliteserien", "country": "Norvegia", "tier": 1},
+    "DEN-1": {"name": "Superliga", "country": "Danimarca", "tier": 1},
+    "SWE-1": {"name": "Allsvenskan", "country": "Svezia", "tier": 1},
+    "FIN-1": {"name": "Veikkausliiga", "country": "Finlandia", "tier": 1},
+    "ISL-1": {"name": "Besta deild", "country": "Islanda", "tier": 1},
+    "POL-1": {"name": "Ekstraklasa", "country": "Polonia", "tier": 1},
+    "CZE-1": {"name": "Chance Liga", "country": "Cechia", "tier": 1},
+    "CRO-1": {"name": "HNL", "country": "Croazia", "tier": 1},
+    "SRB-1": {"name": "Super liga", "country": "Serbia", "tier": 1},
+    "ROU-1": {"name": "Liga I", "country": "Romania", "tier": 1},
+    "HUN-1": {"name": "NB I", "country": "Ungheria", "tier": 1},
+    "UKR-1": {"name": "Premier Liha", "country": "Ucraina", "tier": 1},
+    "GRE-1": {"name": "Super League", "country": "Grecia", "tier": 1},
+    "BUL-1": {"name": "Parva liga", "country": "Bulgaria", "tier": 1},
+    "SVK-1": {"name": "Niké liga", "country": "Slovacchia", "tier": 1},
+    "SVN-1": {"name": "PrvaLiga", "country": "Slovenia", "tier": 1},
+    "TUR-1": {"name": "Süper Lig", "country": "Turchia", "tier": 1},
 }
 
 # Ordine dei paesi nei menu (specifiche, sezione 3)
 COUNTRY_ORDER = ["Italia", "Europa", "Inghilterra", "Spagna", "Germania", "Francia"]
 CUP_COUNTRY = "Europa"  # "paese" delle coppe europee: le squadre invece restano nel loro
 # Paesi come li scrive API-Football -> come li scriviamo noi (gli altri restano in inglese)
-COUNTRY_NAMES = {"Italy": "Italia", "England": "Inghilterra", "Spain": "Spagna", "Germany": "Germania", "France": "Francia"}
+COUNTRY_NAMES = {
+    "Italy": "Italia", "England": "Inghilterra", "Spain": "Spagna", "Germany": "Germania", "France": "Francia", "Norway": "Norvegia", "Denmark": "Danimarca", "Sweden": "Svezia", "Finland": "Finlandia", "Iceland": "Islanda", "Poland": "Polonia", "Czech-Republic": "Cechia", "Croatia": "Croazia", "Serbia": "Serbia", "Romania": "Romania", "Hungary": "Ungheria", "Ukraine": "Ucraina", "Greece": "Grecia", "Bulgaria": "Bulgaria", "Slovakia": "Slovacchia", "Slovenia": "Slovenia", "Turkey": "Turchia",
+}  # fmt: skip
 
 
-def competition_sort_key(c: Competition) -> tuple[int, int, str]:
-    """Prima il paese (Italia in testa), poi la categoria, poi il nome."""
+def competition_sort_key(c: Competition) -> tuple[int, str, int, str]:
+    """Prima il paese (Italia in testa, poi i paesi principali, poi gli altri in ordine alfabetico), la categoria, il nome."""
     country = COUNTRY_ORDER.index(c.country) if c.country in COUNTRY_ORDER else len(COUNTRY_ORDER)
-    return country, c.tier, c.name
+    return country, c.country if country == len(COUNTRY_ORDER) else "", c.tier, c.name
 
 # Sigle e parole che non distinguono una squadra dall'altra
 _NOISE = {

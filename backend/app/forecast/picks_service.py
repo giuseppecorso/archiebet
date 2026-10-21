@@ -6,10 +6,11 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.adapters.api_football import EAST_NORTH
 from app.forecast.multiple import Leg
 from app.forecast.picks import ESTIMATE_ONLY, MarketPick, match_picks
 from app.forecast.radar_service import load_book_odds
-from app.models import Match, MatchPrediction, MatchStatus
+from app.models import Competition, Match, MatchPrediction, MatchStatus
 
 
 def upcoming_picks(db: Session, now: datetime, until: datetime, bookmakers: Sequence[str]) -> list[tuple[Match, list[MarketPick]]]:
@@ -17,7 +18,9 @@ def upcoming_picks(db: Session, now: datetime, until: datetime, bookmakers: Sequ
     matches = list(
         db.scalars(
             select(Match)
+            .join(Competition, Competition.id == Match.competition_id)
             .where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now, Match.kickoff_at <= until)
+            .where(Competition.code.not_in(list(EAST_NORTH.values())))  # solo in Partite finché la prova D128 non passa
             .order_by(Match.kickoff_at, Match.id)
         )
     )

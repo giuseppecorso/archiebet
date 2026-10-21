@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from app.adapters.api_football import ApiFootballAdapter
+from app.adapters.api_football import EAST_NORTH, ApiFootballAdapter
 from app.adapters.cache import FileCache
 from app.adapters.football_data import FootballDataAdapter, season_of
 from app.adapters.oddspapi import OddsPapiAdapter
@@ -79,7 +79,7 @@ def sync_api_football_all(db, settings: Settings, log=logger.info) -> ImportRepo
     current = season_of(datetime.now(UTC).date())
     past = [s for s in settings.api_football_season_years if s < current]
     report = sync_api_football(db, adapter, settings.api_football_league_ids, past, log=log)
-    leagues = [*settings.api_football_league_ids, *settings.api_football_current_league_ids]
+    leagues = [*settings.api_football_league_ids, *settings.api_football_current_league_ids, *EAST_NORTH]
     report.add(sync_api_football(db, adapter, leagues, [current], log=log))
     return report
 
@@ -242,7 +242,7 @@ def live_job() -> None:
         with SessionLocal() as db:
             if not needs_live(db, now):
                 return
-            leagues = [*settings.api_football_league_ids, *settings.api_football_current_league_ids]
+            leagues = [*settings.api_football_league_ids, *settings.api_football_current_league_ids, *EAST_NORTH]
             report = sync_live(db, api_football_adapter(db, settings), leagues, now)
             if report.finished:
                 settle_radar(db, now)

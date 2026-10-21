@@ -54,6 +54,12 @@ MINOR_TOURNAMENTS = {
     390: "BRA-2", 703: "ARG-2", 402: "JPN-2", 2094: "JPN-3", 28163: "USA-2", 27382: "MEX-2",
 }  # fmt: skip
 
+# Massime serie dell'Est e del Nord Europa per la prova D128 (id OddsPapi da /tournaments, 2026-10-21)
+EAST_NORTH_TOURNAMENTS = {
+    20: "NOR-1", 39: "DEN-1", 40: "SWE-1", 41: "FIN-1", 188: "ISL-1", 202: "POL-1", 172: "CZE-1", 170: "CRO-1", 210: "SRB-1",
+    152: "ROU-1", 187: "HUN-1", 218: "UKR-1", 185: "GRE-1", 247: "BUL-1", 211: "SVK-1", 212: "SVN-1", 52: "TUR-1",
+}  # fmt: skip
+
 
 def archive_history(
     adapter: OddsPapiAdapter,
