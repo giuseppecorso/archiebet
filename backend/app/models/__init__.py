@@ -6,6 +6,7 @@ Regola di scalabilità (sezione 14.2), da rispettare in ogni nuova tabella:
   si calcolano una volta sola e tutti gli utenti li leggono.
 """
 
+from app.models.assistant import AiQuestion
 from app.models.base import Base
 from app.models.betting import Bet, BetKind, BetSelection, BetSnapshot, UserSettings
 from app.models.forecast import MatchPrediction, RadarSignal
@@ -16,6 +17,7 @@ from app.models.usage import UsageEvent
 from app.models.user import User, UserSession
 
 __all__ = [
+    "AiQuestion",
     "Base",
     "Bet",
     "BetKind",

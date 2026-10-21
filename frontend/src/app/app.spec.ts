@@ -22,6 +22,8 @@ describe('ArchieBet: navigazione', () => {
   afterEach(() => {
     // La dashboard chiede sempre anche le partite in corso (D92): qui non ce ne sono
     http.match((r) => r.url.startsWith('/api/matches?view=live')).forEach((r) => r.flush([]));
+    // ... e lo storico di Chiedi ad Archie (Fase 6)
+    http.match((r) => r.url.startsWith('/api/ask')).forEach((r) => r.flush([]));
     http.verify();
   });
 
@@ -105,6 +107,7 @@ describe('ArchieBet: navigazione', () => {
         price: 7.0, value: 0.26, suspicious: true,
       },
     ]);
+    (await nextRequest((r) => r.url.startsWith('/api/ask'))).flush([]); // storico di Chiedi ad Archie: vuoto
     await harness.fixture.whenStable();
     const offLine = harness.routeNativeElement!.querySelector('ab-off-line-card')!.textContent!;
     expect(offLine).toContain('2 · Frosinone');

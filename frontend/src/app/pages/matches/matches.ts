@@ -1,3 +1,4 @@
+import { AskArchie } from '../../shared/ask-archie';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, effect, signal } from '@angular/core';
 import { Competition, CompetitionGroup } from '../../core/football';
@@ -17,7 +18,7 @@ const STORAGE_KEY = 'archiebet.matches.filters';
 /** Dashboard "Partite": elenco per campionato con filtri. Multipla, schedina e ArchieTV arrivano nelle fasi successive. */
 @Component({
   selector: 'ab-matches',
-  imports: [DataStatusBar, MatchRow, MultipleCard, OffLineCard, ShowMore, LeagueLogo],
+  imports: [DataStatusBar, MatchRow, MultipleCard, OffLineCard, ShowMore, LeagueLogo, AskArchie],
   templateUrl: './matches.html',
   styleUrl: './matches.scss',
 })

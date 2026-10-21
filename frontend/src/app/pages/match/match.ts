@@ -1,3 +1,4 @@
+import { AskArchie } from '../../shared/ask-archie';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { KeyValuePipe } from '@angular/common';
@@ -71,7 +72,7 @@ const ARCHIE_MARKETS: [string, string, string][] = [
 
 @Component({
   selector: 'ab-match',
-  imports: [RouterLink, FormBadges, ShowMore, Crest, LeagueLogo, KeyValuePipe],
+  imports: [RouterLink, FormBadges, ShowMore, Crest, LeagueLogo, KeyValuePipe, AskArchie],
   templateUrl: './match.html',
   styleUrl: './match.scss',
 })

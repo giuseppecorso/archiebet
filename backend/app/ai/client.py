@@ -60,12 +60,28 @@ class Ai:
             output_format=output,
             output_config={"effort": effort},
         )
-        usage = response.usage
+        self._record(purpose, model, response.usage, user_id)
+        if response.stop_reason != "end_turn" or response.parsed_output is None:
+            raise AiError(f"Risposta non utilizzabile ({response.stop_reason})")
+        return response.parsed_output
+
+    def create(self, purpose: str, model: str, system: str, messages: list, tools: list | None = None, max_tokens: int = 8000,
+               effort: str = "medium", user_id: int | None = None) -> Any:  # fmt: skip
+        """Una richiesta libera (es. con strumenti): stesso tetto di spesa e stesso registro di parse()."""
+        if model not in PRICES:
+            raise AiError(f"Modello senza prezzo nel listino: {model}")
+        self._gateway.ensure_can_spend(user_id, self._now())
+        kwargs = {"tools": tools} if tools else {}
+        response = self._client.messages.create(model=model, max_tokens=max_tokens, system=system, messages=messages,
+                                                output_config={"effort": effort}, **kwargs)  # fmt: skip
+        self._record(purpose, model, response.usage, user_id)
+        if response.stop_reason in ("refusal", "max_tokens"):
+            raise AiError(f"Risposta non utilizzabile ({response.stop_reason})")
+        return response
+
+    def _record(self, purpose: str, model: str, usage: Any, user_id: int | None) -> None:
         # La cache costa meno, ma si conta a prezzo pieno: per il tetto meglio sovrastimare
         tokens_in = usage.input_tokens + (getattr(usage, "cache_creation_input_tokens", 0) or 0) + (getattr(usage, "cache_read_input_tokens", 0) or 0)
         cost = Decimal(str(cost_usd(model, tokens_in, usage.output_tokens))) * EUR_PER_USD
         record_usage(self._db, f"ai:{purpose}:{model.removeprefix('claude-')}", units=tokens_in + usage.output_tokens, cost_eur=cost, user_id=user_id,
-                     created_at=self._now())
-        if response.stop_reason != "end_turn" or response.parsed_output is None:
-            raise AiError(f"Risposta non utilizzabile ({response.stop_reason})")
-        return response.parsed_output
+                     created_at=self._now())  # fmt: skip

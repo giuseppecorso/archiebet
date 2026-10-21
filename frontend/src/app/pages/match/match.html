@@ -250,6 +250,8 @@
     </section>
   }
 
+  <ab-ask-archie [matchId]="d.match.id" placeholder="Es. Conviene l'Over angoli? Chi tira di più?" />
+
   @if (d.match.competition.code.startsWith('ITA-') || fan.value()?.facts?.length) {
     <section class="panel box fan" aria-labelledby="fan-title">
       <div class="box-head">
