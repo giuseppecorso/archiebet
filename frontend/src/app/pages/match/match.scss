@@ -725,3 +725,36 @@ tr.absent td {
   background: var(--chip);
   border-radius: 10px;
 }
+.lu-list {
+  margin: 0 0 6px;
+  padding-left: 22px;
+  li {
+    padding: 2px 0;
+  }
+}
+.lu-role {
+  display: inline-block;
+  width: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.plan-states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+  .chip {
+    padding: 4px 10px;
+    font: inherit;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    cursor: pointer;
+    &.on {
+      color: var(--bg);
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+  }
+}

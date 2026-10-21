@@ -4,7 +4,7 @@ import { Component, computed, effect, inject, input, signal } from '@angular/cor
 import { KeyValuePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { Market, pickLabel } from '../../core/bets';
-import { MatchAnalysis, MatchNumbers, MatchPicks, PlayerShots, verdictClass } from '../../core/picks';
+import { MatchAnalysis, MatchNumbers, MatchPicks, PlanState, PlayerShots, TeamLineup, verdictClass } from '../../core/picks';
 import { RouterLink } from '@angular/router';
 import { FanFact, MatchFan, SOURCE_LABELS, factTone } from '../../core/fan';
 import { MatchDetail, OddsRow, TeamSummary } from '../../core/football';
@@ -93,6 +93,15 @@ export class MatchPage {
   protected readonly numbersSide = signal<'totale' | 'casa' | 'ospite'>('totale');
   /** Tiri dei giocatori (D111): i primi 6 per squadra, gli assenti secondo le notizie in fondo */
   protected readonly players = httpResource<PlayerShots[]>(() => `/api/picks/match/${this.id()}/players`);
+  /** Formazioni previste o ufficiali (D123) */
+  protected readonly lineups = httpResource<TeamLineup[]>(() => `/api/picks/match/${this.id()}/lineups`);
+  protected readonly roleLabels: Record<string, string> = { G: 'Portiere', D: 'Difesa', M: 'Centrocampo', F: 'Attacco' };
+  /** Piano partita live (D124): situazioni tipiche e quote minime */
+  protected readonly plan = httpResource<PlanState[]>(() => `/api/picks/match/${this.id()}/plan`);
+  protected readonly planIndex = signal(0);
+  protected readonly planLabels: Record<string, string> = {
+    '1X2:1': '1', '1X2:X': 'X', '1X2:2': '2', 'OU2.5:over': 'Over 2.5', 'OU2.5:under': 'Under 2.5', 'GG:yes': 'Goal', 'GG:no': 'No goal',
+  };
   /** Partite gemelle (D121): le 100 partite passate più simili e come sono finite */
   protected readonly twins = httpResource<Twins>(() => `/api/lab/twins/${this.id()}`);
   protected readonly playersBySide = computed(() => {

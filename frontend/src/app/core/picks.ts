@@ -96,3 +96,29 @@ export interface PlayerShots {
   /** Assente o squalificato secondo le notizie (Archie tifoso) */
   absent: string | null;
 }
+
+/** Formazioni previste (D123) o ufficiali */
+export interface LineupPlayer {
+  name: string;
+  position: string;
+  p_start: number | null;
+  absent: string | null;
+}
+
+export interface TeamLineup {
+  side: 'casa' | 'ospite';
+  official: boolean;
+  eleven: LineupPlayer[];
+  doubtful: LineupPlayer[];
+  out: LineupPlayer[];
+  based_on: number;
+}
+
+/** Piano partita live (D124) */
+export interface PlanState {
+  minute: number;
+  home_goals: number;
+  away_goals: number;
+  remaining: [number, number];
+  lines: { market: string; selection: string; probability: number; fair_odds: number; min_odds: number | null }[];
+}

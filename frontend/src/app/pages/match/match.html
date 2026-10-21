@@ -250,6 +250,85 @@
     </section>
   }
 
+  @if (lineups.value()?.length) {
+    <section class="panel box lineups" aria-labelledby="lu-title">
+      <div class="box-head">
+        <h2 id="lu-title" class="title box-title">Formazioni</h2>
+        <span class="muted small">{{ lineups.value()![0].official ? 'ufficiali' : 'previste da Archie' }}</span>
+      </div>
+      <div class="num-grid">
+        @for (t of lineups.value(); track t.side) {
+          <div>
+            <h3 class="title fan-team">
+              {{ t.side === 'casa' ? d.match.home.name : d.match.away.name }}
+              @if (t.official) { <span class="v ok">ufficiale</span> }
+            </h3>
+            <ol class="lu-list">
+              @for (p of t.eleven; track p.name) {
+                <li>
+                  <span class="lu-role">{{ p.position }}</span> {{ p.name }}
+                  @if (p.p_start != null && !t.official) { <span class="muted small">titolare {{ fmt.pct(p.p_start) }}</span> }
+                </li>
+              }
+            </ol>
+            @if (t.doubtful.length) {
+              <p class="small">In dubbio: @for (p of t.doubtful; track p.name; let last = $last) {{{ p.name }} ({{ fmt.pct(p.p_start) }}){{ last ? '' : ', ' }}}</p>
+            }
+            @if (t.out.length) {
+              <p class="small">Fuori secondo le notizie: @for (p of t.out; track p.name; let last = $last) {<span [title]="p.absent ?? ''">{{ p.name }}</span>{{ last ? '' : ', ' }}}</p>
+            }
+          </div>
+        }
+      </div>
+      <p class="muted small">
+        Prevista = i titolari dell'ultima partita, senza chi le notizie danno assente, sostituiti dai più presenti di recente.
+        Archie l'ha provato su 2.700 formazioni di Serie A e B: indovina in media 8 titolari su 11, meglio di un calcolo più
+        complicato (D123). Le ufficiali compaiono circa un'ora prima del fischio. "titolare 80%" = quante volte è partito
+        titolare nelle ultime 5, contando di più le più recenti.
+      </p>
+    </section>
+  }
+
+  @if (plan.value()?.length && d.match.status === 'scheduled') {
+    <section class="panel box plan" aria-labelledby="plan-title">
+      <div class="box-head">
+        <h2 id="plan-title" class="title box-title">Piano partita live</h2>
+        <span class="trial-tag" title="Motore verificato solo all'intervallo e sull'1X2 (D92); da seguire in simulata (D124)">sperimentale</span>
+      </div>
+      <p class="small">
+        Pronto prima del fischio: scegli la situazione e vedi la quota giusta e la <strong>quota minima</strong> da cui conviene
+        giocare live. Se il bookmaker paga almeno la quota minima, secondo Archie c'è valore.
+      </p>
+      <div class="chips plan-states" role="group" aria-label="Situazione della partita">
+        @for (st of plan.value(); track $index) {
+          <button type="button" class="chip" [class.on]="planIndex() === $index" [attr.aria-pressed]="planIndex() === $index" (click)="planIndex.set($index)">
+            {{ st.minute === 45 ? 'Intervallo' : st.minute + "'" }} · {{ st.home_goals }}-{{ st.away_goals }}
+          </button>
+        }
+      </div>
+      @if (plan.value()![planIndex()]; as st) {
+        <table class="num-table">
+          <thead><tr><th>Esito</th><th>Probabilità</th><th>Quota giusta</th><th>Gioca da</th></tr></thead>
+          <tbody>
+            @for (l of st.lines; track l.market + l.selection) {
+              <tr>
+                <td>{{ planLabels[l.market + ':' + l.selection] }}</td>
+                <td>{{ fmt.pct(l.probability) }}</td>
+                <td>{{ fmt.odds(l.fair_odds) }}</td>
+                <td>@if (l.min_odds) { <strong class="led">{{ fmt.odds(l.min_odds) }}</strong> } @else { <span class="muted small">oltre 4: no</span> }</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <p class="muted small">Gol attesi da qui alla fine: {{ fmt.num(st.remaining[0], 2) }} – {{ fmt.num(st.remaining[1], 2) }}.</p>
+      }
+      <p class="muted small">
+        Stesso calcolo del termometro live, verificato all'intervallo (D92). Le quote live dei bookmaker hanno più margine:
+        se vuoi provarlo, registralo come giocata simulata e guarda come va.
+      </p>
+    </section>
+  }
+
   <ab-ask-archie [matchId]="d.match.id" placeholder="Es. Conviene l'Over angoli? Chi tira di più?" />
 
   @if (d.match.competition.code.startsWith('ITA-') || fan.value()?.facts?.length) {
