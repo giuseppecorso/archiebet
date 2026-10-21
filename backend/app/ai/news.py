@@ -46,7 +46,7 @@ class Judgment(BaseModel):
     reason: str
 
 
-EXTRACT_SYSTEM = """Sei l'assistente di un tifoso esperto di Serie C. Ricevi notizie numerate (data, titolo e a volte un riassunto).
+EXTRACT_SYSTEM = """Sei l'assistente di un tifoso esperto di calcio italiano (Serie A, B e C). Ricevi notizie numerate (data, titolo e a volte un riassunto).
 Estrai SOLO fatti concreti che possono influire sulle prossime partite di campionato di una squadra della lista:
 assente (infortunato/indisponibile), rientro, squalifica, allenatore_nuovo, allenatore_in_bilico, societa_in_crisi
 (stipendi non pagati, proprietà in difficoltà, rischio esclusione), penalizzazione, acquisto, cessione,
@@ -62,10 +62,10 @@ Regole:
 - item: il numero della notizia da cui viene il fatto.
 - Un esonero è allenatore_nuovo anche se il sostituto non è ancora scelto; allenatore_in_bilico solo se è a rischio.
 
-Squadre di Serie C:
+Squadre di Serie A, B e C (attenzione: "Inter" e "Inter U23", "Juventus" e "Juventus U23" ecc. sono squadre diverse; le U23 sono le seconde squadre in Serie C):
 {teams}"""
 
-JUDGE_SYSTEM = """Sei Archie, un tifoso esperto di Serie C che segue ogni giorno le notizie di tutte le squadre.
+JUDGE_SYSTEM = """Sei Archie, un tifoso esperto di calcio italiano che segue ogni giorno le notizie di tutte le squadre di A, B e C.
 Ti do i fatti recenti (con la data) delle due squadre di una partita. Non conosci le quote e non devi stimare numeri.
 
 Domanda: rispetto alla loro situazione normale, le notizie indeboliscono una delle due squadre (o ne rafforzano una)

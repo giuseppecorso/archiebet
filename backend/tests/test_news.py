@@ -191,3 +191,29 @@ def test_no_judgment_without_odds(db):
     report = run_news(db, FakeNews(), Ai(db, "k", Settings(ai_monthly_budget_eur=10), client=client, now=lambda: NOW),
                       "claude-haiku-5-5", "claude-opus-5-5", NOW)  # fmt: skip
     assert report.facts == 1 and report.judged == 0 and len(client.calls) == 1  # i fatti sì, il giudizio aspetta le quote
+
+
+def test_google_news_query_is_targeted_and_polite(tmp_path):
+    urls, pauses = [], []
+    adapter = NewsAdapter(FileCache(tmp_path, "news"), http_get=lambda url: urls.append(url) or GNEWS, sleep=pauses.append)
+    adapter.google_news("Torino")
+    adapter.google_news("Monza")
+    adapter.google_news("Torino")  # in cache: nessuna nuova ricerca
+    assert len(urls) == 2 and pauses == [1.5]  # pausa tra due ricerche vere
+    assert "infortunio" in urls[0] and "%22Torino%22" in urls[0]
+
+
+def test_fan_test_keeps_serie_c_and_serie_a_b_apart(db):
+    c_match = setup_match(db)  # Serie C
+    comp_a = Competition(code="ITA-A", name="Serie A", country="Italia", tier=1)
+    db.add(comp_a)
+    db.flush()
+    a_match = Match(competition_id=comp_a.id, season="2026/27", kickoff_at=NOW + timedelta(days=2), kickoff_has_time=True,
+                    home_team_id=c_match.home_team_id, away_team_id=c_match.away_team_id)  # fmt: skip
+    db.add(a_match)
+    db.flush()
+    db.add_all([insight(c_match.id, NOW, "home"), insight(a_match.id, NOW, "away")])
+    db.commit()
+    c_signals, _ = fan_test(db, serie_c=True)
+    ab_signals, _ = fan_test(db, serie_c=False)
+    assert [s.match_id for s in c_signals] == [c_match.id] and [s.match_id for s in ab_signals] == [a_match.id]

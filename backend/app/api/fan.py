@@ -46,6 +46,7 @@ class InsightOut(BaseModel):
 
 
 class FanTestOut(BaseModel):
+    group: str  # "Serie C" (D101) o "Serie A e B" (D105): conteggi separati
     signals: int
     target: int
     mean_move: float | None  # punti di probabilità verso il lato indicato (0,01 = un punto)
@@ -58,14 +59,14 @@ class MatchFanOut(BaseModel):
     test: FanTestOut
 
 
-def _test(db) -> FanTestOut:
-    found, est = fan_test(db)
-    return FanTestOut(signals=len(found), target=TARGET_SIGNALS, mean_move=est.mean if est else None, std_error=est.std_error if est else None)
+def _test(db, serie_c: bool = True) -> FanTestOut:
+    found, est = fan_test(db, serie_c)
+    return FanTestOut(group="Serie C" if serie_c else "Serie A e B", signals=len(found), target=TARGET_SIGNALS, mean_move=est.mean if est else None, std_error=est.std_error if est else None)
 
 
 @router.get("/test")
-def fan_test_status(_: CurrentUser, db: DbSession) -> FanTestOut:
-    return _test(db)
+def fan_test_status(_: CurrentUser, db: DbSession) -> list[FanTestOut]:
+    return [_test(db, True), _test(db, False)]
 
 
 @router.get("/match/{match_id}")
@@ -85,4 +86,4 @@ def match_fan(match_id: int, _: CurrentUser, db: DbSession) -> MatchFanOut:
                      published_at=f.published_at, url=n.url, source=n.source) for f, n in rows]  # fmt: skip
     last = db.scalars(select(MatchInsight).where(MatchInsight.match_id == match_id).order_by(MatchInsight.created_at.desc())).first()
     insight = InsightOut(created_at=last.created_at, side=last.side, strength=last.strength, reason=last.reason) if last else None
-    return MatchFanOut(facts=facts, insight=insight, test=_test(db))
+    return MatchFanOut(facts=facts, insight=insight, test=_test(db, match.competition.code.startswith("ITA-C")))

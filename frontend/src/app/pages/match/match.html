@@ -103,11 +103,11 @@
     </section>
   }
 
-  @if (d.match.competition.code.startsWith('ITA-C') || fan.value()?.facts?.length) {
+  @if (d.match.competition.code.startsWith('ITA-') || fan.value()?.facts?.length) {
     <section class="panel box fan" aria-labelledby="fan-title">
       <div class="box-head">
         <h2 id="fan-title" class="title box-title">Cosa sa il tifoso</h2>
-        <span class="trial-tag" title="Archie legge le notizie della Serie C e giudica chi favoriscono. Si misura se poi le quote si muovono verso il suo giudizio: verdetto a 150 partite (D101)">in prova</span>
+        <span class="trial-tag" title="Archie legge le notizie di Serie A, B e C e giudica chi favoriscono. Si misura se poi le quote si muovono verso il suo giudizio: verdetto a 150 partite, Serie C e Serie A-B contate a parte (D101, D105)">in prova</span>
       </div>
       @if (fan.value(); as f) {
         @if (f.insight; as ins) {
@@ -139,9 +139,9 @@
           }
         </div>
         <p class="muted small fan-note">
-          Archie legge ogni 2 ore le notizie della Serie C (TuttoC.com e Google News) e ne estrae i fatti con l'AI.
-          È "in prova": vale solo se le quote, dopo il suo giudizio, si muovono nella direzione che indica
-          ({{ f.test.signals }}/{{ f.test.target }} partite misurate).
+          Archie legge ogni 2 ore le notizie di Serie A, B e C (Google News; per la C anche TuttoC.com) e ne estrae i
+          fatti con l'AI. Giudica una partita solo quando ci sono le quote dei bookmaker italiani. È "in prova": vale solo se
+          le quote, dopo il suo giudizio, si muovono nella direzione che indica ({{ f.test.group }}: {{ f.test.signals }}/{{ f.test.target }} partite misurate).
         </p>
       } @else if (fan.isLoading()) {
         <p class="muted small">Carico le notizie…</p>

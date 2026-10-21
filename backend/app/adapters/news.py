@@ -1,4 +1,4 @@
-"""Notizie della Serie C da feed RSS pubblici (D102): TuttoC.com e Google News.
+"""Notizie del calcio italiano da feed RSS pubblici (D102, D105): TuttoC.com (Serie C) e Google News (A, B, C).
 
 Si leggono solo titolo, riassunto, link e data (uso privato): niente pagine intere. L'XML lo legge expat, che dalla
 versione 2.4 blocca le espansioni di entità malevole ("billion laughs").
@@ -6,6 +6,7 @@ versione 2.4 blocca le espansioni di entità malevole ("billion laughs").
 
 import html
 import re
+import time
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -56,25 +57,40 @@ def parse_rss(xml_text: str, source: str) -> list[FeedItem]:
     return out
 
 
+# Ricerca mirata (D105): solo notizie che possono cambiare una partita, meno rumore e meno costo per l'AI
+GNEWS_TERMS = ("infortunio OR infortunato OR squalifica OR squalificato OR esonero OR esonerato OR allenatore OR indisponibili"
+               ' OR assenti OR stipendi OR penalizzazione OR "probabili formazioni"')  # fmt: skip
+GNEWS_PAUSE = 1.5  # secondi tra due ricerche: Google News è gratuito, non lo si martella
+
+
 def gnews_query(team: str) -> str:
-    return f'"{team}" calcio'
+    return f'"{team}" calcio ({GNEWS_TERMS})'
 
 
 class NewsAdapter(DataSourceAdapter):
     source = SOURCE
 
-    def __init__(self, cache: FileCache, on_call: Callable[[str], None] | None = None, http_get: Callable[[str], str] | None = None):
+    def __init__(self, cache: FileCache, on_call: Callable[[str], None] | None = None, http_get: Callable[[str], str] | None = None,
+                 sleep: Callable[[float], None] = time.sleep):  # fmt: skip
         super().__init__(cache, on_call)
         self._http_get = http_get or _http_get
+        self._sleep = sleep
+        self._searched = False
 
     def tuttoc(self, max_age: timedelta = timedelta(minutes=50)) -> list[FeedItem]:
         """Ultime notizie della Serie C da TuttoC.com (circa 20, cioè le ultime 6-7 ore)."""
         return parse_rss(self.cached("tuttoc", max_age, lambda: self._http_get(TUTTOC_URL)), "tuttoc")
 
     def google_news(self, team: str, max_age: timedelta = timedelta(hours=20)) -> list[FeedItem]:
-        """Titoli di Google News sulla squadra (fino a 100, anche di altri sport: li scarta l'AI)."""
+        """Titoli di Google News sulla squadra con la ricerca mirata (fino a 100; quelli di altri sport li scarta l'AI)."""
         url = f"{GNEWS_URL}?{urlencode({'q': gnews_query(team), 'hl': 'it', 'gl': 'IT', 'ceid': 'IT:it'})}"
-        return parse_rss(self.cached(f"gnews?{team}", max_age, lambda: self._http_get(url)), "gnews")
+        return parse_rss(self.cached(f"gnews-mirata?{team}", max_age, lambda: self._search(url)), "gnews")
+
+    def _search(self, url: str) -> str:
+        if self._searched:
+            self._sleep(GNEWS_PAUSE)
+        self._searched = True
+        return self._http_get(url)
 
 
 def _http_get(url: str) -> str:

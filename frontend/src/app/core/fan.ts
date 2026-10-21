@@ -19,6 +19,8 @@ export interface FanInsight {
 }
 
 export interface FanTest {
+  /** "Serie C" (D101) o "Serie A e B" (D105): conteggi separati */
+  group: string;
   signals: number;
   target: number;
   /** Spostamento medio delle quote verso il lato indicato da Archie (0,01 = un punto percentuale) */

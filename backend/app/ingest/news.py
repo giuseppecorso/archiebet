@@ -1,4 +1,4 @@
-"""Archie tifoso (D101-D102): raccoglie le notizie della Serie C, ne estrae i fatti, giudica le partite e misura
+"""Archie tifoso (D101-D105): raccoglie le notizie di Serie A, B e C, ne estrae i fatti, giudica le partite e misura
 se poi le quote si muovono verso il suo giudizio."""
 
 import logging
@@ -20,9 +20,10 @@ from app.models import Competition, Match, MatchInsight, MatchStatus, NewsItem, 
 
 logger = logging.getLogger(__name__)
 
-SERIE_C = "ITA-C%"
+ITALIAN = "ITA-%"  # Serie A, B e C (D105)
+SERIE_C = "ITA-C"
 ITEMS_MAX_AGE = timedelta(days=4)  # notizie più vecchie non si leggono
-GNEWS_AHEAD = timedelta(days=3)  # Google News solo per chi gioca nei prossimi 3 giorni
+GNEWS_AHEAD = timedelta(days=7)  # Google News per chi gioca nei prossimi 7 giorni (D105)
 FACTS_WINDOW = timedelta(days=10)  # fatti considerati nel giudizio
 JUDGE_AHEAD = timedelta(days=4)
 JUDGE_EVERY = timedelta(hours=12)  # al massimo un giudizio ogni 12 ore per partita
@@ -35,19 +36,20 @@ def normalize(name: str) -> str:
     return " ".join(name.lower().replace(".", " ").split())
 
 
-def upcoming_serie_c(db: Session, now: datetime, ahead: timedelta) -> list[Match]:
+def upcoming_matches(db: Session, now: datetime, ahead: timedelta) -> list[Match]:
+    """Partite italiane (A, B, C) in programma entro ahead."""
     return list(db.scalars(
         select(Match).join(Competition, Competition.id == Match.competition_id)
-        .where(Competition.code.like(SERIE_C), Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now, Match.kickoff_at <= now + ahead)
+        .where(Competition.code.like(ITALIAN), Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now, Match.kickoff_at <= now + ahead)
         .order_by(Match.kickoff_at)
     ))  # fmt: skip
 
 
-def serie_c_teams(db: Session, now: datetime) -> dict[int, str]:
-    """Squadre di Serie C della stagione: quelle con partite negli ultimi 60 giorni o nei prossimi 60."""
+def italian_teams(db: Session, now: datetime) -> dict[int, str]:
+    """Squadre di A, B e C della stagione: quelle con partite negli ultimi 60 giorni o nei prossimi 60."""
     rows = db.scalars(
         select(Match).join(Competition, Competition.id == Match.competition_id)
-        .where(Competition.code.like(SERIE_C), Match.kickoff_at >= now - timedelta(days=60), Match.kickoff_at <= now + timedelta(days=60))
+        .where(Competition.code.like(ITALIAN), Match.kickoff_at >= now - timedelta(days=60), Match.kickoff_at <= now + timedelta(days=60))
     )  # fmt: skip
     out = {}
     for m in rows:
@@ -83,7 +85,7 @@ def store_items(db: Session, items: Sequence[FeedItem], now: datetime) -> int:
 
 def fetch_news(db: Session, adapter: NewsAdapter, now: datetime, report: NewsReport) -> None:
     feeds: list[tuple[str, Callable[[], list[FeedItem]]]] = [("TuttoC", adapter.tuttoc)]
-    playing = {t for m in upcoming_serie_c(db, now, GNEWS_AHEAD) for t in (m.home_team.name, m.away_team.name)}
+    playing = {t for m in upcoming_matches(db, now, GNEWS_AHEAD) for t in (m.home_team.name, m.away_team.name)}
     feeds += [(f"Google News {team}", lambda team=team: adapter.google_news(team)) for team in sorted(playing)]
     for label, read in feeds:
         try:
@@ -97,7 +99,7 @@ def fetch_news(db: Session, adapter: NewsAdapter, now: datetime, report: NewsRep
 
 def process_news(db: Session, ai: Ai, model: str, now: datetime, report: NewsReport) -> None:
     """Fatti dalle notizie non ancora lette, a blocchi di 40."""
-    teams = serie_c_teams(db, now)
+    teams = italian_teams(db, now)
     by_name = {normalize(name): team_id for team_id, name in teams.items()}
     todo = list(db.scalars(select(NewsItem).where(NewsItem.processed_at.is_(None), NewsItem.published_at >= now - ITEMS_MAX_AGE)
                           .order_by(NewsItem.published_at)))  # fmt: skip
@@ -138,7 +140,7 @@ def needs_judgment(last: MatchInsight | None, facts: Sequence[TeamFact], now: da
 
 
 def refresh_insights(db: Session, ai: Ai, model: str, now: datetime, report: NewsReport) -> None:
-    for m in upcoming_serie_c(db, now, JUDGE_AHEAD):
+    for m in upcoming_matches(db, now, JUDGE_AHEAD):
         if m.kickoff_at - now < SIGNAL_BEFORE:
             continue
         home, away = team_facts(db, m.home_team_id, now), team_facts(db, m.away_team_id, now)
@@ -217,9 +219,11 @@ def signals(rows: Sequence[tuple[MatchInsight, datetime]]) -> list[FanSignal]:
     return out
 
 
-def fan_test(db: Session) -> tuple[list[FanSignal], Estimate | None]:
-    rows = db.execute(select(MatchInsight, Match.kickoff_at).join(Match, Match.id == MatchInsight.match_id)).all()
-    found = signals([(i, k) for i, k in rows])
+def fan_test(db: Session, serie_c: bool = True) -> tuple[list[FanSignal], Estimate | None]:
+    """Prova D101 sulla Serie C; serie_c=False: Serie A e B, conteggio e verdetto separati (D105)."""
+    rows = db.execute(select(MatchInsight, Match.kickoff_at, Competition.code).join(Match, Match.id == MatchInsight.match_id)
+                      .join(Competition, Competition.id == Match.competition_id)).all()  # fmt: skip
+    found = signals([(i, k) for i, k, code in rows if code.startswith(SERIE_C) == serie_c])
     if len(found) < 2:
         return found, None
     return found, clustered_mean([s.move for s in found], [s.match_id for s in found])
