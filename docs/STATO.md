@@ -2,6 +2,14 @@
 
 Ultimo aggiornamento: 2026-10-21
 
+## Caccia al CLV, notizie compatte, ArchieTV (2026-10-22)
+
+- [x] **Multipla "Caccia al CLV"** (D134): solo occasioni D72, scelte per CLV atteso; pagella su 20 settimane: 6 multiple, CLV +5,6% (campione piccolo).
+- [x] **Cosa sa il tifoso**: notizie simili in una riga ("+N simili").
+- [x] **ArchieTV**: se YouTube non risponde, ultimi video salvati.
+- Prossimo: accesso dallo smartphone (Tailscale, in attesa dell'ok di Giuse).
+- Test: 449 backend + 30 frontend, tutti verdi.
+
 ## Diretta al posto del Live (2026-10-21, richiesta di Giuse)
 
 - [x] **Diretta** (D133): risultati in tempo reale con cronaca (gol, assist, cartellini, cambi, VAR); giocate live tolte (piano partita e quote del momento).

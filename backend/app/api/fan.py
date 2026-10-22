@@ -1,5 +1,6 @@
 """Archie tifoso (D101-D102): i fatti delle due squadre e il giudizio di Archie per la pagina partita; stato della prova."""
 
+import unicodedata
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, HTTPException
@@ -28,6 +29,13 @@ KIND_LABELS = {
 }
 
 
+class SimilarOut(BaseModel):
+    detail: str
+    published_at: datetime
+    url: str
+    source: str
+
+
 class FactOut(BaseModel):
     team_id: int
     kind: str
@@ -37,6 +45,31 @@ class FactOut(BaseModel):
     published_at: datetime
     url: str
     source: str
+    similar: list[SimilarOut] = []  # altre notizie sulla stessa cosa (più vecchie), raggruppate sotto questa
+
+
+# Una sola panchina e una sola società: tutte le notizie di questo tipo raccontano la stessa storia
+ONE_STORY_KINDS = {"allenatore_in_bilico", "allenatore_nuovo", "societa_in_crisi", "penalizzazione"}
+
+
+def _surname(name: str | None) -> str:
+    """"Luciano Spalletti" e "Spalletti" → "spalletti"; "Conceição" e "Conceicao" → "conceicao"."""
+    if not name:
+        return ""
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().lower()
+    return plain.replace(".", " ").split()[-1] if plain.split() else ""
+
+
+def group_facts(facts: list[FactOut]) -> list[FactOut]:
+    """Notizie simili (stessa squadra, stesso tipo, stessa persona) in una riga sola: resta la più recente."""
+    groups: dict[tuple, FactOut] = {}
+    for f in sorted(facts, key=lambda x: x.published_at, reverse=True):
+        key = (f.team_id, f.kind, "" if f.kind in ONE_STORY_KINDS else _surname(f.player))
+        if key in groups:
+            groups[key].similar.append(SimilarOut(detail=f.detail, published_at=f.published_at, url=f.url, source=f.source))
+        else:
+            groups[key] = f.model_copy(update={"similar": []})
+    return list(groups.values())
 
 
 class InsightOut(BaseModel):
@@ -83,8 +116,8 @@ def match_fan(match_id: int, _: CurrentUser, db: DbSession) -> MatchFanOut:
                TeamFact.published_at <= match.kickoff_at)
         .order_by(TeamFact.published_at.desc())
     ).all()  # fmt: skip
-    facts = [FactOut(team_id=f.team_id, kind=f.kind, label=KIND_LABELS.get(f.kind, f.kind), player=f.player, detail=f.detail,
-                     published_at=f.published_at, url=n.url, source=n.source) for f, n in rows]  # fmt: skip
+    facts = group_facts([FactOut(team_id=f.team_id, kind=f.kind, label=KIND_LABELS.get(f.kind, f.kind), player=f.player, detail=f.detail,
+                                 published_at=f.published_at, url=n.url, source=n.source) for f, n in rows])  # fmt: skip
     last = db.scalars(select(MatchInsight).where(MatchInsight.match_id == match_id).order_by(MatchInsight.created_at.desc())).first()
     insight = InsightOut(created_at=last.created_at, side=last.side, strength=last.strength, reason=last.reason) if last else None
     return MatchFanOut(facts=facts, insight=insight, test=_test(db, match.competition.code.startswith("ITA-C")))

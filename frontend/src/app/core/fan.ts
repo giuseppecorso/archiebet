@@ -9,6 +9,8 @@ export interface FanFact {
   published_at: string;
   url: string;
   source: 'tuttoc' | 'gnews' | string;
+  /** Altre notizie sulla stessa cosa, più vecchie: raggruppate sotto questa */
+  similar?: { detail: string; published_at: string; url: string; source: string }[];
 }
 
 export interface FanInsight {

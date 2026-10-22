@@ -6,7 +6,7 @@ import { Review } from '../../core/review';
 import { MultipleView } from '../../shared/multiple-view';
 import { RouterLink } from '@angular/router';
 
-type Profile = 'molto tranquilla' | 'tranquilla' | 'equilibrata' | 'coraggiosa' | 'spericolata' | 'personalizzata';
+type Profile = 'molto tranquilla' | 'tranquilla' | 'equilibrata' | 'coraggiosa' | 'spericolata' | 'caccia al clv' | 'personalizzata';
 
 /** Livelli di rischio (D130), dal più prudente al più spinto, più quello personalizzato */
 const PROFILES: { key: Profile; label: string; hint: string }[] = [
@@ -15,6 +15,11 @@ const PROFILES: { key: Profile; label: string; hint: string }[] = [
   { key: 'equilibrata', label: 'Equilibrata', hint: 'partite al 65% o più, quota 3–5' },
   { key: 'coraggiosa', label: 'Coraggiosa', hint: 'partite al 45% o più, quota 5–15, scelta per valore' },
   { key: 'spericolata', label: 'Spericolata', hint: 'partite al 30% o più, quota 15–60, scelta per valore: vince raramente' },
+  {
+    key: 'caccia al clv',
+    label: 'Caccia al CLV',
+    hint: "solo quote sopra il giusto secondo la regola delle Occasioni (l'unica provata sul passato), scelte per CLV atteso; se non bastano, meno partite",
+  },
   { key: 'personalizzata', label: 'Personalizzata', hint: 'scegli tu probabilità minima per partita, quota totale e cosa privilegiare' },
 ];
 const HORIZONS: [Horizon, string][] = [

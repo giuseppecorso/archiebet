@@ -7,7 +7,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.143-009688?logo=fastapi&logoColor=white)
 ![Angular](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
-![Test](https://img.shields.io/badge/test-446%20backend%20%2B%2030%20frontend-brightgreen)
+![Test](https://img.shields.io/badge/test-449%20backend%20%2B%2030%20frontend-brightgreen)
 
 🇬🇧 [English version](README.en.md)
 
@@ -26,9 +26,9 @@ sempre il codice**.
 |---|---|
 | **Problema** | Capire, con metodo, se e dove un modello o un'informazione batte le quote di un mercato molto efficiente |
 | **Soluzione** | Backend FastAPI con 6 fonti dati, modelli statistici (Dixon-Coles, Elo, Shin, binomiale negativa, Poisson live, Monte Carlo), frontend Angular 22 |
-| **Metodo** | 133 decisioni documentate; ogni ipotesi provata con regole scritte prima di vedere i dati, taratura e conferma su periodi separati, errori standard per partita |
+| **Metodo** | 134 decisioni documentate; ogni ipotesi provata con regole scritte prima di vedere i dati, taratura e conferma su periodi separati, errori standard per partita |
 | **Risultato** | Un solo vantaggio confermato sullo storico (CLV +2,5% ± 0,3 su 734 casi), in verifica dal vivo; decine di ipotesi scartate e documentate |
-| **Qualità** | 476 test automatici, CI su GitHub Actions, migrazioni Alembic, avvio con Docker in un comando |
+| **Qualità** | 479 test automatici, CI su GitHub Actions, migrazioni Alembic, avvio con Docker in un comando |
 
 ## Provalo in 2 minuti (Docker)
 
@@ -136,7 +136,7 @@ sviluppatore che implementa sotto regole precise.
 
 - **Cosa ho fatto io:** requisiti e specifiche ([SPECIFICHE.md](docs/SPECIFICHE.md)), scelte di prodotto e priorità, principi statistici non negoziabili, approvazione delle decisioni, verifica dell'app in uso, revisione dei risultati delle prove.
 - **Regole date all'assistente** ([CLAUDE.md](CLAUDE.md)): ogni calcolo ha un test; niente dati dal futuro; un fattore entra solo se una prova sul passato lo giustifica; i numeri li calcola il codice, mai l'AI; chiavi solo in `.env`; commit piccoli e documentati.
-- **Controlli:** 476 test automatici e CI a ogni push; ogni decisione registrata con motivazione ([DECISIONI.md](docs/DECISIONI.md)); prove pesanti eseguite su copie del database; avanzamento tracciato fase per fase ([STATO.md](docs/STATO.md)).
+- **Controlli:** 479 test automatici e CI a ogni push; ogni decisione registrata con motivazione ([DECISIONI.md](docs/DECISIONI.md)); prove pesanti eseguite su copie del database; avanzamento tracciato fase per fase ([STATO.md](docs/STATO.md)).
 - **Commit:** quelli scritti con l'assistente riportano il trailer `Co-Authored-By: Claude`.
 
 L'obiettivo era anche imparare a guidare in modo professionale uno sviluppo assistito dall'AI: definire bene il problema, fissare criteri di accettazione verificabili e non accettare un risultato senza test e senza prove.

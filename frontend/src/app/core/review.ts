@@ -57,7 +57,7 @@ export interface Review {
   };
 }
 
-export const REVIEW_PROFILES = ['molto tranquilla', 'tranquilla', 'equilibrata', 'coraggiosa', 'spericolata'];
+export const REVIEW_PROFILES = ['molto tranquilla', 'tranquilla', 'equilibrata', 'coraggiosa', 'spericolata', 'caccia al clv'];
 
 /** "2026-10-12" → "12–18 ott" */
 export function weekLabel(monday: string): string {

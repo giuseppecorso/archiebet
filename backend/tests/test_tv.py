@@ -45,3 +45,23 @@ def test_tv_api_sorts_and_skips_broken_channels(logged_client, monkeypatch):
     monkeypatch.setattr(yt.YouTubeAdapter, "latest", fake_latest)
     videos = logged_client.get("/api/tv").json()
     assert [v["video_id"] for v in videos] == ["abc123", "def456"]
+
+
+def test_old_videos_shown_when_youtube_fails(tmp_path):
+    """I feed di YouTube a volte rispondono 404 per ore: meglio gli ultimi video salvati che niente."""
+    from datetime import UTC, datetime
+
+    import pytest
+
+    now = [datetime(2026, 10, 21, 10, 0, tzinfo=UTC)]
+    cache = FileCache(tmp_path, "youtube", now=lambda: now[0])
+    yt.YouTubeAdapter(cache, http_get=lambda url: FEED).latest("UCBJeMCIeLQos7wacox4hmLQ")
+
+    def broken(url):
+        raise RuntimeError("404")
+
+    now[0] = datetime(2026, 10, 22, 10, 0, tzinfo=UTC)  # un giorno dopo: cache scaduta, YouTube giù
+    assert len(yt.YouTubeAdapter(cache, http_get=broken).latest("UCBJeMCIeLQos7wacox4hmLQ")) == 2
+    now[0] = datetime(2026, 10, 30, 10, 0, tzinfo=UTC)  # oltre una settimana: niente video vecchissimi
+    with pytest.raises(RuntimeError):
+        yt.YouTubeAdapter(cache, http_get=broken).latest("UCBJeMCIeLQos7wacox4hmLQ")

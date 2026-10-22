@@ -168,4 +168,20 @@ def test_custom_profile_and_quality_tiers():
     serie_c = [Leg(i, datetime(2026, 10, 25, tzinfo=UTC), "1X2", "1", 0.70, 1.33, "consenso") for i in range(4)]
     m = build_multiple(serie_c, 4, custom_profile(0.6, 2.0, 5.0, False))
     assert m is not None and m.quality == PAYS_LITTLE and not m.with_value and m.legs[0].source == "consenso"
-    assert set(PROFILES) == {"molto tranquilla", "tranquilla", "equilibrata", "coraggiosa", "spericolata"}
+    assert set(PROFILES) == {"molto tranquilla", "tranquilla", "equilibrata", "coraggiosa", "spericolata", "caccia al clv"}
+
+
+def test_clv_hunt_only_occasions_and_shorter_if_needed():
+    """Caccia al CLV (D134): solo gambe che passano la regola delle Occasioni, per CLV atteso; più corta se mancano."""
+    when = datetime(2026, 10, 25, tzinfo=UTC)
+    legs = [
+        Leg(1, when, "1X2", "1", 0.50, 2.10),  # valore +5%: occasione (soglia ~2% a quota 2,1)
+        Leg(2, when, "OU2.5", "over", 0.55, 1.90),  # +4,5%: occasione
+        Leg(3, when, "1X2", "X", 0.30, 3.40),  # +2%: sotto la soglia (~3,1% a quota 3,4)
+        Leg(4, when, "DC", "1X", 0.80, 1.30),  # +4%, ma la doppia chance non è un mercato provato
+        Leg(5, when, "1X2", "1", 0.60, 1.80, "consenso"),  # +8%, ma senza riferimento sharp
+        Leg(6, when, "COR9.5", "over", 0.55, 1.95),  # angoli: non nella regola D72
+    ]
+    m = build_multiple(legs, 4, PROFILES["caccia al clv"])
+    assert m is not None and {l.match_id for l in m.legs} == {1, 2}  # 4 richieste, solo 2 occasioni: multipla da 2
+    assert build_multiple(legs[2:], 4, PROFILES["caccia al clv"]) is None  # nessuna occasione: nessuna multipla

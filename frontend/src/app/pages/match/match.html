@@ -357,11 +357,21 @@
             <div class="fan-col">
               <h3 class="title fan-team">{{ side === 0 ? d.match.home.name : d.match.away.name }}</h3>
               @for (fact of fanFacts()[side]; track $index) {
-                <a [class]="'fan-fact ' + factTone(fact.kind)" [href]="fact.url" target="_blank" rel="noopener noreferrer">
-                  <span class="fact-kind">{{ fact.label }}</span>
-                  <span class="fact-detail">{{ fact.detail }}</span>
-                  <span class="muted small">{{ fmt.dayLabel(fact.published_at) }} · {{ sourceLabels[fact.source] ?? fact.source }}</span>
-                </a>
+                <div [class]="'fan-fact ' + factTone(fact.kind)">
+                  <a class="fact-line" [href]="fact.url" target="_blank" rel="noopener noreferrer">
+                    <span class="fact-kind">{{ fact.label }}</span>
+                    <span class="fact-detail">{{ fact.detail }}</span>
+                    <span class="muted fact-when">{{ fmt.dayLabel(fact.published_at) }}</span>
+                  </a>
+                  @if (fact.similar?.length) {
+                    <details class="fact-similar">
+                      <summary>+{{ fact.similar!.length }} {{ fact.similar!.length === 1 ? 'notizia simile' : 'notizie simili' }}</summary>
+                      @for (o of fact.similar; track $index) {
+                        <a [href]="o.url" target="_blank" rel="noopener noreferrer">{{ fmt.dayLabel(o.published_at) }} · {{ o.detail }}</a>
+                      }
+                    </details>
+                  }
+                </div>
               } @empty {
                 <p class="muted small">Nessuna notizia rilevante negli ultimi 10 giorni.</p>
               }

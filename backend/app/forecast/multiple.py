@@ -18,7 +18,9 @@ from dataclasses import replace
 from itertools import combinations, product
 
 from app.forecast.clv import SUSPICIOUS_VALUE
-from app.forecast.picks import LOW_PRICE
+from app.forecast.data import ODDS_MARKETS
+from app.forecast.picks import LOW_PRICE, MARKET_SOURCES
+from app.forecast.radar import qualifies
 
 LEGS = 4
 MIN_PROBABILITY = 0.65
@@ -81,6 +83,7 @@ class Profile:
     min_total: float
     max_total: float
     by_value: bool  # True = vince il valore atteso più alto; False = la probabilità di vincere più alta
+    clv: bool = False  # "Caccia al CLV" (D134): solo gambe che passano la regola delle Occasioni, scelte per CLV atteso
 
 
 PROFILES = {
@@ -89,6 +92,7 @@ PROFILES = {
     "equilibrata": Profile(MIN_PROBABILITY, MIN_TOTAL, MAX_TOTAL, by_value=False),  # la multipla del giorno
     "coraggiosa": Profile(0.45, 5.0, 15.0, by_value=True),
     "spericolata": Profile(0.30, 15.0, 60.0, by_value=True),
+    "caccia al clv": Profile(0.0, 1.2, 200.0, by_value=True, clv=True),
 }
 
 
@@ -101,6 +105,12 @@ MAX_COMBINATIONS = 400_000  # tiene la ricerca sotto il secondo anche con 6 part
 
 def eligible(leg: Leg, min_value: float, min_probability: float = MIN_PROBABILITY) -> bool:
     return leg.probability >= min_probability and min_value <= leg.value <= SUSPICIOUS_VALUE
+
+
+def occasion(leg: Leg) -> bool:
+    """La gamba passa la regola delle Occasioni (D72): mercati provati, riferimento sharp, quota abbastanza sopra il giusto.
+    Il valore contro la quota giusta di adesso è la stima migliore del CLV che si avrà alla chiusura."""
+    return leg.source in MARKET_SOURCES and leg.market in ODDS_MARKETS and leg.value <= SUSPICIOUS_VALUE and qualifies(leg.price, leg.value)
 
 
 def _options(legs: Sequence[Leg]) -> list[Leg]:
@@ -121,7 +131,7 @@ def _max_matches(n: int) -> int:
 def _search(legs: Sequence[Leg], min_value: float, n: int, profile: Profile) -> Multiple | None:
     by_match: dict[int, list[Leg]] = {}
     for leg in legs:
-        if eligible(leg, min_value, profile.min_probability):
+        if (occasion(leg) and leg.probability >= profile.min_probability) if profile.clv else eligible(leg, min_value, profile.min_probability):
             by_match.setdefault(leg.match_id, []).append(leg)
     if len(by_match) < n:
         return None
@@ -137,7 +147,10 @@ def _search(legs: Sequence[Leg], min_value: float, n: int, profile: Profile) -> 
                 continue
             p = math.prod(leg.probability for leg in choice)
             ev = p * price - 1.0
-            key = (round(ev, 6), p) if profile.by_value else (round(p, 2), ev)  # probabilità entro 1 punto = pari: decide il valore
+            if profile.clv:
+                key = (round(sum(leg.value for leg in choice) / n, 6), p)  # CLV atteso medio delle gambe
+            else:
+                key = (round(ev, 6), p) if profile.by_value else (round(p, 2), ev)  # probabilità entro 1 punto = pari: decide il valore
             if best is None or key > best[:2]:
                 best = (key[0], key[1], choice)
     if best is None:
@@ -148,7 +161,13 @@ def _search(legs: Sequence[Leg], min_value: float, n: int, profile: Profile) -> 
 
 def build_multiple(legs: Sequence[Leg], n: int = LEGS, profile: Profile = PROFILES["equilibrata"]) -> Multiple | None:
     """La multipla migliore per il profilo: prima con valore, poi con quote nella norma, infine (dichiarata) con
-    quote che pagano poco."""
+    quote che pagano poco. "Caccia al CLV": solo occasioni, e se non bastano per n partite una multipla più corta."""
+    if profile.clv:
+        for k in range(n, 1, -1):
+            found = _search(legs, 0.0, k, profile)
+            if found is not None:
+                return found
+        return None
     for min_value, quality in ((0.0, VALUE), (LOW_PRICE, NORMAL), (FULL_MARGIN, PAYS_LITTLE)):
         found = _search(legs, min_value, n, profile)
         if found is not None:

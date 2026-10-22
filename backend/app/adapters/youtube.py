@@ -9,11 +9,12 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from app.adapters.base import DataSourceAdapter
-from app.adapters.cache import FileCache
+from app.adapters.cache import MISSING, FileCache
 
 SOURCE = "youtube"
 FEED_URL = "https://www.youtube.com/feeds/videos.xml?channel_id={}"
 USER_AGENT = "ArchieBet/1.0 (uso privato)"
+STALE_MAX_AGE = timedelta(days=7)  # se YouTube non risponde, video salvati fino a una settimana fa
 
 # Canali ufficiali verificati il 2026-10-21 (Serie B e Serie C non hanno un canale ufficiale con video nel feed)
 CHANNELS = {
@@ -59,8 +60,15 @@ class YouTubeAdapter(DataSourceAdapter):
         self._http_get = http_get or _http_get
 
     def latest(self, channel_id: str, max_age: timedelta = timedelta(hours=1)) -> list[Video]:
-        """Gli ultimi ~15 video del canale (feed in cache un'ora)."""
-        body = self.cached(f"feed?{channel_id}", max_age, lambda: self._http_get(FEED_URL.format(channel_id)))
+        """Gli ultimi ~15 video del canale (feed in cache un'ora). I feed di YouTube a volte rispondono 404 per ore:
+        allora si mostrano gli ultimi video salvati (fino a 7 giorni) invece di niente."""
+        key = f"feed?{channel_id}"
+        try:
+            body = self.cached(key, max_age, lambda: self._http_get(FEED_URL.format(channel_id)))
+        except Exception:
+            body = self.cache.get(key, STALE_MAX_AGE)
+            if body is MISSING:
+                raise
         return parse_feed(body, CHANNELS.get(channel_id, channel_id))
 
 

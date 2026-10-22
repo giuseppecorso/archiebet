@@ -425,7 +425,7 @@ def multiple(
     horizon: Horizon = "today",
     date_from: date | None = Query(None, description="Con horizon=range: primo giorno, AAAA-MM-GG"),
     date_to: date | None = Query(None, description="Con horizon=range: ultimo giorno, AAAA-MM-GG"),
-    profile: Literal["molto tranquilla", "tranquilla", "equilibrata", "coraggiosa", "spericolata", "personalizzata"] = "equilibrata",
+    profile: Literal["molto tranquilla", "tranquilla", "equilibrata", "coraggiosa", "spericolata", "caccia al clv", "personalizzata"] = "equilibrata",
     legs: int = Query(LEGS, ge=2, le=6),
     min_probability: float = Query(0.6, ge=0.2, le=0.95, description="Profilo personalizzato: probabilità minima di ogni partita"),
     min_total: float = Query(2.0, ge=1.2, le=200, description="Profilo personalizzato: quota totale minima"),
