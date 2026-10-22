@@ -161,3 +161,17 @@ def test_draw_no_bet_never_in_multiples():
     picks = [(match, match_picks(TEAM_BOOK, None, ["sisal"]))]
     markets = {leg.market for leg in legs_for(picks, "sisal", bench=frozenset())}
     assert "TGH1.5" in markets and "DNB" not in markets
+
+
+# --- Multigol e combo: quote giuste ricavate dal mercato (D136) ---
+
+
+def test_derived_multigol_and_combos_are_consistent():
+    from app.forecast.derived import derived_lines
+
+    lines = {d.label: d.probability for d in derived_lines(0.50, 0.25, 0.55)}
+    assert lines["Multigol 1-3"] < lines["Multigol 1-4"]  # un intervallo più largo è più probabile
+    assert lines["1 + Over 2.5"] < min(lines["1 + Over 1.5"], 0.50 + 0.01)  # mai più probabile dell'1 da solo
+    assert lines["1X + Over 1.5"] > lines["1 + Over 1.5"]
+    assert lines["Goal + Over 2.5"] < 0.55 + 0.01
+    assert all(0 < p < 1 for p in lines.values())

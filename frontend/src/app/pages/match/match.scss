@@ -814,3 +814,39 @@ tr.absent td {
   font-weight: 700;
   border-bottom: 1px solid var(--line);
 }
+
+/* Multigol e combo (D136) */
+.derived {
+  margin: 12px 0;
+}
+.dv-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 6px 20px;
+}
+.dv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  th {
+    padding: 3px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-align: left;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+  }
+  td {
+    padding: 3px 4px;
+    border-bottom: 1px solid var(--line-row);
+  }
+  th + th,
+  td + td {
+    text-align: right;
+  }
+  .led {
+    font-size: 13px;
+  }
+}

@@ -151,6 +151,30 @@ class NumbersOut(BaseModel):
     lines: list[LineOut]
 
 
+class DerivedOut(BaseModel):
+    group: str
+    label: str
+    probability: float
+    fair_odds: float
+
+
+@router.get("/match/{match_id}/derived")
+def match_derived(match_id: int, _: CurrentUser, db: DbSession) -> list[DerivedOut]:
+    """Quote giuste di multigol e combo (D136): stima dal mercato, da confrontare con l'app del bookmaker."""
+    from app.forecast.derived import derived_lines
+
+    match = db.get(Match, match_id)
+    if match is None:
+        raise HTTPException(404, "Partita non trovata")
+    picks = {p.market: p for p in match_market_picks(db, match, get_settings().radar_bookmaker_list)}
+    if "1X2" not in picks or picks["1X2"].source == MODEL_SOURCE:
+        return []  # senza un mercato di riferimento la stima non avrebbe base
+    p = picks["1X2"].probabilities
+    over = picks["OU2.5"].probabilities.get("over") if "OU2.5" in picks else None
+    return [DerivedOut(group=d.group, label=d.label, probability=round(d.probability, 4), fair_odds=round(d.fair_odds, 2))
+            for d in derived_lines(p["1"], p["2"], over)]
+
+
 @router.get("/match/{match_id}/numbers")
 def match_numbers(match_id: int, _: CurrentUser, db: DbSession) -> list[NumbersOut]:
     """Tiri, angoli e cartellini attesi con le quote giuste di Archie (modello D108-D109, non messo alla prova contro il mercato)."""

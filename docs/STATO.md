@@ -5,8 +5,9 @@ Ultimo aggiornamento: 2026-10-21
 ## Telefono, gol per squadra, Draw No Bet (2026-10-22)
 
 - [x] **Accesso dal telefono** con Tailscale Serve (HTTPS solo per i dispositivi di Giuse), app installabile (icona, manifest, service worker) e grafica per telefono (menu in basso, partite su una riga).
+- [x] **Multigol e combo** (D136): quote giuste nella pagina partita, segnate "stima".
 - [x] **Gol di una squadra e Draw No Bet** (D135) con quote vere di Sisal ed Eurobet; generatore: spiega perché non trova multipla, angoli e cartellini "in prova".
-- Test: 454 backend + 31 frontend, tutti verdi.
+- Test: 455 backend + 31 frontend, tutti verdi.
 
 ## Caccia al CLV, notizie compatte, ArchieTV (2026-10-22)
 

@@ -90,6 +90,12 @@ export class MatchPage {
   /** I due pronostici (D107) e l'analisi scritta da Archie */
   protected readonly matchPicks = httpResource<MatchPicks>(() => `/api/picks/match/${this.id()}`);
   protected readonly analysis = httpResource<MatchAnalysis | null>(() => `/api/fan/match/${this.id()}/analysis`);
+  /** Multigol e combo: quote giuste ricavate dal mercato (D136, stima) */
+  protected readonly derived = httpResource<{ group: string; label: string; probability: number; fair_odds: number }[]>(() => `/api/picks/match/${this.id()}/derived`);
+
+  protected derivedOf(group: string) {
+    return (this.derived.value() ?? []).filter((d) => d.group === group);
+  }
   /** Tiri, angoli e cartellini attesi (D109) */
   protected readonly numbers = httpResource<MatchNumbers[]>(() => `/api/picks/match/${this.id()}/numbers`);
   protected readonly numbersSide = signal<'totale' | 'casa' | 'ospite'>('totale');

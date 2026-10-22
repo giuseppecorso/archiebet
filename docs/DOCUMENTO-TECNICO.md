@@ -54,7 +54,7 @@ flowchart TB
 | `forecast/` | Modelli e prove: Dixon-Coles, Elo, rimozione del margine, radar delle occasioni, modelli dei conteggi, live, simulatore, ricerca delle strategie, quando giocare |
 | `betting/` | Schedine, chiusura automatica, CLV, autopsie, regolamento personale |
 | `ai/` | Client Claude con output strutturato (Pydantic), strumenti per "Chiedi ad Archie", estrazione di fatti dalle notizie |
-| `api/` | 52 endpoint REST divisi per area |
+| `api/` | 53 endpoint REST divisi per area |
 | `jobs.py` | Aggiornamento dati ogni 6 ore, live ogni minuto, notizie ogni 2 ore, archivio quote e "cosa impara Archie" ogni settimana |
 | `cli.py` | Comandi per sincronizzazioni e per le prove statistiche (`backtest`, `strategy-search`, `timing-test`, ...) |
 
@@ -137,7 +137,7 @@ spesa** che registra ogni chiamata e blocca oltre il tetto mensile. Usi:
 
 ## 7. Qualità
 
-- **454 test backend** (pytest) e **31 test frontend** (Vitest): ogni calcolo di probabilità, quota, valore o guadagno ha un test (anche casi limite trovati a mano, es. arrotondamenti).
+- **455 test backend** (pytest) e **31 test frontend** (Vitest): ogni calcolo di probabilità, quota, valore o guadagno ha un test (anche casi limite trovati a mano, es. arrotondamenti).
 - **Test delle API** con database in memoria e client autenticato; adattatori provati con risposte registrate, senza rete.
 - **CI** su GitHub Actions a ogni push (`.github/workflows/ci.yml`): test del backend, build e test del frontend, build delle immagini Docker.
 - **Docker**: `docker compose up --build` avvia backend (FastAPI) e frontend (build Angular servita da nginx, che inoltra `/api`), con un utente dimostrativo e lo storico gratuito di football-data, senza chiavi API.

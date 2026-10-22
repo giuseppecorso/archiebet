@@ -199,6 +199,28 @@
     </section>
   }
 
+  @if (d.match.status === 'scheduled' && derived.value()?.length) {
+    <section class="panel box derived" aria-labelledby="dv-title">
+      <div class="box-head">
+        <h2 id="dv-title" class="title box-title">Multigol e combo · quote giuste</h2>
+        <span class="trial-tag" title="Calcolate dal mercato (1X2 e Under/Over 2.5 di Pinnacle) con il modello dei gol: non ancora provate sul passato (D136)">stima</span>
+      </div>
+      <p class="muted small">Queste quote non arrivano dai bookmaker: confrontale tu con l'app. Se Sisal o Eurobet pagano <strong>di più</strong> della quota giusta, il prezzo è buono.</p>
+      <div class="dv-cols">
+        @for (g of ['Multigol', 'Combo']; track g) {
+          <table class="dv-table">
+            <thead><tr><th>{{ g }}</th><th>Prob.</th><th>Giusta</th></tr></thead>
+            <tbody>
+              @for (l of derivedOf(g); track l.label) {
+                <tr><td>{{ l.label }}</td><td class="muted">{{ fmt.pct(l.probability) }}</td><td class="led">{{ fmt.odds(l.fair_odds) }}</td></tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </section>
+  }
+
   @if (d.match.status === 'scheduled' && numbers.value()?.length) {
     <section class="panel box numbers" aria-labelledby="num-title">
       <div class="box-head">
