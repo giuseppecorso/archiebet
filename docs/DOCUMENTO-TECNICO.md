@@ -74,10 +74,12 @@ flowchart TB
 
 Ogni adattatore passa da `FileCache`: una risposta per file JSON con data di salvataggio, così le prove si ripetono
 offline e le quote di richieste non si sprecano. Le partite di fonti diverse si collegano per campionato, squadre
-(nomi normalizzati con regole e alias) e data con tolleranza.
+(nomi normalizzati con regole e alias) e data con tolleranza. Quando due fonti non sono d'accordo vince il dato più
+definitivo: un risultato non torna mai "da giocare" per colpa di un elenco vecchio, e le partite ancora senza
+risultato due ore dopo il fischio si ricontrollano da sole (D133).
 
 **Modello dei dati (estratto):** `competitions`, `teams` + `team_aliases`, `matches` + `match_sources`, `match_odds`
-(per fonte, bookmaker, mercato, esito, apertura/chiusura), `match_live`, `match_predictions`, `radar_signals`,
+(per fonte, bookmaker, mercato, esito, apertura/chiusura), `match_live` + `match_events` (cronaca: gol, cartellini, cambi, VAR), `match_predictions`, `radar_signals`,
 `bets` + `bet_selections` + `bet_snapshots`, `news_items`, `team_facts`, `match_insights`, `usage_events`, `users` + `user_sessions`, `user_settings`, `user_rules`.
 
 ## 4. Modelli statistici
@@ -115,6 +117,14 @@ Ogni prova segue lo stesso schema, scritto nel registro **prima** di guardare i 
 | Quando giocare (D119) | Indifferente: l'orario sposta meno di mezzo punto di CLV, il margine pesa 7–10% |
 | Formazioni previste (D123) | "L'ultima formazione" indovina più del metodo pesato: 8,5 titolari su 11 |
 | Serie minori di 23 paesi (D106) | Non passano: le occasioni hanno CLV negativo |
+| Pagella settimanale (D132): ricalibrazione logistica per 8 gruppi di mercato, in walk-forward | Nessuna correzione migliora (t tra −1,1 e +0,1 su 20 settimane, 18.099 mercati): probabilità già oneste |
+
+**Auto-valutazione settimanale (D132).** Ogni settimana il sistema ricostruisce dall'archivio delle quote cosa avrebbe
+proposto con le quote delle 10 del mattino (Pronostici e una multipla al giorno per livello di rischio e bookmaker) e lo
+confronta con i risultati: favorito atteso contro uscito, log loss contro la chiusura, vinte contro attese, CLV. Per ogni
+gruppo (famiglia di mercato × fonte della probabilità) prova una ricalibrazione p' = σ(a + b·logit p) stimata solo sulle
+settimane precedenti; si attiva se migliora la log loss oltre 2,5 errori standard su almeno 4 settimane. Un gruppo le cui
+gambe vincono meno del previsto oltre la stessa soglia esce dalle multiple. Lo stato di ogni settimana usa solo il passato.
 
 ## 6. AI
 
@@ -139,4 +149,4 @@ spesa** che registra ogni chiamata e blocca oltre il tetto mensile. Usi:
 - Il vantaggio misurato è piccolo e raro (~50 occasioni a stagione su 10 campionati alla quota bet365): il verdetto dal vivo è lento. Prossimo passo proposto: verdetto sequenziale e più bookmaker giocabili.
 - Dipendenza da fonti esterne con quote di richieste (OddsPapi 250/mese).
 - App pensata per un utente su un PC; il passaggio a PostgreSQL e a un server è previsto dalla struttura (sezione 14 delle specifiche) ma non fatto.
-- Le strategie e la taratura si rimisurano ogni settimana da sole (lavoro "learning").
+- Le strategie, la taratura e la pagella si rimisurano ogni settimana da sole (lavoro "learning"); il sistema non impara dalle singole giocate dell'utente, che sono troppo poche per dire qualcosa.

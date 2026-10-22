@@ -28,7 +28,7 @@ but **every number is computed by code**.
 |---|---|
 | **Problem** | Find out, with a sound method, whether and where a model or a piece of information beats a very efficient market |
 | **Solution** | FastAPI backend with 6 data sources and statistical models (Dixon-Coles, Elo, Shin de-margining, negative binomial, in-play Poisson, Monte Carlo), Angular 22 frontend |
-| **Method** | 137 documented decisions; every hypothesis tested with rules written before looking at the data, tuning and confirmation on separate periods, match-clustered standard errors |
+| **Method** | 133 documented decisions; every hypothesis tested with rules written before looking at the data, tuning and confirmation on separate periods, match-clustered standard errors |
 | **Outcome** | One edge confirmed on historical data (CLV +2.5% ± 0.3 over 734 cases), now under live verification; dozens of hypotheses rejected and documented |
 | **Quality** | 476 automated tests, GitHub Actions CI, Alembic migrations, one-command Docker start |
 
