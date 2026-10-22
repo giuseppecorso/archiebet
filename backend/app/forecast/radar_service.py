@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.forecast.clv import ClvSummary
 from app.forecast.data import EXTRA_GOAL_MARKETS, ODDS_MARKETS, OVERLAPPING_MARKETS
-from app.forecast.radar_markets import is_secondary, secondary_won
+from app.forecast.radar_markets import DNB, is_secondary, secondary_won
 from app.forecast.radar import (
     PLAYABLE_BOOKMAKERS,
     qualifies,
@@ -42,7 +42,8 @@ def load_book_odds(db: Session, match_ids: Iterable[int], closing: bool) -> dict
         rows = db.execute(
             select(MatchOdds.match_id, MatchOdds.source, MatchOdds.bookmaker, MatchOdds.market, MatchOdds.selection, MatchOdds.price).where(
                 MatchOdds.match_id.in_(ids[start : start + 500]),
-                or_(MatchOdds.market.in_([*ODDS_MARKETS, *OVERLAPPING_MARKETS, *EXTRA_GOAL_MARKETS]), MatchOdds.market.like("COR%"), MatchOdds.market.like("CRD%")),
+                or_(MatchOdds.market.in_([*ODDS_MARKETS, *OVERLAPPING_MARKETS, *EXTRA_GOAL_MARKETS, DNB]), MatchOdds.market.like("COR%"),
+                    MatchOdds.market.like("CRD%"), MatchOdds.market.like("TG%")),
                 MatchOdds.is_closing.is_(closing),
             )
         ).all()

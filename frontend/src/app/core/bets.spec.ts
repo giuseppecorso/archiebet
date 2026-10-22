@@ -20,6 +20,15 @@ describe('giocate: etichette e anteprima', () => {
     expect(['1X2', 'OU2.5', 'CORH4.5', 'CRD3.5'].map(marketFamily)).toEqual(['esito', 'gol', 'angoli', 'cartellini']);
   });
 
+  it('gestisce gol di una squadra e Draw No Bet (D135)', () => {
+    const match = { home: { id: 1, name: 'Inter' }, away: { id: 2, name: 'Roma' } };
+    expect(pickLabel('TGH1.5', 'over', match)).toBe('Over 1.5 gol · Inter');
+    expect(marketLabel('TGA0.5', match)).toBe('Gol Roma U/O 0.5');
+    expect(pickLabel('DNB', '2', match)).toBe('2 DNB · Roma');
+    expect(marketSelections('DNB')).toEqual(['1', '2']);
+    expect(['TGH1.5', 'DNB'].map(marketFamily)).toEqual(['gol squadra', 'esito']);
+  });
+
   it('calcola quota totale e vincita come il backend', () => {
     // 1,85 × 2,10 × 1,50 = 5,8275; × 10 € = 58,28 € (stesso test del backend)
     expect(preview([1.85, 2.1, 1.5], 10)).toEqual({ total: 5.8275, payout: 58.28 });

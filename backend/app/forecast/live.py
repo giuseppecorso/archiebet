@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from scipy.optimize import minimize
 
-from app.forecast.radar_markets import is_secondary
+from app.forecast.radar_markets import is_secondary, parse_team_goals
 
 MAX_GOALS = 12
 FIRST_HALF_SHARE = 0.45  # quota dei gol segnati nel primo tempo: stimata con `python -m app.cli live-check` (D92)
@@ -39,7 +39,8 @@ def score_matrix(lam_home: float, lam_away: float, n: int = MAX_GOALS) -> list[l
 def outcome_probabilities(lam_home: float, lam_away: float, home_goals: int = 0, away_goals: int = 0) -> dict[str, float]:
     """Probabilità finali di 1, X, 2, Over 2.5 ("over"), Over 0.5, 1.5, 3.5 e 4.5 ("over0.5", ...) e Goal
     partendo dal punteggio attuale e dai gol che restano."""
-    out = {"1": 0.0, "X": 0.0, "2": 0.0, "over": 0.0, **{f"over{n}.5": 0.0 for n in (0, 1, 3, 4)}, "yes": 0.0}
+    out = {"1": 0.0, "X": 0.0, "2": 0.0, "over": 0.0, **{f"over{n}.5": 0.0 for n in (0, 1, 3, 4)}, "yes": 0.0,
+           **{f"{side}_over{n}.5": 0.0 for side in ("home", "away") for n in range(8)}}  # gol di una squadra (D135)
     matrix = score_matrix(lam_home, lam_away)
     total = sum(map(sum, matrix))  # oltre 12 gol resta una probabilità minuscola: si rinormalizza
     for i, row in enumerate(matrix):
@@ -50,6 +51,9 @@ def outcome_probabilities(lam_home: float, lam_away: float, home_goals: int = 0,
             out["over"] += p if h + a >= 3 else 0.0
             for n in (0, 1, 3, 4):
                 out[f"over{n}.5"] += p if h + a > n else 0.0
+            for n in range(8):
+                out[f"home_over{n}.5"] += p if h > n else 0.0
+                out[f"away_over{n}.5"] += p if a > n else 0.0
             out["yes"] += p if h > 0 and a > 0 else 0.0
     return out
 
@@ -104,6 +108,11 @@ def selection_probability(market: str, pick: str, probs: Mapping[str, float]) ->
         return probs[key] if pick == "over" else 1.0 - probs[key]
     if market == "GG":
         return probs["yes"] if pick == "yes" else 1.0 - probs["yes"]
+    if market == "DNB":  # la schedina resta viva anche col pareggio (puntata restituita)
+        return probs[pick] + probs["X"]
+    if (team := parse_team_goals(market)) is not None:
+        key = f"{'home' if team[0] == 'casa' else 'away'}_over{team[1]:g}"
+        return probs[key] if pick == "over" else 1.0 - probs[key]
     raise ValueError(market)
 
 

@@ -26,8 +26,8 @@ BOOKMAKERS = ["Sisal", "Eurobet", "bet365", "Snai", "Lottomatica", "Goldbet", "B
 # ---------- Modelli ----------
 
 
-# 1X2, doppia chance, Under/Over dei gol, Gol/No gol, angoli e cartellini (D131); l'esito lo controlla is_valid_pick
-MARKET_PATTERN = r"^(1X2|DC|GG|OU[0-4]\.5|(COR|CRD)[HA]?\d{1,2}\.5)$"
+# 1X2, doppia chance, Draw No Bet, Under/Over dei gol e di una squadra, Gol/No gol, angoli e cartellini; l'esito lo controlla is_valid_pick
+MARKET_PATTERN = r"^(1X2|DC|DNB|GG|OU[0-4]\.5|TG[HA]\d\.5|(COR|CRD)[HA]?\d{1,2}\.5)$"
 
 
 class SelectionIn(BaseModel):

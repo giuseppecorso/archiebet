@@ -109,3 +109,55 @@ def test_corner_bet_void_if_stats_never_arrive(db, world):
     assert settle_open_bets(db, datetime(2026, 10, 17, 12, tzinfo=UTC) + timedelta(days=15)) == 1
     db.refresh(bet)
     assert (bet.status, bet.payout) == ("void", D("10.00"))
+
+
+# --- Gol di una squadra e Draw No Bet (D135) ---
+
+
+def test_team_goals_and_draw_no_bet_settle_on_the_score():
+    from app.betting.calc import VOID
+
+    assert selection_outcome("TGH1.5", "over", 2, 0) == WON
+    assert selection_outcome("TGA0.5", "under", 2, 1) == LOST
+    assert selection_outcome("DNB", "1", 1, 1) == VOID  # pareggio: puntata restituita
+    assert selection_outcome("DNB", "2", 0, 1) == WON
+    assert market_name("TGA0.5") == "gol ospite Under/Over 0.5" and market_name("DNB") == "Draw No Bet"
+    assert is_valid_pick("TGH2.5", "under") and is_valid_pick("DNB", "2") and not is_valid_pick("DNB", "X")
+
+
+def test_draw_no_bet_fair_closing_and_live():
+    from app.betting.calc import fair_closing_odds
+
+    # 1X2 2,00 / 3,50 / 4,00 senza margine: P(1) 48,3%, P(2) 24,1% → DNB "1" = 2/3 → quota giusta 1,50
+    assert float(fair_closing_odds("DNB", "1", {"1": D("2.0"), "X": D("3.5"), "2": D("4.0")}, None)) == pytest.approx(1.5)
+    probs = outcome_probabilities(1.6, 1.0)
+    assert selection_probability("DNB", "2", probs) == pytest.approx(probs["2"] + probs["X"])  # viva anche col pareggio
+    assert selection_probability("TGH0.5", "over", probs) == pytest.approx(1 - 2.718281828 ** -1.6, abs=1e-6)
+    assert outcome_probabilities(0.4, 0.4, 2, 0)["home_over1.5"] == pytest.approx(1.0)
+
+
+TEAM_BOOK = {
+    "pinnacle": {"1X2": {"1": 2.0, "X": 3.6, "2": 4.0}, "TGH1.5": {"over": 2.10, "under": 1.75}, "TGA0.5": {"over": 1.40, "under": 2.90}},
+    "sisal": {"1X2": {"1": 1.95, "X": 3.4, "2": 3.9}, "TGH1.5": {"over": 2.20, "under": 1.62}, "DNB": {"1": 1.38, "2": 2.70}},
+}
+
+
+def test_team_goals_in_every_league_and_dnb_from_1x2():
+    probs = best_probabilities(TEAM_BOOK, None)  # niente bisogno di statistiche: si chiudono col risultato
+    assert probs["TGH1.5"][0] == "pinnacle" and "TGA0.5" in probs
+    p1x2 = probs["1X2"][1]
+    assert probs["DNB"][1]["1"] == pytest.approx(p1x2["1"] / (p1x2["1"] + p1x2["2"]))
+    markets = [p.market for p in match_picks(TEAM_BOOK, None, ["sisal"])]
+    assert markets.index("DNB") < markets.index("TGH1.5") < markets.index("TGA0.5")
+    assert market_family("TGH1.5") == "gol squadra" and market_family("DNB") == "esito"
+
+
+def test_draw_no_bet_never_in_multiples():
+    from types import SimpleNamespace
+
+    from app.forecast.picks_service import legs_for
+
+    match = SimpleNamespace(id=1, kickoff_at=NOW)
+    picks = [(match, match_picks(TEAM_BOOK, None, ["sisal"]))]
+    markets = {leg.market for leg in legs_for(picks, "sisal", bench=frozenset())}
+    assert "TGH1.5" in markets and "DNB" not in markets

@@ -7,7 +7,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.143-009688?logo=fastapi&logoColor=white)
 ![Angular](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
-![Test](https://img.shields.io/badge/test-449%20backend%20%2B%2030%20frontend-brightgreen)
+![Test](https://img.shields.io/badge/test-454%20backend%20%2B%2031%20frontend-brightgreen)
 
 🇬🇧 [English version](README.en.md)
 
@@ -26,9 +26,9 @@ sempre il codice**.
 |---|---|
 | **Problema** | Capire, con metodo, se e dove un modello o un'informazione batte le quote di un mercato molto efficiente |
 | **Soluzione** | Backend FastAPI con 6 fonti dati, modelli statistici (Dixon-Coles, Elo, Shin, binomiale negativa, Poisson live, Monte Carlo), frontend Angular 22 |
-| **Metodo** | 134 decisioni documentate; ogni ipotesi provata con regole scritte prima di vedere i dati, taratura e conferma su periodi separati, errori standard per partita |
+| **Metodo** | 135 decisioni documentate; ogni ipotesi provata con regole scritte prima di vedere i dati, taratura e conferma su periodi separati, errori standard per partita |
 | **Risultato** | Un solo vantaggio confermato sullo storico (CLV +2,5% ± 0,3 su 734 casi), in verifica dal vivo; decine di ipotesi scartate e documentate |
-| **Qualità** | 479 test automatici, CI su GitHub Actions, migrazioni Alembic, avvio con Docker in un comando |
+| **Qualità** | 485 test automatici, CI su GitHub Actions, migrazioni Alembic, avvio con Docker in un comando |
 
 ## Provalo in 2 minuti (Docker)
 
@@ -64,7 +64,7 @@ simulatore. Quote attuali, live, notizie e AI si attivano aggiungendo le chiavi 
 | **Home "Oggi"** | Partite di oggi, occasioni del momento, giocate in corso, ArchieTV (video ufficiali delle leghe dai feed RSS di YouTube) |
 | **Partite** | Serie A, B, C, top 5 europei con seconde divisioni, coppe UEFA, 17 campionati dell'Est e del Nord; pagina partita con statistiche, formazioni previste, numeri attesi (tiri, angoli, cartellini), analisi scritta dall'AI, partite "gemelle" |
 | **Diretta** | Risultati in tempo reale come su un sito di risultati: minuto, punteggio, primo tempo e cronaca (gol con assist, rigori, autogol, cartellini, cambi, VAR) da API-Football |
-| **Pronostici** | Stima migliore per ogni partita (1X2, doppia chance, Under/Over 0.5–4.5, Goal, angoli e cartellini), Occasioni, generatore di multiple con 5 livelli di rischio e profilo personalizzato, **pagella settimanale** con cui Archie si corregge da solo (solo se una prova walk-forward lo giustifica), statistiche, simulatore Monte Carlo |
+| **Pronostici** | Stima migliore per ogni partita (1X2, doppia chance, Under/Over 0.5–4.5, Goal, gol di una squadra, Draw No Bet, angoli e cartellini), Occasioni, generatore di multiple con 5 livelli di rischio e profilo personalizzato, **pagella settimanale** con cui Archie si corregge da solo (solo se una prova walk-forward lo giustifica), statistiche, simulatore Monte Carlo |
 | **Il mio Archie** | Schedine reali e simulate chiuse in automatico, CLV, "sfortuna o errore?", regolamento personale, domande in linguaggio naturale (Claude con strumenti sui dati dell'app) |
 | **Schedina** | Sempre visibile: un clic su una quota la aggiunge; controllo del regolamento prima di registrare |
 
@@ -136,7 +136,7 @@ sviluppatore che implementa sotto regole precise.
 
 - **Cosa ho fatto io:** requisiti e specifiche ([SPECIFICHE.md](docs/SPECIFICHE.md)), scelte di prodotto e priorità, principi statistici non negoziabili, approvazione delle decisioni, verifica dell'app in uso, revisione dei risultati delle prove.
 - **Regole date all'assistente** ([CLAUDE.md](CLAUDE.md)): ogni calcolo ha un test; niente dati dal futuro; un fattore entra solo se una prova sul passato lo giustifica; i numeri li calcola il codice, mai l'AI; chiavi solo in `.env`; commit piccoli e documentati.
-- **Controlli:** 479 test automatici e CI a ogni push; ogni decisione registrata con motivazione ([DECISIONI.md](docs/DECISIONI.md)); prove pesanti eseguite su copie del database; avanzamento tracciato fase per fase ([STATO.md](docs/STATO.md)).
+- **Controlli:** 485 test automatici e CI a ogni push; ogni decisione registrata con motivazione ([DECISIONI.md](docs/DECISIONI.md)); prove pesanti eseguite su copie del database; avanzamento tracciato fase per fase ([STATO.md](docs/STATO.md)).
 - **Commit:** quelli scritti con l'assistente riportano il trailer `Co-Authored-By: Claude`.
 
 L'obiettivo era anche imparare a guidare in modo professionale uno sviluppo assistito dall'AI: definire bene il problema, fissare criteri di accettazione verificabili e non accettare un risultato senza test e senza prove.

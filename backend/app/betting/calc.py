@@ -6,12 +6,14 @@ Mercati gestiti e loro esiti:
 - "OU0.5" … "OU4.5": "over", "under" (Under/Over sulla linea dei gol indicata, D130-D131)
 - "GG" (Goal/NoGoal): "yes", "no"
 - angoli e cartellini (D131): "COR9.5", "CORH4.5", "CRDA1.5", ... con "over", "under" (nomi in radar_markets)
+- gol di una squadra (D135): "TGH1.5" (casa), "TGA0.5" (ospite) con "over", "under"
+- "DNB" (Draw No Bet, D135): "1", "2"; col pareggio la puntata torna (selezione annullata)
 """
 
 from collections.abc import Iterable, Sequence
 from decimal import ROUND_HALF_UP, Decimal
 
-from app.forecast.radar_markets import OVER_UNDER, is_secondary, parse_secondary, secondary_won
+from app.forecast.radar_markets import DNB, DNB_SELECTIONS, OVER_UNDER, is_secondary, is_team_goals, parse_secondary, parse_team_goals, secondary_won
 
 MARKETS: dict[str, tuple[str, ...]] = {
     "1X2": ("1", "X", "2"),
@@ -35,20 +37,24 @@ CENT = Decimal("0.01")
 
 def selections_of(market: str) -> tuple[str, ...]:
     """Esiti ammessi di un mercato (vuoto se il mercato non è gestito)."""
-    return MARKETS.get(market) or (OVER_UNDER if is_secondary(market) else ())
+    if market == DNB:
+        return DNB_SELECTIONS
+    return MARKETS.get(market) or (OVER_UNDER if is_secondary(market) or is_team_goals(market) else ())
 
 
 def is_valid_pick(market: str, pick: str) -> bool:
     return pick in selections_of(market)
 
 
-SHORT_NAMES = {"1X2": "1X2", "DC": "doppia chance", "GG": "Gol/No gol"}
+SHORT_NAMES = {"1X2": "1X2", "DC": "doppia chance", "GG": "Gol/No gol", DNB: "Draw No Bet"}
 
 
 def market_name(market: str) -> str:
     """Nome breve in italiano: "Under/Over 2.5", "angoli casa Under/Over 4.5", ..."""
     if (line := ou_line(market)) is not None:
         return f"Under/Over {line:g}"
+    if (team := parse_team_goals(market)) is not None:
+        return f"gol {team[0]} Under/Over {team[1]:g}"
     if (parsed := parse_secondary(market)) is not None:
         family, side, line = parsed
         who = "" if side == "totale" else f" {side}"
@@ -75,6 +81,11 @@ def selection_outcome(market: str, pick: str, home_goals: int, away_goals: int) 
     if not is_valid_pick(market, pick) or is_secondary(market):  # angoli e cartellini: secondary_outcome
         raise ValueError(f"Esito '{pick}' non valido per il mercato '{market}'")
     result = "1" if home_goals > away_goals else "X" if home_goals == away_goals else "2"
+    if market == DNB:
+        return VOID if result == "X" else WON if pick == result else LOST
+    if (team := parse_team_goals(market)) is not None:
+        goals = home_goals if team[0] == "casa" else away_goals
+        return WON if (goals > team[1]) == (pick == "over") else LOST
     if market == "1X2":
         hit = pick == result
     elif market == "DC":
@@ -148,13 +159,16 @@ def fair_odds(prices: dict[str, Decimal]) -> dict[str, Decimal]:
 
 def fair_closing_odds(market: str, pick: str, closing_1x2: dict[str, Decimal] | None, closing_ou: dict[str, Decimal] | None) -> Decimal | None:
     """Quota giusta di chiusura per la selezione, se abbiamo le quote di chiusura del mercato."""
-    if market in ("1X2", "DC") and closing_1x2 and len(closing_1x2) == 3:
+    if market in ("1X2", "DC", DNB) and closing_1x2 and len(closing_1x2) == 3:
         fair = fair_odds(closing_1x2)
+        if market == DNB:  # col pareggio si riprende la puntata: conta solo 1 contro 2
+            p1, p2 = 1 / fair["1"], 1 / fair["2"]
+            return (p1 + p2) / (p1 if pick == "1" else p2)
         if market == "1X2":
             return fair[pick]
         probability = sum(1 / fair[p] for p in pick)  # es. "1X" = P(1) + P(X)
         return 1 / probability
-    if (ou_line(market) is not None or is_secondary(market) or market == "GG") and closing_ou and len(closing_ou) == 2:  # closing_ou: chiusura dello stesso mercato
+    if (ou_line(market) is not None or is_secondary(market) or is_team_goals(market) or market == "GG") and closing_ou and len(closing_ou) == 2:  # closing_ou: chiusura dello stesso mercato
         return fair_odds(closing_ou)[pick]
     return None
 

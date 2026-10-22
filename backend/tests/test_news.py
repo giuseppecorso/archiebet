@@ -228,7 +228,7 @@ def test_match_picks_and_analysis_endpoints(logged_client, db, monkeypatch):
     m.kickoff_at = datetime.now(UTC) + timedelta(days=2)
     db.commit()
     picks = logged_client.get(f"/api/picks/match/{m.id}").json()
-    assert [p["market"] for p in picks["markets"]] == ["1X2", "DC"]  # dal consenso di Sisal e Snai
+    assert [p["market"] for p in picks["markets"]] == ["1X2", "DC", "DNB"]  # dal consenso di Sisal e Snai (Draw No Bet dall'1X2, D135)
     assert [(s["kind"], s["offer"]["verdict"]) for s in picks["suggestions"]] == [("sicuro", "paga poco")]  # il più probabile tra 2 e 4 è lo stesso: non si ripete
 
     brief = fan_api.analysis_brief(db, m)

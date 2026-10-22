@@ -12,6 +12,10 @@ FAMILIES = {"COR": "angoli", "CRD": "cartellini"}
 SIDES = {"": "totale", "H": "casa", "A": "ospite"}
 OVER_UNDER = ("over", "under")
 _SECONDARY = re.compile(r"^(COR|CRD)([HA]?)(\d+\.5)$")
+# Gol di una sola squadra (D135): "TGH1.5" = gol della squadra di casa sopra/sotto 1,5. Non sono nel radar delle Occasioni.
+_TEAM_GOALS = re.compile(r"^TG([HA])(\d\.5)$")
+DNB = "DNB"  # Draw No Bet: pareggio = puntata restituita (D135)
+DNB_SELECTIONS = ("1", "2")
 
 
 def secondary_name(family: str, side: str, line: float) -> str:
@@ -31,13 +35,30 @@ def is_secondary(market: str) -> bool:
     return _SECONDARY.match(market) is not None
 
 
+def team_goals_name(side: str, line: float) -> str:
+    """("casa", 1.5) → "TGH1.5"."""
+    return f"TG{'H' if side == 'casa' else 'A'}{line:.1f}"
+
+
+def parse_team_goals(market: str) -> tuple[str, float] | None:
+    """"TGA0.5" → ("ospite", 0.5); None se non è un mercato di gol di una squadra."""
+    m = _TEAM_GOALS.match(market)
+    return ("casa" if m.group(1) == "H" else "ospite", float(m.group(2))) if m else None
+
+
+def is_team_goals(market: str) -> bool:
+    return _TEAM_GOALS.match(market) is not None
+
+
 def selections(market: str) -> tuple[str, ...]:
     """Esiti di un mercato del radar (vuoto se il mercato non è seguito)."""
     if market in ODDS_MARKETS:
         return tuple(ODDS_MARKETS[market])
     if market in EXTRA_GOAL_MARKETS:
         return tuple(EXTRA_GOAL_MARKETS[market])
-    return OVER_UNDER if is_secondary(market) else ()
+    if market == DNB:
+        return DNB_SELECTIONS
+    return OVER_UNDER if is_secondary(market) or is_team_goals(market) else ()
 
 
 def secondary_won(market: str, selection: str, corners: tuple[int | None, int | None],

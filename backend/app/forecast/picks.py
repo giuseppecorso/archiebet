@@ -15,7 +15,7 @@ from typing import Any
 from app.forecast.markets import value
 from app.forecast.demargin import proportional
 from app.forecast.radar import SIMULATION_BOOKMAKERS, BookOdds, fair_reference, qualifies
-from app.forecast.radar_markets import is_secondary, parse_secondary, selections
+from app.forecast.radar_markets import DNB, is_secondary, is_team_goals, parse_secondary, parse_team_goals, selections
 
 MARKET_SOURCES = ("pinnacle", "betfair_ex", "market_avg")  # dal più preciso al meno preciso
 MODEL_SOURCE = "archie"
@@ -26,7 +26,7 @@ CONSENSUS_MIN_BOOKMAKERS = 2
 ESTIMATE_ONLY = (MODEL_SOURCE, CONSENSUS_SOURCE)  # stime senza riferimento sharp: niente "valore" (nelle multiple il consenso sì, D130)
 LOW_PRICE = -0.05  # sotto questo valore il bookmaker "paga poco" (margine più alto del solito)
 GOAL_MARKETS = ("OU0.5", "OU1.5", "OU2.5", "OU3.5", "OU4.5", "GG")
-PICK_MARKETS = ("1X2", "DC", *GOAL_MARKETS)  # OU1.5 e OU3.5 dal D130, OU0.5 e OU4.5 dal D131
+PICK_MARKETS = ("1X2", "DC", DNB, *GOAL_MARKETS)  # OU1.5 e OU3.5 dal D130, OU0.5 e OU4.5 dal D131, Draw No Bet dal D135
 SECONDARY_SHARP = ("pinnacle",)
 SECONDARY_RANGE = (0.12, 0.88)  # angoli e cartellini: solo linee "giocabili", non Over 5.5 angoli a 1,02 (D131)
 
@@ -82,10 +82,24 @@ def double_chance(p1x2: dict[str, float]) -> dict[str, float]:
 
 
 def market_family(market: str) -> str:
-    """"esito" (1X2, doppia chance), "gol" (Under/Over, Gol/No gol), "angoli" o "cartellini"."""
+    """"esito" (1X2, doppia chance, Draw No Bet), "gol" (Under/Over, Gol/No gol), "gol squadra", "angoli" o "cartellini"."""
     if (parsed := parse_secondary(market)) is not None:
         return parsed[0]
-    return "esito" if market in ("1X2", "DC") else "gol"
+    if is_team_goals(market):
+        return "gol squadra"
+    return "esito" if market in ("1X2", "DC", DNB) else "gol"
+
+
+def team_goals_markets(book: BookOdds) -> list[str]:
+    """Gol di una squadra quotati (D135), in ordine: casa poi ospite, per linea."""
+    found = {m for markets in book.values() for m in markets if is_team_goals(m)}
+    return sorted(found, key=lambda m: (parse_team_goals(m)[0] != "casa", parse_team_goals(m)[1]))
+
+
+def draw_no_bet(p1x2: dict[str, float]) -> dict[str, float]:
+    """Draw No Bet: col pareggio si riprende la puntata, quindi conta solo 1 contro 2."""
+    played = p1x2["1"] + p1x2["2"]
+    return {"1": p1x2["1"] / played, "2": p1x2["2"] / played}
 
 
 def secondary_markets(book: BookOdds) -> list[str]:
@@ -117,9 +131,16 @@ def best_probabilities(book: BookOdds, model: dict[str, Any] | None, secondary: 
             out[market] = (CONSENSUS_SOURCE, consensus)
         elif model and market in model:
             out[market] = (MODEL_SOURCE, {k: float(v) for k, v in model[market].items()})
+    for market in team_goals_markets(book):  # gol di una squadra (D135): in tutti i campionati, si chiudono col risultato
+        ref = fair_reference(book, market, SECONDARY_SHARP) or (
+            (CONSENSUS_SOURCE, c) if (c := italian_consensus(book, market)) is not None else None
+        )
+        if ref is not None and SECONDARY_RANGE[0] <= ref[1]["over"] <= SECONDARY_RANGE[1]:
+            out[market] = ref
     if "1X2" in out:
         source, p = out["1X2"]
         out["DC"] = (source, double_chance(p))
+        out[DNB] = (source, draw_no_bet(p))
     return out
 
 
@@ -141,7 +162,7 @@ def match_picks(book: BookOdds, model: dict[str, Any] | None, bookmakers: Sequen
     """Tutti i mercati di una partita con la loro fonte, probabilità e quote dei bookmaker di Giuse
     (angoli e cartellini solo con secondary=True: campionati dove si possono chiudere, D131)."""
     probs = best_probabilities(book, model, secondary)
-    order = [*PICK_MARKETS, *(m for m in probs if is_secondary(m))]
+    order = [*PICK_MARKETS, *(m for m in probs if is_team_goals(m)), *(m for m in probs if is_secondary(m))]
     return [
         MarketPick(market, source, p, offers_for(book, market, p, bookmakers, source))
         for market in order

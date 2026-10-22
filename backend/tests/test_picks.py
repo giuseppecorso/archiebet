@@ -48,7 +48,7 @@ def test_model_only_where_market_is_missing():
 def test_match_picks_with_both_bookmakers_and_favorite():
     book = {"pinnacle": PIN, "sisal": {"1X2": {"1": 2.1, "X": 3.3, "2": 3.6}}, "eurobet": {"1X2": {"1": 2.0}}}
     picks = match_picks(book, None, ("sisal", "eurobet"))
-    assert [p.market for p in picks] == ["1X2", "DC"]
+    assert [p.market for p in picks] == ["1X2", "DC", "DNB"]
     one = picks[0]
     p1 = shin([2.0, 3.6, 4.0])[0]
     sisal, eurobet = one.offers["1"]

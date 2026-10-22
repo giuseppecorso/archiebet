@@ -137,7 +137,7 @@ spesa** che registra ogni chiamata e blocca oltre il tetto mensile. Usi:
 
 ## 7. Qualità
 
-- **449 test backend** (pytest) e **30 test frontend** (Vitest): ogni calcolo di probabilità, quota, valore o guadagno ha un test (anche casi limite trovati a mano, es. arrotondamenti).
+- **454 test backend** (pytest) e **31 test frontend** (Vitest): ogni calcolo di probabilità, quota, valore o guadagno ha un test (anche casi limite trovati a mano, es. arrotondamenti).
 - **Test delle API** con database in memoria e client autenticato; adattatori provati con risposte registrate, senza rete.
 - **CI** su GitHub Actions a ogni push (`.github/workflows/ci.yml`): test del backend, build e test del frontend, build delle immagini Docker.
 - **Docker**: `docker compose up --build` avvia backend (FastAPI) e frontend (build Angular servita da nginx, che inoltra `/api`), con un utente dimostrativo e lo storico gratuito di football-data, senza chiavi API.

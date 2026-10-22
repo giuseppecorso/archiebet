@@ -60,6 +60,7 @@ MARKETS = {
     "1012": ("OU3.5", {"1012": "over", "1013": "under"}),
     "106": ("OU0.5", {"106": "over", "107": "under"}),  # D131 (esiti verificati sulle definizioni dei mercati)
     "1014": ("OU4.5", {"1014": "over", "1015": "under"}),
+    "10214": ("DNB", {"10214": "1", "10215": "2"}),  # D135 (esiti verificati sulle definizioni dei mercati)
     "101902": ("DC", {"101902": "1X", "101903": "12", "101904": "X2"}),  # Pinnacle non la quota
     "104": ("GG", {"104": "yes", "105": "no"}),
 }
@@ -133,16 +134,18 @@ SECONDARY_SLUGS = {"pinnacle", "sisal.it", "eurobet.it"}
 
 
 def secondary_market_map(definitions: Sequence[dict[str, Any]]) -> dict[str, tuple[str, dict[str, str]]]:
-    """Over/Under .5 di angoli e cartellini a fine partita (totali e per squadra) → nome nel radar ("COR9.5", "CRDH1.5", ...)."""
+    """Over/Under .5 di angoli e cartellini (totali e per squadra) e gol di una squadra (D135) → "COR9.5", "CRDH1.5", "TGH1.5", ..."""
     out = {}
     for d in definitions:
         name, line = d.get("marketName", ""), float(d.get("handicap") or 0)
         if d.get("period") != "fulltime" or "Half" in name or "Over Under" not in name or line % 1 != 0.5:
             continue
-        family = "COR" if name.startswith("Corners") else "CRD" if name.startswith("Bookings") else None
+        family = "COR" if name.startswith("Corners") else "CRD" if name.startswith("Bookings") else "TG" if name.startswith("Over Under Team") else None
         if family is None:
             continue
         side = "H" if "Team 1" in name else "A" if "Team 2" in name else ""
+        if family == "TG" and not side:
+            continue  # gol per squadra (D135): solo Team 1 / Team 2
         outcomes = {str(o["outcomeId"]): o["outcomeName"].lower() for o in d.get("outcomes", []) if o["outcomeName"].lower() in ("over", "under")}
         if len(outcomes) == 2:
             out[str(d["marketId"])] = (f"{family}{side}{line:.1f}", outcomes)

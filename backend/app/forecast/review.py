@@ -61,8 +61,8 @@ class Row:
 
     @property
     def exclusive(self) -> bool:
-        """Esiti che si escludono (tutti tranne la doppia chance): servono per log loss e taratura."""
-        return self.market != "DC"
+        """Esiti che si escludono e uno vince sempre (non doppia chance né Draw No Bet): servono per log loss e taratura."""
+        return self.market not in ("DC", "DNB")
 
 
 def snapshot_time(kickoff: datetime) -> datetime:
@@ -284,7 +284,7 @@ def legs_of(rows: Iterable[Row], bookmaker: str, bench: frozenset[str] = frozens
     return [
         Leg(r.match_id, r.kickoff, r.market, s, p, price, r.source)
         for r in rows
-        if r.group not in bench
+        if r.group not in bench and r.market != "DNB"  # il rimborso col pareggio non sta nei conti della multipla
         for s, p in r.probabilities.items()
         if (price := r.prices.get(bookmaker, {}).get(s))
     ]

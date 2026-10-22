@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.adapters.api_football import EAST_NORTH
 from app.forecast.data import STATS_LEAGUES
+from app.forecast.radar_markets import DNB
 from app.forecast.multiple import Leg
 from app.forecast.picks import MODEL_SOURCE, MarketPick, market_family, match_picks
 from app.forecast.radar_service import load_book_odds
@@ -52,8 +53,8 @@ def legs_for(picks: Sequence[tuple[Match, list[MarketPick]]], bookmaker: str, be
     legs = []
     for match, markets in picks:
         for mp in markets:
-            if mp.source == MODEL_SOURCE or f"{market_family(mp.market)} · {mp.source}" in bench:
-                continue  # niente gambe dal solo modello (D88); il consenso dei bookmaker italiani sì (Serie C, D130)
+            if mp.source == MODEL_SOURCE or mp.market == DNB or f"{market_family(mp.market)} · {mp.source}" in bench:
+                continue  # niente Draw No Bet nelle multiple: il rimborso col pareggio cambia i conti (D135)  # niente gambe dal solo modello (D88); il consenso dei bookmaker italiani sì (Serie C, D130)
             for selection, offers in mp.offers.items():
                 for offer in offers:
                     if offer.bookmaker == bookmaker:

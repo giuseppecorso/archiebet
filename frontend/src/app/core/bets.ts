@@ -138,18 +138,32 @@ export function parseSecondary(market: string): { family: string; side: '' | 'H'
   return m ? { family: FAMILY[m[1]], side: m[2] as '' | 'H' | 'A', line: m[3] } : null;
 }
 
-/** Famiglia di mercati per i filtri: esito, gol, angoli, cartellini */
-export function marketFamily(market: string): 'esito' | 'gol' | 'angoli' | 'cartellini' {
-  const sec = parseSecondary(market);
-  if (sec) return sec.family as 'angoli' | 'cartellini';
-  return market === '1X2' || market === 'DC' ? 'esito' : 'gol';
+const TEAM_GOALS = /^TG([HA])(\d\.5)$/;
+
+/** Gol di una sola squadra (D135): "TGH1.5" → { side: 'H', line: '1.5' } */
+export function parseTeamGoals(market: string): { side: 'H' | 'A'; line: string } | null {
+  const m = TEAM_GOALS.exec(market);
+  return m ? { side: m[1] as 'H' | 'A', line: m[2] } : null;
 }
 
-const BASE_LABEL: Record<string, string> = { '1X2': 'Esito finale', DC: 'Doppia chance', GG: 'Goal / NoGoal' };
+/** Famiglia di mercati per i filtri: esito, gol, gol squadra, angoli, cartellini */
+export function marketFamily(market: string): 'esito' | 'gol' | 'gol squadra' | 'angoli' | 'cartellini' {
+  const sec = parseSecondary(market);
+  if (sec) return sec.family as 'angoli' | 'cartellini';
+  if (parseTeamGoals(market)) return 'gol squadra';
+  return market === '1X2' || market === 'DC' || market === 'DNB' ? 'esito' : 'gol';
+}
+
+const BASE_LABEL: Record<string, string> = { '1X2': 'Esito finale', DC: 'Doppia chance', DNB: 'Draw No Bet (pareggio rimborsato)', GG: 'Goal / NoGoal' };
 
 /** "OU2.5" → "Under / Over 2.5", "CORH4.5" → "Angoli Inter U/O 4.5" (con la partita) o "Angoli casa U/O 4.5" */
 export function marketLabel(market: Market, match?: Pick<MatchCard, 'home' | 'away'>): string {
   if (market.startsWith('OU')) return `Under / Over ${market.slice(2)}`;
+  const team = parseTeamGoals(market);
+  if (team) {
+    const who = match ? (team.side === 'H' ? match.home.name : match.away.name) : team.side === 'H' ? 'casa' : 'ospite';
+    return `Gol ${who} U/O ${team.line}`;
+  }
   const sec = parseSecondary(market);
   if (sec) {
     const who = sec.side === '' ? 'totali' : match ? (sec.side === 'H' ? match.home.name : match.away.name) : sec.side === 'H' ? 'casa' : 'ospite';
@@ -163,6 +177,7 @@ export function marketSelections(market: Market): string[] {
   if (market === '1X2') return ['1', 'X', '2'];
   if (market === 'DC') return ['1X', 'X2', '12'];
   if (market === 'GG') return ['yes', 'no'];
+  if (market === 'DNB') return ['1', '2'];
   return ['over', 'under'];
 }
 
@@ -171,6 +186,8 @@ export function pickLabel(market: Market, pick: string, match?: Pick<MatchCard, 
   const team = (side: 'home' | 'away') => (match ? ` · ${match[side].name}` : '');
   const ou = pick === 'over' ? 'Over' : 'Under';
   if (market.startsWith('OU')) return `${ou} ${market.slice(2)}`;
+  const tg = parseTeamGoals(market);
+  if (tg) return `${ou} ${tg.line} gol${tg.side === 'H' ? team('home') : team('away')}`;
   const sec = parseSecondary(market);
   if (sec) {
     const who = sec.side === '' ? '' : sec.side === 'H' ? team('home') : team('away');
@@ -183,6 +200,8 @@ export function pickLabel(market: Market, pick: string, match?: Pick<MatchCard, 
     'DC:1X': '1X',
     'DC:X2': 'X2',
     'DC:12': '12',
+    'DNB:1': `1 DNB${team('home')}`,
+    'DNB:2': `2 DNB${team('away')}`,
     'GG:yes': 'Goal',
     'GG:no': 'NoGoal',
   };

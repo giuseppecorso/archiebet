@@ -17,7 +17,7 @@ from app.config import get_settings
 from app.forecast.data import STATS_LEAGUES
 from app.forecast.learning_service import learning_dir
 from app.forecast.picks import MarketPick, Offer, best_probabilities, match_picks, price_verdict
-from app.forecast.radar_markets import is_secondary, secondary_won
+from app.forecast.radar_markets import is_secondary, is_team_goals, secondary_won
 from app.forecast.radar_service import won
 from app.forecast.review import Row, State, recalibrate, snapshot_time, weekly_report
 from app.models import Match, MatchStatus
@@ -27,7 +27,12 @@ REVIEW_FILE = "review.json"
 
 
 def winners_of(market: str, selections: Sequence[str], match: Match) -> frozenset[str] | None:
-    """Esiti vinti di un mercato; None se servono angoli o cartellini e le statistiche non ci sono."""
+    """Esiti vinti di un mercato; None se servono angoli o cartellini e le statistiche non ci sono.
+    Draw No Bet col pareggio: nessun esito vinto (puntata restituita)."""
+    if market == "DNB" or is_team_goals(market):
+        from app.betting.calc import WON, selection_outcome
+
+        return frozenset(s for s in selections if selection_outcome(market, s, match.home_goals, match.away_goals) == WON)
     if is_secondary(market):
         stats = ((match.home_corners, match.away_corners), (match.home_yellow, match.away_yellow), (match.home_red or 0, match.away_red or 0))
         outcome = {s: secondary_won(market, s, *stats) for s in selections}

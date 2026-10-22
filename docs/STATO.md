@@ -2,6 +2,12 @@
 
 Ultimo aggiornamento: 2026-10-21
 
+## Telefono, gol per squadra, Draw No Bet (2026-10-22)
+
+- [x] **Accesso dal telefono** con Tailscale Serve (HTTPS solo per i dispositivi di Giuse), app installabile (icona, manifest, service worker) e grafica per telefono (menu in basso, partite su una riga).
+- [x] **Gol di una squadra e Draw No Bet** (D135) con quote vere di Sisal ed Eurobet; generatore: spiega perché non trova multipla, angoli e cartellini "in prova".
+- Test: 454 backend + 31 frontend, tutti verdi.
+
 ## Caccia al CLV, notizie compatte, ArchieTV (2026-10-22)
 
 - [x] **Multipla "Caccia al CLV"** (D134): solo occasioni D72, scelte per CLV atteso; pagella su 20 settimane: 6 multiple, CLV +5,6% (campione piccolo).

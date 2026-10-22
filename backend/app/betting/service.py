@@ -172,7 +172,7 @@ CLV_WAIT = timedelta(days=7)  # la chiusura di Pinnacle arriva al giro di aggior
 
 
 def _set_clv(db: Session, sel: BetSelection) -> None:
-    other = "OU2.5" if sel.market in ("1X2", "DC") else sel.market
+    other = "OU2.5" if sel.market in ("1X2", "DC", "DNB") else sel.market
     fair = fair_closing_odds(sel.market, sel.pick, _closing_prices(db, sel.match_id, "1X2"), _closing_prices(db, sel.match_id, other))
     sel.fair_closing_odds = fair.quantize(Decimal("0.001")) if fair is not None else None
     sel.clv = clv(sel.odds, fair)

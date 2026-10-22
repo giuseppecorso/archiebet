@@ -50,6 +50,7 @@ const MARKETS: [string, string][] = [
   ['OU3.5', 'U/O 3.5'],
   ['OU4.5', 'U/O 4.5'],
   ['GG', 'Goal/NoGoal'],
+  ['gol squadra', 'Gol squadra'],
   ['angoli', 'Angoli'],
   ['cartellini', 'Cartellini'],
 ];
