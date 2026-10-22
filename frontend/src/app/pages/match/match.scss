@@ -850,3 +850,63 @@ tr.absent td {
     font-size: 13px;
   }
 }
+
+/* Telefono: intestazione a tabellone su una riga (casa · orario/risultato · ospite) */
+@media (max-width: 600px) {
+  .top {
+    margin-bottom: 6px;
+  }
+  .top .info {
+    display: none;
+  }
+  .header {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 12px 8px;
+    background-image: none;
+  }
+  .side-team {
+    flex: 1 1 0;
+    min-width: 0;
+    gap: 6px;
+  }
+  .crest-big {
+    --crest: 40px; /* il componente dello stemma legge la sua misura da qui */
+  }
+  .team-name {
+    font-size: 15px;
+    letter-spacing: 1px;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+  .side-team ab-form-badges {
+    --size: 16px; /* pallini della forma più piccoli */
+  }
+  .side-team ::ng-deep .badges {
+    gap: 2px;
+  }
+  .side-team ::ng-deep .b {
+    font-size: 9px;
+  }
+  .center {
+    flex: 0 0 auto;
+    max-width: 44%;
+    gap: 4px;
+  }
+  .comp {
+    font-size: 9px;
+    letter-spacing: 0.5px;
+  }
+  .big-time,
+  .big-score {
+    font-size: 26px;
+  }
+  .when {
+    font-size: 11px;
+  }
+  .play {
+    padding: 5px 10px;
+    font-size: 13px;
+  }
+}
