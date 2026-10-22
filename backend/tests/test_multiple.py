@@ -185,3 +185,16 @@ def test_clv_hunt_only_occasions_and_shorter_if_needed():
     m = build_multiple(legs, 4, PROFILES["caccia al clv"])
     assert m is not None and {l.match_id for l in m.legs} == {1, 2}  # 4 richieste, solo 2 occasioni: multipla da 2
     assert build_multiple(legs[2:], 4, PROFILES["caccia al clv"]) is None  # nessuna occasione: nessuna multipla
+
+
+def test_why_no_multiple_is_explained():
+    from app.forecast.multiple import why_none
+
+    when = datetime(2026, 10, 25, tzinfo=UTC)
+    corners = [Leg(i, when, "COR9.5", "over", 0.55, 1.70) for i in range(3)]
+    text = why_none(corners, 4, PROFILES["equilibrata"])
+    assert "Solo 0 partite" in text and "65%" in text and "giorno prima" in text
+    assert "Nessuna quota" in why_none([], 4, PROFILES["equilibrata"])
+    assert "Occasioni" in why_none(corners, 4, PROFILES["caccia al clv"])
+    easy = [leg(i, 0.9, 1.05) for i in range(1, 6)]  # partite valide, ma quota totale troppo bassa
+    assert "quota totale 3–5" in why_none(easy, 4, PROFILES["equilibrata"])

@@ -150,7 +150,7 @@ const MARKETS: [string, string][] = [
     <section class="panel box result" aria-live="polite" aria-label="Multipla proposta">
       @if (result.value(); as d) {
         <ab-multiple-view [data]="d" [stake]="stake()"
-          empty="Con queste scelte non c'è una multipla sensata. Prova meno partite, più mercati, un altro rischio o tutta la settimana." />
+          empty="Con queste scelte non c'è una multipla sensata." />
       } @else if (result.isLoading()) {
         <p class="muted small">Archie sta provando le combinazioni…</p>
       } @else if (result.error()) {

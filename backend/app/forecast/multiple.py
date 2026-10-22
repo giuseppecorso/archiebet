@@ -178,3 +178,24 @@ def build_multiple(legs: Sequence[Leg], n: int = LEGS, profile: Profile = PROFIL
 def multiple_of_the_day(legs: Sequence[Leg]) -> Multiple | None:
     """La più facile e sensata (specifiche, sezione 5): profilo equilibrato, 4 partite."""
     return build_multiple(legs)
+
+
+SECONDARY_PREFIXES = ("COR", "CRD")
+
+
+def why_none(legs: Sequence[Leg], n: int, profile: Profile) -> str:
+    """Perché non c'è una multipla con queste scelte, detto in modo utile (D134)."""
+    if not legs:
+        return "Nessuna quota per i mercati e i campionati scelti in questo periodo: allarga i giorni o i mercati."
+    only_secondary = all(leg.market.startswith(SECONDARY_PREFIXES) for leg in legs)
+    late = " Sisal ed Eurobet pubblicano angoli e cartellini di solito solo il giorno prima della partita." if only_secondary else ""
+    if profile.clv:
+        found = len({leg.match_id for leg in legs if occasion(leg)})
+        return (f"Solo {found} partite hanno una quota sopra il giusto secondo la regola delle Occasioni (1X2, Under/Over 2.5, Goal): "
+                "ne servono almeno 2. È normale: succede poche volte a settimana." + late)
+    ok = {leg.match_id for leg in legs if eligible(leg, FULL_MARGIN, profile.min_probability)}
+    if len(ok) < n:
+        return (f"Solo {len(ok)} partite hanno una scelta al {profile.min_probability:.0%} o più con un prezzo accettabile: ne servono {n}. "
+                "Prova meno partite, più giorni o un livello più coraggioso." + late)
+    return (f"Le combinazioni possibili non stanno nella quota totale {profile.min_total:g}–{profile.max_total:g}: "
+            "prova un altro numero di partite o un altro livello." + late)

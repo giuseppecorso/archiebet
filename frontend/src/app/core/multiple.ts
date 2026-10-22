@@ -33,4 +33,6 @@ export interface MultiplesOut {
   horizon: Horizon;
   multiples: Multiple[];
   missing: string[];
+  /** Se non c'è nessuna multipla: perché, e cosa provare (D134) */
+  hint?: string | null;
 }

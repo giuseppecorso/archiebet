@@ -29,7 +29,7 @@ import { Crest } from './crest';
           <li>
             <span class="when muted small">{{ day(l.match.kickoff_at) }} {{ time(l.match.kickoff_at) }} · {{ l.match.competition.name }}</span>
             <a [routerLink]="['/partite', l.match.id]" class="match"><ab-crest [team]="l.match.home" [size]="18" /> {{ l.match.home.name }} – {{ l.match.away.name }} <ab-crest [team]="l.match.away" [size]="18" /></a>
-            <span class="pick">{{ label(l.market, l.selection, l.match) }}@if (l.source === 'consenso') { <span class="muted small" title="Probabilità dalla media dei bookmaker italiani senza margine: in Serie C Pinnacle non c'è (D130)">· consenso italiano</span> }</span>
+            <span class="pick">{{ label(l.market, l.selection, l.match) }}@if (isSecondary(l.market)) { <span class="trial" title="Angoli e cartellini: il valore rispetto a Pinnacle è ancora in verifica dal vivo (D94)">in prova</span> }@if (l.source === 'consenso') { <span class="muted small" title="Probabilità dalla media dei bookmaker italiani senza margine: in Serie C Pinnacle non c'è (D130)">· consenso italiano</span> }</span>
             <span class="nums"><span class="muted small">{{ pct(l.probability) }}</span><span class="led">{{ odds(l.price) }}</span></span>
           </li>
         }
@@ -61,6 +61,7 @@ import { Crest } from './crest';
       }
     } @else {
       <p class="muted">{{ empty() }}</p>
+      @if (d.hint) { <p class="hint">{{ d.hint }}</p> }
     }
   `,
   styles: `
@@ -89,10 +90,16 @@ import { Crest } from './crest';
     .neg { color: var(--loss); }
     .note { margin: 10px 0 0; font-size: 12px; color: var(--text-2); }
     .note.pos { color: var(--value); }
+    .hint { margin: 6px 0 0; font-size: 13px; color: var(--text-2); }
+    .trial { margin-left: 6px; padding: 0 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--amber); border: 1px solid var(--amber); border-radius: 3px; }
   `,
 })
 export class MultipleView {
   readonly data = input.required<MultiplesOut>();
+
+  protected isSecondary(market: string): boolean {
+    return market.startsWith('COR') || market.startsWith('CRD');
+  }
   readonly stake = input(10);
   /** Testo quando non c'è nessuna multipla */
   readonly empty = input('Nessuna multipla sensata: meglio non giocare, o guardare le singole nei Pronostici.');

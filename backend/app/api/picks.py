@@ -14,7 +14,7 @@ from app.auth.deps import CurrentUser, DbSession
 from app.config import get_settings
 from app.forecast.clv import SUSPICIOUS_VALUE
 from app.forecast.data import ODDS_MARKETS
-from app.forecast.multiple import LEGS, PROFILES, build_multiple, custom_profile
+from app.forecast.multiple import LEGS, PROFILES, build_multiple, custom_profile, why_none
 from app.forecast.picks import MODEL_SOURCE, MarketPick, favorite, market_family, off_line
 from app.forecast.picks_service import legs_for, match_market_picks, upcoming_picks
 from app.forecast.suggestions import suggestions
@@ -391,6 +391,7 @@ class MultiplesOut(BaseModel):
     legs: int
     multiples: list[MultipleOut]  # una per bookmaker di Giuse
     missing: list[str]  # bookmaker per cui oggi non c'è una multipla sensata
+    hint: str | None = None  # se non c'è nessuna multipla: perché, e cosa provare (D134)
 
 
 def _midnight(day: date) -> datetime:
@@ -450,10 +451,14 @@ def multiple(
         upcoming = [(m, [p for p in mp if p.market in allowed or market_family(p.market) in allowed]) for m, mp in upcoming]
     cards = {c.id: c for c in match_cards(db, [m for m, _ in upcoming], now)}
     multiples, missing = [], []
+    chosen = custom_profile(min_probability, min_total, max_total, by == "valore") if profile == "personalizzata" else PROFILES[profile]
+    hint = None
     for bm in bookmakers:
         label = BOOKMAKER_LABELS.get(bm, bm)
-        chosen = custom_profile(min_probability, min_total, max_total, by == "valore") if profile == "personalizzata" else PROFILES[profile]
-        best = build_multiple(legs_for(upcoming, bm), legs, chosen)
+        bm_legs = legs_for(upcoming, bm)
+        best = build_multiple(bm_legs, legs, chosen)
+        if best is None and hint is None:
+            hint = why_none(bm_legs, legs, chosen)
         if best is None:
             missing.append(label)
             continue
@@ -474,7 +479,7 @@ def multiple(
                 expected_value=best.expected_value,
             )
         )
-    return MultiplesOut(horizon=horizon, profile=profile, legs=legs, multiples=multiples, missing=missing)
+    return MultiplesOut(horizon=horizon, profile=profile, legs=legs, multiples=multiples, missing=missing, hint=None if multiples else hint)
 
 
 # ---------- Quote fuori linea oggi (D70) ----------
