@@ -225,3 +225,26 @@
   gap: 6px;
   margin: 8px 0 4px;
 }
+
+/* Telefono: niente riga tecnica dei dati, campionati su una riga che scorre di lato */
+@media (max-width: 600px) {
+  ab-data-status {
+    display: none;
+  }
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-right: -16px;
+    padding-right: 16px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .filters .chip,
+  .country {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .country select {
+    font-size: 15px;
+  }
+}

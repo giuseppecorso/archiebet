@@ -133,3 +133,12 @@
   border-radius: 4px;
   cursor: pointer;
 }
+
+/* Telefono: la schedina sta sopra il menu in basso */
+@media (max-width: 600px) {
+  .slip {
+    right: 8px;
+    bottom: calc(56px + env(safe-area-inset-bottom));
+    width: calc(100vw - 16px);
+  }
+}

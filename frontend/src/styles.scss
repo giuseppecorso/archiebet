@@ -328,10 +328,14 @@ body {
 }
 @media (max-width: 600px) {
   .hero {
-    min-height: 72px;
+    min-height: 0;
+    margin-bottom: 10px;
     padding: 10px 12px;
   }
   .hero h1 {
-    font-size: 24px;
+    font-size: 22px;
+  }
+  .hero p {
+    display: none; /* sul telefono basta il titolo */
   }
 }

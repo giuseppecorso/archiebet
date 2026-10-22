@@ -118,19 +118,6 @@
   border-color: var(--line-muted);
 }
 
-@media (max-width: 600px) {
-  .row {
-    padding: 9px 12px;
-  }
-  .tag {
-    width: auto;
-  }
-  .scorers {
-    width: 100%;
-    order: 5;
-  }
-}
-
 /* Partita in corso (D92): minuto e punteggio in ambra, puntino che pulsa */
 .live-tag {
   display: inline-flex;
@@ -154,4 +141,51 @@
 }
 .score.live {
   color: var(--amber);
+}
+
+/* Telefono: una riga per partita, quote (o marcatori) a destra */
+@media (max-width: 600px) {
+  .row {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+    gap: 6px 8px;
+    padding: 7px 10px;
+  }
+  .when .label {
+    font-size: 9px;
+  }
+  .time {
+    font-size: 13px;
+  }
+  .name {
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .score {
+    font-size: 14px;
+  }
+  .odds {
+    gap: 3px;
+  }
+  .odd {
+    width: 40px;
+    padding: 2px 0;
+  }
+  .sel {
+    font-size: 9px;
+  }
+  .price {
+    font-size: 12px;
+  }
+  .scorers {
+    order: 0;
+    width: 104px;
+    font-size: 10px;
+    gap: 2px;
+  }
+  .tag {
+    display: none;
+  }
 }

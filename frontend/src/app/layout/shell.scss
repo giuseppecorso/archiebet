@@ -133,4 +133,57 @@
     padding-left: 16px;
     padding-right: 16px;
   }
+  /* Telefono: intestazione sottile (logo e strumenti) e menu fisso in basso, come un'app */
+  .header {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .user {
+    display: none;
+  }
+  .icon-btn,
+  .logout {
+    min-height: 36px;
+    height: 36px;
+  }
+  .icon-btn {
+    width: 36px;
+  }
+  .nav {
+    position: fixed;
+    z-index: 50;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    padding: 0 0 env(safe-area-inset-bottom);
+    background: var(--bg-header);
+    border-top: 1px solid var(--line-strong);
+    backdrop-filter: blur(8px);
+  }
+  .nav-link {
+    padding: 14px 2px 12px;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-align: center;
+    white-space: nowrap;
+    border-bottom: 0;
+    border-top: 3px solid transparent;
+
+    &.active {
+      border-top-color: var(--amber);
+    }
+  }
+  .content {
+    padding-top: 12px;
+    padding-bottom: 84px; /* spazio per il menu in basso */
+  }
+  .footer {
+    display: none;
+  }
 }

@@ -32,6 +32,11 @@ const SUBTREE: IsActiveMatchOptions = { paths: 'subset', queryParams: 'ignored',
     }
     .sub:hover { color: var(--text); border-color: var(--amber); }
     .sub.on { color: var(--bg); background: var(--amber); border-color: var(--amber); }
+    /* Telefono: una riga sola che scorre di lato */
+    @media (max-width: 600px) {
+      .subnav { flex-wrap: nowrap; overflow-x: auto; gap: 4px; margin: 0 -16px 10px 0; padding: 0 16px 8px 0; scrollbar-width: none; }
+      .sub { flex: 0 0 auto; padding: 4px 11px; font-size: 14px; white-space: nowrap; }
+    }
   `,
 })
 export class Subnav {
