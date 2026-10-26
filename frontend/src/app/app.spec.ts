@@ -57,7 +57,7 @@ describe('ArchieBet: navigazione', () => {
     expect(TestBed.inject(Router).url).toBe('/login');
   });
 
-  it('dopo il login mostra il menu e le partite della dashboard', async () => {
+  it('dopo il login mostra il menu e le partite del giorno, con tendine per giorno e campionato', async () => {
     const harness = await navigateAs('/partite', true);
 
     const links = [...harness.routeNativeElement!.querySelectorAll('nav.nav a')].map((a) => a.textContent?.trim());
@@ -66,10 +66,9 @@ describe('ArchieBet: navigazione', () => {
     const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
     const premier = { code: 'ENG-1', name: 'Premier League', country: 'Inghilterra', tier: 1 };
     (await nextRequest('/api/competitions')).flush([serieA, premier]);
-    const upcoming = await nextRequest((r) => r.url.startsWith('/api/matches?view=upcoming'));
-    expect(upcoming.request.url).toContain('competitions=ITA-A'); // tendina sull'Italia: niente Premier
-    expect(upcoming.request.url).not.toContain('ENG-1');
-    upcoming.flush([
+    const today = await nextRequest((r) => r.url.startsWith('/api/matches?view=day'));
+    expect(today.request.url).not.toContain('competitions='); // tutti i campionati
+    today.flush([
       {
         competition: serieA,
         matches: [
@@ -81,37 +80,28 @@ describe('ArchieBet: navigazione', () => {
         ],
       },
     ]);
-    (await nextRequest('/api/status')).flush({
-      now: '2026-10-10T12:00:00Z', syncing: false, upcoming: 5, upcoming_with_prediction: 3,
-      sources: [{ source: 'football-data', label: 'Serie A e B', configured: true, last_ok_at: '2026-10-10T11:00:00Z', last_run_at: '2026-10-10T11:00:00Z', last_run_ok: true, message: 'ok' }],
-      competitions: [{ competition: serieA, last_result_at: '2026-09-20T18:45:00Z', awaiting_results: 8, next_match_at: '2026-10-10T18:45:00Z' }],
-    });
     await harness.fixture.whenStable();
+    const page = harness.routeNativeElement!;
+    expect(page.textContent).not.toContain('Prossime'); // niente più divisione tra prossime e risultati
 
-    const bar = harness.routeNativeElement!.querySelector('ab-data-status')!.textContent!;
-    expect(bar).toContain('previsioni 3/5');
-    expect(bar).toContain('· 8 in arrivo');
-
-    const row = harness.routeNativeElement!.querySelector('ab-match-row a') as HTMLAnchorElement;
+    const row = page.querySelector('ab-match-row a') as HTMLAnchorElement;
     expect(row.textContent).toContain('Napoli');
     expect(row.textContent).toContain('20:45'); // 18:45 UTC in ora italiana
     expect(row.textContent).toContain('1.44');
     expect(row.getAttribute('href')).toBe('/partite/7');
 
-    // Tendina dei paesi: Inghilterra → solo la Premier League
-    const select = harness.routeNativeElement!.querySelector('.country select') as HTMLSelectElement;
-    expect([...select.options].map((o) => o.textContent?.trim())).toEqual(['Italia', 'Inghilterra', 'Tutti i paesi']);
-    select.value = 'Inghilterra';
-    select.dispatchEvent(new Event('change'));
+    // Tendina dei campionati: Premier League
+    const [daySelect, compSelect] = [...page.querySelectorAll('.toolbar select')] as HTMLSelectElement[];
+    expect(daySelect.options.length).toBe(11); // da 3 giorni fa a 7 giorni avanti
+    expect([...compSelect.options].map((o) => o.textContent?.trim())).toEqual(['Tutti i campionati', 'Italia · Serie A', 'Inghilterra · Premier League']);
+    compSelect.value = 'ENG-1';
+    compSelect.dispatchEvent(new Event('change'));
     harness.fixture.detectChanges();
-    const english = await nextRequest((r) => r.url.startsWith('/api/matches?view=upcoming'));
+    const english = await nextRequest((r) => r.url.startsWith('/api/matches?view=day'));
     expect(english.request.url).toContain('competitions=ENG-1');
-    expect(english.request.url).not.toContain('ITA-A');
     english.flush([]);
     await harness.fixture.whenStable();
-    const chips = [...harness.routeNativeElement!.querySelectorAll('.filters .chip')].map((b) => b.textContent?.trim());
-    expect(chips).toEqual(['Premier League']);
-    localStorage.removeItem('archiebet.matches.filters');
+    localStorage.removeItem('archiebet.matches.competition');
   });
 
   it('la home mostra le partite di oggi, le occasioni e ArchieTV', async () => {
@@ -165,51 +155,6 @@ describe('ArchieBet: navigazione', () => {
     await harness.fixture.whenStable();
     expect(page.querySelector('ab-match-events')?.textContent).toContain('Lautaro Martínez');
     expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Diretta');
-  });
-
-  it('il simulatore sta dentro Pronostici, senza la sfida', async () => {
-    const harness = await navigateAs('/simulatore', true);
-    (await nextRequest('/api/play/matches')).flush([]);
-    await harness.fixture.whenStable();
-    const page = harness.routeNativeElement!;
-    expect(page.textContent).toContain('A cosa serve');
-    expect(page.textContent).not.toContain('Sfida');
-    expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Pronostici');
-    expect(page.querySelector('.subnav a.on')?.textContent?.trim()).toBe('Simulatore');
-  });
-
-  it("i pronostici mostrano la stima migliore e le quote di Sisal ed Eurobet con l'etichetta", async () => {
-    const harness = await navigateAs('/pronostici', true);
-    const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
-    const offer = (bookmaker: string, price: number, value: number, verdict: string) => ({ bookmaker, price, value, verdict });
-    (await nextRequest('/api/picks')).flush({
-      bookmakers: ['Sisal', 'Eurobet'],
-      picks: [
-        {
-          match: {
-            id: 7, competition: serieA, season: '2026/27', kickoff_at: '2026-10-17T16:00:00Z', kickoff_has_time: true,
-            status: 'scheduled', home: { id: 1, name: 'Milan' }, away: { id: 2, name: 'Inter' },
-            home_goals: null, away_goals: null, odds_1x2: null,
-          },
-          favorite: '2', favorite_probability: 0.4, signals: 1,
-          markets: [
-            {
-              market: '1X2', source: 'Pinnacle', from_model: false,
-              probabilities: { '1': 0.32, X: 0.28, '2': 0.4 },
-              offers: { '1': [offer('Sisal', 3.4, 0.088, 'valore')], '2': [offer('Eurobet', 2.3, -0.08, 'paga poco')] },
-            },
-          ],
-        },
-      ],
-    });
-    await harness.fixture.whenStable();
-    const page = harness.routeNativeElement!;
-    expect(page.querySelector('.fav')?.textContent).toContain('2 · Inter');
-    expect(page.querySelector('.fav')?.textContent).toContain('40%');
-    expect(page.querySelector('.cells .v.valore')?.textContent?.trim()).toBe('+ Sisal 3.40');
-    expect(page.querySelector('.cells .v.poco')?.textContent?.trim()).toBe('+ Eurobet 2.30');
-    expect(page.querySelector('.occ')?.textContent?.trim()).toBe('1 occasione');
-    expect(page.querySelector('.source')?.textContent).toContain('Pinnacle');
   });
 
   it('il generatore manda le scelte al backend e mostra la multipla', async () => {

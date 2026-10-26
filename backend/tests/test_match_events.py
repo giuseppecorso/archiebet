@@ -124,3 +124,16 @@ def test_football_data_fixtures_file_does_not_undo_a_result(db):
     import_matches(db, parse_csv("Div,Date,Time,HomeTeam,AwayTeam\nI1,24/10/2026,15:00,Inter,Milan\n"), season="2026/27")  # elenco vecchio
     m = db.scalar(select(Match))
     assert (m.status, m.home_goals, m.away_goals) == ("finished", 2, 1)
+
+
+def test_goal_cancelled_by_var_is_not_a_scorer():
+    """Gol annullato per fuorigioco: resta in cronaca come annullato, non tra i marcatori, e il punteggio torna."""
+    item = fixture(77, (505, "Inter"), (489, "AC Milan"), date=KICKOFF, status="FT", goals=(0, 0), league=135, season=2026)
+    item["events"] = [
+        ev(30, 505, "Goal", "Normal Goal", "Thuram"),
+        ev(32, 505, "Var", "Goal Disallowed - offside", "Thuram"),
+        ev(70, 489, "Var", "Penalty cancelled", "Leao"),  # rigore tolto: nessun gol da annullare
+    ]
+    events = parse_events(item)
+    assert [e.kind for e in events] == ["goal_cancelled", "var", "var"]
+    assert events[0].detail == "Goal Disallowed - offside"

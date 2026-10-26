@@ -55,10 +55,13 @@ COUNTRY_NAMES = {
 }  # fmt: skip
 
 
+# Campionati principali in testa, come su un sito di risultati; poi gli altri per paese (A-Z) e categoria
+TOP_COMPETITIONS = ["ITA-A", "EU-CL", "EU-EL", "EU-ECL", "ENG-1", "ESP-1", "GER-1", "FRA-1", "ITA-B"]
+
+
 def competition_sort_key(c: Competition) -> tuple[int, str, int, str]:
-    """Prima il paese (Italia in testa, poi i paesi principali, poi gli altri in ordine alfabetico), la categoria, il nome."""
-    country = COUNTRY_ORDER.index(c.country) if c.country in COUNTRY_ORDER else len(COUNTRY_ORDER)
-    return country, c.country if country == len(COUNTRY_ORDER) else "", c.tier, c.name
+    top = TOP_COMPETITIONS.index(c.code) if c.code in TOP_COMPETITIONS else len(TOP_COMPETITIONS)
+    return top, c.country if top == len(TOP_COMPETITIONS) else "", c.tier, c.name
 
 # Sigle e parole che non distinguono una squadra dall'altra
 _NOISE = {

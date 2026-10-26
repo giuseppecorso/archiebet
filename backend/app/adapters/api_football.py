@@ -202,7 +202,7 @@ class AFEvent:
     minute: int | None
     extra: int | None
     side: str  # "home" | "away"
-    kind: str  # goal | penalty | own_goal | missed_penalty | yellow | second_yellow | red | subst | var
+    kind: str  # goal | penalty | own_goal | goal_cancelled | missed_penalty | yellow | second_yellow | red | subst | var
     player: str | None
     other: str | None  # assist del gol, o l'altro giocatore del cambio
     detail: str | None
@@ -226,6 +226,28 @@ def event_kind(type_: str, detail: str | None) -> str | None:
     return None
 
 
+CANCEL_WORDS = ("cancel", "disallow")  # VAR: "Goal cancelled", "Goal Disallowed - offside", ...
+CANCEL_WINDOW = 5  # minuti tra il gol e la decisione del VAR
+
+
+def cancel_goals(events: list[AFEvent]) -> list[AFEvent]:
+    """Un gol annullato dal VAR resta in cronaca come "goal_cancelled" e non conta tra i marcatori."""
+    out = list(events)
+    for i, var in enumerate(out):
+        if var.kind != "var" or not any(w in (var.detail or "").lower() for w in CANCEL_WORDS) or "penalty" in (var.detail or "").lower():
+            continue
+        candidates = [
+            j for j in range(i - 1, -1, -1)
+            if out[j].kind in ("goal", "penalty", "own_goal") and out[j].side == var.side
+            and (var.minute or 0) - (out[j].minute or 0) <= CANCEL_WINDOW
+        ]
+        if candidates:
+            same_player = [j for j in candidates if out[j].player and out[j].player == var.player]
+            j = (same_player or candidates)[0]
+            out[j] = AFEvent(out[j].minute, out[j].extra, out[j].side, "goal_cancelled", out[j].player, out[j].other, var.detail)
+    return out
+
+
 def parse_events(item: dict[str, Any]) -> tuple[AFEvent, ...]:
     home_id = item["teams"]["home"]["id"]
     out = []
@@ -239,7 +261,7 @@ def parse_events(item: dict[str, Any]) -> tuple[AFEvent, ...]:
             "home" if (e.get("team") or {}).get("id") == home_id else "away",
             kind, (e.get("player") or {}).get("name"), (e.get("assist") or {}).get("name"), e.get("detail"),
         ))  # fmt: skip
-    return tuple(out)
+    return tuple(cancel_goals(out))
 
 
 def parse_fixtures(body: dict[str, Any]) -> list[AFFixture]:

@@ -1,116 +1,12 @@
 <header class="hero">
   <h1>Pronostici</h1>
-  <p>La stima migliore di Archie per ogni partita. Clicca una quota <span class="hero-accent">(+ Sisal 2.15)</span> e finisce nella tua schedina.</p>
+  <p>Le multiple studiate da Archie e le quote che pagano più del giusto.</p>
 </header>
 <ab-subnav [items]="tabs" label="Pronostici" />
 
 @if (tab() === 'occasioni') {
   <ab-off-line-card />
   <ab-radar [embedded]="true" />
-} @else if (tab() === 'multipla') {
-  <ab-generator />
-} @else if (tab() === 'pagella') {
-  <ab-review />
 } @else {
-  @if (data.error()) {
-    <p class="warn">I pronostici non rispondono: controlla che il backend sia acceso.</p>
-  }
-  @if (data.value(); as d) {
-    <div class="toolbar">
-      <label class="country">
-        <span class="sr-only">Paese</span>
-        <select class="title" [value]="country()" (change)="country.set($any($event.target).value)">
-          <option value="" [selected]="country() === ''">Tutti i paesi</option>
-          @for (name of countries(); track name) {
-            <option [value]="name" [selected]="name === country()">{{ name }}</option>
-          }
-        </select>
-      </label>
-      <span class="muted small">
-        Probabilità dalla stima migliore disponibile · quote di {{ d.bookmakers.join(' e ') }}:
-        <span class="v valore">valore</span> <span class="v archie">sopra la media</span> <span class="v norma">nella norma</span> <span class="v poco">paga poco</span>
-      </span>
-    </div>
-
-    @for (g of days(); track g.day) {
-      <section class="panel day" [attr.aria-label]="g.day">
-        <h2 class="title day-title">{{ g.day }}</h2>
-        @for (p of g.picks; track p.match.id) {
-          @let one = market(p, '1X2');
-          <article class="pick">
-            <div class="pick-head">
-              <span class="led time">{{ fmt.kickoffTime(p.match.kickoff_at) }}</span>
-              <a class="teams" [routerLink]="['/partite', p.match.id]"><ab-crest [team]="p.match.home" [size]="20" /> {{ p.match.home.name }} – {{ p.match.away.name }} <ab-crest [team]="p.match.away" [size]="20" /></a>
-              <span class="muted small comp"><ab-league-logo [code]="p.match.competition.code" [size]="16" /> {{ p.match.competition.name }}</span>
-              @if (p.signals) {
-                <a class="occ" [routerLink]="[]" [queryParams]="{ tab: 'occasioni' }">{{ p.signals === 1 ? '1 occasione' : p.signals + ' occasioni' }}</a>
-              }
-              @if (p.favorite; as fav) {
-                <span class="fav">Pronostico <strong>{{ label(p, '1X2', fav) }}</strong> <span class="led">{{ fmt.pct(p.favorite_probability) }}</span></span>
-              }
-            </div>
-
-            @if (one) {
-              <div class="cells three">
-                @for (sel of selections('1X2'); track sel) {
-                  <div class="cell" [class.best]="sel === p.favorite">
-                    <span class="sel">{{ label(p, '1X2', sel) }}</span>
-                    <span class="led prob">{{ fmt.pct(one.probabilities[sel]) }}</span>
-                    <span class="muted small">giusta {{ fmt.fairOdds(one.probabilities[sel]) }}</span>
-                    <span class="offers">
-                      @for (o of one.offers[sel] ?? []; track o.bookmaker) {
-                        <ab-offer [match]="p.match" market="1X2" [pick]="sel" [offer]="o" />
-                      }
-                    </span>
-                  </div>
-                }
-              </div>
-              <div class="source muted small">
-                Fonte: {{ one.source }}
-                @if (one.from_model) { · stima di Archie, il mercato non c'è }
-                <button type="button" class="more" (click)="toggle(p.match.id)" [attr.aria-expanded]="isOpen(p.match.id)">
-                  {{ isOpen(p.match.id) ? 'Meno mercati' : 'Altri mercati' }}
-                </button>
-              </div>
-            } @else {
-              <p class="muted small">Nessuna stima: per questa partita mancano sia le quote sia il modello.</p>
-            }
-
-            @if (isOpen(p.match.id)) {
-              <div class="extras">
-                @for (m of others(p); track m.market) {
-                  <div class="extra">
-                    <span class="extra-title">{{ marketLabel(p, m.market) }} <span class="muted">· {{ m.source }}</span></span>
-                    <div class="extra-cells">
-                      @for (sel of selections(m.market); track sel) {
-                        <div class="mini">
-                          <span class="sel">{{ label(p, m.market, sel) }}</span>
-                          <span class="led prob">{{ fmt.pct(m.probabilities[sel]) }}</span>
-                          @for (o of m.offers[sel] ?? []; track o.bookmaker) {
-                            <ab-offer [match]="p.match" [market]="m.market" [pick]="sel" [offer]="o" />
-                          }
-                        </div>
-                      }
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-          </article>
-        }
-      </section>
-    } @empty {
-      <p class="muted">Nessuna partita in programma nei prossimi 7 giorni. I pronostici compaiono appena le partite sono in calendario.</p>
-    }
-
-    <section class="panel explain">
-      <h2 class="title">Come leggere i pronostici</h2>
-      <p>
-        La probabilità viene dalla fonte più precisa disponibile: le quote di Pinnacle senza margine, poi Betfair Exchange, poi la
-        media dei bookmaker; il modello di Archie solo dove il mercato manca. Accanto, le quote di {{ d.bookmakers.join(' e ') }}:
-        <strong>valore</strong> = pagano abbastanza più del giusto (dall'1,5% sulle quote basse al 3,5% a quota 4; oltre quota 4 mai), <strong>paga poco</strong> = margine più alto del solito. <strong>sopra la media</strong> = dove Pinnacle non c'è (Serie C) la stima è la media dei bookmaker italiani senza margine, più precisa del modello di Archie (prova D95): una quota sopra la media è un'indicazione, non un valore dimostrato, e non entra nelle multiple.
-        Anche un pronostico giusto, giocato sempre a quote che pagano poco, fa perdere nel lungo periodo.
-      </p>
-    </section>
-  }
+  <ab-generator />
 }

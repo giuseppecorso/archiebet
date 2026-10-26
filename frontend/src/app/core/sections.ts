@@ -92,7 +92,7 @@ export const SECTIONS: Section[] = [
   },
 ];
 
-/** Menu principale (richiesta di Giuse, 2026-10-21): 4 voci; ognuna si accende anche sulle sue pagine interne. */
+/** Menu principale: ogni voce si accende anche sulle sue pagine interne. */
 export interface MenuItem {
   label: string;
   link: string;
@@ -103,7 +103,7 @@ export const MENU: MenuItem[] = [
   { label: 'Home', link: '/', prefixes: ['/'] },
   { label: 'Partite', link: '/partite', prefixes: ['/partite'] },
   { label: 'Diretta', link: '/diretta', prefixes: ['/diretta'] },
-  { label: 'Pronostici', link: '/pronostici', prefixes: ['/pronostici', '/laboratorio', '/simulatore'] },
+  { label: 'Pronostici', link: '/pronostici', prefixes: ['/pronostici'] },
   { label: 'Il mio Archie', link: '/schedine', prefixes: ['/schedine', '/statistiche', '/chiedi'] },
 ];
 
@@ -117,12 +117,8 @@ export interface SubItem {
 }
 
 export const PRONOSTICI_TABS: SubItem[] = [
-  { label: 'Pronostici', link: '/pronostici' },
+  { label: 'Fammi una multipla', link: '/pronostici' },
   { label: 'Occasioni', link: '/pronostici', query: { tab: 'occasioni' } },
-  { label: 'Multipla', link: '/pronostici', query: { tab: 'multipla' } },
-  { label: 'Pagella', link: '/pronostici', query: { tab: 'pagella' } },
-  { label: 'Statistiche', link: '/laboratorio', subtree: true },
-  { label: 'Simulatore', link: '/simulatore' },
 ];
 
 export const MIO_ARCHIE_TABS: SubItem[] = [

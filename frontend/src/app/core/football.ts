@@ -42,7 +42,7 @@ export interface MatchCard {
   highlights?: MatchEvent[];
 }
 
-export type EventKind = 'goal' | 'penalty' | 'own_goal' | 'missed_penalty' | 'yellow' | 'second_yellow' | 'red' | 'subst' | 'var';
+export type EventKind = 'goal' | 'penalty' | 'own_goal' | 'goal_cancelled' | 'missed_penalty' | 'yellow' | 'second_yellow' | 'red' | 'subst' | 'var';
 
 /** Un evento della cronaca (D133) */
 export interface MatchEvent {

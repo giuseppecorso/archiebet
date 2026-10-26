@@ -9,10 +9,10 @@ start "ArchieBet - backend (non chiudere)" /min cmd /k "cd /d "%~dp0backend" && 
 start "ArchieBet - frontend (non chiudere)" /min cmd /k "cd /d "%~dp0frontend" && npm start"
 
 echo Avvio di ArchieBet in corso: il browser si apre appena e' pronto...
-powershell -NoProfile -Command "for ($i = 0; $i -lt 90; $i++) { try { Invoke-WebRequest -UseBasicParsing http://localhost:4280 -TimeoutSec 2 | Out-Null; exit 0 } catch { Start-Sleep -Seconds 2 } }; exit 1"
+powershell -NoProfile -Command "for ($i = 0; $i -lt 90; $i++) { try { Invoke-WebRequest -UseBasicParsing http://127.0.0.1:4280 -TimeoutSec 2 | Out-Null; exit 0 } catch { Start-Sleep -Seconds 2 } }; exit 1"
 if errorlevel 1 (
   echo ArchieBet non risponde dopo 3 minuti: guarda le finestre "backend" e "frontend" per l'errore.
   pause
   exit /b 1
 )
-start "" http://localhost:4280
+start "" http://127.0.0.1:4280

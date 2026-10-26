@@ -2,9 +2,9 @@ import { Component, computed, input } from '@angular/core';
 import { MatchEvent, eventMinute } from '../core/football';
 
 const ICON: Record<string, string> = {
-  goal: '⚽', penalty: '⚽', own_goal: '⚽', missed_penalty: '✕', yellow: '▮', second_yellow: '▮▮', red: '▮', subst: '⇄', var: 'VAR',
+  goal: '⚽', penalty: '⚽', own_goal: '⚽', goal_cancelled: '⚽', missed_penalty: '✕', yellow: '▮', second_yellow: '▮▮', red: '▮', subst: '⇄', var: 'VAR',
 };
-const NOTE: Record<string, string> = { penalty: 'rigore', own_goal: 'autogol', missed_penalty: 'rigore sbagliato', second_yellow: 'secondo giallo' };
+const NOTE: Record<string, string> = { goal_cancelled: 'gol annullato dal VAR', penalty: 'rigore', own_goal: 'autogol', missed_penalty: 'rigore sbagliato', second_yellow: 'secondo giallo' };
 
 /** Cronaca di una partita (D133), come su un sito di risultati: casa a sinistra, ospite a destra. */
 @Component({
@@ -43,6 +43,8 @@ const NOTE: Record<string, string> = { penalty: 'rigore', own_goal: 'autogol', m
     .k-subst .icon { color: var(--sky); }
     .k-var .icon { font-size: 9px; font-weight: 700; color: var(--text-2); }
     .k-goal strong, .k-penalty strong, .k-own_goal strong { color: var(--text); }
+    .k-goal_cancelled .icon { opacity: 0.4; }
+    .k-goal_cancelled strong { text-decoration: line-through; color: var(--muted); }
     .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .none { padding: 4px 0; }
   `,
@@ -63,7 +65,7 @@ export class MatchEvents {
   }
 
   protected label(e: MatchEvent): string {
-    const names: Record<string, string> = { goal: 'Gol', penalty: 'Gol su rigore', own_goal: 'Autogol', missed_penalty: 'Rigore sbagliato', yellow: 'Ammonizione', second_yellow: 'Espulsione per doppio giallo', red: 'Espulsione', subst: 'Cambio', var: 'VAR' };
+    const names: Record<string, string> = { goal: 'Gol', goal_cancelled: 'Gol annullato', penalty: 'Gol su rigore', own_goal: 'Autogol', missed_penalty: 'Rigore sbagliato', yellow: 'Ammonizione', second_yellow: 'Espulsione per doppio giallo', red: 'Espulsione', subst: 'Cambio', var: 'VAR' };
     return names[e.kind] ?? e.kind;
   }
 }

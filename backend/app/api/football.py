@@ -68,7 +68,7 @@ class EventOut(BaseModel):
     minute: int | None
     extra: int | None
     side: Literal["home", "away"]
-    kind: str  # goal | penalty | own_goal | missed_penalty | yellow | second_yellow | red | subst | var
+    kind: str  # goal | penalty | own_goal | goal_cancelled | missed_penalty | yellow | second_yellow | red | subst | var
     player: str | None
     other: str | None
     detail: str | None
