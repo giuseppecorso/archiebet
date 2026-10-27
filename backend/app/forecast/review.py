@@ -203,7 +203,7 @@ def correction_test(data: GroupData, before: date) -> GroupTest:
 # --- Panchina -----------------------------------------------------------------------------------------------
 
 def playable(r: Row, selection: str, bookmakers: Sequence[str]) -> float | None:
-    """La quota migliore tra i bookmaker di Giuse, se la gamba potrebbe entrare in una multipla."""
+    """La quota migliore tra i bookmaker dell'utente, se la gamba potrebbe entrare in una multipla."""
     p = r.probabilities[selection]
     prices = [r.prices.get(bm, {}).get(selection) for bm in bookmakers]
     best = max((x for x in prices if x), default=None)

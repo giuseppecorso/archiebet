@@ -1,7 +1,7 @@
-"""Regolamento personale (Fase 6, D114): regole di gioco di Giuse controllate prima di "L'ho giocata".
+"""Regolamento personale (Fase 6, D114): regole di gioco dell'utente controllate prima di "L'ho giocata".
 
 Le regole si scrivono a mano o nascono dai dati: Archie suggerisce di evitare i gruppi di giocate (mercato, campionato,
-schedine lunghe, quote sotto il giusto) dove Giuse ha perso valore con abbastanza giocate da fidarsi. Solo avvisi, mai
+schedine lunghe, quote sotto il giusto) dove l'utente ha perso valore con abbastanza giocate da fidarsi. Solo avvisi, mai
 blocchi (come per il budget, D39).
 """
 

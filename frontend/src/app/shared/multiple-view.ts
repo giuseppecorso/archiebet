@@ -29,7 +29,7 @@ import { Crest } from './crest';
           <li>
             <span class="when muted small">{{ day(l.match.kickoff_at) }} {{ time(l.match.kickoff_at) }} · {{ l.match.competition.name }}</span>
             <a [routerLink]="['/partite', l.match.id]" class="match"><ab-crest [team]="l.match.home" [size]="18" /> {{ l.match.home.name }} – {{ l.match.away.name }} <ab-crest [team]="l.match.away" [size]="18" /></a>
-            <span class="pick">{{ label(l.market, l.selection, l.match) }}@if (isSecondary(l.market)) { <span class="trial" title="Angoli e cartellini: il valore rispetto a Pinnacle è ancora in verifica dal vivo (D94)">in prova</span> }@if (l.source === 'consenso') { <span class="muted small" title="Probabilità dalla media dei bookmaker italiani senza margine: in Serie C Pinnacle non c'è (D130)">· consenso italiano</span> }</span>
+            <span class="pick">{{ label(l.market, l.selection, l.match) }}@if (isSecondary(l.market)) { <span class="trial" title="Angoli e cartellini: il valore rispetto a Pinnacle è ancora in verifica dal vivo ">in prova</span> }@if (l.source === 'consenso') { <span class="muted small" title="Probabilità dalla media dei bookmaker italiani senza margine: in Serie C Pinnacle non c'è ">· consenso italiano</span> }</span>
             <span class="nums"><span class="muted small">{{ pct(l.probability) }}</span><span class="led">{{ odds(l.price) }}</span></span>
           </li>
         }

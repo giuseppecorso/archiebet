@@ -111,7 +111,7 @@ def sync_oddspapi_job() -> None:
                 on_call=lambda source: record_usage(db, source),
                 monthly_reserve=settings.oddspapi_monthly_reserve,
             )
-            # Quote dei bookmaker di Giuse e di quelli della simulazione (D74), senza doppioni
+            # Quote dei bookmaker dell'utente e di quelli della simulazione (D74), senza doppioni
             bookmakers = list(dict.fromkeys([*settings.radar_bookmaker_list, *SIMULATION_BOOKMAKERS]))
             report = sync_oddspapi(db, adapter, datetime.now(UTC), log=logger.warning, bookmakers=bookmakers)
         # Gli storici completi pesano fino a 20 MB l'uno e si riscaricano gratis: si tengono 2 giorni

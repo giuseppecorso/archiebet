@@ -4,7 +4,7 @@
   prima); football-data, quando arriva, aggiorna le stesse partite (stesso campionato, stagione e squadre).
 
 - Elenco delle partite in programma: una volta al giorno (2 richieste: massimo 5 campionati per richiesta).
-- Partite dei prossimi 7 giorni: quote attuali di Pinnacle e dei bookmaker dove Giuse gioca (Sisal, Eurobet)
+- Partite dei prossimi 7 giorni: quote attuali di Pinnacle e dei bookmaker dell'utente (Sisal, Eurobet)
   dallo storico gratuito (1 chiamata per partita fino a 3 bookmaker, 5,5 secondi), salvate come "non di chiusura".
 - Partite iniziate da almeno 2 ore: quota di chiusura di Pinnacle = ultimo prezzo prima del calcio d'inizio,
   il riferimento per il CLV (D48).

@@ -46,9 +46,9 @@
       </div>
     </div>
     <p class="note">
-      Misurata su {{ r.simulation_bookmakers.join(', ') }} (quota migliore tra loro, D74): ogni occasione conta come una
+      Misurata su {{ r.simulation_bookmakers.join(', ') }} (quota migliore tra loro): ogni occasione conta come una
       giocata simulata alla prima quota vista. Il radar esce dalla prova con almeno
-      {{ r.live.target }} giocate e un CLV medio positivo oltre due errori standard (D59).
+      {{ r.live.target }} giocate e un CLV medio positivo oltre due errori standard.
     </p>
   </section>
 
@@ -81,8 +81,8 @@
       </div>
       <p class="note">
         Sullo storico (aprile–ottobre 2026, 1.400 partite) le occasioni su angoli e cartellini di Sisal ed Eurobet hanno battuto
-        la chiusura di Pinnacle del 3-6% (D82). Possono essere quote non più giocabili o con limiti bassi: per questo sono
-        "in prova" e contano a parte fino a 300 giocate misurate (D94).
+        la chiusura di Pinnacle del 3-6%. Possono essere quote non più giocabili o con limiti bassi: per questo sono
+        "in prova" e contano a parte fino a 300 giocate misurate.
       </p>
     </section>
   }
@@ -118,10 +118,10 @@
                 <td>
                   <strong>{{ pick(s) }}</strong>
                   @if (s.secondary) {
-                    <span class="trial-tag" title="Angoli e cartellini: superata la prova sullo storico (D82), ora in prova dal vivo con un conteggio a parte (D94)">in prova</span>
+                    <span class="trial-tag" title="Angoli e cartellini: superata la prova sullo storico, ora in prova dal vivo con un conteggio a parte">in prova</span>
                   }
                   @if (s.strategy) {
-                    <span class="trial-tag" [title]="'Strategia trovata da Archie e confermata sulle stagioni passate (D118): ' + s.strategy">strategia di Archie</span>
+                    <span class="trial-tag" [title]="'Strategia trovata da Archie e confermata sulle stagioni passate : ' + s.strategy">strategia di Archie</span>
                   }
                 </td>
                 <td><span class="led price">{{ fmt.odds(s.price) }}</span><span class="small book">{{ s.bookmaker }}</span></td>

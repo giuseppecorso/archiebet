@@ -229,7 +229,7 @@ def strength(pick: StudyPick, price: float | None = None) -> float:
 
 
 def pick_strength(pick: dict) -> float:
-    """Come `strength`, sui pronostici salvati (dizionari): conta la quota migliore tra i bookmaker di Giuse."""
+    """Come `strength`, sui pronostici salvati (dizionari): conta la quota migliore tra i bookmaker dell'utente."""
     hh, hn, ah, an = pick["evidence"]
     price = max(pick["prices"].values(), default=None)
     edge = max(0.0, pick["p_archie"] * price - 1) if price else 0.0
@@ -326,3 +326,21 @@ def weather_adjustment(rain_mm: float | None, wind_kmh: float | None) -> Adjustm
         what = f"pioggia forte ({rain_mm:.0f} mm)" if rain_mm >= BAD_WEATHER[0] else f"vento forte ({wind_kmh:.0f} km/h)"
         return Adjustment(1 - WEATHER_EFFECT, 1 - WEATHER_EFFECT, (f"Meteo previsto: {what}, di solito si segna un po' meno.",))
     return Adjustment()
+
+
+# --- Pagella dello studio (D139): i pronostici escono quanto Archie dice? ---
+
+
+def scorecard(rows: Sequence[tuple[str, str, float, bool]]) -> dict:
+    """rows: (settimana, livello, probabilità di Archie, uscito). Per livello e per settimana: proposti, usciti, attesi."""
+    def tally(items):
+        n = len(items)
+        won = sum(1 for *_, hit in items if hit)
+        expected = sum(p for _, _, p, _ in items)
+        return {"picks": n, "won": won, "expected": round(expected, 2), "hit_rate": round(won / n, 4) if n else None,
+                "promised": round(expected / n, 4) if n else None}  # fmt: skip
+
+    levels = {level: tally([r for r in rows if r[1] == level]) for level in LEVELS}
+    weeks = sorted({r[0] for r in rows})
+    by_week = [{"week": w, **{level: tally([r for r in rows if r[0] == w and r[1] == level]) for level in LEVELS}} for w in weeks]
+    return {"levels": levels, "weeks": by_week}

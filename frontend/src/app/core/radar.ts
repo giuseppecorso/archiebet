@@ -28,7 +28,7 @@ export interface RadarSignal {
   secondary?: boolean;
 }
 
-/** Occasione di adesso su un bookmaker di Giuse (D74) */
+/** Occasione di adesso su un bookmaker dell'utente (D74) */
 export interface Occasion {
   match_id: number;
   competition: Competition;

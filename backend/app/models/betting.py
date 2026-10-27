@@ -84,7 +84,7 @@ class UserSettings(Base):
 
 
 class UserRule(Base):
-    """Una regola del regolamento personale (D114): scritta da Giuse o accettata dai suggerimenti di Archie."""
+    """Una regola del regolamento personale (D114): scritta dall'utente o accettata dai suggerimenti di Archie."""
 
     __tablename__ = "user_rules"
 

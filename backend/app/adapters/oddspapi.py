@@ -129,7 +129,7 @@ def parse_current(body: list[dict[str, Any]]) -> dict[str, Prices]:
     return out
 
 
-# Angoli e cartellini (D94): solo il riferimento e i bookmaker di Giuse, per non moltiplicare le righe nel database
+# Angoli e cartellini (D94): solo il riferimento e i bookmaker dell'utente, per non moltiplicare le righe nel database
 SECONDARY_SLUGS = {"pinnacle", "sisal.it", "eurobet.it"}
 
 

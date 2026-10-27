@@ -60,7 +60,7 @@ def picks(_: CurrentUser, db: DbSession, days: int = Query(7, ge=1, le=14)) -> P
     bookmakers = get_settings().radar_bookmaker_list
     upcoming = upcoming_picks(db, now, now + timedelta(days=days), bookmakers)
     matches = [m for m, _ in upcoming]
-    # Occasioni sui bookmaker di Giuse: esiti dei mercati del radar con almeno una quota "valore" (stessa regola, D72/D74)
+    # Occasioni sui bookmaker dell'utente: esiti dei mercati del radar con almeno una quota "valore" (stessa regola, D72/D74)
     signals = {
         m.id: len({(p.market, sel) for p in mp if p.market in ODDS_MARKETS for sel, offers in p.offers.items() if any(o.verdict == "valore" for o in offers)})
         for m, mp in upcoming
@@ -413,7 +413,7 @@ class MultiplesOut(BaseModel):
     horizon: Horizon
     profile: str
     legs: int
-    multiples: list[MultipleOut]  # una per bookmaker di Giuse
+    multiples: list[MultipleOut]  # una per bookmaker dell'utente
     missing: list[str]  # bookmaker per cui oggi non c'è una multipla sensata
     hint: str | None = None  # se non c'è nessuna multipla: perché, e cosa provare (D134)
 

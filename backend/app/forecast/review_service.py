@@ -92,6 +92,33 @@ def review_path() -> Path:
     return learning_dir() / REVIEW_FILE
 
 
+def study_scorecard(db) -> dict:
+    """Per ogni partita finita con uno studio, il pronostico migliore di ogni livello (quello che la multipla avrebbe
+    proposto) confrontato con il risultato."""
+    from sqlalchemy import select
+
+    from app.betting.calc import WON, needs_half_time, selection_outcome
+    from app.forecast.review import day_of, week_of
+    from app.forecast.study import LEVELS, pick_strength, scorecard
+    from app.models import MatchStudy
+
+    rows = []
+    for m, study in db.execute(select(Match, MatchStudy).join(MatchStudy, MatchStudy.match_id == Match.id)
+                               .where(Match.status == MatchStatus.FINISHED, Match.home_goals.is_not(None))).all():  # fmt: skip
+        kickoff = m.kickoff_at if m.kickoff_at.tzinfo else m.kickoff_at.replace(tzinfo=UTC)
+        ht = (m.ht_home_goals, m.ht_away_goals) if m.ht_home_goals is not None else None
+        for level in LEVELS:
+            mine = [p for p in study.data["picks"] if p["level"] == level]
+            if not mine:
+                continue
+            best = max(mine, key=pick_strength)
+            if needs_half_time(best["market"]) and ht is None:
+                continue
+            hit = selection_outcome(best["market"], best["selection"], m.home_goals, m.away_goals, ht) == WON
+            rows.append((week_of(day_of(kickoff)).isoformat(), level, best["p_archie"], hit))
+    return scorecard(rows)
+
+
 def refresh_review(log=print) -> str:
     """Rifà la pagella di tutte le settimane e aggiorna correzioni e panchina (lavoro settimanale)."""
     from app.db import SessionLocal
@@ -99,6 +126,8 @@ def refresh_review(log=print) -> str:
     with SessionLocal() as db:
         rows = load_rows(db, log)
     report = weekly_report(rows, REVIEW_BOOKMAKERS)
+    with SessionLocal() as db:
+        report["study"] = study_scorecard(db)  # pronostici studiati: usciti contro promessi (D139)
     report["computed_at"] = datetime.now(UTC).isoformat()
     review_path().write_text(json.dumps(report, ensure_ascii=False), encoding="utf-8")
     load_review.cache_clear()

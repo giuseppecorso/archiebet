@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # OddsPapi: quote dei bookmaker italiani e di Pinnacle/Betfair (D61)
     oddspapi_key: str | None = None
     oddspapi_monthly_reserve: int = 20  # richieste del mese da non usare mai in automatico
-    # Bookmaker su cui Giuse ha un conto: il radar gioca solo lì (D66). Nomi: sisal, snai, eurobet, goldbet, ...
+    # Bookmaker su cui l'utente ha un conto: il radar gioca solo lì (D66). Nomi: sisal, snai, eurobet, goldbet, ...
     radar_bookmakers: str = "sisal,eurobet"
 
     # Claude API (Fase 6): un solo modulo per l'AI (app/ai); tetto di spesa mensile controllato dal codice
@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     sync_enabled: bool = True
     sync_interval_hours: int = 6
 
-    ai_monthly_budget_eur: float = 10.0  # tetto di Giuse: 10-15 € al mese (D97, D103)
+    ai_monthly_budget_eur: float = 10.0  # tetto di spesa: 10-15 € al mese (D97, D103)
     ai_user_monthly_quota_eur: float = 10.0
     ai_budget_warning_ratio: float = 0.8
 

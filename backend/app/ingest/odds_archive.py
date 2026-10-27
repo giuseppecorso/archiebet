@@ -14,7 +14,7 @@ from typing import Any
 from app.adapters.cache import MISSING, FileCache
 from app.adapters.oddspapi import MARKETS, TOURNAMENTS, OddsPapiAdapter, OddsPapiError
 
-ARCHIVE_SLUGS = ("pinnacle", "sisal.it", "eurobet.it")  # riferimento + bookmaker di Giuse: una chiamata per partita
+ARCHIVE_SLUGS = ("pinnacle", "sisal.it", "eurobet.it")  # riferimento + bookmaker dell'utente: una chiamata per partita
 SERIE_C_SLUGS = ("sisal.it", "eurobet.it", "snai.it")  # in Serie C Pinnacle non c'è: un terzo bookmaker italiano
 FOREVER = timedelta(days=36500)
 RETRIES = 3

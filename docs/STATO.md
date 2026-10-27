@@ -4,7 +4,7 @@ Ultimo aggiornamento: 2026-10-21
 
 ## Telefono, gol per squadra, Draw No Bet (2026-10-22)
 
-- [x] **Accesso dal telefono** con Tailscale Serve (HTTPS solo per i dispositivi di Giuse), app installabile (icona, manifest, service worker) e grafica per telefono (menu in basso, partite su una riga).
+- [x] **Accesso dal telefono** con Tailscale Serve (HTTPS solo per i dispositivi dell'utente), app installabile (icona, manifest, service worker) e grafica per telefono (menu in basso, partite su una riga).
 - [x] **Multigol e combo** (D136): quote giuste nella pagina partita, segnate "stima".
 - [x] **Gol di una squadra e Draw No Bet** (D135) con quote vere di Sisal ed Eurobet; generatore: spiega perché non trova multipla, angoli e cartellini "in prova".
 - Test: 455 backend + 31 frontend, tutti verdi.
@@ -14,31 +14,31 @@ Ultimo aggiornamento: 2026-10-21
 - [x] **Multipla "Caccia al CLV"** (D134): solo occasioni D72, scelte per CLV atteso; pagella su 20 settimane: 6 multiple, CLV +5,6% (campione piccolo).
 - [x] **Cosa sa il tifoso**: notizie simili in una riga ("+N simili").
 - [x] **ArchieTV**: se YouTube non risponde, ultimi video salvati.
-- Prossimo: accesso dallo smartphone (Tailscale, in attesa dell'ok di Giuse).
+- Prossimo: accesso dallo smartphone (Tailscale, in attesa dell'ok dell'utente).
 - Test: 449 backend + 30 frontend, tutti verdi.
 
-## Diretta al posto del Live (2026-10-21, richiesta di Giuse)
+## Diretta al posto del Live (2026-10-21, richiesta di prodotto)
 
 - [x] **Diretta** (D133): risultati in tempo reale con cronaca (gol, assist, cartellini, cambi, VAR); giocate live tolte (piano partita e quote del momento).
 - [x] Partite iniziate o finite: marcatori ed espulsioni al posto delle quote; cronaca nella pagina partita.
 - [x] Corretti: risultati che tornavano "da giocare" (elenchi vecchi) e CLV mai ricalcolato quando la chiusura arriva dopo.
 - Test: 446 backend + 30 frontend, tutti verdi.
 
-## Più mercati, pagella settimanale, grafica minimal (2026-10-21, richieste di Giuse)
+## Più mercati, pagella settimanale, grafica minimal (2026-10-21, richieste di prodotto)
 
 - [x] **Più mercati** (D131): Under/Over 0.5 e 4.5; angoli e cartellini (totali e per squadra) nei 10 campionati con statistiche a fine partita, in Pronostici, pagina partita, multipla e schedina, con chiusura automatica quando arrivano le statistiche.
 - [x] **Pagella settimanale** (D132): scheda Pronostici → Pagella; Archie ricostruisce ogni settimana Pronostici e multiple con le quote delle 10 del mattino e decide da solo tarature e panchina (regole registrate). Primo giro: niente da correggere.
 - [x] **Grafica più minimal**: riquadri, spazi e numeri ridotti; Pronostici e "Gioca questa partita" con gli esiti su una riga.
 - Test: 442 backend + 29 frontend, tutti verdi.
 
-## Grafica, navigazione e nuovi campionati (2026-10-21, richieste di Giuse)
+## Grafica, navigazione e nuovi campionati (2026-10-21, richieste di prodotto)
 
 - [x] **Schedina sempre visibile** (D126): un clic su una quota in Pronostici, nella pagina partita o su una Multipla la mette in schedina; registra con il controllo del regolamento.
 - [x] **Menu a 4 voci** (D126): Partite (filtri per giorno, campionato, squadra), Live, Pronostici (Pronostici, Occasioni, Multipla, Statistiche, Simulatore), Il mio Archie (schedine, statistiche e regolamento, Chiedi ad Archie). Sfida contro Archie tolta.
 - [x] **Live** (D125, sperimentale): partite in corso con quota giusta e quota minima da giocare adesso.
 - [x] **Grafica "stadio di sera"** (D127): colori più vivi, foto di stadio e prato (Unsplash, in `frontend/public/img`).
 - [x] **Est e Nord Europa** (D128): 17 massime serie con calendario e risultati in Partite; restano fuori da Pronostici e Occasioni finché la prova non passa. Archivio quote in corso (`odds-archive --east`), poi `east-test`.
-- Nota: le Occasioni dal vivo sono a 1 giocata su 300 (ne escono poche): proposto a Giuse un verdetto sequenziale e più bookmaker giocabili.
+- Nota: le Occasioni dal vivo sono a 1 giocata su 300 (ne escono poche): proposto all'utente un verdetto sequenziale e più bookmaker giocabili.
 - Test: 417 backend + 27 frontend, tutti verdi.
 
 ## Fase 8 – Coppe, altri campionati, formazioni, piano live: CONCLUSA (2026-10-21)
@@ -51,7 +51,7 @@ Ultimo aggiornamento: 2026-10-21
 
 ## Fase 7 – Apprendimento: CONCLUSA (2026-10-21)
 
-Rivista con Giuse (D117): le strategie le trova Archie da solo; tolti il Laboratorio strategie (regole scritte a mano) e il fiuto come fattore.
+Rivista con l'utente (D117): le strategie le trova Archie da solo; tolti il Laboratorio strategie (regole scritte a mano) e il fiuto come fattore.
 - [x] **Archie cerca le strategie** (D118, `strategy-search`): 1.650 strategie su ~205.000 giocate possibili (bet365 d'apertura contro Pinnacle di chiusura), taratura 2012/13–2019/20, conferma dal 2020/21. **Nessuna passa**; le Occasioni restano sulla regola D72. Se un giorno una passa, entra da sola nelle Occasioni con l'etichetta "strategia di Archie" (`radar_signals.strategy`, API e lavoro radar).
 - [x] **Quando giocare** (D119, `timing-test`): sulle quote ora per ora di Sisal ed Eurobet (archivio OddsPapi, ~3.700 partite) l'orario sposta meno di mezzo punto di CLV: è indifferente. Il margine pesa 7-10%.
 - [x] **Autocorrezione** (D120): controllo settimanale della taratura sulle 2.000 partite più recenti per gruppo e mercato; una fascia fuori fa partire una prova, non una correzione. Prima segnalazione (Over 2.5 in A e B sotto il 40%) provata su dati indipendenti (D122): era caso.
@@ -103,9 +103,9 @@ Test: 129 backend + 11 frontend, tutti verdi.
 
 ## Prossima sessione: API-Football Pro e Fase 5
 
-Deciso con Giuse il 2026-10-18: **piano Pro (19 $/mese, 7.500 richieste/giorno, mensile)**, da attivare all'inizio della prossima sessione (Giuse lo compra dalla dashboard, Claude verifica con `/status` che è gratuito). Il Pro basta: i piani cambiano solo il numero di richieste; stima di punta ~1.100/giorno.
+Deciso con l'utente il 2026-10-18: **piano Pro (19 $/mese, 7.500 richieste/giorno, mensile)**, da attivare all'inizio della prossima sessione (l'utente lo compra dalla dashboard, Claude verifica con `/status` che è gratuito). Il Pro basta: i piani cambiano solo il numero di richieste; stima di punta ~1.100/giorno.
 
-Blocchi, in ordine (Giuse interessato anche ai **mercati secondari** cartellini/angoli, vedi IDEE 2026-10-20):
+Blocchi, in ordine (l'utente interessato anche ai **mercati secondari** cartellini/angoli, vedi IDEE 2026-10-20):
 1. ~~Risultati aggiornati~~ fatto il 2026-10-20 (D80): Pro attivo fino al 2026-11-20; tutti i campionati per la stagione in corso + Serie C 2025/26, nessun doppione (prova su copia). Meteo e shock climatico: non passano (D81).
 2. ~~Seconde divisioni~~ fatte il 2026-10-20 (D75). ~~Coppe europee~~ fatte il 2026-10-20 (D85).
    Fatti anche il 2026-10-20: multipla con Domani / 2-3 giorni / date scelte (D83); grafica più viva con stemmi, loghi, bandiere, luci da stadio, barra Dati che scorre (D84); aggiornamento più veloce e robusto (football-data salta le stagioni concluse, OddsPapi non si blocca su 404, 429 e timeout, cache degli storici ripulita dopo 2 giorni).
@@ -116,7 +116,7 @@ Blocchi, in ordine (Giuse interessato anche ai **mercati secondari** cartellini/
 4. **Fase 5 – Live: fatta il 2026-10-21 (D92-D93).** Tabella `match_live` (migrazione fd842ab9d186, applicata all'avvio), lavoro ogni minuto solo con partite in corso (`/fixtures?live=`), risultato finale e schedine chiuse a fine partita; termometro della speranza (Poisson dai gol attesi del mercato, verificato all'intervallo su 5 stagioni, `python -m app.cli live-check`); scheda **Live** in dashboard, minuto e punteggio in ambra, termometro e "Segui live" (ogni 30 s) nelle schedine. Effetto del punteggio (D93) provato: migliora la calibrazione ma non passa la conferma, da riprovare a fine 2026/27.
    Pagina partita con minuto, punteggio e probabilità 1X2 di adesso (aggiornata ogni 30 s). Il termometro della Multipla del giorno si vede registrandola come schedina (reale o simulata): la multipla proposta si ricalcola solo con partite non iniziate.
 
-La simulazione dal vivo del radar (D59, 300 giocate) continua da sola a ogni aggiornamento, con la regola D72/D73 dal 2026-10-18 (Shin, quota ≤ 4, soglia che cresce con la quota), misurata su 8 bookmaker italiani (D74); a Giuse si mostrano solo le occasioni su Sisal ed Eurobet. Ripartita da zero.
+La simulazione dal vivo del radar (D59, 300 giocate) continua da sola a ogni aggiornamento, con la regola D72/D73 dal 2026-10-18 (Shin, quota ≤ 4, soglia che cresce con la quota), misurata su 8 bookmaker italiani (D74); all'utente si mostrano solo le occasioni su Sisal ed Eurobet. Ripartita da zero.
 
 ## Fase 4 – Pronostici e valore: CONCLUSA (2026-10-15)
 
@@ -124,8 +124,8 @@ La simulazione dal vivo del radar (D59, 300 giocate) continua da sola a ogni agg
 - [x] Motore del radar (`app/forecast/radar.py`): probabilità giusta Pinnacle/Betfair contro la quota migliore giocabile, segnali ≥ 2%, "sospetto" sopra il 15%
 - [x] **Simulazione dal vivo partita** (D60): tabella `radar_signals`, segnali rilevati prima del calcio d'inizio a ogni aggiornamento, CLV con la chiusura; per ora bookmaker giocabile = bet365 (quote football-data)
 - [x] Piani quote verificati (D61): OddsPapi gratuito come primo passo
-- [x] Account gratuito OddsPapi creato da Giuse, chiave in `backend/.env` (`ODDSPAPI_KEY`): piano free, 250 richieste/mese, **348 bookmaker inclusi**, tra cui Pinnacle, Betfair Exchange e i principali italiani (sisal.it, snai.it, eurobet.it, goldbet.it, lottomatica.it, bet365.it, betflag.it, planetwin365.it, ...)
-- [x] Adapter OddsPapi (`app/adapters/oddspapi.py`) e import (`app/ingest/oddspapi.py`) nell'aggiornamento automatico (D62): Pinnacle + 9 bookmaker italiani, chiusura Pinnacle dallo storico gratuito, riserva mensile; radar solo su Sisal ed Eurobet, dove Giuse ha un conto (D66). Provato dal vivo su una copia del DB: 2 richieste, 30 partite trovate, nessuna ancora nel nostro calendario (football-data arriva fino al 12/10)
+- [x] Account gratuito OddsPapi creato dall'utente, chiave in `backend/.env` (`ODDSPAPI_KEY`): piano free, 250 richieste/mese, **348 bookmaker inclusi**, tra cui Pinnacle, Betfair Exchange e i principali italiani (sisal.it, snai.it, eurobet.it, goldbet.it, lottomatica.it, bet365.it, betflag.it, planetwin365.it, ...)
+- [x] Adapter OddsPapi (`app/adapters/oddspapi.py`) e import (`app/ingest/oddspapi.py`) nell'aggiornamento automatico (D62): Pinnacle + 9 bookmaker italiani, chiusura Pinnacle dallo storico gratuito, riserva mensile; radar solo su Sisal ed Eurobet, dove l'utente ha un conto (D66). Provato dal vivo su una copia del DB: 2 richieste, 30 partite trovate, nessuna ancora nel nostro calendario (football-data arriva fino al 12/10)
 - [x] Pagina **Radar** nel menu (`/radar`, API `/api/radar`): segnali sulle prossime partite con dove giocarla, quota giusta, valore, "sospetto" sopra il 15%, quota di adesso; ultimi segnali con CLV; riepilogo della simulazione verso le 300 giocate
 - [x] **Campionati maggiori europei** (D64-D65): Premier League, LaLiga, Bundesliga, Ligue 1 con storico dal 2005/06 (football-data, ~30.000 partite, prima importazione ~1 minuto), quote OddsPapi, tendina dei paesi in dashboard. Modello solo italiano; modelli esteri e coppe in Fase 8
 - [x] **Pronostici** (D67, menu "Pronostici", API `/api/picks`): per ogni partita dei prossimi 7 giorni la stima migliore (Pinnacle → Betfair → media mercato → modello di Archie), pronostico secco, quote di Sisal ed Eurobet con etichetta valore / nella norma / paga poco, altri mercati (doppia chance, Under/Over 2.5). Il radar è diventato la scheda **Occasioni** della stessa pagina (/radar porta lì)
@@ -155,7 +155,7 @@ Test: 274 backend + 17 frontend.
 - [x] Prova del nove contro il mercato (`python -m app.cli factor-test`): riposo, motivazione e modello non battono l'apertura Pinnacle (D56)
 - [x] **Radar confermato** come motore in A e B: CLV +3,2% (bet365) e +4,1% (quota migliore), positivo quasi in ogni stagione (D57)
 - [x] Comando del verdetto con criteri fissati in anticipo (D58): `python -m app.cli verdict`, funziona solo a cassaforte aperta
-- [x] **Verdetto sulla cassaforte 2025/26** (aperta da Giuse il 2026-10-12): modello SUPERATO (calibrazione 2,9%, distanza dal mercato +0,026), radar NON superato per campione troppo piccolo (45 giocate, CLV +2,4% ± 3,1%) → resta in prova fino alla verifica dal vivo in Fase 4 (D59)
+- [x] **Verdetto sulla cassaforte 2025/26** (aperta dall'utente il 2026-10-12): modello SUPERATO (calibrazione 2,9%, distanza dal mercato +0,026), radar NON superato per campione troppo piccolo (45 giocate, CLV +2,4% ± 3,1%) → resta in prova fino alla verifica dal vivo in Fase 4 (D59)
 
 **Dove siamo:** il modello è ben calibrato (errore 1-2%) ma in A e B non batte il mercato; il valore misurato sta nel radar (quote dei bookmaker contro la quota giusta di Pinnacle). Fattori "da esperto" (formazioni, assenze, notizie) da provare quando avremo lo storico di API-Football a pagamento.
 
@@ -163,7 +163,7 @@ Test: 202 backend + 13 frontend.
 
 Avvio: icone **Avvia ArchieBet** / **Spegni ArchieBet** sul Desktop (file `avvia-archiebet.bat` / `spegni-archiebet.bat`). Icone LED e collegamenti su Desktop e menu Start si ricreano con `powershell -ExecutionPolicy Bypass -File tools\crea-icone.ps1`.
 
-## Da fare al PC (Giuse)
+## Da fare al PC (l'utente)
 
 Le attività manuali sono raccolte qui, da fare tutte insieme quando sei al computer.
 
@@ -187,11 +187,11 @@ Criterio di fine fase: dati Serie A, B e C (storico e calendario), elenco partit
 - [x] API-Football collegato (piano gratuito): storico Serie C 2022/23-2024/25, 3 gironi → 3.420 partite con stadi e giornate
 - [x] Squadre unite tra le due fonti (34 automaticamente, 3 rifondazioni a mano), nomi italiani per le seconde squadre
 - [x] Serie C nella dashboard (filtri per girone) e nella pagina partita
-- [ ] **Stagione in corso di Serie C e risultati aggiornati di A e B**: arrivano con il piano a pagamento di API-Football, da attivare quando tutto è pronto (decisione di Giuse). Basterà aggiungere `2025,2026` a `API_FOOTBALL_SEASONS` e `135,136` a `API_FOOTBALL_LEAGUES` in `backend/.env`.
+- [ ] **Stagione in corso di Serie C e risultati aggiornati di A e B**: arrivano con il piano a pagamento di API-Football, da attivare quando tutto è pronto (decisione dell'utente). Basterà aggiungere `2025,2026` a `API_FOOTBALL_SEASONS` e `135,136` a `API_FOOTBALL_LEAGUES` in `backend/.env`.
 
 Test: 66 backend + 6 frontend, tutti verdi.
 
-Il criterio "calendario Serie C in corso" si completa attivando il piano a pagamento (vedi sopra); Giuse ha deciso di farlo quando tutto sarà pronto.
+Il criterio "calendario Serie C in corso" si completa attivando il piano a pagamento (vedi sopra); l'utente ha deciso di farlo quando tutto sarà pronto.
 
 ## Fase 0 – Setup: CONCLUSA (2026-10-11)
 

@@ -1,4 +1,4 @@
-"""Pronostici (D67): per ogni partita la stima di probabilità migliore disponibile e le quote dei bookmaker di Giuse.
+"""Pronostici (D67): per ogni partita la stima di probabilità migliore disponibile e le quote dei bookmaker dell'utente.
 
 Regola (D53): prima il mercato, il modello solo dove il mercato manca.
 - Fonte per ogni mercato, in ordine: Pinnacle senza margine, Betfair Exchange, media dei bookmaker senza margine,
@@ -44,7 +44,7 @@ class MarketPick:
     market: str
     source: str  # da dove viene la probabilità
     probabilities: dict[str, float]
-    offers: dict[str, list[Offer]]  # esito → quote dei bookmaker di Giuse
+    offers: dict[str, list[Offer]]  # esito → quote dei bookmaker dell'utente
     corrected: bool = False  # probabilità corrette dalla taratura che Archie ha imparato (D132)
 
 
@@ -147,7 +147,7 @@ def best_probabilities(book: BookOdds, model: dict[str, Any] | None, secondary: 
 def offers_for(
     book: BookOdds, market: str, probabilities: dict[str, float], bookmakers: Sequence[str], source: str = "pinnacle"
 ) -> dict[str, list[Offer]]:
-    """Quote dei bookmaker di Giuse per ogni esito, con valore ed etichetta (solo dove la quota c'è)."""
+    """Quote dei bookmaker dell'utente per ogni esito, con valore ed etichetta (solo dove la quota c'è)."""
     out: dict[str, list[Offer]] = {}
     for selection, p in probabilities.items():
         for bm in bookmakers:
@@ -159,7 +159,7 @@ def offers_for(
 
 
 def match_picks(book: BookOdds, model: dict[str, Any] | None, bookmakers: Sequence[str], secondary: bool = False) -> list[MarketPick]:
-    """Tutti i mercati di una partita con la loro fonte, probabilità e quote dei bookmaker di Giuse
+    """Tutti i mercati di una partita con la loro fonte, probabilità e quote dei bookmaker dell'utente
     (angoli e cartellini solo con secondary=True: campionati dove si possono chiudere, D131)."""
     probs = best_probabilities(book, model, secondary)
     order = [*PICK_MARKETS, *(m for m in probs if is_team_goals(m)), *(m for m in probs if is_secondary(m))]
@@ -192,7 +192,7 @@ class OffLine:
 
 
 def off_line(picks: Sequence[MarketPick], threshold: float = OFF_LINE) -> list[OffLine]:
-    """Le quote dei bookmaker di Giuse molto sopra il giusto, dalla più fuori linea."""
+    """Le quote dei bookmaker dell'utente molto sopra il giusto, dalla più fuori linea."""
     out = [
         OffLine(p.market, selection, p.probabilities[selection], o)
         for p in picks

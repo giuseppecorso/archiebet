@@ -1,4 +1,4 @@
-"""Simulatore partita (Fase 6, D115). La sfida contro Archie (D116) è stata tolta su richiesta di Giuse (D126)."""
+"""Simulatore partita (Fase 6, D115). La sfida contro Archie (D116) è stata tolta (D126)."""
 
 from datetime import UTC, datetime, timedelta
 

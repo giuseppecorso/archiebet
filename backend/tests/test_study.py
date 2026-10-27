@@ -117,3 +117,11 @@ def test_weather_and_chaining():
     assert st.weather_adjustment(None, None) == st.Adjustment()
     both = st.news_adjustment("home", "lieve", "", "A", "B").then(st.weather_adjustment(6.0, 0.0))
     assert both.home == pytest.approx(1.03 * 0.96) and len(both.reasons) == 2
+
+
+def test_scorecard_compares_promised_and_won():
+    rows = [("2026-10-19", "cauto", 0.80, True), ("2026-10-19", "cauto", 0.80, False), ("2026-10-26", "rischioso", 0.40, True)]
+    card = st.scorecard(rows)
+    assert card["levels"]["cauto"] == {"picks": 2, "won": 1, "expected": 1.6, "hit_rate": 0.5, "promised": 0.8}
+    assert card["levels"]["equilibrato"]["picks"] == 0
+    assert [w["week"] for w in card["weeks"]] == ["2026-10-19", "2026-10-26"]

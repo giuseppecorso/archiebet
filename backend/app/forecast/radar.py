@@ -1,7 +1,7 @@
 """Radar delle quote (D57): il motore di Archie in Serie A e B.
 
 Probabilità giusta = quota di un bookmaker "sharp" (Pinnacle, altrimenti Betfair Exchange) senza margine.
-Per ogni esito si cerca la quota migliore tra i bookmaker su cui Giuse può giocare: se
+Per ogni esito si cerca la quota migliore tra i bookmaker su cui l'utente può giocare: se
 probabilità giusta × quota − 1 ≥ soglia, è un segnale del radar ("dove giocarla" = quel bookmaker).
 Funzioni pure, niente database: il salvataggio e la simulazione dal vivo stanno in radar_service.py.
 """
@@ -36,7 +36,7 @@ def qualifies(price: float, v: float) -> bool:
     return price <= MAX_PRICE and v >= required_value(price)
 LIVE_TARGET = 300  # giocate necessarie per il giudizio dal vivo (D59)
 
-# Bookmaker italiani su cui si gioca davvero (D66): quelli dove Giuse ha un conto. Si cambiano in
+# Bookmaker italiani su cui si gioca davvero (D66): quelli dove l'utente ha un conto. Si cambiano in
 # backend/.env con RADAR_BOOKMAKERS; questo è solo il valore predefinito.
 PLAYABLE_BOOKMAKERS = ("sisal", "eurobet")
 # La simulazione verso il verdetto si misura su tutti i bookmaker italiani disponibili (D74); BetFlag no:

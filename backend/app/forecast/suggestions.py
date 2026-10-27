@@ -1,7 +1,7 @@
-"""I due pronostici della pagina partita: il più sicuro e il più spinto (richiesta di Giuse, D107).
+"""I due pronostici della pagina partita: il più sicuro e il più spinto (D107).
 
 Si scelgono tra i mercati dei Pronostici (1X2, doppia chance, Under/Over 2.5, Gol/No gol) con le quote dei bookmaker
-di Giuse. "Sicuro" vuol dire più probabile, non conveniente: il valore lo dice l'etichetta della quota (principio 1).
+dell'utente. "Sicuro" vuol dire più probabile, non conveniente: il valore lo dice l'etichetta della quota (principio 1).
 """
 
 from collections.abc import Sequence
@@ -21,7 +21,7 @@ class Suggestion:
     selection: str
     probability: float
     source: str
-    offer: Offer  # la quota migliore tra i bookmaker di Giuse
+    offer: Offer  # la quota migliore tra i bookmaker dell'utente
     has_value: bool  # la quota batte la probabilità giusta con la regola delle Occasioni (D72)
 
 

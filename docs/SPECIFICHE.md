@@ -5,7 +5,7 @@ Schermate di riferimento: artifact "ArchieBet – Schermate" (Dashboard, Pagina 
 
 ## 1. Cos'è
 App web che fa da esperto personale di pronostici sul calcio. Non indovina chi vince: stima le probabilità, le confronta con le quote, trova quelle sbagliate, costruisce multiple sensate e oneste, segue le giocate live e fa imparare dall'esperienza sia l'utente sia il modello.
-Per ora gira solo sul PC di Giuse, per uso privato. Il codice nasce però già pronto a diventare multi-utente (vedi sezione 14).
+Per ora gira solo sul PC dell'utente, per uso privato. Il codice nasce però già pronto a diventare multi-utente (vedi sezione 14).
 Nome: ArchieBet. Motto: "Give me the odds, I'll move the world." Testi dell'app in italiano.
 
 ## 2. Stile grafico
@@ -38,7 +38,7 @@ Colori con significato fisso: verde = valore/vinta, rosso = persa/valore negativ
 5. Gioca (solo crediti finti)
    - Simulatore partita (10.000 simulazioni, partita "dal vivo" sul tabellone, comandi "E se...").
    - Sfida contro Archie (pronostici a giornata, crediti, classifica, amici invitabili).
-6. Laboratorio (aggiunto il 2026-10-11, idea di Giuse)
+6. Laboratorio (aggiunto il 2026-10-11, idea dell'utente)
    - Campionati: per campionato e stagione, classifica finale e numeri del campionato (1/X/2 in casa e fuori, media gol, Over 2.5, Goal), confronto tra stagioni e tra gironi.
    - Squadre: storia stagione per stagione (categoria, posizione, punti, gol), tutte le partite, casa/trasferta, scontri diretti.
    - Cosa impara Archie (Fase 7, D117): strategie cercate da Archie da solo, quando giocare, taratura, mappa del valore.
@@ -101,14 +101,14 @@ Forma squadra (xG, Elo, punti), forma e importanza dei giocatori, infortuni e sq
 - Attenzione: quasi tutti questi piani sono per uso personale/non commerciale. Un'app con utenti paganti richiede licenze commerciali (vedi sezione 15).
 
 ## 10. Costi mensili stimati (uso personale)
-- Fasi 0–4: 0 € (tutto sul PC di Giuse).
+- Fasi 0–4: 0 € (tutto sul PC dell'utente).
 - A regime: API-Football ~19 $, quote da verificare (obiettivo < 20 €), AI 5–15 €. Server solo quando si va online.
 - Hosting esistente: WordPress su Serverplan (giuseppecorso.it). Adatto solo come indirizzo (sottodominio, es. archie.giuseppecorso.it) o per file statici; il backend Python sempre acceso richiede un VPS. Da verificare nel pannello: SSH, Python App, Cron Jobs. Qualunque cosa pubblicata sul dominio personale va dietro login e con noindex (il dominio è usato anche per la carriera).
 
 ## 11. Stack
 - Backend: Python 3.12+ (venv), FastAPI, SQLAlchemy + SQLite all'inizio (PostgreSQL quando servono più utenti), APScheduler, pandas, numpy, scipy, scikit-learn; LightGBM come sfidante.
 - Frontend: Angular, aggiornamenti live con SSE.
-- Sviluppo e uso su Windows (PC di Giuse); deploy con Docker solo quando si va online.
+- Sviluppo e uso su Windows (PC dell'utente); deploy con Docker solo quando si va online.
 
 ## 12. Principi non negoziabili
 1. Valore, non pronostici.
@@ -146,10 +146,10 @@ Forma squadra (xG, Elo, punti), forma e importanza dei giocatori, infortuni e sq
 ## 15. Prima di investire: i cancelli
 Nessun investimento, e soprattutto nessun prestito, prima di aver superato questi cancelli, in ordine:
 1. Il modello supera il verdetto sulla cassaforte e mostra CLV positivo per almeno 3 mesi di simulazione e uso reale.
-2. Giuse usa ArchieBet ogni settimana per almeno 3 mesi.
+2. L'utente usa ArchieBet ogni settimana per almeno 3 mesi.
 3. 20–50 tester gratuiti (amici) lo usano e tornano ogni settimana.
 4. Parere legale scritto sul modello di business (divieto di pubblicità del gioco, servizi di pronostici, GDPR, pagamenti) e forma fiscale (partita IVA o società).
 5. Preventivi scritti delle licenze commerciali per dati e quote.
 6. Prova che qualcuno paga: lista d'attesa o pre-vendite prima di spendere.
 7. Business plan con punto di pareggio.
-Poi si investe a gradini: prima un piccolo budget proprio, prestiti solo per cifre che Giuse può rimborsare con lo stipendio anche se il progetto fallisce.
+Poi si investe a gradini: prima un piccolo budget proprio, prestiti solo per cifre che l'utente può rimborsare con lo stipendio anche se il progetto fallisce.

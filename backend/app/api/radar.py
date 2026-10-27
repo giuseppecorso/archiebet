@@ -48,7 +48,7 @@ class SignalOut(BaseModel):
 
 
 class OccasionOut(BaseModel):
-    """Occasione di adesso su un bookmaker di Giuse (calcolata al momento, non salvata)."""
+    """Occasione di adesso su un bookmaker dell'utente (calcolata al momento, non salvata)."""
 
     match_id: int
     competition: CompetitionOut
@@ -81,7 +81,7 @@ class LiveOut(BaseModel):
 class RadarOut(BaseModel):
     threshold: float  # valore minimo a quota 2 (la soglia cresce con la quota, D72)
     max_price: float
-    playable: list[str]  # i bookmaker di Giuse: le occasioni mostrate
+    playable: list[str]  # i bookmaker dell'utente: le occasioni mostrate
     simulation_bookmakers: list[str]  # quelli su cui si misura la simulazione (D74)
     upcoming: list[OccasionOut]
     recent: list[SignalOut]

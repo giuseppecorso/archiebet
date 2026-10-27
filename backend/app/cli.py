@@ -351,7 +351,7 @@ def _history_sim(first: str, last: str) -> int:
     best_sims = by_book["market_max"]
     sm = hs.summarize_plays(hs.occasions(best_sims, d72))
     if sm:
-        print(f"\n  D72 alla quota migliore del mercato (non giocabile da Giuse, solo confronto): {sm.clv.n} giocate, CLV {pct(sm.clv.mean)} ± {sm.clv.std_error * 100:.2f}, rendimento {pct(sm.roi.mean)}")
+        print(f"\n  D72 alla quota migliore del mercato (non giocabile dall'utente, solo confronto): {sm.clv.n} giocate, CLV {pct(sm.clv.mean)} ± {sm.clv.std_error * 100:.2f}, rendimento {pct(sm.roi.mean)}")
 
     print("\n(3) Multipla del giorno (gambe 1X2 e Under/Over 2.5 a quota bet365), tutte le stagioni")
     for name, n in (("tranquilla", 3), ("equilibrata", 4), ("coraggiosa", 4)):
