@@ -16,6 +16,8 @@ from app.forecast.study import (
     Adjustment,
     Played,
     TableSpot,
+    BOOK_GAP,
+    book_probability,
     favored_side,
     first_half_share,
     half_of,
@@ -225,13 +227,16 @@ def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict
                                ("TGA" in p.market and (side, scored) in (("away", True), ("home", False))) or "OU" in p.market
                     if trait_half == half and concerns:
                         supporting.append(text)
-        warned = caution.get(favored_side(p.market, p.selection) or "", [])
+        warned = list(caution.get(favored_side(p.market, p.selection) or "", []))
+        p_book = book_probability(book, p.market, p.selection, PLAYABLE)
+        if p_book is not None and p.p_archie - p_book >= BOOK_GAP:
+            warned.append(f"⚠ Il bookmaker non è d'accordo: la quota dice {p_book:.0%}. Sul passato, in questi casi ha avuto ragione quasi sempre lui.")
         picks.append({
             "market": p.market, "selection": p.selection, "level": p.level, "event": p.event,
             "p_model": round(p.p_model, 4), "p_archie": round(p.p_archie, 4),
             "evidence": [p.evidence.home_hits, p.evidence.home_n, p.evidence.away_hits, p.evidence.away_n],
             "reasons": [*p.reasons, *supporting, *warned, *context], "prices": prices,
-            "traits": supporting, "caution": warned,
+            "traits": supporting, "caution": warned, "p_book": round(p_book, 4) if p_book is not None else None,
         })  # fmt: skip
     return {
         "lam": round(lam, 3), "mu": round(mu, 3), "rho": round(fit.rho, 4), "xg": xg is not None,

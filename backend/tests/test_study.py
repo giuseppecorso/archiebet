@@ -72,9 +72,18 @@ def test_choose_multiple_one_leg_per_match_and_exclusions():
     chosen = st.choose_multiple(studies, "cauto", 5)
     assert [m for m, _ in chosen] == [1, 2] and chosen[0][1]["p_archie"] == 0.85
     assert [m for m, _ in st.choose_multiple(studies, "cauto", 5, {1})] == [2]  # "genera un'altra": partite nuove
-    # A parità, prima dove la quota del bookmaker paga più dello studio
-    tie = [(1, [pick("cauto", 0.80, {"sisal": 1.20})]), (2, [pick("cauto", 0.80, {"sisal": 1.40})])]
+    # Le quote non danno precedenza (D145): a parità vince chi non ha segnali di prudenza
+    tie = [(1, [{**pick("cauto", 0.80, {"sisal": 1.40}), "caution": ["⚠ Il bookmaker non è d'accordo"]}]), (2, [pick("cauto", 0.80, {"sisal": 1.20})])]
     assert st.choose_multiple(tie, "cauto", 1)[0][0] == 2
+
+
+def test_book_probability_without_margin():
+    book = {"sisal": {"1X2": {"1": 2.0, "X": 3.4, "2": 4.0}}, "eurobet": {"1X2": {"1": 2.1, "X": 3.3, "2": 3.8}}, "snai": {}}
+    p = st.book_probability(book, "1X2", "1", ("sisal", "eurobet", "snai"))
+    one = (1 / 2.0) / (1 / 2.0 + 1 / 3.4 + 1 / 4.0)
+    two = (1 / 2.1) / (1 / 2.1 + 1 / 3.3 + 1 / 3.8)
+    assert p == pytest.approx((one + two) / 2)
+    assert st.book_probability(book, "1T_TGH0.5", "over", ("sisal",)) is None  # mercato non quotato
 
 
 def test_study_markets_settle_and_have_names():

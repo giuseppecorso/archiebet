@@ -2,6 +2,13 @@
 
 Ultimo aggiornamento: 2026-10-21
 
+## Studio provato sul passato (2026-10-27)
+
+- [x] Prova D140-D142: modello per campionato e xG entrano; stanchezza e assenti no; forma recente pesa poco (modello = 192 partite).
+- [x] D143: secondo tempo, tratti per tempo con test statistico, segnali di prudenza come criterio d'ordine.
+- [x] D144-D145: il bookmaker non sbaglia dove lo studio è in disaccordo; il disaccordo diventa prudenza.
+- [ ] Prossimi: più campionati (serie minori, coppe) e multiple a tema; account per gli amici; bot Telegram.
+
 ## Lo studio di Archie (2026-10-27)
 
 - [x] **Fammi una multipla** rifatta sullo studio (D137): gol attesi Dixon-Coles con primo tempo, fatti del campo, coerenza modello-campo, tre livelli, spiegazioni, "genera un'altra".

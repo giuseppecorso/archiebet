@@ -238,14 +238,12 @@ def strength(pick: StudyPick, price: float | None = None) -> float:
 
 
 def pick_strength(pick: dict) -> float:
-    """Ordine dei pronostici salvati: probabilità di Archie, quota migliore tra i bookmaker dell'utente (se paga più dello
-    studio), accordo modello-campo; un poco più su con un tratto per tempo coerente, un poco più giù con i segnali di
-    prudenza sulla squadra favorita (D143)."""
+    """Ordine dei pronostici salvati: probabilità di Archie e accordo modello-campo; un poco più su con un tratto per tempo
+    coerente, un poco più giù con i segnali di prudenza (D143), compreso il disaccordo con il bookmaker (D145: quando lo
+    studio crede più della quota, di solito ha ragione la quota)."""
     hh, hn, ah, an = pick["evidence"]
-    price = max(pick["prices"].values(), default=None)
-    edge = max(0.0, pick["p_archie"] * price - 1) if price else 0.0
     frequency = (hh + ah) / (hn + an) if hn + an else 0.0
-    return (pick["p_archie"] + 0.5 * edge + 0.1 * (1 - abs(frequency - pick["p_model"])) + 0.002 * (hn + an)
+    return (pick["p_archie"] + 0.1 * (1 - abs(frequency - pick["p_model"])) + 0.002 * (hn + an)
             + TRAIT_BONUS * len(pick.get("traits", [])) - CAUTION_PENALTY * len(pick.get("caution", [])))
 
 
@@ -364,6 +362,20 @@ TRAIT_MIN_GOALS = 15  # gol minimi per giudicare un tratto
 TRAIT_Z = 2.0  # oltre 2 deviazioni standard dalla media del campionato: difficile che sia il caso
 TRAIT_BONUS = 0.02  # nell'ordine: un pronostico sui tempi coerente con un tratto vero sale un poco
 CAUTION_PENALTY = 0.03  # nell'ordine: ogni segnale di prudenza sulla squadra favorita fa scendere un poco
+BOOK_GAP = 0.05  # lo studio crede almeno 5 punti più della quota: prova D144, di solito ha ragione la quota (D145)
+
+
+def book_probability(book: dict, market: str, selection: str, bookmakers: Sequence[str]) -> float | None:
+    """Probabilità della quota senza margine (proporzionale), media tra i bookmaker che quotano tutto il mercato."""
+    sels = MARKETS[market].selections if market in MARKETS else {}
+    found = []
+    for bm in bookmakers:
+        prices = book.get(bm, {}).get(market, {})
+        if sels and set(prices) >= set(sels) and all(prices[s] > 1 for s in sels):
+            implied = {s: 1 / prices[s] for s in sels}
+            total = sum(implied.values())
+            found.append(implied[selection] / total)
+    return sum(found) / len(found) if found else None
 
 
 def half_trait(goals_1h: int, goals: int, league_share: float) -> tuple[str, float] | None:
