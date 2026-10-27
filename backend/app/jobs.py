@@ -165,8 +165,15 @@ def refresh_studies_job() -> None:
 
     def work() -> str:
         from app.forecast.study_service import refresh_studies
+        from app.ingest.af_detail import download_details
+        from app.ingest.venues import LEAGUES as MAIN_LEAGUES
 
+        settings = get_settings()
         with SessionLocal() as db:
+            if settings.api_football_key:  # schede (xG) delle partite finite che mancano: poche richieste a giro (D142)
+                now = datetime.now(UTC)
+                season = now.year if now.month >= 7 else now.year - 1
+                download_details(api_football_adapter(db, settings), MAIN_LEAGUES, [season], log=logger.debug, max_requests=100)
             done = refresh_studies(db, datetime.now(UTC), log=logger.debug)
         return f"{done} partite studiate"
 
