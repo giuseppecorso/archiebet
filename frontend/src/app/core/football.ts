@@ -40,6 +40,8 @@ export interface MatchCard {
   ht_away_goals?: number | null;
   /** Gol ed espulsioni (D133), per le partite in corso o finite */
   highlights?: MatchEvent[];
+  /** Notizie del tifoso sulle due squadre (partite in programma) */
+  news?: number;
 }
 
 export type EventKind = 'goal' | 'penalty' | 'own_goal' | 'goal_cancelled' | 'missed_penalty' | 'yellow' | 'second_yellow' | 'red' | 'subst' | 'var';

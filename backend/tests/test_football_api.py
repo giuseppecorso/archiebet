@@ -133,3 +133,22 @@ def test_card_odds_fall_back_to_bookmaker_average(db):
     db.commit()
     [card] = match_cards(db, [m], now)
     assert card.odds_1x2 == pytest.approx({"1": 2.15, "X": 3.25, "2": 3.45})
+
+
+def test_upcoming_cards_count_fan_news(logged_client, seeded, db):
+    """Le partite in programma dicono quante notizie ha raccolto il tifoso sulle due squadre (filtro "più notizie")."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.models import NewsItem, Team, TeamFact
+
+    now = datetime.now(UTC)
+    milan = db.scalar(select(Team).where(Team.name == "Milan"))
+    news = NewsItem(source="gnews", url="https://example.org/1", title="Milan, assente il bomber", published_at=now - timedelta(days=1))
+    db.add(news)
+    db.flush()
+    db.add(TeamFact(team_id=milan.id, news_id=news.id, kind="assente", player="Bomber", detail="Out due settimane", published_at=now - timedelta(days=1)))
+    db.add(TeamFact(team_id=milan.id, news_id=news.id, kind="assente", player="Vecchio", detail="Notizia vecchia", published_at=now - timedelta(days=30)))
+    db.commit()
+    groups = logged_client.get("/api/matches?view=upcoming").json()
+    milan_inter = groups[0]["matches"][0]
+    assert milan_inter["news"] == 1  # la notizia di 30 giorni fa non conta

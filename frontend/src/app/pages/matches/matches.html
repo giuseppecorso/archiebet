@@ -21,6 +21,13 @@
       }
     </select>
   </label>
+  <label>
+    <span class="sr-only">Ordine</span>
+    <select [ngModel]="order()" (ngModelChange)="order.set($event)">
+      <option value="ora">Per campionato</option>
+      <option value="notizie">Più notizie</option>
+    </select>
+  </label>
   <input class="team-search" type="search" placeholder="Cerca una squadra…" [ngModel]="team()" (ngModelChange)="team.set($event)" aria-label="Cerca una squadra" />
 </div>
 
@@ -28,6 +35,15 @@
   <p class="empty">Carico le partite…</p>
 } @else if (data.error()) {
   <p class="empty error" role="alert">Non riesco a caricare le partite. Il backend è acceso?</p>
+} @else if (order() === 'notizie') {
+  <section class="panel group" aria-label="Partite con più notizie">
+    <h2 class="group-head">Prima le partite su cui il tifoso sa di più</h2>
+    @for (m of byNews(); track m.id) {
+      <ab-match-row [match]="m" />
+    } @empty {
+      <p class="empty">Nessuna notizia sulle squadre di questo giorno.</p>
+    }
+  </section>
 } @else {
   @for (g of groups(); track g.competition.code) {
     <section class="panel group" [attr.aria-label]="g.competition.name">

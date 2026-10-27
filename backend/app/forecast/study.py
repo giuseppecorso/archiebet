@@ -250,3 +250,79 @@ def choose_multiple(studies: Sequence[tuple[int, list[dict]]], level: str, n: in
             best.append((pick_strength(top), match_id, top))
     best.sort(key=lambda x: x[0], reverse=True)
     return [(match_id, pick) for _, match_id, pick in best[:n]]
+
+
+# --- Correzioni prudenti dello studio: notizie, motivazione, meteo (D138, non provate sul passato) ---
+
+NEWS_EFFECT = {"netta": 0.06, "lieve": 0.03}  # gol attesi: +x a chi le notizie favoriscono, −x all'altra
+MOTIVATION_EFFECT = 0.03  # chi lotta per qualcosa contro chi non ha più obiettivi
+MOTIVATION_MIN_PLAYED = 8  # a inizio stagione la classifica non dice ancora niente
+BAD_WEATHER = (4.0, 35.0)  # pioggia in mm nelle due ore di gioco, vento medio in km/h
+WEATHER_EFFECT = 0.04  # meno gol attesi con pioggia o vento forti
+
+
+@dataclass(frozen=True)
+class Adjustment:
+    home: float = 1.0  # moltiplica i gol attesi della squadra di casa
+    away: float = 1.0
+    reasons: tuple[str, ...] = ()
+
+    def then(self, other: "Adjustment") -> "Adjustment":
+        return Adjustment(self.home * other.home, self.away * other.away, self.reasons + other.reasons)
+
+
+def news_adjustment(side: str, strength: str, reason: str, home: str, away: str) -> Adjustment:
+    effect = NEWS_EFFECT.get(strength, 0.0)
+    if side not in ("home", "away") or not effect:
+        return Adjustment()
+    team = home if side == "home" else away
+    text = f"Notizie: favoriscono {team} ({strength}). {reason}".strip()
+    return Adjustment(1 + effect, 1 - effect, (text,)) if side == "home" else Adjustment(1 - effect, 1 + effect, (text,))
+
+
+@dataclass(frozen=True)
+class TableSpot:
+    position: int
+    teams: int
+    points: int
+    played: int
+    points_top: int  # punti della seconda in classifica (zona promozione/titolo)
+    points_safe: int  # punti della prima squadra fuori dalla zona retrocessione
+
+
+def goal_of(spot: TableSpot) -> str | None:
+    """"vertice", "salvezza", "nessun obiettivo" oppure None (in corsa per qualcosa a metà classifica)."""
+    if spot.played < MOTIVATION_MIN_PLAYED:
+        return None
+    if spot.position <= 2 or spot.points >= spot.points_top - 3:
+        return "vertice"
+    if spot.points <= spot.points_safe + 3 and spot.position > spot.teams // 2:
+        return "salvezza"
+    games_left = 2 * (spot.teams - 1) - spot.played
+    if spot.points_top - spot.points > 3 * games_left // 2 and spot.points - spot.points_safe > 6:
+        return "nessun obiettivo"
+    return None
+
+
+def motivation_adjustment(home_spot: TableSpot | None, away_spot: TableSpot | None, home: str, away: str) -> Adjustment:
+    if home_spot is None or away_spot is None:
+        return Adjustment()
+    gh, ga = goal_of(home_spot), goal_of(away_spot)
+    words = {"vertice": "lotta per il vertice", "salvezza": "lotta per la salvezza", "nessun obiettivo": "non ha più obiettivi"}
+    parts = [f"{t} {s.position}° con {s.points} punti{' (' + words[g] + ')' if g else ''}" for t, s, g in ((home, home_spot, gh), (away, away_spot, ga))]
+    text = "Classifica: " + "; ".join(parts) + "."
+    motivated = ("vertice", "salvezza")
+    if gh in motivated and ga == "nessun obiettivo":
+        return Adjustment(1 + MOTIVATION_EFFECT, 1.0, (text,))
+    if ga in motivated and gh == "nessun obiettivo":
+        return Adjustment(1.0, 1 + MOTIVATION_EFFECT, (text,))
+    return Adjustment(reasons=(text,))
+
+
+def weather_adjustment(rain_mm: float | None, wind_kmh: float | None) -> Adjustment:
+    if rain_mm is None or wind_kmh is None:
+        return Adjustment()
+    if rain_mm >= BAD_WEATHER[0] or wind_kmh >= BAD_WEATHER[1]:
+        what = f"pioggia forte ({rain_mm:.0f} mm)" if rain_mm >= BAD_WEATHER[0] else f"vento forte ({wind_kmh:.0f} km/h)"
+        return Adjustment(1 - WEATHER_EFFECT, 1 - WEATHER_EFFECT, (f"Meteo previsto: {what}, di solito si segna un po' meno.",))
+    return Adjustment()

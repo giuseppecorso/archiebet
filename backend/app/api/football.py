@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.auth.deps import CurrentUser, DbSession
 from app.forecast.demargin import shin
 from app.ingest.teams import competition_sort_key
-from app.models import Competition, Match, MatchEvent, MatchOdds, MatchPrediction, MatchStatus
+from app.models import Competition, Match, MatchEvent, MatchOdds, MatchPrediction, MatchStatus, TeamFact
 from app.stats.team_stats import Result, TeamSummary, form, head_to_head, standings, summary
 
 router = APIRouter(prefix="/api", tags=["football"])
@@ -93,6 +93,7 @@ class MatchCard(BaseModel):
     ht_home_goals: int | None = None
     ht_away_goals: int | None = None
     highlights: list[EventOut] = []  # gol ed espulsioni, per le partite in corso o finite (D133)
+    news: int = 0  # notizie raccolte dal tifoso sulle due squadre negli ultimi 10 giorni (partite in programma)
 
 
 class CompetitionGroup(BaseModel):
@@ -222,6 +223,7 @@ def match_cards(db: Session, matches: list[Match], now: datetime) -> list[MatchC
     if started:
         for e in db.scalars(select(MatchEvent).where(MatchEvent.match_id.in_(started), MatchEvent.kind.in_(HIGHLIGHTS)).order_by(MatchEvent.match_id, MatchEvent.seq)):
             highlights[e.match_id].append(event_out(e))
+    news = _news_counts(db, [m for m in matches if m.status == MatchStatus.SCHEDULED], now)
     return [
         MatchCard(
             id=m.id,
@@ -239,9 +241,27 @@ def match_cards(db: Session, matches: list[Match], now: datetime) -> list[MatchC
             ht_home_goals=m.ht_home_goals,
             ht_away_goals=m.ht_away_goals,
             highlights=highlights.get(m.id, []),
+            news=news.get(m.id, 0),
         )
         for m in matches
     ]
+
+
+def _news_counts(db: Session, matches: list[Match], now: datetime) -> dict[int, int]:
+    """Quante notizie sulle due squadre nei 10 giorni prima della partita (o di oggi, se è ancora lontana)."""
+    from app.ingest.news import FACTS_WINDOW
+
+    if not matches:
+        return {}
+    teams = {t for m in matches for t in (m.home_team_id, m.away_team_id)}
+    rows = db.execute(select(TeamFact.team_id, TeamFact.published_at).where(TeamFact.team_id.in_(teams), TeamFact.published_at >= now - FACTS_WINDOW)).all()
+    out = {}
+    for m in matches:
+        kickoff = m.kickoff_at if m.kickoff_at.tzinfo else m.kickoff_at.replace(tzinfo=UTC)
+        start = min(kickoff, now) - FACTS_WINDOW
+        out[m.id] = sum(1 for team, when in rows if team in (m.home_team_id, m.away_team_id)
+                        and start <= (when if when.tzinfo else when.replace(tzinfo=UTC)) <= kickoff)  # fmt: skip
+    return out
 
 
 def event_out(e: MatchEvent) -> EventOut:

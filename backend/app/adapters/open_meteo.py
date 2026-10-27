@@ -20,6 +20,7 @@ from app.adapters.cache import FileCache
 SOURCE = "open-meteo"
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+FORECAST_URL = "https://api.open-meteo.com/v1/forecast"  # previsioni dei prossimi giorni (D138)
 HOURLY = ("precipitation", "wind_speed_10m", "temperature_2m")
 PAUSE_SECONDS = 0.3  # cortesia verso un servizio gratuito
 
@@ -103,6 +104,15 @@ class OpenMeteoAdapter(DataSourceAdapter):
                   "hourly": ",".join(HOURLY), "timezone": "UTC"}  # fmt: skip
         key = f"archive?lat={lat}&lon={lon}&start={start}&end={end}"
         return parse_hourly(self.cached(key, timedelta(days=3650), lambda: self._request(ARCHIVE_URL, params)))
+
+
+    def forecast_hourly(self, latitude: float, longitude: float, day: date) -> Hourly:
+        """Previsioni orarie di un giorno (pioggia, vento, temperatura), in cache 6 ore."""
+        lat, lon = round(latitude, 2), round(longitude, 2)
+        params = {"latitude": lat, "longitude": lon, "start_date": day.isoformat(), "end_date": day.isoformat(),
+                  "hourly": ",".join(HOURLY), "timezone": "UTC"}  # fmt: skip
+        key = f"forecast?lat={lat}&lon={lon}&day={day}"
+        return parse_hourly(self.cached(key, timedelta(hours=6), lambda: self._request(FORECAST_URL, params)))
 
 
 def _http_get(url: str, params: dict[str, Any]) -> tuple[int, Any]:

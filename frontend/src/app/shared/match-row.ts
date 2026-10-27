@@ -60,6 +60,9 @@ import { liveShort } from '../core/live';
       }
 
       <div class="tag">
+        @if (m.news) {
+          <span class="news" [title]="m.news + ' notizie sulle due squadre: le trovi in Cosa sa il tifoso'">{{ m.news }} notizie</span>
+        }
         @if (m.status === 'awaiting_result') {
           <span class="badge awaiting">Risultato in arrivo</span>
         } @else if (m.status === 'finished') {

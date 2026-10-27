@@ -86,3 +86,34 @@ def test_study_markets_settle_and_have_names():
         selection_outcome("1T_OU0.5", "over", 1, 0)  # serve il primo tempo
     assert market_name("1T_TGA0.5") == "gol ospite Under/Over 0.5 primo tempo"
     assert st.event_text("CB_1X_O1.5", "yes", "Brescia", "Cittadella") == "Brescia non perde e almeno 2 gol"
+
+
+# --- Correzioni prudenti: notizie, motivazione, meteo (D138) ---
+
+
+def test_news_adjustment_moves_expected_goals():
+    adj = st.news_adjustment("away", "netta", "Il Brescia perde il bomber.", "Brescia", "Cittadella")
+    assert (adj.home, adj.away) == pytest.approx((0.94, 1.06))
+    assert adj.reasons[0].startswith("Notizie: favoriscono Cittadella (netta)")
+    assert st.news_adjustment("none", "", "", "A", "B") == st.Adjustment()
+
+
+def test_motivation_from_the_table():
+    def spot(pos, pts, played=20, top=40, safe=20, teams=20):
+        return st.TableSpot(pos, teams, pts, played, top, safe)
+
+    assert st.goal_of(spot(1, 45)) == "vertice"
+    assert st.goal_of(spot(18, 19)) == "salvezza"
+    assert st.goal_of(spot(10, 28, played=34)) == "nessun obiettivo"  # lontana da tutto con 4 giornate alla fine
+    assert st.goal_of(spot(18, 19, played=5)) is None  # a inizio stagione la classifica non dice niente
+    adj = st.motivation_adjustment(spot(18, 19, played=34), spot(10, 28, played=34), "Brescia", "Cittadella")
+    assert (adj.home, adj.away) == pytest.approx((1.03, 1.0)) and "lotta per la salvezza" in adj.reasons[0]
+
+
+def test_weather_and_chaining():
+    assert st.weather_adjustment(6.0, 10.0).home == pytest.approx(0.96)
+    assert st.weather_adjustment(0.0, 40.0).reasons[0].startswith("Meteo previsto: vento forte")
+    assert st.weather_adjustment(0.5, 10.0) == st.Adjustment()
+    assert st.weather_adjustment(None, None) == st.Adjustment()
+    both = st.news_adjustment("home", "lieve", "", "A", "B").then(st.weather_adjustment(6.0, 0.0))
+    assert both.home == pytest.approx(1.03 * 0.96) and len(both.reasons) == 2

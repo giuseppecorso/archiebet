@@ -38,6 +38,8 @@ export class Matches {
   protected readonly day = signal(isoDay());
   protected readonly competition = signal<string>(readSaved());
   protected readonly team = signal('');
+  /** 'ora' = per campionato e orario; 'notizie' = prima le partite su cui il tifoso sa di più */
+  protected readonly order = signal<'ora' | 'notizie'>('ora');
 
   protected readonly competitions = httpResource<Competition[]>(() => '/api/competitions', { defaultValue: [] });
   protected readonly data = httpResource<CompetitionGroup[]>(
@@ -50,6 +52,14 @@ export class Matches {
       .map((g) => ({ ...g, matches: g.matches.filter((m) => !q || `${m.home.name} ${m.away.name}`.toLowerCase().includes(q)) }))
       .filter((g) => g.matches.length);
   });
+
+  /** Ordine "più notizie": tutte le partite con almeno una notizia, dalla più ricca */
+  protected readonly byNews = computed(() =>
+    this.groups()
+      .flatMap((g) => g.matches)
+      .filter((m) => (m.news ?? 0) > 0)
+      .sort((a, b) => (b.news ?? 0) - (a.news ?? 0)),
+  );
 
   constructor() {
     effect(() => {
