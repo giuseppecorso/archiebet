@@ -1,5 +1,6 @@
 import { AskArchie } from '../../shared/ask-archie';
 import { AuthService } from '../../core/auth.service';
+import { StudyLeg } from '../../core/study';
 import { OfferButton } from '../../shared/offer-button';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
@@ -90,6 +91,22 @@ export class MatchPage {
   protected readonly factTone = factTone;
   /** I due pronostici (D107) e l'analisi scritta da Archie */
   protected readonly matchPicks = httpResource<MatchPicks>(() => `/api/picks/match/${this.id()}`);
+  /** Lo studio della partita (D137): i pronostici migliori per livello, ognuno con il suo perché */
+  protected readonly study = httpResource<Record<string, StudyLeg[]>>(() => `/api/study/match/${this.id()}`);
+  protected readonly studyLegs = computed(() =>
+    (['cauto', 'equilibrato', 'rischioso'] as const).flatMap((level) => {
+      const leg = this.study.value()?.[level]?.[0];
+      return leg ? [{ level, leg }] : [];
+    }),
+  );
+  /** Angoli e cartellini: lo studio non li calcola, restano le probabilità dalle quote (D131) */
+  protected readonly statsSuggestions = computed(() => (this.matchPicks.value()?.suggestions ?? []).filter((s) => /^(COR|CRD)/.test(s.market)));
+  protected priceList(leg: StudyLeg): [string, number][] {
+    return Object.entries(leg.prices);
+  }
+  protected capital(text: string): string {
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
   protected readonly analysis = httpResource<MatchAnalysis | null>(() => `/api/fan/match/${this.id()}/analysis`);
   /** Multigol e combo: quote giuste ricavate dal mercato (D136, stima) */
   protected readonly derived = httpResource<{ group: string; label: string; probability: number; fair_odds: number }[]>(() => `/api/picks/match/${this.id()}/derived`);

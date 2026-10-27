@@ -103,27 +103,42 @@
     </section>
   }
 
-  @if (matchPicks.value()?.suggestions?.length || analysis.value()) {
+  @if (studyLegs().length || statsSuggestions().length || analysis.value()) {
     <section class="panel box analysis" aria-labelledby="an-title">
       <div class="box-head">
         <h2 id="an-title" class="title box-title">Analisi di Archie</h2>
-        <span class="muted small">"sicuro" = più probabile, non per forza conveniente: lo dice l'etichetta della quota</span>
+        <span class="muted small">percentuali dello studio di Archie (modello dei gol e fatti del campo), non delle quote</span>
       </div>
-      @if (matchPicks.value()?.suggestions; as sugg) {
+      @if (studyLegs().length) {
         <div class="sugg-cards">
-          @for (s of sugg; track s.kind) {
-            <div class="sugg" [class.bold]="s.kind === 'spinto'">
-              <span class="title sugg-kind">{{ s.kind === 'sicuro' ? 'Il più sicuro' : 'Il più spinto' }}</span>
-              <span class="sugg-pick">{{ pickName(s.market, s.selection) }}</span>
-              <span class="led sugg-pct">{{ fmt.pct(s.probability) }}</span>
+          @for (s of studyLegs(); track s.level) {
+            <div class="sugg" [class.bold]="s.level !== 'cauto'">
+              <span class="title sugg-kind">{{ s.level }}</span>
+              <span class="sugg-pick">{{ capital(s.leg.event) }}</span>
+              <span class="led sugg-pct">{{ fmt.pct(s.leg.p_archie) }}</span>
               <span class="sugg-offer">
-                quota {{ fmt.odds(s.offer.price) }} · {{ s.offer.bookmaker }}
-                <span [class]="'v ' + verdictClass(s.offer.verdict)">{{ s.offer.verdict }}</span>
+                @for (o of priceList(s.leg); track o[0]) {
+                  <span>quota {{ fmt.odds(o[1]) }} · {{ o[0] }}</span>
+                } @empty {
+                  <span class="muted small">quota da cercare sull'app · giusta secondo lo studio {{ fmt.odds(1 / s.leg.p_archie) }}</span>
+                }
               </span>
-              <span class="muted small">probabilità da {{ s.source }}</span>
+              <details class="why">
+                <summary>Perché</summary>
+                @for (r of s.leg.reasons; track $index) { <p>{{ r }}</p> }
+              </details>
             </div>
           }
         </div>
+      }
+      @if (statsSuggestions().length) {
+        <p class="stats-sugg small">
+          <span class="muted">Angoli e cartellini, dalle quote:</span>
+          @for (s of statsSuggestions(); track s.kind) {
+            <span>{{ pickName(s.market, s.selection) }} {{ fmt.pct(s.probability) }} · quota {{ fmt.odds(s.offer.price) }} {{ s.offer.bookmaker }}
+              <span [class]="'v ' + verdictClass(s.offer.verdict)">{{ s.offer.verdict }}</span></span>
+          }
+        </p>
       }
       @if (analysis.value(); as a) {
         <div class="an-text">
