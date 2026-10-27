@@ -7,9 +7,8 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.forecast.data import MODEL_COUNTRY, load_games
+from app.forecast.data import load_games
 from app.forecast.dixon_coles import DixonColesFit
-from app.forecast.elo import EloTimeline, run_elo
 from app.forecast.model import ModelConfig, fit_at
 from app.forecast.radar_service import load_book_odds
 from app.forecast.study import (
@@ -28,6 +27,8 @@ from app.ingest.teams import CUP_COUNTRY
 from app.models import Competition, Match, MatchInsight, MatchStatus, MatchStudy
 
 STUDY_DAYS = 8  # partite dei prossimi giorni
+XG_WEIGHT = 0.75  # gol attesi = 25% modello sui gol + 75% modello sugli xG (prova D140, dove gli xG ci sono)
+XG_SEASONS = 3  # stagioni di schede (xG) per il modello sugli xG
 WEATHER_DAYS = 3  # meteo previsto solo per le partite dei prossimi 3 giorni
 SAMPLE = 10  # ultime partite in casa (o in trasferta) guardate per i fatti
 PLAYABLE = ("sisal", "eurobet")
@@ -39,23 +40,35 @@ def season_before(season: str) -> str:
     return f"{start}/{str(start + 1)[-2:]}"
 
 
-def country_fit(db: Session, country: str, now: datetime, upcoming: Sequence[Match]) -> DixonColesFit | None:
-    """Gol attesi del paese. In Italia il modello di Archie con l'Elo (D50-D51), altrove Dixon-Coles con pesi nel tempo."""
-    games = load_games(db, country)
+def league_fit(games: Sequence, now: datetime) -> DixonColesFit | None:
+    """Gol attesi di un campionato: Dixon-Coles con pesi nel tempo, un modello per campionato (prova D140)."""
     if not games:
         return None
-    kickoffs = [g.kickoff_at for g in games]
-    if country != MODEL_COUNTRY:
-        return fit_at(games, kickoffs, now, ModelConfig(elo_prior=False))
-    config = ModelConfig()
-    timeline = EloTimeline(games, run_elo(games, config.elo))
-    tier_of = {t: m.competition.tier for m in upcoming for t in (m.home_team_id, m.away_team_id)}
+    return fit_at(games, [g.kickoff_at for g in games], now, ModelConfig(elo_prior=False))
 
-    def rating(team: int) -> float:
-        r = timeline.rating_at(team, now)
-        return r if r is not None else config.elo.tier_base[tier_of[team]] - config.elo.newcomer_penalty
 
-    return fit_at(games, kickoffs, now, config, extra_teams=tier_of, rating_at=rating)
+def xg_fit(adapter, af_league: int, season_start: int, now: datetime) -> DixonColesFit | None:
+    """Modello sugli xG del campionato dalle schede di API-Football (D140), con gli id delle squadre di API-Football."""
+    from app.forecast.dixon_coles import fit_dixon_coles, time_decay_weights
+    from app.ingest.af_detail import FOREVER, load_details
+
+    rows = []
+    for season in range(season_start - XG_SEASONS + 1, season_start + 1):
+        try:
+            fixtures = adapter.fixtures(af_league, season, FOREVER)
+        except Exception:  # calendario non in cache e fonte non raggiungibile: niente xG
+            continue
+        for d in load_details(adapter.cache, [f.id for f in fixtures]):
+            stats = d.get("stats") or {}
+            xh, xa = (stats.get("home") or {}).get("xg"), (stats.get("away") or {}).get("xg")
+            when = datetime.fromisoformat(d["date"])
+            if xh is not None and xa is not None and when < now:
+                rows.append((d["home"], d["away"], xh, xa, when))
+    if len(rows) < 50:
+        return None
+    fit = fit_dixon_coles([r[0] for r in rows], [r[1] for r in rows], [r[2] for r in rows], [r[3] for r in rows],
+                          weights=time_decay_weights([r[4] for r in rows], now, ModelConfig().xi_per_day), ridge=ModelConfig().ridge)  # fmt: skip
+    return fit
 
 
 def _finished(db: Session, competition_id: int, seasons: Iterable[str], before: datetime) -> list[Match]:
@@ -130,11 +143,15 @@ def table(games: Sequence[Match], season: str) -> dict[int, TableSpot]:
     return {t: TableSpot(i + 1, n, pts[t], played[t], top, safe) for i, t in enumerate(order)}
 
 
-def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict, adjustment: Adjustment = Adjustment()) -> dict | None:
-    """Lo studio completo di una partita, pronto da salvare (None se mancano i dati)."""
+def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict, adjustment: Adjustment = Adjustment(),
+                xg: tuple[float, float] | None = None) -> dict | None:
+    """Lo studio completo di una partita, pronto da salvare (None se mancano i dati).
+    `xg`: gol attesi dal modello sugli xG, se il campionato li ha (si mescolano con quelli sui gol, D140)."""
     if not (fit.has_team(m.home_team_id) and fit.has_team(m.away_team_id)):
         return None
     lam, mu = fit.expected_goals(m.home_team_id, m.away_team_id)
+    if xg is not None:
+        lam, mu = (1 - XG_WEIGHT) * lam + XG_WEIGHT * xg[0], (1 - XG_WEIGHT) * mu + XG_WEIGHT * xg[1]
     lam, mu = lam * adjustment.home, mu * adjustment.away
     share_home, share_away = shares(games, m.home_team_id, m.away_team_id)
     probs = model_probabilities(lam, mu, fit.rho, share_home, share_away)
@@ -155,10 +172,25 @@ def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict
             "reasons": [*p.reasons, *context], "prices": prices,
         })  # fmt: skip
     return {
-        "lam": round(lam, 3), "mu": round(mu, 3), "rho": round(fit.rho, 4),
+        "lam": round(lam, 3), "mu": round(mu, 3), "rho": round(fit.rho, 4), "xg": xg is not None,
         "share_home": round(share_home, 3), "share_away": round(share_away, 3),
         "form_home": form_home, "form_away": form_away, "notes": list(adjustment.reasons), "picks": picks,
     }  # fmt: skip
+
+
+def _api_football(db: Session):
+    """Adattatore di API-Football (solo cache, se possibile), id API-Football di ogni squadra, id dei campionati."""
+    from app.adapters.api_football import LEAGUES
+    from app.config import get_settings
+    from app.models import TeamAlias
+
+    settings = get_settings()
+    if not settings.api_football_key:
+        return None, {}, {}
+    from app.jobs import api_football_adapter
+
+    af_of_team = {a.team_id: int(a.alias) for a in db.scalars(select(TeamAlias).where(TeamAlias.source == "api-football")) if a.alias.isdigit()}
+    return api_football_adapter(db, settings), af_of_team, {code: af for af, code in LEAGUES.items()}
 
 
 def weather_reader():
@@ -199,13 +231,24 @@ def refresh_studies(db: Session, now: datetime, log=print) -> int:
     for ins in db.scalars(select(MatchInsight).where(MatchInsight.match_id.in_([m.id for m in upcoming])).order_by(MatchInsight.created_at)):
         insights[ins.match_id] = ins  # resta l'ultimo giudizio sulle notizie
     weather = weather_reader()
+    adapter, af_of_team, af_league_of = _api_football(db)
     done = 0
     for country, matches in by_country.items():
-        fit = country_fit(db, country, now, matches)
-        if fit is None:
-            continue
+        country_games = load_games(db, country)
+        fits: dict[int, DixonColesFit | None] = {}
+        xg_fits: dict[int, DixonColesFit | None] = {}
         history: dict[tuple[int, str], list[Match]] = {}
         for m in matches:
+            if m.competition_id not in fits:  # un modello per campionato (D140)
+                fits[m.competition_id] = league_fit([g for g in country_games if g.competition_id == m.competition_id], now)
+                af_league = af_league_of.get(m.competition.code)
+                xg_fits[m.competition_id] = xg_fit(adapter, af_league, int(m.season[:4]), now) if adapter is not None and af_league else None
+            fit = fits[m.competition_id]
+            if fit is None:
+                continue
+            fx = xg_fits[m.competition_id]
+            ah, aa = af_of_team.get(m.home_team_id), af_of_team.get(m.away_team_id)
+            xg = fx.expected_goals(ah, aa) if fx is not None and ah is not None and aa is not None and fx.has_team(ah) and fx.has_team(aa) else None
             key = (m.competition_id, m.season)
             if key not in history:
                 history[key] = _finished(db, m.competition_id, (m.season, season_before(m.season)), now)
@@ -216,7 +259,7 @@ def refresh_studies(db: Session, now: datetime, log=print) -> int:
                 adj = news_adjustment(ins.side, ins.strength, ins.reason, home, away).then(adj)
             if m.kickoff_at.replace(tzinfo=m.kickoff_at.tzinfo or UTC) <= now + timedelta(days=WEATHER_DAYS):
                 adj = adj.then(weather_adjustment(*weather(m)))
-            data = study_match(m, fit, history[key], books.get(m.id, {}), adj)
+            data = study_match(m, fit, history[key], books.get(m.id, {}), adj, xg)
             if data is None:
                 continue
             row = db.get(MatchStudy, m.id) or MatchStudy(match_id=m.id)

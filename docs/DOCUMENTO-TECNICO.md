@@ -100,11 +100,12 @@ risultato due ore dopo il fischio si ricontrollano da sole (D133).
 I pronostici della multipla non partono dalle quote ma da uno studio della partita, calcolato dal codice
 (`forecast/study.py`, `forecast/study_service.py`):
 
-1. **Gol attesi** con Dixon-Coles e pesi nel tempo (in Italia con l'Elo come punto di partenza).
+1. **Gol attesi** con Dixon-Coles e pesi nel tempo, **un modello per campionato**; dove ci sono gli xG (campionati
+   principali) i gol attesi sono 25% modello sui gol + 75% modello sugli xG (prove D140-D142).
 2. **Primo tempo**: la parte dei gol che ogni squadra segna e subisce nel primo tempo, avvicinata alla media del
    campionato quando le partite sono poche; da qui Poisson sui gol del primo tempo.
-3. **Probabilità di Archie**: media bayesiana tra il modello (vale come 24 partite) e quello che è successo nelle ultime
-   10 partite in casa della squadra di casa e in trasferta dell'ospite.
+3. **Probabilità di Archie**: media bayesiana tra il modello (vale come 192 partite, scelto dalla prova) e quello che è
+   successo nelle ultime 10 partite in casa e in trasferta: i fatti recenti spiegano e filtrano, quasi non spostano.
 4. **Coerenza**: un pronostico entra solo se modello e campo sono d'accordo.
 5. **Correzioni prudenti**: giudizio delle notizie (±3/6% dei gol attesi), motivazione dalla classifica (+3%), meteo
    previsto (−4%); dichiarate nella spiegazione e misurate dalla pagella.

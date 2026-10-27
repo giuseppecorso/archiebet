@@ -4,7 +4,7 @@
 2. Primo tempo: per ogni squadra la parte dei suoi gol fatti e subiti nel primo tempo, avvicinata alla media del
    campionato quando le partite sono poche.
 3. Probabilità di Archie = probabilità del modello aggiornata con quello che è successo davvero nelle ultime partite in
-   casa della squadra di casa e in trasferta dell'ospite (media bayesiana: il modello vale come 24 partite).
+   casa della squadra di casa e in trasferta dell'ospite (media bayesiana: il modello vale come 192 partite, D141).
    Un pronostico entra solo se modello e campo sono d'accordo.
 4. Pronostici per livello (cauto, equilibrato, rischioso), scartando quelli che il campo smentisce, con la spiegazione
    scritta dai numeri.
@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 from app.forecast.dixon_coles import score_matrix
 
-PRIOR_GAMES = 24  # il modello (tre stagioni di risultati) pesa come 24 partite: 10+10 partite recenti lo spostano, non lo ribaltano
+PRIOR_GAMES = 192  # il modello pesa come 192 partite (prove D140-D141): le ultime 10+10 partite servono a spiegare e a filtrare, quasi non spostano la probabilità
 MODEL_TOLERANCE = 0.08  # anche il modello da solo deve stare (quasi) dentro il livello: modello e campo d'accordo
 SHARE_PRIOR_GOALS = 20  # quota del primo tempo: la media del campionato pesa come 20 gol
 MIN_SAMPLE = 4  # partite minime in casa (o in trasferta) per giudicare

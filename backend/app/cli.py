@@ -1381,6 +1381,7 @@ def main() -> int:
     commands.add_parser("learning-refresh", help="Archie rifà le prove della Fase 7 e salva i risultati (come il lavoro settimanale)")
     commands.add_parser("review-refresh", help="pagella settimanale di Archie e correzioni automatiche (D132)")
     commands.add_parser("study-refresh", help="Archie studia le partite dei prossimi giorni (D137)")
+    commands.add_parser("study-backtest", help="prova D140: lo studio e le sue varianti sul passato (walk-forward)")
     det = commands.add_parser("af-details", help="scheda completa delle partite finite da API-Football: xG, giocatori, eventi (D140)")
     det.add_argument("--seasons", default="2022,2023,2024,2025,2026")
     det.add_argument("--leagues", default="", help="id API-Football separati da virgola (vuoto = campionati principali e Serie C)")
@@ -1443,6 +1444,28 @@ def main() -> int:
         from app.forecast.learning_service import refresh_learning
 
         print(refresh_learning())
+        return 0
+    if args.command == "study-backtest":
+        import json as _json
+        from datetime import timedelta as _td
+
+        from app.forecast import study_backtest as bt
+
+        with SessionLocal() as db:
+            adapter = api_football_adapter(db, get_settings())
+        games, calendar = bt.load(adapter.cache, lambda league, season: adapter.fixtures(league, season, _td(days=36500)))
+        print(f"partite in cache: {len(games)}, con xG: {sum(1 for g in games if g.xh is not None)}, squadre nel calendario: {len(calendar)}")
+        prepared = bt.prepare(games, calendar, (*bt.TUNING, *bt.CONFIRMATION))
+        results = bt.run_variants(prepared)
+        best = bt.combined(prepared, results)
+        both = (bt.improvement(prepared, bt.Config(), best, bt.TUNING), bt.improvement(prepared, bt.Config(), best, bt.CONFIRMATION))
+        print(f"Tutte le varianti che passano insieme: {best} | taratura {both[0].mean:+.4f} ± {both[0].std_error:.4f} | conferma {both[1].mean:+.4f} ± {both[1].std_error:.4f}")
+        out = get_settings().data_cache_dir / "learning" / "study_backtest.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(_json.dumps({"variants": [{"name": r.name, "config": r.config.__dict__, "passed": r.passed,
+                                                  "tuning": [r.tuning.mean, r.tuning.std_error, r.tuning.n],
+                                                  "confirmation": [r.confirmation.mean, r.confirmation.std_error, r.confirmation.n]} for r in results],
+                                     "combined": best.__dict__}, ensure_ascii=False), encoding="utf-8")  # fmt: skip
         return 0
     if args.command == "af-details":
         from app.ingest.af_detail import download_details
