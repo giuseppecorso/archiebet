@@ -9,6 +9,8 @@ Ultimo aggiornamento: 2026-10-27
 - [x] D144-D145: il bookmaker non sbaglia dove lo studio è in disaccordo; il disaccordo diventa prudenza.
 - [x] D146-D147: 6 massime serie e 18 serie minori europee in più (3 stagioni di storico); coppe europee nello studio con un modello che collega i campionati (prova passata, t = 9 e 6,2); multiple a tema; risultato ai 90 minuti (i supplementari non contano).
 - [x] D148: account per al massimo 5 amici, dati separati, niente AI per loro (costo zero), accesso con la condivisione Tailscale. Telegram escluso (scelta di Giuse, 2026-10-27).
+- [x] D149-D155 (2026-10-28): analisi della partita dallo studio con il Perché in popup; Partite e Diretta unite (righe con marcatori, filtri Tutte · In diretta · Finite · Da giocare · Giocate, partita finita = solo tabellino); "Decide Archie" e quota obiettivo nella multipla; Occasioni a carte con lo studio accanto (D152 non passa: nessun filtro); **bacheca Daily** con 5 schedine al giorno, statistiche pubbliche e immagine per Instagram; bookmaker italiani come "Altri bookmakers"; Funnel attivo (amici senza Tailscale, login con blocco dopo 5 errori).
+- [ ] Ad app finita: pubblicazione automatica su Telegram e Instagram (guida in `docs/GUIDA-SOCIAL.md`), contenuti "nostalgia" per Instagram, funzioni a pagamento (da valutare con un legale), inviti per registrarsi da soli.
 - [ ] Da valutare: quote Sisal/Eurobet per i nuovi campionati (oggi lì la multipla non mostra il prezzo); campionati di Cipro, Israele, Kazakistan… per studiare tutte le partite di Conference League.
 
 ## Lo studio di Archie (2026-10-27)
