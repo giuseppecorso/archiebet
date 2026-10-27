@@ -158,7 +158,7 @@ const BASE_LABEL: Record<string, string> = { '1X2': 'Esito finale', DC: 'Doppia 
 
 /** "OU2.5" → "Under / Over 2.5", "CORH4.5" → "Angoli Inter U/O 4.5" (con la partita) o "Angoli casa U/O 4.5" */
 export function marketLabel(market: Market, match?: Pick<MatchCard, 'home' | 'away'>): string {
-  if (market.startsWith('1T_')) return `${marketLabel(market.slice(3), match)} · 1° tempo`;
+  if (market.startsWith('1T_') || market.startsWith('2T_')) return `${marketLabel(market.slice(3), match)} · ${market[0]}° tempo`;
   if (market.startsWith('MG')) return `Multigol ${market.slice(2)}`;
   if (market.startsWith('CB_')) {
     const [, res, goals] = market.split('_');
@@ -192,7 +192,7 @@ export function marketSelections(market: Market): string[] {
 export function pickLabel(market: Market, pick: string, match?: Pick<MatchCard, 'home' | 'away'>): string {
   const team = (side: 'home' | 'away') => (match ? ` · ${match[side].name}` : '');
   const ou = pick === 'over' ? 'Over' : 'Under';
-  if (market.startsWith('1T_')) return `${pickLabel(market.slice(3), pick, match)} 1° tempo`;
+  if (market.startsWith('1T_') || market.startsWith('2T_')) return `${pickLabel(market.slice(3), pick, match)} ${market[0]}° tempo`;
   if (market.startsWith('MG') || market.startsWith('CB_')) return marketLabel(market);
   if (market.startsWith('OU')) return `${ou} ${market.slice(2)}`;
   const tg = parseTeamGoals(market);

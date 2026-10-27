@@ -132,7 +132,7 @@ def leg_probability(leg: LegState) -> float | None:
     """Probabilità che la gamba vinca adesso; None se mancano i gol attesi (niente quote prima della partita)."""
     if leg.settled is not None:
         return 1.0 if leg.settled else 0.0
-    if leg.rates is None or is_secondary(leg.market) or leg.market.startswith(("1T_", "MG", "CB_")):
+    if leg.rates is None or is_secondary(leg.market) or leg.market.startswith(("1T_", "2T_", "MG", "CB_")):
         return None  # angoli, cartellini e mercati dello studio: niente modello dal vivo
     share = remaining_share(leg.status, leg.minute)
     lh, la = remaining_rates(leg.rates, share, leg.home_goals, leg.away_goals)

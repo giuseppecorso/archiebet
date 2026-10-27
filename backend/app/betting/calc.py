@@ -31,11 +31,11 @@ MARKETS: dict[str, tuple[str, ...]] = {
 
 def is_study_only(market: str) -> bool:
     """Mercati che esistono solo nello studio di Archie: primo tempo, multigol, combo (D137)."""
-    return market.startswith(("1T_", "MG", "CB_")) and market in STUDY_MARKETS
+    return market.startswith(("1T_", "2T_", "MG", "CB_")) and market in STUDY_MARKETS
 
 
 def needs_half_time(market: str) -> bool:
-    return market.startswith("1T_")
+    return market.startswith(("1T_", "2T_"))
 
 
 def ou_line(market: str) -> float | None:
@@ -68,9 +68,9 @@ def market_name(market: str) -> str:
         return f"Under/Over {line:g}"
     if (team := parse_team_goals(market)) is not None:
         return f"gol {team[0]} Under/Over {team[1]:g}"
-    if market.startswith("1T_"):
+    if market.startswith(("1T_", "2T_")):
         inner = market_name(market[3:])
-        return f"{inner} primo tempo"
+        return f"{inner} {'primo' if market.startswith('1T_') else 'secondo'} tempo"
     if market.startswith("MG"):
         return f"multigol {market[2:]}"
     if market.startswith("CB_"):

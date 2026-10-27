@@ -40,6 +40,7 @@ Outcome = Callable[[int, int, int, int], bool]  # gol casa, gol ospite, gol casa
 class MarketDef:
     selections: dict[str, Outcome]
     first_half: bool = False
+    second_half: bool = False  # i gol del secondo tempo sono quelli finali meno quelli del primo (D143)
 
 
 def _over(line: float, get: Callable[[int, int, int, int], int]) -> dict[str, Outcome]:
@@ -64,13 +65,16 @@ MARKETS: dict[str, MarketDef] = {
     **{f"1T_OU{n}.5": MarketDef(_over(n + 0.5, lambda h, a, x, y: x + y), first_half=True) for n in (0, 1)},
     "1T_TGH0.5": MarketDef(_over(0.5, lambda h, a, x, y: x), first_half=True),
     "1T_TGA0.5": MarketDef(_over(0.5, lambda h, a, x, y: y), first_half=True),
+    **{f"2T_OU{n}.5": MarketDef(_over(n + 0.5, lambda h, a, x, y: (h - x) + (a - y)), second_half=True) for n in (0, 1)},
+    "2T_TGH0.5": MarketDef(_over(0.5, lambda h, a, x, y: h - x), second_half=True),
+    "2T_TGA0.5": MarketDef(_over(0.5, lambda h, a, x, y: a - y), second_half=True),
 }
 
 
 def event_text(market: str, selection: str, home: str, away: str) -> str:
     """Il pronostico detto a parole: "il Brescia segna nel primo tempo", "almeno 3 gol", ..."""
     team = home if "TGH" in market else away
-    first = " nel primo tempo" if market.startswith("1T_") else ""
+    first = " nel primo tempo" if market.startswith("1T_") else " nel secondo tempo" if market.startswith("2T_") else ""
     if market == "1X2":
         return {"1": f"vince {home}", "X": "pareggio", "2": f"vince {away}"}[selection]
     if market == "DC":
@@ -110,12 +114,17 @@ def model_probabilities(lam: float, mu: float, rho: float, share_home: float, sh
     lam1, mu1 = lam * share_home, mu * share_away
     ph = [math.exp(-lam1) * lam1**i / math.factorial(i) for i in range(MAX_GOALS + 1)]
     pa = [math.exp(-mu1) * mu1**j / math.factorial(j) for j in range(MAX_GOALS + 1)]
+    lam2, mu2 = lam - lam1, mu - mu1  # gol attesi nel secondo tempo
+    qh = [math.exp(-lam2) * lam2**i / math.factorial(i) for i in range(MAX_GOALS + 1)]
+    qa = [math.exp(-mu2) * mu2**j / math.factorial(j) for j in range(MAX_GOALS + 1)]
     out: dict[str, dict[str, float]] = {}
     for name, m in MARKETS.items():
         probs = {}
         for sel, wins in m.selections.items():
             if m.first_half:
                 probs[sel] = sum(ph[i] * pa[j] for i in range(MAX_GOALS + 1) for j in range(MAX_GOALS + 1) if wins(0, 0, i, j))
+            elif m.second_half:  # gol del secondo tempo come "finale" con primo tempo a zero
+                probs[sel] = sum(qh[i] * qa[j] for i in range(MAX_GOALS + 1) for j in range(MAX_GOALS + 1) if wins(i, j, 0, 0))
             else:
                 probs[sel] = float(sum(full[i, j] for i in range(MAX_GOALS + 1) for j in range(MAX_GOALS + 1) if wins(i, j, 0, 0)))
         out[name] = probs
@@ -229,12 +238,15 @@ def strength(pick: StudyPick, price: float | None = None) -> float:
 
 
 def pick_strength(pick: dict) -> float:
-    """Come `strength`, sui pronostici salvati (dizionari): conta la quota migliore tra i bookmaker dell'utente."""
+    """Ordine dei pronostici salvati: probabilità di Archie, quota migliore tra i bookmaker dell'utente (se paga più dello
+    studio), accordo modello-campo; un poco più su con un tratto per tempo coerente, un poco più giù con i segnali di
+    prudenza sulla squadra favorita (D143)."""
     hh, hn, ah, an = pick["evidence"]
     price = max(pick["prices"].values(), default=None)
     edge = max(0.0, pick["p_archie"] * price - 1) if price else 0.0
     frequency = (hh + ah) / (hn + an) if hn + an else 0.0
-    return pick["p_archie"] + 0.5 * edge + 0.1 * (1 - abs(frequency - pick["p_model"])) + 0.002 * (hn + an)
+    return (pick["p_archie"] + 0.5 * edge + 0.1 * (1 - abs(frequency - pick["p_model"])) + 0.002 * (hn + an)
+            + TRAIT_BONUS * len(pick.get("traits", [])) - CAUTION_PENALTY * len(pick.get("caution", [])))
 
 
 def choose_multiple(studies: Sequence[tuple[int, list[dict]]], level: str, n: int, exclude: set[int] = frozenset()) -> list[tuple[int, dict]]:
@@ -344,3 +356,43 @@ def scorecard(rows: Sequence[tuple[str, str, float, bool]]) -> dict:
     weeks = sorted({r[0] for r in rows})
     by_week = [{"week": w, **{level: tally([r for r in rows if r[0] == w and r[1] == level]) for level in LEVELS}} for w in weeks]
     return {"levels": levels, "weeks": by_week}
+
+
+# --- Tratti per tempo e segnali di prudenza (D143) ---
+
+TRAIT_MIN_GOALS = 15  # gol minimi per giudicare un tratto
+TRAIT_Z = 2.0  # oltre 2 deviazioni standard dalla media del campionato: difficile che sia il caso
+TRAIT_BONUS = 0.02  # nell'ordine: un pronostico sui tempi coerente con un tratto vero sale un poco
+CAUTION_PENALTY = 0.03  # nell'ordine: ogni segnale di prudenza sulla squadra favorita fa scendere un poco
+
+
+def half_trait(goals_1h: int, goals: int, league_share: float) -> tuple[str, float] | None:
+    """("primo" o "secondo", quota del primo tempo) se la squadra si stacca dalla media oltre il caso (test binomiale)."""
+    if goals < TRAIT_MIN_GOALS or not 0 < league_share < 1:
+        return None
+    z = (goals_1h - goals * league_share) / math.sqrt(goals * league_share * (1 - league_share))
+    if abs(z) < TRAIT_Z:
+        return None
+    return ("primo" if z > 0 else "secondo"), goals_1h / goals
+
+
+def trait_text(team: str, scored: bool, half: str, share: float, league_share: float) -> str:
+    verb = "segna" if scored else "subisce"
+    mine = share if half == "primo" else 1 - share
+    league = league_share if half == "primo" else 1 - league_share
+    return f"{team} {verb} soprattutto nel {half} tempo: {mine:.0%} dei gol contro il {league:.0%} del campionato (non è un caso: test statistico)."
+
+
+def favored_side(market: str, selection: str) -> str | None:
+    """Quale squadra deve "fare bene" perché il pronostico esca: "home", "away" o nessuna."""
+    home = {("1X2", "1"), ("DC", "1X"), ("CB_1X_O1.5", "yes"), ("CB_1_O1.5", "yes"), ("CB_1X_U3.5", "yes")}
+    away = {("1X2", "2"), ("DC", "X2"), ("CB_X2_O1.5", "yes"), ("CB_2_O1.5", "yes"), ("CB_X2_U3.5", "yes")}
+    if (market, selection) in home or (market.endswith(("TGH0.5", "TGH1.5")) and selection == "over"):
+        return "home"
+    if (market, selection) in away or (market.endswith(("TGA0.5", "TGA1.5")) and selection == "over"):
+        return "away"
+    return None
+
+
+def half_of(market: str) -> str | None:
+    return "primo" if market.startswith("1T_") else "secondo" if market.startswith("2T_") else None

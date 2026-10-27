@@ -16,8 +16,12 @@ from app.forecast.study import (
     Adjustment,
     Played,
     TableSpot,
+    favored_side,
     first_half_share,
+    half_of,
+    half_trait,
     model_probabilities,
+    trait_text,
     motivation_adjustment,
     news_adjustment,
     study_picks,
@@ -143,8 +147,53 @@ def table(games: Sequence[Match], season: str) -> dict[int, TableSpot]:
     return {t: TableSpot(i + 1, n, pts[t], played[t], top, safe) for i, t in enumerate(order)}
 
 
+def traits(games: Sequence[Match], team_id: int, name: str) -> list[tuple[str, str, bool]]:
+    """Tratti per tempo della squadra che non sono un caso (D143): (tempo, testo, riguarda i gol fatti)."""
+    goals = sum(m.home_goals + m.away_goals for m in games)
+    league = sum(m.ht_home_goals + m.ht_away_goals for m in games) / goals if goals else 0.45
+    s = s1 = c = c1 = 0
+    for m in games:
+        if m.home_team_id == team_id:
+            s, s1, c, c1 = s + m.home_goals, s1 + m.ht_home_goals, c + m.away_goals, c1 + m.ht_away_goals
+        elif m.away_team_id == team_id:
+            s, s1, c, c1 = s + m.away_goals, s1 + m.ht_away_goals, c + m.home_goals, c1 + m.ht_home_goals
+    out = []
+    for scored, total, first in ((True, s, s1), (False, c, c1)):
+        found = half_trait(first, total, league)
+        if found:
+            out.append((found[0], trait_text(name, scored, found[0], found[1], league), scored))
+    return out
+
+
+def caution_for(db: Session, m: Match, team_id: int, name: str, insight: MatchInsight | None, side: str) -> list[str]:
+    """Segnali di prudenza su una squadra (D143): partita ravvicinata, assenze annunciate, notizie contro."""
+    from app.ingest.news import FACTS_WINDOW
+    from app.models import TeamFact
+
+    out = []
+    kickoff = m.kickoff_at if m.kickoff_at.tzinfo else m.kickoff_at.replace(tzinfo=UTC)
+    last = db.scalar(select(Match).where(or_(Match.home_team_id == team_id, Match.away_team_id == team_id), Match.status == MatchStatus.FINISHED,
+                                         Match.kickoff_at < kickoff).order_by(Match.kickoff_at.desc()).limit(1))  # fmt: skip
+    if last is not None:
+        last_at = last.kickoff_at if last.kickoff_at.tzinfo else last.kickoff_at.replace(tzinfo=UTC)
+        days = (kickoff - last_at).total_seconds() / 86400
+        if days <= 3.5:
+            europe = last.competition.country == CUP_COUNTRY
+            away = last.away_team_id == team_id
+            where = f"in trasferta in {last.competition.name}" if europe and away else f"in {last.competition.name}"
+            out.append(f"⚠ Prudenza: {name} ha giocato {where} {days:.0f} giorni prima.")
+    since = kickoff - min(FACTS_WINDOW, timedelta(days=7))
+    absent = {f.player for f in db.scalars(select(TeamFact).where(TeamFact.team_id == team_id, TeamFact.kind.in_(("assente", "squalifica")),
+                                                                     TeamFact.published_at >= since, TeamFact.published_at <= kickoff)) if f.player}  # fmt: skip
+    if len(absent) >= 2:
+        out.append(f"⚠ Prudenza: {name} ha assenze annunciate ({', '.join(sorted(absent)[:4])}).")
+    if insight is not None and insight.strength == "netta" and insight.side in ("home", "away") and insight.side != side:
+        out.append(f"⚠ Prudenza: le notizie favoriscono nettamente l'avversaria di {name}.")
+    return out
+
+
 def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict, adjustment: Adjustment = Adjustment(),
-                xg: tuple[float, float] | None = None) -> dict | None:
+                xg: tuple[float, float] | None = None, caution: dict[str, list[str]] | None = None) -> dict | None:
     """Lo studio completo di una partita, pronto da salvare (None se mancano i dati).
     `xg`: gol attesi dal modello sugli xG, se il campionato li ha (si mescolano con quelli sui gol, D140)."""
     if not (fit.has_team(m.home_team_id) and fit.has_team(m.away_team_id)):
@@ -162,14 +211,27 @@ def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict
     context = [f"Forma nelle ultime 5 di campionato: {home} {form_home or '—'}, {away} {form_away or '—'}.", *adjustment.reasons]
     if (adjustment.home, adjustment.away) != (1.0, 1.0):
         context.append("Notizie, classifica e meteo correggono di poco i gol attesi: correzioni prudenti, non ancora verificate sul passato.")
+    caution = caution or {}
+    team_traits = {"home": traits(games, m.home_team_id, home), "away": traits(games, m.away_team_id, away)}
     picks = []
     for p in study_picks(probs, home_games, away_games, home, away):
         prices = {bm: price for bm in PLAYABLE if (price := book.get(bm, {}).get(p.market, {}).get(p.selection))}
+        half = half_of(p.market)
+        supporting = []
+        if half and p.selection == "over":  # un tratto vero del tempo giusto sostiene un "segna"/"almeno un gol" in quel tempo
+            for side, items in team_traits.items():
+                for trait_half, text, scored in items:
+                    concerns = ("TGH" in p.market and (side, scored) in (("home", True), ("away", False))) or \
+                               ("TGA" in p.market and (side, scored) in (("away", True), ("home", False))) or "OU" in p.market
+                    if trait_half == half and concerns:
+                        supporting.append(text)
+        warned = caution.get(favored_side(p.market, p.selection) or "", [])
         picks.append({
             "market": p.market, "selection": p.selection, "level": p.level, "event": p.event,
             "p_model": round(p.p_model, 4), "p_archie": round(p.p_archie, 4),
             "evidence": [p.evidence.home_hits, p.evidence.home_n, p.evidence.away_hits, p.evidence.away_n],
-            "reasons": [*p.reasons, *context], "prices": prices,
+            "reasons": [*p.reasons, *supporting, *warned, *context], "prices": prices,
+            "traits": supporting, "caution": warned,
         })  # fmt: skip
     return {
         "lam": round(lam, 3), "mu": round(mu, 3), "rho": round(fit.rho, 4), "xg": xg is not None,
@@ -259,7 +321,9 @@ def refresh_studies(db: Session, now: datetime, log=print) -> int:
                 adj = news_adjustment(ins.side, ins.strength, ins.reason, home, away).then(adj)
             if m.kickoff_at.replace(tzinfo=m.kickoff_at.tzinfo or UTC) <= now + timedelta(days=WEATHER_DAYS):
                 adj = adj.then(weather_adjustment(*weather(m)))
-            data = study_match(m, fit, history[key], books.get(m.id, {}), adj, xg)
+            insight = insights.get(m.id)
+            caution = {"home": caution_for(db, m, m.home_team_id, home, insight, "home"), "away": caution_for(db, m, m.away_team_id, away, insight, "away")}
+            data = study_match(m, fit, history[key], books.get(m.id, {}), adj, xg, caution)
             if data is None:
                 continue
             row = db.get(MatchStudy, m.id) or MatchStudy(match_id=m.id)

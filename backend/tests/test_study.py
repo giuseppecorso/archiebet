@@ -125,3 +125,34 @@ def test_scorecard_compares_promised_and_won():
     assert card["levels"]["cauto"] == {"picks": 2, "won": 1, "expected": 1.6, "hit_rate": 0.5, "promised": 0.8}
     assert card["levels"]["equilibrato"]["picks"] == 0
     assert [w["week"] for w in card["weeks"]] == ["2026-10-19", "2026-10-26"]
+
+
+# --- Secondo tempo, tratti per tempo, segnali di prudenza (D143) ---
+
+
+def test_second_half_markets():
+    probs = st.model_probabilities(1.5, 1.0, -0.05, 0.45, 0.42)
+    assert probs["2T_TGH0.5"]["over"] == pytest.approx(1 - math.exp(-1.5 * 0.55))
+    assert probs["2T_OU0.5"]["under"] == pytest.approx(math.exp(-(1.5 * 0.55 + 1.0 * 0.58)))
+    assert st.event_text("2T_TGA0.5", "over", "Brescia", "Cittadella") == "Cittadella segna nel secondo tempo"
+    assert selection_outcome("2T_TGH0.5", "over", 2, 0, (2, 0)) == LOST  # i due gol erano nel primo tempo
+    assert selection_outcome("2T_OU1.5", "over", 3, 1, (1, 1)) == WON
+
+
+def test_half_trait_only_when_not_by_chance():
+    assert st.half_trait(14, 20, 0.44) == ("primo", 0.7)  # 70% contro 44%: oltre 2 deviazioni standard
+    assert st.half_trait(10, 20, 0.44) is None  # 50%: può essere il caso
+    assert st.half_trait(4, 20, 0.44)[0] == "secondo"
+    assert st.half_trait(9, 10, 0.44) is None  # troppo pochi gol per dirlo
+    assert "70% dei gol contro il 44%" in st.trait_text("Frosinone", True, "primo", 0.7, 0.44)
+
+
+def test_favored_side_and_caution_ordering():
+    assert st.favored_side("1X2", "1") == "home" and st.favored_side("DC", "X2") == "away"
+    assert st.favored_side("1T_TGA0.5", "over") == "away" and st.favored_side("OU2.5", "over") is None
+    base = {"p_archie": 0.70, "p_model": 0.70, "evidence": [7, 10, 7, 10], "prices": {}}
+    tired = {**base, "caution": ["⚠ Prudenza: ha giocato 3 giorni prima."]}
+    supported = {**base, "traits": ["segna soprattutto nel primo tempo"]}
+    assert st.pick_strength(tired) < st.pick_strength(base) < st.pick_strength(supported)
+    # a parità, tra due partite si sceglie quella senza segnali di prudenza
+    assert st.choose_multiple([(1, [{**tired, "level": "equilibrato"}]), (2, [{**base, "level": "equilibrato"}])], "equilibrato", 1)[0][0] == 2
