@@ -214,37 +214,86 @@ body {
   background-attachment: fixed;
 }
 
-/* Striscia con i colori della bandiera accanto al nome del campionato */
+/* Bandierina del paese accanto al nome del campionato: rettangolo 3:2 disegnato con i gradienti (niente immagini) */
 .flag {
   display: inline-block;
   flex: none;
-  width: 4px;
-  height: 20px;
+  width: 18px;
+  height: 12px;
   border-radius: 2px;
   background: var(--line-muted);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
 }
-.flag[data-country='Italia'] { background: linear-gradient(#009246 0 33%, #f4f5f0 33% 66%, #ce2b37 66%); }
-.flag[data-country='Inghilterra'] { background: linear-gradient(#f4f5f0 0 35%, #cf142b 35% 65%, #f4f5f0 65%); }
+/* Tre bande verticali */
+.flag[data-country='Italia'] { background: linear-gradient(90deg, #009246 0 33.3%, #f4f5f0 33.3% 66.6%, #ce2b37 66.6%); }
+.flag[data-country='Francia'] { background: linear-gradient(90deg, #0055a4 0 33.3%, #f4f5f0 33.3% 66.6%, #ef4135 66.6%); }
+.flag[data-country='Romania'] { background: linear-gradient(90deg, #002b7f 0 33.3%, #fcd116 33.3% 66.6%, #ce1126 66.6%); }
+.flag[data-country='Belgio'] { background: linear-gradient(90deg, #000 0 33.3%, #fdda24 33.3% 66.6%, #ef3340 66.6%); }
+/* Bande orizzontali */
+.flag[data-country='Germania'] { background: linear-gradient(#000 0 33.3%, #dd0000 33.3% 66.6%, #ffce00 66.6%); }
 .flag[data-country='Spagna'] { background: linear-gradient(#aa151b 0 25%, #f1bf00 25% 75%, #aa151b 75%); }
-.flag[data-country='Germania'] { background: linear-gradient(#000 0 33%, #dd0000 33% 66%, #ffce00 66%); }
-.flag[data-country='Francia'] { background: linear-gradient(#0055a4 0 33%, #f4f5f0 33% 66%, #ef4135 66%); }
-.flag[data-country='Norvegia'] { background: linear-gradient(#ba0c2f 0 40%, #f4f5f0 40% 45%, #00205b 45% 55%, #f4f5f0 55% 60%, #ba0c2f 60%); }
-.flag[data-country='Danimarca'] { background: linear-gradient(#c8102e 0 42%, #f4f5f0 42% 58%, #c8102e 58%); }
-.flag[data-country='Svezia'] { background: linear-gradient(#006aa7 0 40%, #fecc02 40% 60%, #006aa7 60%); }
-.flag[data-country='Finlandia'] { background: linear-gradient(#f4f5f0 0 38%, #003580 38% 62%, #f4f5f0 62%); }
-.flag[data-country='Islanda'] { background: linear-gradient(#02529c 0 38%, #dc1e35 38% 62%, #02529c 62%); }
+.flag[data-country='Olanda'] { background: linear-gradient(#ae1c28 0 33.3%, #f4f5f0 33.3% 66.6%, #21468b 66.6%); }
+.flag[data-country='Austria'] { background: linear-gradient(#ed2939 0 33.3%, #f4f5f0 33.3% 66.6%, #ed2939 66.6%); }
+.flag[data-country='Ungheria'] { background: linear-gradient(#ce2939 0 33.3%, #f4f5f0 33.3% 66.6%, #477050 66.6%); }
+.flag[data-country='Bulgaria'] { background: linear-gradient(#f4f5f0 0 33.3%, #00966e 33.3% 66.6%, #d62612 66.6%); }
 .flag[data-country='Polonia'] { background: linear-gradient(#f4f5f0 0 50%, #dc143c 50%); }
-.flag[data-country='Cechia'] { background: linear-gradient(#f4f5f0 0 33%, #11457e 33% 66%, #d7141a 66%); }
-.flag[data-country='Croazia'] { background: linear-gradient(#ff0000 0 33%, #f4f5f0 33% 66%, #171796 66%); }
-.flag[data-country='Serbia'] { background: linear-gradient(#c6363c 0 33%, #0c4076 33% 66%, #f4f5f0 66%); }
-.flag[data-country='Romania'] { background: linear-gradient(#002b7f 0 33%, #fcd116 33% 66%, #ce1126 66%); }
-.flag[data-country='Ungheria'] { background: linear-gradient(#ce2939 0 33%, #f4f5f0 33% 66%, #477050 66%); }
 .flag[data-country='Ucraina'] { background: linear-gradient(#0057b7 0 50%, #ffd700 50%); }
-.flag[data-country='Grecia'] { background: linear-gradient(#0d5eaf 0 25%, #f4f5f0 25% 50%, #0d5eaf 50% 75%, #f4f5f0 75%); }
-.flag[data-country='Bulgaria'] { background: linear-gradient(#f4f5f0 0 33%, #00966e 33% 66%, #d62612 66%); }
-.flag[data-country='Slovacchia'] { background: linear-gradient(#f4f5f0 0 33%, #0b4ea2 33% 66%, #ee1c25 66%); }
-.flag[data-country='Slovenia'] { background: linear-gradient(#f4f5f0 0 33%, #005da4 33% 66%, #ed1c24 66%); }
-.flag[data-country='Turchia'] { background: linear-gradient(#e30a17 0 40%, #f4f5f0 40% 60%, #e30a17 60%); }
+.flag[data-country='Croazia'] { background: linear-gradient(#ff0000 0 33.3%, #f4f5f0 33.3% 66.6%, #171796 66.6%); }
+.flag[data-country='Serbia'] { background: linear-gradient(#c6363c 0 33.3%, #0c4076 33.3% 66.6%, #f4f5f0 66.6%); }
+.flag[data-country='Slovacchia'] { background: linear-gradient(#f4f5f0 0 33.3%, #0b4ea2 33.3% 66.6%, #ee1c25 66.6%); }
+.flag[data-country='Slovenia'] { background: linear-gradient(#f4f5f0 0 33.3%, #005da4 33.3% 66.6%, #ed1c24 66.6%); }
+.flag[data-country='Grecia'] {
+  background:
+    linear-gradient(90deg, transparent 0 7.5%, #f4f5f0 7.5% 15%, transparent 15%) 0 0 / 40% 55.5% no-repeat,
+    linear-gradient(transparent 0 40%, #f4f5f0 40% 60%, transparent 60%) 0 0 / 40% 55.5% no-repeat,
+    linear-gradient(#0d5eaf, #0d5eaf) 0 0 / 40% 55.5% no-repeat,
+    repeating-linear-gradient(#0d5eaf 0 11.1%, #f4f5f0 11.1% 22.2%);
+}
+.flag[data-country='Cechia'] {
+  background:
+    linear-gradient(to bottom right, #11457e 50%, transparent 50.5%) 0 0 / 50% 50% no-repeat,
+    linear-gradient(to top right, #11457e 50%, transparent 50.5%) 0 100% / 50% 50% no-repeat,
+    linear-gradient(#f4f5f0 0 50%, #d7141a 50%);
+}
+/* Croci */
+.flag[data-country='Inghilterra'] {
+  background: linear-gradient(90deg, transparent 0 42%, #cf142b 42% 58%, transparent 58%), linear-gradient(transparent 0 38%, #cf142b 38% 62%, transparent 62%), #f4f5f0;
+}
+.flag[data-country='Scozia'] {
+  background:
+    linear-gradient(to top right, transparent 0 44%, #f4f5f0 44% 56%, transparent 56%),
+    linear-gradient(to bottom right, transparent 0 44%, #f4f5f0 44% 56%, transparent 56%),
+    #0065bd;
+}
+.flag[data-country='Svizzera'] {
+  background:
+    linear-gradient(90deg, transparent 0 43%, #fff 43% 57%, transparent 57%) center / 100% 64% no-repeat,
+    linear-gradient(transparent 0 40%, #fff 40% 60%, transparent 60%) center / 52% 100% no-repeat,
+    #da291c;
+}
+.flag[data-country='Danimarca'] { background: linear-gradient(90deg, transparent 0 30%, #f4f5f0 30% 42%, transparent 42%), linear-gradient(transparent 0 42%, #f4f5f0 42% 58%, transparent 58%), #c8102e; }
+.flag[data-country='Svezia'] { background: linear-gradient(90deg, transparent 0 30%, #fecc02 30% 42%, transparent 42%), linear-gradient(transparent 0 42%, #fecc02 42% 58%, transparent 58%), #006aa7; }
+.flag[data-country='Finlandia'] { background: linear-gradient(90deg, transparent 0 28%, #003580 28% 44%, transparent 44%), linear-gradient(transparent 0 38%, #003580 38% 62%, transparent 62%), #f4f5f0; }
+.flag[data-country='Norvegia'] {
+  background:
+    linear-gradient(90deg, transparent 0 31%, #00205b 31% 41%, transparent 41%), linear-gradient(transparent 0 44%, #00205b 44% 56%, transparent 56%),
+    linear-gradient(90deg, transparent 0 27%, #f4f5f0 27% 45%, transparent 45%), linear-gradient(transparent 0 36%, #f4f5f0 36% 64%, transparent 64%),
+    #ba0c2f;
+}
+.flag[data-country='Islanda'] {
+  background:
+    linear-gradient(90deg, transparent 0 31%, #dc1e35 31% 41%, transparent 41%), linear-gradient(transparent 0 44%, #dc1e35 44% 56%, transparent 56%),
+    linear-gradient(90deg, transparent 0 27%, #f4f5f0 27% 45%, transparent 45%), linear-gradient(transparent 0 36%, #f4f5f0 36% 64%, transparent 64%),
+    #02529c;
+}
+/* Simboli */
+.flag[data-country='Turchia'] {
+  background: radial-gradient(circle at 8.4px 6px, #e30a17 0 2.7px, transparent 3px), radial-gradient(circle at 7.4px 6px, #f4f5f0 0 3.4px, transparent 3.7px), #e30a17;
+}
+.flag[data-country='Portogallo'] {
+  background: radial-gradient(circle at 40% 50%, #ffe000 0 2.4px, transparent 2.8px), linear-gradient(90deg, #006600 0 40%, #ff0000 40%);
+}
+.flag[data-country='Europa'] { background: radial-gradient(circle, transparent 0 2.4px, #ffcc00 2.6px 3.4px, transparent 3.6px), #003399; }
 
 /* Titoli di pagina: sotto, la linea di metà campo con il cerchio di centrocampo */
 .page-title {
@@ -261,7 +310,6 @@ body {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='14' viewBox='0 0 160 14'%3E%3Cpath d='M0 7h66M94 7h66' stroke='%23ffb000' stroke-width='2' stroke-linecap='round' opacity='.7'/%3E%3Ccircle cx='80' cy='7' r='6' fill='none' stroke='%23ffb000' stroke-width='2' opacity='.7'/%3E%3Ccircle cx='80' cy='7' r='1.6' fill='%23ffb000'/%3E%3C/svg%3E") no-repeat;
   filter: drop-shadow(0 0 4px rgb(255 176 0 / 0.5));
 }
-.flag[data-country='Europa'] { background: radial-gradient(circle, #ffcc00 0 2px, #003399 2.5px); }
 
 /* Etichette delle quote e "in prova": usate in più pagine (D107) */
 .v {
