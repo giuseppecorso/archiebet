@@ -203,6 +203,7 @@ class MyPickOut(BaseModel):
     """Una giocata dell'utente su una partita, per vederla nella lista delle partite (D155)."""
 
     match_id: int
+    match: MatchCard  # la partita, per il filtro "Giocate" di Partite (anche di altri giorni)
     bet_id: int
     legs: int  # gambe della schedina (1 = singola)
     market: str
@@ -234,7 +235,9 @@ def my_picks_on_matches(user: CurrentUser, db: DbSession) -> list[MyPickOut]:
 
     bets = list(db.scalars(select(Bet).where(Bet.user_id == user.id, Bet.status == "open")))
     selections = [s for b in bets for s in b.selections]
-    states = selection_states(db, selections, datetime.now(UTC))
+    now = datetime.now(UTC)
+    states = selection_states(db, selections, now)
+    cards = {c.id: c for c in match_cards(db, list({s.match_id: s.match for s in selections}.values()), now)}
     out = []
     for b in bets:
         for sel in b.selections:
@@ -245,7 +248,7 @@ def my_picks_on_matches(user: CurrentUser, db: DbSession) -> list[MyPickOut]:
                 state = "waiting"
             else:
                 state = now_state(sel.market, sel.pick, st.status, st.home_goals, st.away_goals)
-            out.append(MyPickOut(match_id=sel.match_id, bet_id=b.id, legs=len(b.selections), market=sel.market, pick=sel.pick, state=state,
+            out.append(MyPickOut(match_id=sel.match_id, match=cards[sel.match_id], bet_id=b.id, legs=len(b.selections), market=sel.market, pick=sel.pick, state=state,
                                  probability=leg_probability(st) if st is not None and state not in ("waiting",) else None))  # fmt: skip
     return out
 

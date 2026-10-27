@@ -66,3 +66,4 @@
 .chip.on { color: var(--amber); background: var(--chip); border-color: var(--amber); }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--loss); }
 .count { padding: 0 5px; font-size: 10px; color: #fff; background: var(--loss); border-radius: 8px; }
+.count.bets { background: var(--amber); color: #14110c; }

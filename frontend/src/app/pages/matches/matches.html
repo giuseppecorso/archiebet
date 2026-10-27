@@ -6,7 +6,7 @@
 <div class="chips" role="group" aria-label="Stato">
   @for (f of filters; track f[0]) {
     <button type="button" class="chip" [class.on]="filter() === f[0]" [attr.aria-pressed]="filter() === f[0]" (click)="filter.set(f[0])">
-      @if (f[0] === 'live') { <span class="dot" aria-hidden="true"></span> }{{ f[1] }}@if (f[0] === 'live' && liveCount()) { <span class="count">{{ liveCount() }}</span> }
+      @if (f[0] === 'live') { <span class="dot" aria-hidden="true"></span> }{{ f[1] }}@if (f[0] === 'live' && liveCount()) { <span class="count">{{ liveCount() }}</span> }@if (f[0] === 'giocate' && betMatches().length) { <span class="count bets">{{ betMatches().length }}</span> }
     </button>
   }
 </div>
@@ -39,7 +39,16 @@
   <input class="team-search" type="search" placeholder="Cerca una squadra…" [ngModel]="team()" (ngModelChange)="team.set($event)" aria-label="Cerca una squadra" />
 </div>
 
-@if (data.isLoading() && !data.hasValue()) {
+@if (filter() === 'giocate') {
+  <section class="panel group" aria-label="Le partite su cui hai giocato">
+    <h2 class="group-head">Le partite su cui hai una giocata aperta</h2>
+    @for (m of betMatches(); track m.id) {
+      <ab-diretta-row [match]="m" [tick]="tick()" [mine]="picksByMatch().get(m.id) ?? []" />
+    } @empty {
+      <p class="empty">Nessuna giocata aperta: quando registri una schedina, le sue partite compaiono qui con come stanno andando.</p>
+    }
+  </section>
+} @else if (data.isLoading() && !data.hasValue()) {
   <p class="empty">Carico le partite…</p>
 } @else if (data.error()) {
   <p class="empty error" role="alert">Non riesco a caricare le partite. Il backend è acceso?</p>

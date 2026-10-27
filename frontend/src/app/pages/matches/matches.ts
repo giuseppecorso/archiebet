@@ -7,7 +7,7 @@ import { LIVE_REFRESH_MS } from '../../core/live';
 import { LeagueLogo } from '../../shared/crest';
 import { DirettaRow } from '../live/live';
 
-type Filter = 'tutte' | 'live' | 'finite' | 'programma';
+type Filter = 'tutte' | 'live' | 'finite' | 'programma' | 'giocate';
 
 const STORAGE_KEY = 'archiebet.matches.competition';
 const DAYS_BACK = 3;
@@ -46,7 +46,7 @@ export class Matches {
   protected readonly order = signal<'ora' | 'notizie'>('ora');
   /** Dall'indirizzo: ?stato=live (la vecchia Diretta) */
   readonly stato = input<string | undefined>(undefined);
-  protected readonly filters: [Filter, string][] = [['tutte', 'Tutte'], ['live', 'In diretta'], ['finite', 'Finite'], ['programma', 'Da giocare']];
+  protected readonly filters: [Filter, string][] = [['tutte', 'Tutte'], ['live', 'In diretta'], ['finite', 'Finite'], ['programma', 'Da giocare'], ['giocate', 'Giocate']];
   protected readonly filter = signal<Filter>('tutte');
   /** Sale ogni 30 secondi: oggi ricarica punteggi e cronache aperte */
   protected readonly tick = signal(0);
@@ -63,6 +63,13 @@ export class Matches {
     const out = new Map<number, MyPick[]>();
     for (const p of this.myPicks.value()) out.set(p.match_id, [...(out.get(p.match_id) ?? []), p]);
     return out;
+  });
+
+  /** Filtro "Giocate": le partite con una mia scommessa aperta, in corso o dei prossimi giorni (anche fuori dal giorno scelto) */
+  protected readonly betMatches = computed(() => {
+    const seen = new Map<number, MatchCard>();
+    for (const p of this.myPicks.value()) if (['waiting', 'winning', 'losing', 'unknown'].includes(p.state)) seen.set(p.match_id, p.match);
+    return [...seen.values()].sort((a, b) => a.kickoff_at.localeCompare(b.kickoff_at));
   });
 
   protected readonly liveCount = computed(() => (this.data.value() ?? []).reduce((n, g) => n + g.matches.filter((m) => !!m.live).length, 0));

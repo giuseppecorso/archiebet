@@ -266,6 +266,7 @@ export interface Versus {
 /** Una giocata aperta dell'utente su una partita, con come sta andando adesso (D155) */
 export interface MyPick {
   match_id: number;
+  match: import('./football').MatchCard;
   bet_id: number;
   legs: number;
   market: string;
