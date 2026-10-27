@@ -10,7 +10,7 @@ from app.api.football import MatchCard, _news_counts, match_cards
 from app.api.picks import Horizon, horizon_window
 from app.auth.deps import CurrentUser, DbSession
 from app.betting.calc import market_name
-from app.forecast.study import LEVELS, THEMES, choose_multiple, theme_market, theme_match
+from app.forecast.study import LEVELS, THEMES, choose_multiple, leg_price, theme_market, theme_match, up_to_target
 from app.forecast.study_service import load_studies
 from app.ingest.teams import CUP_COUNTRY
 from app.models import Match, MatchStudy
@@ -44,6 +44,8 @@ class StudyMultipleOut(BaseModel):
     win_probability: float  # le partite sono indipendenti: prodotto delle probabilità di Archie
     totals: dict[str, float]  # quota totale per bookmaker, solo se quota tutte le gambe
     more: bool  # ci sono altre partite per "genera un'altra multipla"
+    total_odds: float  # quota totale: migliore quota di ogni gamba, o quella giusta dello studio dove manca
+    target_reached: bool = True  # con la quota obiettivo: ci è arrivata?
 
 
 def _leg(card: MatchCard, pick: dict) -> StudyLegOut:
@@ -66,6 +68,7 @@ def study_multiple(
     competitions: str | None = Query(None, description="codici separati da virgola"),
     exclude: str | None = Query(None, description="partite già proposte, id separati da virgola"),
     theme: Theme = "tutte",
+    target: float | None = Query(None, gt=1, le=100000, description="quota totale obiettivo: Archie aggiunge gambe finché ci arriva"),
 ) -> StudyMultipleOut:
     now = datetime.now(UTC)
     try:
@@ -77,7 +80,13 @@ def study_multiple(
     news = _news_counts(db, [m for m, _ in studies], now) if theme == "notizie" else {}
     pool = [(m.id, [p for p in d["picks"] if theme_market(theme, p["market"])]) for m, d in studies
             if theme_match(theme, m.competition.tier, m.competition.country == CUP_COUNTRY, news.get(m.id, 0))]  # fmt: skip
-    chosen = choose_multiple(pool, level, legs, skip)
+    if target:
+        chosen = up_to_target(choose_multiple(pool, level, MAX_LEGS, skip), target)
+    else:
+        chosen = choose_multiple(pool, level, legs, skip)
+    total_odds = 1.0
+    for _, pick in chosen:
+        total_odds *= leg_price(pick)
     matches = {m.id: m for m, _ in studies}
     chosen.sort(key=lambda c: matches[c[0]].kickoff_at)
     cards = {c.id: c for c in match_cards(db, [matches[mid] for mid, _ in chosen], now)}
@@ -93,7 +102,8 @@ def study_multiple(
                 total *= leg.prices[label]
             totals[label] = round(total, 2)
     remaining = choose_multiple(pool, level, 1, skip | {mid for mid, _ in chosen})
-    return StudyMultipleOut(level=level, legs=out, win_probability=round(probability, 4) if out else 0.0, totals=totals, more=bool(remaining))
+    return StudyMultipleOut(level=level, legs=out, win_probability=round(probability, 4) if out else 0.0, totals=totals, more=bool(remaining),
+                            total_odds=round(total_odds, 2) if chosen else 0.0, target_reached=not target or total_odds >= target)
 
 
 @router.get("/match/{match_id}")

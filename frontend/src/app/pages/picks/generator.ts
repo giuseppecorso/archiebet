@@ -41,7 +41,13 @@ const HORIZONS: [Horizon, string][] = [
       <p class="hint muted small">{{ hint() }}</p>
       <div class="row">
         <label>Partite
-          <input type="number" min="1" max="30" [value]="legs()" (change)="restart(); legs.set(clamp(+$any($event.target).value))" />
+          <input type="number" min="1" max="30" [value]="legs()" [disabled]="!!target()" (change)="restart(); legs.set(clamp(+$any($event.target).value))" />
+        </label>
+        <label>Quota obiettivo
+          <input type="number" min="1.1" step="any" placeholder="es. 50" [value]="target() ?? ''" (change)="restart(); target.set(toTarget($any($event.target).value))" />
+        </label>
+        <label>Puntata €
+          <input type="number" min="0.5" step="0.5" [value]="stake()" (input)="stake.set(+$any($event.target).value || 0)" />
         </label>
         <label>Quando
           <select (change)="restart(); horizon.set($any($event.target).value)">
@@ -91,16 +97,21 @@ const HORIZONS: [Horizon, string][] = [
           <div class="totals">
             <span>Esce tutta: <strong>{{ pct(r.win_probability) }}</strong> <span class="muted small">· circa 1 volta su {{ oneIn(r.win_probability) }}</span></span>
             @for (t of totalsList(r); track t[0]) {
-              <span>Quota totale {{ t[0] }}: <strong class="led">{{ fmtOdds(t[1]) }}</strong></span>
+              <span>Quota totale {{ t[0] }}: <strong class="led">{{ fmtOdds(t[1]) }}</strong> <span class="muted small">· con {{ stake() }} € vinci <strong>{{ money(stake() * t[1]) }}</strong></span></span>
+            } @empty {
+              <span>Quota totale stimata: <strong class="led">{{ fmtOdds(r.total_odds) }}</strong> <span class="muted small">· con {{ stake() }} € circa {{ money(stake() * r.total_odds) }} (alcune quote vanno cercate sull'app)</span></span>
             }
           </div>
+          @if (target() && !r.target_reached) {
+            <p class="muted small warn">Con queste scelte Archie arriva solo a quota {{ fmtOdds(r.total_odds) }}: prova più giorni, tutti i campionati o un livello più rischioso.</p>
+          }
           <div class="actions">
             @if (totalsList(r).length) {
               <button type="button" class="btn-primary" (click)="toSlip(r, totalsList(r)[0][0])">Metti nella schedina ({{ totalsList(r)[0][0] }})</button>
             }
             <button type="button" class="again" [disabled]="!r.more" (click)="another(r)">Genera un'altra multipla</button>
           </div>
-          @if (r.legs.length < legs()) {
+          @if (!target() && r.legs.length < legs()) {
             <p class="muted small">Archie ha trovato solo {{ r.legs.length }} partite da proporre a questo livello: le altre non hanno un pronostico su cui modello e campo sono d'accordo.</p>
           }
           <p class="muted small note">La percentuale è quella dello studio di Archie (modello dei gol e fatti del campo), non quella delle quote.</p>
@@ -159,6 +170,9 @@ export class Generator {
   protected readonly horizon = signal<Horizon>('2days');
   protected readonly competition = signal('');
   protected readonly theme = signal('tutte');
+  /** Quota totale voluta (es. 50): Archie aggiunge partite finché ci arriva */
+  protected readonly target = signal<number | null>(null);
+  protected readonly stake = signal(5);
   /** Partite già proposte: "genera un'altra multipla" le salta */
   protected readonly excluded = signal<number[]>([]);
 
@@ -171,6 +185,7 @@ export class Generator {
     const params = new URLSearchParams({ level: this.level(), legs: String(this.legs()), horizon: this.horizon() });
     if (this.competition()) params.set('competitions', this.competition());
     if (this.theme() !== 'tutte') params.set('theme', this.theme());
+    if (this.target()) params.set('target', String(this.target()));
     if (this.excluded().length) params.set('exclude', this.excluded().join(','));
     return `/api/study/multiple?${params}`;
   });
@@ -179,6 +194,15 @@ export class Generator {
   protected readonly fmtOdds = odds;
   protected readonly day = dayLabel;
   protected readonly time = (iso: string) => kickoffTime(iso);
+
+  protected toTarget(v: string): number | null {
+    const n = Number(String(v).replace(',', '.'));
+    return n > 1 ? Math.min(n, 100000) : null;
+  }
+
+  protected money(n: number): string {
+    return n.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+  }
 
   protected clamp(n: number): number {
     return Math.min(30, Math.max(1, Math.round(n) || 1));
@@ -219,6 +243,7 @@ export class Generator {
         this.slip.toggle({ match: l.match, market: l.market, pick: l.selection, odds: l.prices[bookmaker], bookmaker });
       }
     }
+    this.slip.stake.set(String(this.stake())); // la puntata scelta qui passa alla schedina
     this.slip.open.set(true);
   }
 }

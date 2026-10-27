@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
 from app.auth.deps import CurrentUser, DbSession
+from app.auth.limiter import limiter
 from app.auth.service import authenticate, close_session, open_session
 from app.config import get_settings
 from app.models import User
@@ -26,9 +27,13 @@ class UserOut(BaseModel):
 
 @router.post("/login")
 def login(body: LoginRequest, response: Response, db: DbSession) -> UserOut:
+    if limiter.blocked(body.username):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Troppi tentativi sbagliati: riprova tra 15 minuti")
     user = authenticate(db, body.username, body.password)
     if user is None:
+        limiter.failed(body.username)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Nome utente o password errati")
+    limiter.succeeded(body.username)
     settings = get_settings()
     token = open_session(db, user, settings.session_days)
     response.set_cookie(

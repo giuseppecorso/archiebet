@@ -1,7 +1,10 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 
 from app.api.bets import router as bets_router
 from app.api.football import router as football_router
@@ -51,3 +54,17 @@ app.include_router(tv_router)
 @app.get("/api/health", tags=["system"])
 def health() -> dict[str, str]:
     return {"status": "ok", "env": get_settings().app_env}
+
+
+# --- App compilata sulla stessa porta dell'API (D150): niente server di sviluppo esposto a internet ---
+_dist = Path(get_settings().frontend_dist).resolve() if get_settings().frontend_dist else None
+if _dist is not None and (_dist / "index.html").is_file():
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def frontend(path: str) -> FileResponse:
+        if path.startswith("api/"):
+            raise HTTPException(404, "Non trovato")
+        file = (_dist / path).resolve()
+        if path and file.is_file() and file.is_relative_to(_dist):  # solo file dentro la cartella dell'app
+            return FileResponse(file)
+        return FileResponse(_dist / "index.html")  # le pagine dell'app (es. /partite/12) le gestisce Angular

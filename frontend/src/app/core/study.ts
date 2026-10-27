@@ -25,4 +25,8 @@ export interface StudyMultiple {
   win_probability: number;
   totals: Record<string, number>;
   more: boolean;
+  /** Quota totale: la migliore di ogni gamba, o quella giusta dello studio dove il bookmaker non quota */
+  total_odds: number;
+  /** Con la quota obiettivo: Archie ci è arrivato? */
+  target_reached: boolean;
 }

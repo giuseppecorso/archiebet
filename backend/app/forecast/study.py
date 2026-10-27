@@ -445,3 +445,22 @@ def theme_match(theme: str, tier: int, cup: bool, news: int) -> bool:
     if theme == "notizie":
         return news >= NEWS_MIN
     return True
+
+
+# --- Quota obiettivo: "voglio una multipla a quota 50" ---
+
+
+def leg_price(pick: dict) -> float:
+    """Quota della gamba: la migliore tra i bookmaker dell'utente, altrimenti la quota giusta dello studio."""
+    return max(pick["prices"].values(), default=0.0) or 1 / pick["p_archie"]
+
+
+def up_to_target(ranked: Sequence[tuple[int, dict]], target: float) -> list[tuple[int, dict]]:
+    """Dai pronostici più solidi in giù finché la quota totale arriva all'obiettivo (tutti, se non ci arriva)."""
+    out, total = [], 1.0
+    for match_id, pick in ranked:
+        if total >= target:
+            break
+        out.append((match_id, pick))
+        total *= leg_price(pick)
+    return out

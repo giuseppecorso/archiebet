@@ -38,3 +38,15 @@ def test_match_study_gives_the_best_picks_per_level_with_reasons(logged_client, 
     body = logged_client.get(f"/api/study/match/{mid}").json()
     assert [leg["market"] for leg in body["equilibrato"]] == ["GG", "1X2"]  # il più solido per primo
     assert body["cauto"][0]["reasons"] == ["Il modello dei gol dà l'80%."] and body["rischioso"] == []
+
+
+def test_target_odds_adds_legs_until_reached(logged_client, seeded, db):  # noqa: F811
+    now = datetime.now(UTC)
+    db.add(MatchStudy(match_id=match_id(db, "Milan", "Inter"), computed_at=now, data={"picks": [pick("GG", "yes", 0.6) | {"prices": {"sisal": 1.8}}]}))
+    db.add(MatchStudy(match_id=match_id(db, "Palermo", "Bari"), computed_at=now, data={"picks": [pick("OU2.5", "under", 0.58)]}))
+    db.commit()
+    body = logged_client.get("/api/study/multiple?horizon=week&target=1.5").json()
+    assert len(body["legs"]) == 1 and body["total_odds"] == 1.8 and body["target_reached"]
+    body = logged_client.get("/api/study/multiple?horizon=week&target=50").json()
+    assert len(body["legs"]) == 2 and not body["target_reached"]  # solo due partite: a 50 non ci arriva
+    assert body["total_odds"] == round(1.8 / 0.58, 2)  # dove manca la quota vale quella giusta dello studio
