@@ -1382,6 +1382,7 @@ def main() -> int:
     commands.add_parser("review-refresh", help="pagella settimanale di Archie e correzioni automatiche (D132)")
     commands.add_parser("study-refresh", help="Archie studia le partite dei prossimi giorni (D137)")
     commands.add_parser("study-backtest", help="prova D140: lo studio e le sue varianti sul passato (walk-forward)")
+    commands.add_parser("bookmaker-test", help="prova D144: dove sbaglia il bookmaker (studio contro quota media prima della partita)")
     det = commands.add_parser("af-details", help="scheda completa delle partite finite da API-Football: xG, giocatori, eventi (D140)")
     det.add_argument("--seasons", default="2022,2023,2024,2025,2026")
     det.add_argument("--leagues", default="", help="id API-Football separati da virgola (vuoto = campionati principali e Serie C)")
@@ -1444,6 +1445,43 @@ def main() -> int:
         from app.forecast.learning_service import refresh_learning
 
         print(refresh_learning())
+        return 0
+    if args.command == "bookmaker-test":
+        import json as _json
+
+        from sqlalchemy import select as _select
+
+        from app.forecast import bookmaker_test as bk
+        from app.forecast.data import STATS_LEAGUES, load_games
+        from app.models import Competition, MatchOdds
+
+        with SessionLocal() as db:
+            comps = {c.id: c for c in db.scalars(_select(Competition).where(Competition.code.in_(STATS_LEAGUES)))}
+            games_by_league = {}
+            for country in {c.country for c in comps.values()}:
+                for g in load_games(db, country):
+                    if g.competition_id in comps:
+                        games_by_league.setdefault(comps[g.competition_id].code, []).append(g)
+            ids = {g.match_id for gs in games_by_league.values() for g in gs if g.season in (*bk.TUNING, *bk.CONFIRMATION)}
+            odds: dict = {}
+            for o in db.scalars(_select(MatchOdds).where(MatchOdds.bookmaker == "market_avg", MatchOdds.is_closing.is_(False), MatchOdds.market.in_(("1X2", "OU2.5")))):
+                if o.match_id in ids:
+                    odds.setdefault(o.match_id, {}).setdefault(o.market, {})[o.selection] = float(o.price)
+        print(f"partite con quote prima della partita: {len(odds)}")
+        cases = bk.collect(games_by_league, odds, (*bk.TUNING, *bk.CONFIRMATION))
+        segs = bk.segments(cases)
+        for seg in segs:
+            t, c = seg.tuning, seg.confirmation
+            print(f"{seg.league} {seg.market}: taratura {t.mean:+.3f} ± {t.std_error:.3f} (n {t.n}) | conferma "
+                  f"{(c.mean if c else 0):+.3f} ± {(c.std_error if c else 0):.3f} (n {c.n if c else 0}) | {'PASSA' if seg.passed else 'no'}")  # fmt: skip
+        tun = [c for c in cases if c.season in bk.TUNING]
+        con = [c for c in cases if c.season in bk.CONFIRMATION]
+        at, ac = bk._estimate(tun), bk._estimate(con)
+        print(f"TUTTI: taratura {at.mean:+.4f} ± {at.std_error:.4f} (n {at.n}) | conferma {ac.mean:+.4f} ± {ac.std_error:.4f} (n {ac.n})")
+        roi = sum(c.price * c.hit - 1 for c in con) / len(con) if con else 0
+        print(f"controllo: rendimento in conferma giocando tutti i disaccordi alla quota media {roi:+.3f}")
+        out = get_settings().data_cache_dir / "learning" / "bookmaker_test.json"
+        out.write_text(_json.dumps({"passed": [[s.league, s.market] for s in segs if s.passed]}), encoding="utf-8")
         return 0
     if args.command == "study-backtest":
         import json as _json
