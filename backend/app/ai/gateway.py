@@ -56,11 +56,21 @@ class AIGateway:
         return self._status(self.settings.ai_monthly_budget_eur, None, now)
 
     def user_status(self, user_id: int, now: datetime | None = None) -> BudgetStatus:
-        return self._status(self.settings.ai_user_monthly_quota_eur, user_id, now)
+        from app.models import User
+
+        user = self.db.get(User, user_id)
+        admin = user is None or user.is_admin
+        return self._status(self.settings.ai_user_monthly_quota_eur if admin else self.settings.ai_friend_monthly_quota_eur, user_id, now)
 
     def ensure_can_spend(self, user_id: int | None, now: datetime | None = None) -> None:
         if self.global_status(now).exceeded:
             raise BudgetExceeded("Tetto di spesa AI del mese raggiunto")
+        if user_id is not None and self.settings.ai_friend_monthly_quota_eur <= 0:
+            from app.models import User
+
+            user = self.db.get(User, user_id)
+            if user is not None and not user.is_admin:
+                raise BudgetExceeded("Le funzioni AI sono riservate all'amministratore")
         if user_id is not None and self.user_status(user_id, now).exceeded:
             raise BudgetExceeded("Hai esaurito la tua quota AI di questo mese")
 

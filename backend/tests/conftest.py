@@ -36,6 +36,6 @@ def client(db: Session) -> TestClient:
 def logged_client(client: TestClient, db: Session) -> TestClient:
     from app.auth.service import create_user
 
-    create_user(db, "giuse", "una-password-lunga")
+    create_user(db, "giuse", "una-password-lunga", is_admin=True)  # Giuse è l'amministratore
     assert client.post("/api/auth/login", json={"username": "giuse", "password": "una-password-lunga"}).status_code == 200
     return client

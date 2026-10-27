@@ -8,7 +8,7 @@ Ultimo aggiornamento: 2026-10-27
 - [x] D143: secondo tempo, tratti per tempo con test statistico, segnali di prudenza come criterio d'ordine.
 - [x] D144-D145: il bookmaker non sbaglia dove lo studio è in disaccordo; il disaccordo diventa prudenza.
 - [x] D146-D147: 6 massime serie e 18 serie minori europee in più (3 stagioni di storico); coppe europee nello studio con un modello che collega i campionati (prova passata, t = 9 e 6,2); multiple a tema; risultato ai 90 minuti (i supplementari non contano).
-- [ ] Prossimi: account per gli amici (una decina, via Tailscale). Telegram escluso (scelta di Giuse, 2026-10-27).
+- [x] D148: account per al massimo 5 amici, dati separati, niente AI per loro (costo zero), accesso con la condivisione Tailscale. Telegram escluso (scelta di Giuse, 2026-10-27).
 - [ ] Da valutare: quote Sisal/Eurobet per i nuovi campionati (oggi lì la multipla non mostra il prezzo); campionati di Cipro, Israele, Kazakistan… per studiare tutte le partite di Conference League.
 
 ## Lo studio di Archie (2026-10-27)

@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 
-from app.auth.deps import CurrentUser, DbSession
+from app.auth.deps import AdminUser, CurrentUser, DbSession
 from app.config import get_settings
 from app.models import AiQuestion, Bet, Match, MatchStatus, MatchStudy, Team, TeamFact
 from app.betting.calc import market_name
@@ -160,7 +160,7 @@ def history(user: CurrentUser, db: DbSession, match_id: int | None = None) -> li
 
 
 @router.post("")
-def ask_archie(body: AskIn, user: CurrentUser, db: DbSession) -> AnswerOut:
+def ask_archie(body: AskIn, user: AdminUser, db: DbSession) -> AnswerOut:  # AI: solo l'amministratore
     from app.ai import ask as ask_module
     from app.ai.client import Ai, AiError
     from app.ai.gateway import BudgetExceeded

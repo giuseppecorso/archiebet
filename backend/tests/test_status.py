@@ -66,3 +66,19 @@ def test_only_one_sync_at_a_time(logged_client, monkeypatch):
 def test_status_requires_login(client):
     assert client.get("/api/status").status_code == 401
     assert client.post("/api/status/refresh").status_code == 401
+
+
+def friend_client(client, db):
+    from app.auth.service import create_user
+
+    create_user(db, "amico", "una-password-lunga")
+    assert client.post("/api/auth/login", json={"username": "amico", "password": "una-password-lunga"}).status_code == 200
+    return client
+
+
+def test_friends_cannot_start_a_refresh_nor_use_the_ai(client, db):
+    friend = friend_client(client, db)
+    assert friend.post("/api/status/refresh").status_code == 403
+    assert friend.post("/api/ask", json={"question": "Chi vince?"}).status_code == 403
+    assert friend.post("/api/fan/match/1/analysis").status_code == 403
+    assert friend.post("/api/rules/style").status_code == 403

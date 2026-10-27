@@ -137,7 +137,7 @@
           <p class="muted small">Scritta da Archie {{ fmt.dayLabel(a.created_at) }} alle {{ fmt.kickoffTime(a.created_at) }} con i numeri calcolati dall'app.</p>
         </div>
       }
-      @if (d.match.status === 'scheduled') {
+      @if (d.match.status === 'scheduled' && admin()) {
         <div class="an-actions">
           <button type="button" class="btn-primary" (click)="writeAnalysis()" [disabled]="writing()">
             @if (writing()) {

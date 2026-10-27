@@ -1,4 +1,5 @@
 import { AskArchie } from '../../shared/ask-archie';
+import { AuthService } from '../../core/auth.service';
 import { OfferButton } from '../../shared/offer-button';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
@@ -124,6 +125,9 @@ export class MatchPage {
   protected readonly analysisError = signal<string | null>(null);
   protected readonly verdictClass = verdictClass;
   private readonly http = inject(HttpClient);
+  /** Scrivere l'analisi usa l'AI: solo l'amministratore (gli amici leggono quelle già scritte) */
+  private readonly auth = inject(AuthService);
+  protected readonly admin = computed(() => !!this.auth.user()?.is_admin);
 
   protected marketName(market: string): string {
     return marketLabel(market, this.detail.value()?.match);

@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from app.auth.deps import CurrentUser, DbSession
+from app.auth.deps import AdminUser, CurrentUser, DbSession
 from app.betting.rules import KINDS, DraftSelection, Rule, describe, suggest, violations
 from app.config import get_settings
 from app.models import Bet, Match, Team, UserRule, UserSettings
@@ -151,7 +151,7 @@ il giudice è il CLV, non i soldi vinti nel breve. Niente toni da venditore, nie
 
 
 @router.post("/style")
-def write_style(user: CurrentUser, db: DbSession) -> RulesOut:
+def write_style(user: AdminUser, db: DbSession) -> RulesOut:  # AI: solo l'amministratore
     from app.ai.client import Ai, AiError
     from app.ai.gateway import BudgetExceeded
     from app.betting.analysis import breakdown

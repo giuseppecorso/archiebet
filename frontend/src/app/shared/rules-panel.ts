@@ -1,7 +1,8 @@
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { AuthService } from '../core/auth.service';
 
 interface RuleOut {
   id: number | null;
@@ -76,9 +77,11 @@ interface RulesOut {
         } @else {
           <p class="muted small">Archie lo scrive dai tuoi numeri: schedine, mercati, campionati, CLV.</p>
         }
-        <button type="button" class="btn-primary" [disabled]="writing()" (click)="style()">
-          {{ writing() ? 'Archie scrive…' : d.style ? 'Aggiorna (una volta al giorno)' : 'Scrivi il mio stile di gioco' }}
-        </button>
+        @if (admin()) {
+          <button type="button" class="btn-primary" [disabled]="writing()" (click)="style()">
+            {{ writing() ? 'Archie scrive…' : d.style ? 'Aggiorna (una volta al giorno)' : 'Scrivi il mio stile di gioco' }}
+          </button>
+        }
       }
     </section>
   `,
@@ -98,6 +101,9 @@ interface RulesOut {
 export class RulesPanel {
   protected readonly data = httpResource<RulesOut>(() => '/api/rules');
   protected readonly writing = signal(false);
+  /** Lo stile lo scrive l'AI: solo l'amministratore */
+  private readonly auth = inject(AuthService);
+  protected readonly admin = computed(() => !!this.auth.user()?.is_admin);
   protected readonly error = signal<string | null>(null);
   protected kind = 'max_legs';
   protected value = '';

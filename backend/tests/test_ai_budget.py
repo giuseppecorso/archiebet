@@ -46,10 +46,36 @@ def test_global_cap_blocks_everyone(db):
 
 
 def test_user_quota_blocks_only_that_user(db):
-    giuse = create_user(db, "giuse", "una-password-lunga")
-    amico = create_user(db, "amico", "una-password-lunga")
+    giuse = create_user(db, "giuse", "una-password-lunga", is_admin=True)
+    amico = create_user(db, "amico", "una-password-lunga", is_admin=True)
     spend(db, "10.00", user_id=giuse.id)
     gateway = AIGateway(db, settings(budget=100))
     with pytest.raises(BudgetExceeded):
         gateway.ensure_can_spend(giuse.id, now=NOW)
     gateway.ensure_can_spend(amico.id, now=NOW)
+
+
+def test_friends_have_a_small_quota_inside_the_same_cap(db):
+    giuse = create_user(db, "giuse", "una-password-lunga", is_admin=True)
+    amico = create_user(db, "amico", "una-password-lunga")
+    spend(db, "1.00", user_id=amico.id)
+    spend(db, "1.00", user_id=giuse.id)
+    gateway = AIGateway(db, Settings(ai_monthly_budget_eur=10, ai_user_monthly_quota_eur=10, ai_friend_monthly_quota_eur=1.0, ai_budget_warning_ratio=0.8))
+    with pytest.raises(BudgetExceeded):
+        gateway.ensure_can_spend(amico.id, now=NOW)
+    gateway.ensure_can_spend(giuse.id, now=NOW)
+
+
+def test_friends_never_spend_by_default(db):
+    create_user(db, "giuse", "una-password-lunga", is_admin=True)
+    amico = create_user(db, "amico", "una-password-lunga")
+    with pytest.raises(BudgetExceeded, match="riservate"):
+        AIGateway(db, Settings()).ensure_can_spend(amico.id, now=NOW)
+
+
+def test_at_most_five_friends(db):
+    create_user(db, "giuse", "una-password-lunga", is_admin=True)
+    for k in range(5):
+        create_user(db, f"amico{k}", "una-password-lunga")
+    with pytest.raises(ValueError, match="5 amici"):
+        create_user(db, "amico5", "una-password-lunga")

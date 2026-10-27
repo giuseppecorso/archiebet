@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from app.auth.deps import CurrentUser, DbSession
+from app.auth.deps import AdminUser, CurrentUser, DbSession
 from app.config import get_settings
 from app.ingest.news import FACTS_WINDOW, TARGET_SIGNALS, fan_test
 from app.models import Match, MatchAnalysis, MatchInsight, NewsItem, TeamFact
@@ -212,7 +212,7 @@ def get_analysis(match_id: int, _: CurrentUser, db: DbSession) -> AnalysisOut | 
 
 
 @router.post("/match/{match_id}/analysis")
-def make_analysis(match_id: int, user: CurrentUser, db: DbSession) -> AnalysisOut:
+def make_analysis(match_id: int, user: AdminUser, db: DbSession) -> AnalysisOut:  # AI: solo l'amministratore
     from app.ai.analysis import write_analysis
     from app.ai.client import Ai, AiError
     from app.ai.gateway import BudgetExceeded

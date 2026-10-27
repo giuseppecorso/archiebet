@@ -1,7 +1,8 @@
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
-import { Component, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { AuthService } from '../core/auth.service';
 
 /** Una domanda con la risposta di Archie (API /api/ask, Fase 6) */
 export interface AskAnswer {
@@ -43,6 +44,7 @@ export function answerHtml(text: string): string {
   selector: 'ab-ask-archie',
   imports: [FormsModule],
   template: `
+    @if (admin()) {
     <section class="panel box ask" aria-labelledby="ask-title">
       <div class="box-head">
         <h2 id="ask-title" class="title box-title">Chiedi ad Archie</h2>
@@ -62,6 +64,9 @@ export function answerHtml(text: string): string {
         </div>
       }
     </section>
+    } @else {
+      <p class="muted small">Chiedi ad Archie usa l'AI a pagamento: è riservato all'amministratore.</p>
+    }
   `,
   styles: `
     .ask { margin: 20px 0; }
@@ -85,7 +90,10 @@ export class AskArchie {
   protected question = '';
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
-  protected readonly answers = httpResource<AskAnswer[]>(() => (this.matchId() ? `/api/ask?match_id=${this.matchId()}` : '/api/ask'));
+  /** Solo l'amministratore usa l'AI: gli amici non consumano la sua spesa */
+  private readonly auth = inject(AuthService);
+  protected readonly admin = computed(() => !!this.auth.user()?.is_admin);
+  protected readonly answers = httpResource<AskAnswer[]>(() => (!this.admin() ? undefined : this.matchId() ? `/api/ask?match_id=${this.matchId()}` : '/api/ask'));
   protected readonly html = answerHtml;
   private readonly http = inject(HttpClient);
 

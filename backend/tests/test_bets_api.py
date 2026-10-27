@@ -146,3 +146,15 @@ def test_match_page_shows_live_probabilities(logged_client, db, matches):
     live = logged_client.get(f"/api/matches/{inter}").json()["live_1x2"]
     assert sum(live.values()) == pytest.approx(1.0, abs=1e-6)
     assert live["2"] > live["1"]  # sotto 0-1 all'intervallo, anche da favorita
+
+
+def test_each_user_sees_only_own_bets_and_settings(logged_client, db, matches):
+    from app.auth.service import create_user
+
+    r = logged_client.post("/api/bets", json=bet_body(matches["Inter"]))
+    bet_id = r.json()["bet"]["id"]
+    create_user(db, "amico", "una-password-lunga")
+    logged_client.post("/api/auth/logout")
+    assert logged_client.post("/api/auth/login", json={"username": "amico", "password": "una-password-lunga"}).status_code == 200
+    assert logged_client.get("/api/bets").json() == []
+    assert logged_client.delete(f"/api/bets/{bet_id}").status_code == 404  # la schedina di un altro non si tocca

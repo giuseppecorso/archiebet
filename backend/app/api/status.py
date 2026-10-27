@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 
 from app.api.football import CompetitionOut, competition_out
-from app.auth.deps import CurrentUser, DbSession
+from app.auth.deps import AdminUser, CurrentUser, DbSession
 from app.config import get_settings
 from app.ingest.teams import competition_sort_key
 from app.jobs import is_syncing, sync_all_job
@@ -105,7 +105,7 @@ class RefreshOut(BaseModel):
 
 
 @router.post("/refresh")
-def refresh_now(_: CurrentUser) -> RefreshOut:
+def refresh_now(_: AdminUser) -> RefreshOut:
     """Avvia subito un aggiornamento completo in sottofondo (stesso lavoro di quello automatico)."""
     if is_syncing():
         return RefreshOut(started=False)

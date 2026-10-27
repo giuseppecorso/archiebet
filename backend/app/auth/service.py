@@ -8,10 +8,15 @@ from app.models import User, UserSession
 from app.models.base import utcnow
 
 
+MAX_USERS = 6  # l'amministratore e al massimo 5 amici (anche il limite gratuito di Tailscale)
+
+
 def create_user(db: Session, username: str, password: str, is_admin: bool = False) -> User:
     username = username.strip().lower()
     if not username:
         raise ValueError("Il nome utente non può essere vuoto")
+    if len(db.scalars(select(User.id)).all()) >= MAX_USERS:
+        raise ValueError(f"Ci sono già {MAX_USERS} utenti: l'amministratore e 5 amici al massimo")
     if db.scalar(select(User).where(User.username == username)):
         raise ValueError(f"L'utente '{username}' esiste già")
     user = User(username=username, password_hash=hash_password(password), is_admin=is_admin)
