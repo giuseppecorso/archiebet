@@ -9,7 +9,7 @@ Regola di scalabilità (sezione 14.2), da rispettare in ogni nuova tabella:
 from app.models.assistant import AiQuestion
 from app.models.base import Base
 from app.models.betting import Bet, BetKind, BetSelection, BetSnapshot, ChallengePick, UserRule, UserSettings
-from app.models.forecast import MatchPrediction, RadarSignal
+from app.models.forecast import MatchPrediction, MatchStudy, RadarSignal
 from app.models.sync import SyncRun
 from app.models.news import MatchAnalysis, MatchInsight, NewsItem, TeamFact
 from app.models.football import Competition, Match, MatchEvent, MatchLive, MatchOdds, MatchSource, MatchStatus, Team, TeamAlias
@@ -32,6 +32,7 @@ __all__ = [
     "MatchLive",
     "MatchOdds",
     "MatchPrediction",
+    "MatchStudy",
     "MatchSource",
     "MatchStatus",
     "NewsItem",

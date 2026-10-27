@@ -15,6 +15,7 @@ from app.api.tv import router as tv_router
 from app.api.rules import router as rules_router
 from app.api.picks import router as picks_router
 from app.api.radar import router as radar_router
+from app.api.study import router as study_router
 from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.jobs import start_scheduler
@@ -34,6 +35,7 @@ app = FastAPI(title="ArchieBet", version="0.1.0", lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(football_router)
 app.include_router(lab_router)
+app.include_router(study_router)
 app.include_router(bets_router)
 app.include_router(status_router)
 app.include_router(radar_router)

@@ -8,7 +8,7 @@ from sqlalchemy import or_, select
 
 from app.auth.deps import CurrentUser, DbSession
 from app.config import get_settings
-from app.models import AiQuestion, Bet, Match, MatchStatus, Team, TeamFact
+from app.models import AiQuestion, Bet, Match, MatchStatus, MatchStudy, Team, TeamFact
 from app.betting.calc import market_name
 
 router = APIRouter(prefix="/api/ask", tags=["chiedi ad archie"])
@@ -70,6 +70,16 @@ def build_tools(db, user_id: int):
         if match is None:
             return "Partita non trovata."
         text = [analysis_brief(db, match)]
+        study = db.get(MatchStudy, match_id)
+        if study is not None:  # lo studio di Archie (D137): i pronostici proposti e i loro motivi, calcolati dal codice
+            d = study.data
+            text.append(f"Studio di Archie: gol attesi casa {d['lam']:.2f}, ospite {d['mu']:.2f}; forma {d['form_home']} / {d['form_away']}.")
+            from app.forecast.study import pick_strength
+
+            for level in ("cauto", "equilibrato", "rischioso"):
+                best = sorted((x for x in d["picks"] if x["level"] == level), key=pick_strength, reverse=True)[:3]
+                for x in best:
+                    text.append(f"Pronostico {level}: {x['event']} — probabilità dello studio {x['p_archie']:.0%} (modello {x['p_model']:.0%}). Motivi: {' '.join(x['reasons'])}")
         for n in match_numbers(match_id, None, db):
             total = [line for line in n.lines if line.side == "totale"]
             def quoted(line) -> str:
@@ -132,7 +142,7 @@ def build_tools(db, user_id: int):
     return [
         Tool("cerca_partite", "Trova una squadra per nome e le sue prossime e ultime partite, con l'id da usare negli altri strumenti.",
              {"squadra": "Nome (o parte del nome) della squadra, es. 'Bari'"}, cerca_partite),
-        Tool("scheda_partita", "Scheda completa di una partita: classifica, forma, statistiche, probabilità e quote, i due pronostici, "
+        Tool("scheda_partita", "Scheda completa di una partita: studio di Archie con i pronostici per livello e i loro motivi, classifica, forma, statistiche, probabilità e quote, "
              "notizie, tiri/angoli/cartellini attesi e tiratori.", {"match_id": "Id della partita (da cerca_partite)"}, scheda_partita, ("match_id",)),
         Tool("occasioni", "Le quote con valore dei prossimi 4 giorni sui bookmaker dell'utente (Sisal, Eurobet).", {}, occasioni),
         Tool("notizie_squadra", "Fatti recenti dalle notizie su una squadra: assenti, squalifiche, allenatore, società.",

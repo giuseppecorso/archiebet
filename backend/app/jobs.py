@@ -160,6 +160,19 @@ def refresh_radar_job() -> None:
     _tracked("radar", work)
 
 
+def refresh_studies_job() -> None:
+    """Dopo ogni aggiornamento: Archie ristudia le partite dei prossimi giorni (D137)."""
+
+    def work() -> str:
+        from app.forecast.study_service import refresh_studies
+
+        with SessionLocal() as db:
+            done = refresh_studies(db, datetime.now(UTC), log=logger.debug)
+        return f"{done} partite studiate"
+
+    _tracked("studio", work)
+
+
 def archive_job() -> None:
     """Ogni settimana: storico quote delle ultime 3 settimane di Serie C e campionati principali (prove D98 e D119).
 
@@ -289,6 +302,7 @@ def sync_all_job() -> bool:
         settle_bets_job()  # dopo i risultati nuovi
         refresh_predictions_job()  # si ricalcola solo se sono arrivati dati nuovi
         refresh_radar_job()  # dopo le quote nuove
+        refresh_studies_job()  # lo studio usa risultati, gol attesi e quote del momento
         return True
     finally:
         _sync_lock.release()

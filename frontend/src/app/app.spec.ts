@@ -157,45 +157,33 @@ describe('ArchieBet: navigazione', () => {
     expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Diretta');
   });
 
-  it('il generatore manda le scelte al backend e mostra la multipla', async () => {
-    const harness = await navigateAs('/pronostici?tab=multipla', true);
-    const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
-    const premier = { code: 'ENG-1', name: 'Premier League', country: 'Inghilterra', tier: 1 };
-    (await nextRequest('/api/competitions')).flush([serieA, premier]);
-    const tally = { played: 7, won: 2, expected: 2.1, profit: -1.5, clv: -0.03 };
-    const week = { week: '2026-10-12', matches: 90, families: [], multiples: { base: { equilibrata: tally }, impara: { equilibrata: tally } }, corrections: [], bench: [] };
-    (await nextRequest('/api/lab/review')).flush({ computed_at: '2026-10-21T10:00:00Z', weeks: [week], totals: week.multiples, state: { corrections: {}, bench: [], groups: [], bench_tests: [] } });
-    const first = await nextRequest((r) => r.url.startsWith('/api/picks/multiple'));
-    expect(first.request.url).toBe('/api/picks/multiple?horizon=week&profile=equilibrata&legs=4'); // tutti i mercati e campionati: niente filtri
-    first.flush({ horizon: 'week', profile: 'equilibrata', legs: 4, multiples: [], missing: ['Sisal', 'Eurobet'] });
+  it('il generatore propone pronostici studiati con il perché e ne genera altri (D137)', async () => {
+    const harness = await navigateAs('/pronostici', true);
+    const serieB = { code: 'ITA-B', name: 'Serie B', country: 'Italia', tier: 2 };
+    (await nextRequest('/api/competitions')).flush([serieB]);
+    const first = await nextRequest((r) => r.url.startsWith('/api/study/multiple'));
+    expect(first.request.url).toBe('/api/study/multiple?level=equilibrato&legs=4&horizon=2days');
+    const leg = {
+      match: { id: 9, competition: serieB, season: '2026/27', kickoff_at: '2026-10-25T13:00:00Z', kickoff_has_time: true, status: 'scheduled',
+               home: { id: 1, name: 'Brescia' }, away: { id: 2, name: 'Cittadella' }, home_goals: null, away_goals: null, odds_1x2: null },
+      market: '1T_TGH0.5', selection: 'over', market_label: 'gol casa Under/Over 0.5 primo tempo', event: 'Brescia segna nel primo tempo',
+      level: 'equilibrato', p_archie: 0.71, p_model: 0.64, evidence: [8, 9, 6, 8],
+      reasons: ['«Brescia segna nel primo tempo»: è successo in 8 su 9 partite in casa del Brescia e in 6 su 8 in trasferta del Cittadella.'],
+      prices: {},
+    };
+    first.flush({ level: 'equilibrato', legs: [leg], win_probability: 0.71, totals: {}, more: true });
     await harness.fixture.whenStable();
     const page = harness.routeNativeElement!;
-    expect(page.querySelector('ab-generator')!.textContent).toContain("non c'è una multipla sensata");
-    expect(page.querySelector('ab-generator .track')!.textContent).toContain('vinte 2 su 7 (Archie ne attendeva 2.1)');
+    expect(page.querySelector('.event')?.textContent).toContain('Brescia segna nel primo tempo');
+    expect(page.querySelector('.why')?.textContent).toContain('8 su 9 partite in casa del Brescia');
+    expect(page.querySelector('.offers')?.textContent).toContain("quota da cercare sull'app");
+    expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Pronostici');
 
-    const click = (text: string) =>
-      ([...page.querySelectorAll('ab-generator button')] as HTMLButtonElement[]).find((b) => b.textContent?.trim() === text)!.click();
-    click('Coraggiosa');
-    click('Goal/NoGoal'); // tolto dai mercati
-    click('Premier League'); // solo Premier
+    (page.querySelector('.again') as HTMLButtonElement).click(); // un'altra multipla, con altre partite
     harness.fixture.detectChanges();
-    const second = await nextRequest((r) => r.url.startsWith('/api/picks/multiple'));
-    const url = new URL(second.request.url, 'http://x');
-    expect(url.searchParams.get('profile')).toBe('coraggiosa');
-    expect(url.searchParams.get('markets')).toBe('1X2,DC,OU0.5,OU1.5,OU2.5,OU3.5,OU4.5,gol squadra,angoli,cartellini');
-    expect(url.searchParams.get('competitions')).toBe('ENG-1');
-    second.flush({ horizon: 'week', profile: 'coraggiosa', legs: 4, missing: [], multiples: [] });
-    await harness.fixture.whenStable();
-
-    // Profilo personalizzato (D130): probabilità minima, quota totale e cosa privilegiare vanno al backend
-    click('Personalizzata');
-    harness.fixture.detectChanges();
-    const third = await nextRequest((r) => r.url.startsWith('/api/picks/multiple'));
-    const custom = new URL(third.request.url, 'http://x');
-    expect(custom.searchParams.get('profile')).toBe('personalizzata');
-    expect(custom.searchParams.get('min_probability')).toBe('0.6');
-    expect(custom.searchParams.get('max_total')).toBe('6');
-    third.flush({ horizon: 'week', profile: 'personalizzata', legs: 4, missing: [], multiples: [] });
+    const second = await nextRequest((r) => r.url.startsWith('/api/study/multiple'));
+    expect(second.request.url).toContain('exclude=9');
+    second.flush({ level: 'equilibrato', legs: [], win_probability: 0, totals: {}, more: false });
     await harness.fixture.whenStable();
   });
 

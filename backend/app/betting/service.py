@@ -19,6 +19,7 @@ from app.betting.calc import (
     fair_closing_odds,
     is_settled_by_goals,
     is_valid_pick,
+    needs_half_time,
     secondary_outcome,
     selection_outcome,
     settled_payout,
@@ -206,7 +207,10 @@ def settle_open_bets(db: Session, now: datetime | None = None) -> int:
                 status = VOID
             sel.status = status
         elif match.status == MatchStatus.FINISHED and match.home_goals is not None:
-            sel.status = selection_outcome(sel.market, sel.pick, match.home_goals, match.away_goals)
+            ht = (match.ht_home_goals, match.ht_away_goals) if match.ht_home_goals is not None else None
+            if needs_half_time(sel.market) and ht is None:
+                continue  # primo tempo non ancora arrivato
+            sel.status = selection_outcome(sel.market, sel.pick, match.home_goals, match.away_goals, ht)
         elif match.status == MatchStatus.CANCELLED:
             sel.status = VOID
         else:

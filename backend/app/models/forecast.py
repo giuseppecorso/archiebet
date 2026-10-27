@@ -27,6 +27,16 @@ class MatchPrediction(Base):
     markets: Mapped[dict[str, Any]] = mapped_column(JSON)  # mercato → esito → probabilità
 
 
+class MatchStudy(Base):
+    """Lo studio di una partita (D137): gol attesi, quote del primo tempo, pronostici per livello con la spiegazione."""
+
+    __tablename__ = "match_studies"
+
+    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), primary_key=True)
+    computed_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    data: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
 class RadarSignal(Base):
     """Segnale del radar per partita ed esito (D57), la base della simulazione dal vivo (D59).
 

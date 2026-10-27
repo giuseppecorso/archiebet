@@ -1,0 +1,252 @@
+"""Lo studio di una partita (D137): probabilità di Archie dai numeri di campo, non dalle quote. Funzioni pure.
+
+1. Modello dei gol: Dixon-Coles con pesi nel tempo (gol attesi di casa e ospite, correzione dei risultati bassi).
+2. Primo tempo: per ogni squadra la parte dei suoi gol fatti e subiti nel primo tempo, avvicinata alla media del
+   campionato quando le partite sono poche.
+3. Probabilità di Archie = probabilità del modello aggiornata con quello che è successo davvero nelle ultime partite in
+   casa della squadra di casa e in trasferta dell'ospite (media bayesiana: il modello vale come 24 partite).
+   Un pronostico entra solo se modello e campo sono d'accordo.
+4. Pronostici per livello (cauto, equilibrato, rischioso), scartando quelli che il campo smentisce, con la spiegazione
+   scritta dai numeri.
+"""
+
+import math
+import re
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field
+
+from app.forecast.dixon_coles import score_matrix
+
+PRIOR_GAMES = 24  # il modello (tre stagioni di risultati) pesa come 24 partite: 10+10 partite recenti lo spostano, non lo ribaltano
+MODEL_TOLERANCE = 0.08  # anche il modello da solo deve stare (quasi) dentro il livello: modello e campo d'accordo
+SHARE_PRIOR_GOALS = 20  # quota del primo tempo: la media del campionato pesa come 20 gol
+MIN_SAMPLE = 4  # partite minime in casa (o in trasferta) per giudicare
+MAX_GOALS = 10
+
+LEVELS = {  # probabilità di Archie per livello
+    "cauto": (0.72, 0.93),
+    "equilibrato": (0.55, 0.72),
+    "rischioso": (0.35, 0.55),
+}
+CONTRADICTED = 0.15  # il campo smentisce se la frequenza osservata sta sotto la soglia del livello di oltre 15 punti
+
+
+# --- Mercati studiati: esito come funzione del risultato (finale e del primo tempo) ---
+
+Outcome = Callable[[int, int, int, int], bool]  # gol casa, gol ospite, gol casa 1° tempo, gol ospite 1° tempo
+
+
+@dataclass(frozen=True)
+class MarketDef:
+    selections: dict[str, Outcome]
+    first_half: bool = False
+
+
+def _over(line: float, get: Callable[[int, int, int, int], int]) -> dict[str, Outcome]:
+    return {"over": lambda h, a, x, y: get(h, a, x, y) > line, "under": lambda h, a, x, y: get(h, a, x, y) < line}
+
+
+MARKETS: dict[str, MarketDef] = {
+    "1X2": MarketDef({"1": lambda h, a, x, y: h > a, "X": lambda h, a, x, y: h == a, "2": lambda h, a, x, y: h < a}),
+    "DC": MarketDef({"1X": lambda h, a, x, y: h >= a, "X2": lambda h, a, x, y: h <= a, "12": lambda h, a, x, y: h != a}),
+    **{f"OU{n}.5": MarketDef(_over(n + 0.5, lambda h, a, x, y: h + a)) for n in (1, 2, 3)},
+    "GG": MarketDef({"yes": lambda h, a, x, y: h > 0 and a > 0, "no": lambda h, a, x, y: h == 0 or a == 0}),
+    **{f"TGH{n}.5": MarketDef(_over(n + 0.5, lambda h, a, x, y: h)) for n in (0, 1)},
+    **{f"TGA{n}.5": MarketDef(_over(n + 0.5, lambda h, a, x, y: a)) for n in (0, 1)},
+    **{f"MG{lo}-{hi}": MarketDef({"yes": lambda h, a, x, y, lo=lo, hi=hi: lo <= h + a <= hi}) for lo, hi in ((1, 3), (2, 4), (2, 5))},
+    "CB_1X_O1.5": MarketDef({"yes": lambda h, a, x, y: h >= a and h + a > 1.5}),
+    "CB_X2_O1.5": MarketDef({"yes": lambda h, a, x, y: h <= a and h + a > 1.5}),
+    "CB_1_O1.5": MarketDef({"yes": lambda h, a, x, y: h > a and h + a > 1.5}),
+    "CB_2_O1.5": MarketDef({"yes": lambda h, a, x, y: h < a and h + a > 1.5}),
+    "CB_1X_U3.5": MarketDef({"yes": lambda h, a, x, y: h >= a and h + a < 3.5}),
+    "CB_X2_U3.5": MarketDef({"yes": lambda h, a, x, y: h <= a and h + a < 3.5}),
+    "CB_GG_O2.5": MarketDef({"yes": lambda h, a, x, y: h > 0 and a > 0 and h + a > 2.5}),
+    **{f"1T_OU{n}.5": MarketDef(_over(n + 0.5, lambda h, a, x, y: x + y), first_half=True) for n in (0, 1)},
+    "1T_TGH0.5": MarketDef(_over(0.5, lambda h, a, x, y: x), first_half=True),
+    "1T_TGA0.5": MarketDef(_over(0.5, lambda h, a, x, y: y), first_half=True),
+}
+
+
+def event_text(market: str, selection: str, home: str, away: str) -> str:
+    """Il pronostico detto a parole: "il Brescia segna nel primo tempo", "almeno 3 gol", ..."""
+    team = home if "TGH" in market else away
+    first = " nel primo tempo" if market.startswith("1T_") else ""
+    if market == "1X2":
+        return {"1": f"vince {home}", "X": "pareggio", "2": f"vince {away}"}[selection]
+    if market == "DC":
+        return {"1X": f"{home} non perde", "X2": f"{away} non perde", "12": "non finisce in pareggio"}[selection]
+    if market == "GG":
+        return "segnano entrambe" if selection == "yes" else "almeno una delle due non segna"
+    if market.startswith("MG"):
+        lo, hi = market[2:].split("-")
+        return f"tra {lo} e {hi} gol in partita"
+    if market.startswith("CB_"):
+        _, res, goals = market.split("_")
+        res_text = {"1X": f"{home} non perde", "X2": f"{away} non perde", "1": f"vince {home}", "2": f"vince {away}", "GG": "segnano entrambe"}[res]
+        n = float(goals[1:])
+        goal_text = f"almeno {math.ceil(n)} gol" if goals[0] == "O" else f"al massimo {math.floor(n)} gol"
+        return f"{res_text} e {goal_text}"
+    line = float(re.search(r"(\d+\.5)$", market).group(1))
+    if "TG" in market:
+        if selection == "over":
+            return f"{team} segna{first}" if line == 0.5 else f"{team} segna almeno {math.ceil(line)} gol{first}"
+        return f"{team} non segna{first}" if line == 0.5 else f"{team} segna al massimo {math.floor(line)} gol{first}"
+    if selection == "over":
+        return f"almeno un gol{first}" if line == 0.5 else f"almeno {math.ceil(line)} gol{first}"
+    return f"nessun gol{first}" if line == 0.5 else f"al massimo {math.floor(line)} gol{first}"
+
+
+# --- Probabilità del modello ---
+
+def first_half_share(goals_1h: int, goals: int, league_share: float) -> float:
+    """Parte dei gol nel primo tempo, avvicinata alla media del campionato quando i gol sono pochi."""
+    return (goals_1h + SHARE_PRIOR_GOALS * league_share) / (goals + SHARE_PRIOR_GOALS)
+
+
+def model_probabilities(lam: float, mu: float, rho: float, share_home: float, share_away: float) -> dict[str, dict[str, float]]:
+    """Probabilità di ogni mercato: partita intera con Dixon-Coles, primo tempo con Poisson sui gol del primo tempo."""
+    full = score_matrix(lam, mu, rho, MAX_GOALS)
+    full = full / full.sum()
+    lam1, mu1 = lam * share_home, mu * share_away
+    ph = [math.exp(-lam1) * lam1**i / math.factorial(i) for i in range(MAX_GOALS + 1)]
+    pa = [math.exp(-mu1) * mu1**j / math.factorial(j) for j in range(MAX_GOALS + 1)]
+    out: dict[str, dict[str, float]] = {}
+    for name, m in MARKETS.items():
+        probs = {}
+        for sel, wins in m.selections.items():
+            if m.first_half:
+                probs[sel] = sum(ph[i] * pa[j] for i in range(MAX_GOALS + 1) for j in range(MAX_GOALS + 1) if wins(0, 0, i, j))
+            else:
+                probs[sel] = float(sum(full[i, j] for i in range(MAX_GOALS + 1) for j in range(MAX_GOALS + 1) if wins(i, j, 0, 0)))
+        out[name] = probs
+    return out
+
+
+# --- I fatti del campo ---
+
+@dataclass(frozen=True)
+class Played:
+    """Una partita giocata vista dalla parte della squadra: gol fatti, subiti, fatti e subiti nel primo tempo."""
+
+    scored: int
+    conceded: int
+    scored_1h: int
+    conceded_1h: int
+
+
+def hits(market: str, selection: str, games: Sequence[Played], as_home: bool) -> int:
+    """Quante volte l'esito è uscito: per la squadra di casa le sue partite in casa, per l'ospite quelle in trasferta."""
+    wins = MARKETS[market].selections[selection]
+    if as_home:
+        return sum(wins(g.scored, g.conceded, g.scored_1h, g.conceded_1h) for g in games)
+    return sum(wins(g.conceded, g.scored, g.conceded_1h, g.scored_1h) for g in games)
+
+
+@dataclass(frozen=True)
+class Evidence:
+    home_hits: int
+    home_n: int
+    away_hits: int
+    away_n: int
+
+    @property
+    def n(self) -> int:
+        return self.home_n + self.away_n
+
+    @property
+    def frequency(self) -> float:
+        return (self.home_hits + self.away_hits) / self.n if self.n else 0.0
+
+
+def archie_probability(p_model: float, ev: Evidence) -> float:
+    """Il modello vale come PRIOR_GAMES partite; poi contano i fatti."""
+    return (p_model * PRIOR_GAMES + ev.home_hits + ev.away_hits) / (PRIOR_GAMES + ev.n)
+
+
+# --- Pronostici ---
+
+@dataclass(frozen=True)
+class StudyPick:
+    market: str
+    selection: str
+    level: str
+    p_model: float
+    p_archie: float
+    evidence: Evidence
+    event: str
+    reasons: tuple[str, ...] = field(default=())
+
+
+def level_of(p: float) -> str | None:
+    for name, (lo, hi) in LEVELS.items():
+        if lo <= p < hi:
+            return name
+    return None
+
+
+def _count(k: int, n: int) -> str:
+    return f"{k} su {n}"
+
+
+def explain(event: str, ev: Evidence, home: str, away: str, p_model: float, p_archie: float) -> tuple[str, ...]:
+    return (
+        f"«{event[0].upper() + event[1:]}»: è successo in {_count(ev.home_hits, ev.home_n)} partite in casa del {home} "
+        f"e in {_count(ev.away_hits, ev.away_n)} in trasferta del {away}.",
+        f"Il modello dei gol dà il {p_model:.0%}; con i fatti del campo Archie arriva al {p_archie:.0%}.",
+    )
+
+
+def study_picks(
+    probs: dict[str, dict[str, float]], home_games: Sequence[Played], away_games: Sequence[Played], home: str, away: str
+) -> list[StudyPick]:
+    """Tutti i pronostici sensati della partita, con livello e spiegazione; mai quelli smentiti dal campo."""
+    if len(home_games) < MIN_SAMPLE or len(away_games) < MIN_SAMPLE:
+        return []
+    out = []
+    for market, sels in probs.items():
+        for sel, p_model in sels.items():
+            ev = Evidence(hits(market, sel, home_games, True), len(home_games), hits(market, sel, away_games, False), len(away_games))
+            p = archie_probability(p_model, ev)
+            level = level_of(p)
+            if level is None:
+                continue
+            floor = LEVELS[level][0]
+            if p_model < floor - MODEL_TOLERANCE:
+                continue  # solo il campo recente lo sostiene: troppo poco
+            # Il campo deve essere d'accordo da tutte e due le parti
+            if min(ev.home_hits / ev.home_n, ev.away_hits / ev.away_n) < floor - CONTRADICTED * 2 or ev.frequency < floor - CONTRADICTED:
+                continue
+            event = event_text(market, sel, home, away)
+            out.append(StudyPick(market, sel, level, p_model, p, ev, event, explain(event, ev, home, away, p_model, p)))
+    return out
+
+
+def strength(pick: StudyPick, price: float | None = None) -> float:
+    """Ordine dei pronostici di un livello: prima dove lo studio vede più della quota, poi i più solidi."""
+    edge = max(0.0, pick.p_archie * price - 1) if price else 0.0
+    agreement = 1 - abs(pick.evidence.frequency - pick.p_model)  # modello e campo d'accordo
+    return pick.p_archie + 0.5 * edge + 0.1 * agreement + 0.002 * pick.evidence.n
+
+
+def pick_strength(pick: dict) -> float:
+    """Come `strength`, sui pronostici salvati (dizionari): conta la quota migliore tra i bookmaker di Giuse."""
+    hh, hn, ah, an = pick["evidence"]
+    price = max(pick["prices"].values(), default=None)
+    edge = max(0.0, pick["p_archie"] * price - 1) if price else 0.0
+    frequency = (hh + ah) / (hn + an) if hn + an else 0.0
+    return pick["p_archie"] + 0.5 * edge + 0.1 * (1 - abs(frequency - pick["p_model"])) + 0.002 * (hn + an)
+
+
+def choose_multiple(studies: Sequence[tuple[int, list[dict]]], level: str, n: int, exclude: set[int] = frozenset()) -> list[tuple[int, dict]]:
+    """Il pronostico più solido del livello per ogni partita, poi le n partite migliori (una gamba per partita).
+    `exclude`: partite già proposte ("genera un'altra multipla")."""
+    best = []
+    for match_id, picks in studies:
+        if match_id in exclude:
+            continue
+        mine = [p for p in picks if p["level"] == level]
+        if mine:
+            top = max(mine, key=pick_strength)
+            best.append((pick_strength(top), match_id, top))
+    best.sort(key=lambda x: x[0], reverse=True)
+    return [(match_id, pick) for _, match_id, pick in best[:n]]

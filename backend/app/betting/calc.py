@@ -8,11 +8,13 @@ Mercati gestiti e loro esiti:
 - angoli e cartellini (D131): "COR9.5", "CORH4.5", "CRDA1.5", ... con "over", "under" (nomi in radar_markets)
 - gol di una squadra (D135): "TGH1.5" (casa), "TGA0.5" (ospite) con "over", "under"
 - "DNB" (Draw No Bet, D135): "1", "2"; col pareggio la puntata torna (selezione annullata)
+- dallo studio (D137): primo tempo ("1T_OU0.5", "1T_TGH0.5", ...), multigol ("MG2-4") e combo ("CB_1X_O1.5") con "yes"
 """
 
 from collections.abc import Iterable, Sequence
 from decimal import ROUND_HALF_UP, Decimal
 
+from app.forecast.study import MARKETS as STUDY_MARKETS
 from app.forecast.radar_markets import DNB, DNB_SELECTIONS, OVER_UNDER, is_secondary, is_team_goals, parse_secondary, parse_team_goals, secondary_won
 
 MARKETS: dict[str, tuple[str, ...]] = {
@@ -27,6 +29,15 @@ MARKETS: dict[str, tuple[str, ...]] = {
 }
 
 
+def is_study_only(market: str) -> bool:
+    """Mercati che esistono solo nello studio di Archie: primo tempo, multigol, combo (D137)."""
+    return market.startswith(("1T_", "MG", "CB_")) and market in STUDY_MARKETS
+
+
+def needs_half_time(market: str) -> bool:
+    return market.startswith("1T_")
+
+
 def ou_line(market: str) -> float | None:
     """Linea dei gol di un mercato Under/Over ("OU2.5" → 2.5), None per gli altri mercati."""
     return float(market[2:]) if market.startswith("OU") else None
@@ -39,6 +50,8 @@ def selections_of(market: str) -> tuple[str, ...]:
     """Esiti ammessi di un mercato (vuoto se il mercato non è gestito)."""
     if market == DNB:
         return DNB_SELECTIONS
+    if is_study_only(market):
+        return tuple(STUDY_MARKETS[market].selections)
     return MARKETS.get(market) or (OVER_UNDER if is_secondary(market) or is_team_goals(market) else ())
 
 
@@ -55,6 +68,14 @@ def market_name(market: str) -> str:
         return f"Under/Over {line:g}"
     if (team := parse_team_goals(market)) is not None:
         return f"gol {team[0]} Under/Over {team[1]:g}"
+    if market.startswith("1T_"):
+        inner = market_name(market[3:])
+        return f"{inner} primo tempo"
+    if market.startswith("MG"):
+        return f"multigol {market[2:]}"
+    if market.startswith("CB_"):
+        _, res, goals = market.split("_")
+        return f"combo {res} + {'Over' if goals[0] == 'O' else 'Under'} {goals[1:]}"
     if (parsed := parse_secondary(market)) is not None:
         family, side, line = parsed
         who = "" if side == "totale" else f" {side}"
@@ -76,8 +97,15 @@ def secondary_outcome(market: str, pick: str, corners: tuple[int | None, int | N
     return None if hit is None else WON if hit else LOST
 
 
-def selection_outcome(market: str, pick: str, home_goals: int, away_goals: int) -> str:
-    """Vinta o persa una selezione, dato il risultato finale."""
+def selection_outcome(market: str, pick: str, home_goals: int, away_goals: int, ht: tuple[int, int] | None = None) -> str:
+    """Vinta o persa una selezione, dato il risultato finale (e del primo tempo per i mercati del primo tempo)."""
+    if is_study_only(market):
+        if pick not in STUDY_MARKETS[market].selections:
+            raise ValueError(f"Esito '{pick}' non valido per il mercato '{market}'")
+        if needs_half_time(market) and ht is None:
+            raise ValueError("Serve il risultato del primo tempo")
+        x, y = ht or (0, 0)
+        return WON if STUDY_MARKETS[market].selections[pick](home_goals, away_goals, x, y) else LOST
     if not is_valid_pick(market, pick) or is_secondary(market):  # angoli e cartellini: secondary_outcome
         raise ValueError(f"Esito '{pick}' non valido per il mercato '{market}'")
     result = "1" if home_goals > away_goals else "X" if home_goals == away_goals else "2"
