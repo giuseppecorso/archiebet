@@ -369,3 +369,43 @@
     border-left-color: #e5534b;
   }
 }
+
+/* Schedina aperta: pannello sopra la lista (al centro su PC, dal basso sul telefono) */
+.sheet-back {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.6);
+}
+.sheet {
+  position: relative;
+  flex: 0 1 640px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+.sheet-x {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 36px;
+  min-height: 36px;
+  font-size: 16px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+@media (max-width: 600px) {
+  .sheet-back {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .sheet {
+    flex-basis: 100%;
+    max-height: 85vh;
+  }
+}

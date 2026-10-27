@@ -123,10 +123,7 @@
                   <span class="muted small">quota da cercare sull'app · giusta secondo lo studio {{ fmt.odds(1 / s.leg.p_archie) }}</span>
                 }
               </span>
-              <details class="why">
-                <summary>Perché</summary>
-                @for (r of s.leg.reasons; track $index) { <p>{{ r }}</p> }
-              </details>
+              <ab-why [title]="capital(s.leg.event)" [reasons]="s.leg.reasons" />
             </div>
           }
         </div>

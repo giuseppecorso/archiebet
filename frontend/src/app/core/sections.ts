@@ -124,5 +124,4 @@ export const PRONOSTICI_TABS: SubItem[] = [
 export const MIO_ARCHIE_TABS: SubItem[] = [
   { label: 'Le mie schedine', link: '/schedine', subtree: true },
   { label: 'Statistiche e regolamento', link: '/statistiche' },
-  { label: 'Chiedi ad Archie', link: '/chiedi' },
 ];

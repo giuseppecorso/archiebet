@@ -1,4 +1,5 @@
 import { AskArchie } from '../../shared/ask-archie';
+import { WhyPopup } from '../../shared/why-popup';
 import { AuthService } from '../../core/auth.service';
 import { StudyLeg } from '../../core/study';
 import { OfferButton } from '../../shared/offer-button';
@@ -77,7 +78,7 @@ const ARCHIE_MARKETS: [string, string, string][] = [
 
 @Component({
   selector: 'ab-match',
-  imports: [RouterLink, FormBadges, ShowMore, Crest, LeagueLogo, KeyValuePipe, AskArchie, OfferButton, MatchEvents],
+  imports: [RouterLink, FormBadges, ShowMore, Crest, LeagueLogo, KeyValuePipe, AskArchie, OfferButton, MatchEvents, WhyPopup],
   templateUrl: './match.html',
   styleUrl: './match.scss',
 })

@@ -176,7 +176,7 @@ describe('ArchieBet: navigazione', () => {
     await harness.fixture.whenStable();
     const page = harness.routeNativeElement!;
     expect(page.querySelector('.event')?.textContent).toContain('Brescia segna nel primo tempo');
-    expect(page.querySelector('.why')?.textContent).toContain('8 su 9 partite in casa del Brescia');
+    expect(page.querySelector('.why-dlg')?.textContent).toContain('8 su 9 partite in casa del Brescia'); // il perché sta nel popup
     expect(page.querySelector('.offers')?.textContent).toContain("quota da cercare sull'app");
     expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Pronostici');
 

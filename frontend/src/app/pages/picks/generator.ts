@@ -10,6 +10,7 @@ import { SlipService } from '../../core/slip';
 import { StudyLeg, StudyMultiple } from '../../core/study';
 import { Crest } from '../../shared/crest';
 import { OfferButton } from '../../shared/offer-button';
+import { WhyPopup } from '../../shared/why-popup';
 
 type Level = 'cauto' | 'equilibrato' | 'rischioso';
 
@@ -29,7 +30,7 @@ const HORIZONS: [Horizon, string][] = [
 /** "Archie, fammi una multipla": i pronostici studiati da Archie (D137), ognuno con il suo perché. */
 @Component({
   selector: 'ab-generator',
-  imports: [Crest, KeyValuePipe, OfferButton, RouterLink],
+  imports: [Crest, KeyValuePipe, OfferButton, RouterLink, WhyPopup],
   template: `
     <section class="panel box form" aria-labelledby="gen-title">
       <h2 id="gen-title" class="title">Archie, fammi una multipla</h2>
@@ -87,10 +88,7 @@ const HORIZONS: [Horizon, string][] = [
                     <span class="muted small">quota da cercare sull'app del bookmaker · giusta secondo lo studio {{ fair(l.p_archie) }}</span>
                   }
                 </div>
-                <details class="why">
-                  <summary>Perché</summary>
-                  @for (r of l.reasons; track $index) { <p>{{ r }}</p> }
-                </details>
+                <ab-why [title]="capital(l.event)" [reasons]="l.reasons" />
               </li>
             }
           </ol>

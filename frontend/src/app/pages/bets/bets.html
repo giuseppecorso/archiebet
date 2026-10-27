@@ -13,10 +13,12 @@
   }
 }
 
-<div class="layout">
-  <section class="detail" aria-label="Dettaglio schedina">
-    @if (selected(); as bet) {
+@if (selected(); as bet) {
+  <!-- La schedina aperta sta in un pannello sopra la lista: filtri e lista restano sempre al loro posto -->
+  <div class="sheet-back" (click)="close()">
+  <section class="detail sheet" aria-label="Dettaglio schedina" (click)="$event.stopPropagation()">
       <div class="panel box">
+        <button type="button" class="sheet-x" aria-label="Chiudi" (click)="close()">✕</button>
         <div class="head">
           <div>
             <h1 class="title bet-title">{{ title(bet) }}{{ bet.bookmaker ? ' · ' + bet.bookmaker : '' }}</h1>
@@ -110,17 +112,11 @@
           <p class="error" role="alert">{{ e }}</p>
         }
       </div>
-    } @else if (bets.hasValue()) {
-      <div class="panel box empty">
-        <h1 class="title bet-title">Nessuna schedina</h1>
-        <p class="muted">Registra la prima giocata, reale o simulata: Archie la segue e la chiude da solo quando arrivano i risultati.</p>
-        <a routerLink="/schedine/nuova" class="btn-primary">Registra una giocata</a>
-      </div>
-    } @else {
-      <p class="muted">Carico le schedine…</p>
-    }
   </section>
+  </div>
+}
 
+<div class="layout">
   <aside class="list panel" aria-label="Elenco schedine">
     <div class="list-head">
       <a routerLink="/schedine/nuova" class="btn-primary new">Registra una giocata</a>
@@ -150,7 +146,7 @@
           </a>
         </li>
       } @empty {
-        <li class="muted small pad">Nessuna schedina con questi filtri.</li>
+        <li class="muted small pad">{{ bets.hasValue() ? (counts().all ? 'Nessuna schedina con questi filtri.' : 'Nessuna schedina: registra la prima giocata, reale o simulata. Archie la segue e la chiude da solo quando arrivano i risultati.') : 'Carico le schedine…' }}</li>
       }
     </ul>
     <div class="pad"><ab-show-more [total]="filtered().length" [limit]="10" [(expanded)]="listOpen" /></div>

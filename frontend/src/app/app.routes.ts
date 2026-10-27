@@ -37,7 +37,7 @@ export const routes: Routes = [
       { path: 'gioca', redirectTo: 'simulatore' },
       { path: 'diretta', loadComponent: () => import('./pages/live/live').then((m) => m.DirettaPage), title: 'Diretta · ArchieBet' },
       { path: 'live', redirectTo: 'diretta' },
-      { path: 'chiedi', loadComponent: () => import('./pages/ask/ask').then((m) => m.AskPage), title: 'Chiedi ad Archie · ArchieBet' },
+      { path: 'chiedi', redirectTo: 'partite' }, // le domande si fanno nella pagina della partita
       { path: 'laboratorio', pathMatch: 'full', redirectTo: 'laboratorio/campionati' },
       { path: 'laboratorio/campionati', loadComponent: () => import('./pages/lab/lab-leagues').then((m) => m.LabLeagues), title: 'Laboratorio · Campionati · ArchieBet' },
       { path: 'laboratorio/impara', loadComponent: () => import('./pages/lab/lab-learning').then((m) => m.LabLearning), title: 'Laboratorio · Cosa impara Archie · ArchieBet' },

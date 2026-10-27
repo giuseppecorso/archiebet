@@ -69,8 +69,12 @@ export class Bets {
 
   protected readonly selected = computed(() => {
     const all = this.bets.value();
-    return all.find((b) => b.id === Number(this.id())) ?? this.filtered()[0] ?? null;
+    return this.id() ? (all.find((b) => b.id === Number(this.id())) ?? null) : null; // si apre solo quella cliccata
   });
+
+  protected close(): void {
+    this.router.navigate(['/schedine']);
+  }
 
   protected title(bet: Bet): string {
     const n = bet.selections.length;
