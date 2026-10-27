@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
 import { SECTIONS } from './core/sections';
 import { Shell } from './layout/shell';
@@ -35,8 +36,8 @@ export const routes: Routes = [
       { path: 'schedine/:id', loadComponent: BUILT['schedine'], title: 'Le mie schedine · ArchieBet' },
       { path: 'radar', redirectTo: () => '/pronostici?tab=occasioni' },
       { path: 'gioca', redirectTo: 'simulatore' },
-      { path: 'diretta', loadComponent: () => import('./pages/live/live').then((m) => m.DirettaPage), title: 'Diretta · ArchieBet' },
-      { path: 'live', redirectTo: 'diretta' },
+      { path: 'diretta', redirectTo: () => inject(Router).parseUrl('/partite?stato=live') }, // Diretta e Partite sono una sezione sola
+      { path: 'live', redirectTo: () => inject(Router).parseUrl('/partite?stato=live') },
       { path: 'chiedi', redirectTo: 'partite' }, // le domande si fanno nella pagina della partita
       { path: 'laboratorio', pathMatch: 'full', redirectTo: 'laboratorio/campionati' },
       { path: 'laboratorio/campionati', loadComponent: () => import('./pages/lab/lab-leagues').then((m) => m.LabLeagues), title: 'Laboratorio · Campionati · ArchieBet' },

@@ -167,3 +167,12 @@ export interface MatchDetail {
 }
 
 export const OUTCOME_LABEL: Record<Outcome, string> = { V: 'vinta', N: 'pareggio', P: 'persa' };
+
+/** Marcatori di una squadra: "Thorstvedt 7', Esposito 43' (rig.)" */
+export function scorerList(events: MatchEvent[] | undefined, side: 'home' | 'away'): string {
+  const notes: Record<string, string> = { penalty: ' (rig.)', own_goal: ' (aut.)' };
+  return (events ?? [])
+    .filter((e) => e.side === side && (e.kind === 'goal' || e.kind === 'penalty' || e.kind === 'own_goal'))
+    .map((e) => `${shortName(e.player)} ${eventMinute(e)}${notes[e.kind] ?? ''}`)
+    .join(', ');
+}

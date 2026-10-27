@@ -970,3 +970,16 @@ tr.absent td {
 .card-sub .sep {
   margin: 0 3px 0 4px;
 }
+.head-scorers {
+  margin: 0;
+  max-width: 100%;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--text-2);
+}
+@media (max-width: 600px) {
+  .head-scorers {
+    font-size: 10px;
+  }
+}

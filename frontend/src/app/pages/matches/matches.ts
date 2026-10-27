@@ -1,9 +1,12 @@
 import { httpResource } from '@angular/common/http';
-import { Component, computed, effect, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Competition, CompetitionGroup } from '../../core/football';
+import { Competition, CompetitionGroup, MatchCard } from '../../core/football';
+import { LIVE_REFRESH_MS } from '../../core/live';
 import { LeagueLogo } from '../../shared/crest';
-import { MatchRow } from '../../shared/match-row';
+import { DirettaRow } from '../live/live';
+
+type Filter = 'tutte' | 'live' | 'finite' | 'programma';
 
 const STORAGE_KEY = 'archiebet.matches.competition';
 const DAYS_BACK = 3;
@@ -29,7 +32,7 @@ export function dayName(offset: number, now: Date = new Date()): string {
 /** Partite di un giorno, per campionato: si sceglie il giorno, il campionato e si cerca una squadra. */
 @Component({
   selector: 'ab-matches',
-  imports: [MatchRow, LeagueLogo, FormsModule],
+  imports: [DirettaRow, LeagueLogo, FormsModule],
   templateUrl: './matches.html',
   styleUrl: './matches.scss',
 })
@@ -40,16 +43,25 @@ export class Matches {
   protected readonly team = signal('');
   /** 'ora' = per campionato e orario; 'notizie' = prima le partite su cui il tifoso sa di più */
   protected readonly order = signal<'ora' | 'notizie'>('ora');
+  /** Dall'indirizzo: ?stato=live (la vecchia Diretta) */
+  readonly stato = input<string | undefined>(undefined);
+  protected readonly filters: [Filter, string][] = [['tutte', 'Tutte'], ['live', 'In diretta'], ['finite', 'Finite'], ['programma', 'Da giocare']];
+  protected readonly filter = signal<Filter>('tutte');
+  /** Sale ogni 30 secondi: oggi ricarica punteggi e cronache aperte */
+  protected readonly tick = signal(0);
 
   protected readonly competitions = httpResource<Competition[]>(() => '/api/competitions', { defaultValue: [] });
   protected readonly data = httpResource<CompetitionGroup[]>(
-    () => `/api/matches?view=day&day=${this.day()}&limit=200${this.competition() ? `&competitions=${this.competition()}` : ''}`,
+    () =>
+      `/api/matches?view=day&day=${this.day()}&limit=200${this.competition() ? `&competitions=${this.competition()}` : ''}${this.day() === isoDay() ? `&t=${this.tick()}` : ''}`,
   );
+
+  protected readonly liveCount = computed(() => (this.data.value() ?? []).reduce((n, g) => n + g.matches.filter((m) => !!m.live).length, 0));
 
   protected readonly groups = computed(() => {
     const q = this.team().trim().toLowerCase();
     return (this.data.value() ?? [])
-      .map((g) => ({ ...g, matches: g.matches.filter((m) => !q || `${m.home.name} ${m.away.name}`.toLowerCase().includes(q)) }))
+      .map((g) => ({ ...g, matches: g.matches.filter((m) => this.keep(m) && (!q || `${m.home.name} ${m.away.name}`.toLowerCase().includes(q))) }))
       .filter((g) => g.matches.length);
   });
 
@@ -61,7 +73,25 @@ export class Matches {
       .sort((a, b) => (b.news ?? 0) - (a.news ?? 0)),
   );
 
+  private keep(m: MatchCard): boolean {
+    switch (this.filter()) {
+      case 'live':
+        return !!m.live;
+      case 'finite':
+        return m.status === 'finished';
+      case 'programma':
+        return m.status === 'scheduled' && !m.live;
+      default:
+        return true;
+    }
+  }
+
   constructor() {
+    const timer = setInterval(() => this.tick.update((n) => n + 1), LIVE_REFRESH_MS);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+    effect(() => {
+      if (this.stato() === 'live') this.filter.set('live');
+    });
     effect(() => {
       try {
         localStorage.setItem(STORAGE_KEY, this.competition());

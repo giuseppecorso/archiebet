@@ -11,7 +11,7 @@ import { Market, marketLabel, marketSelections, pickLabel } from '../../core/bet
 import { MatchAnalysis, MatchNumbers, MatchPicks, PlayerShots, TeamLineup, verdictClass } from '../../core/picks';
 import { RouterLink } from '@angular/router';
 import { FanFact, MatchFan, SOURCE_LABELS, factTone } from '../../core/fan';
-import { MatchDetail, MatchEvent, OddsRow, TeamSummary } from '../../core/football';
+import { MatchDetail, MatchEvent, OddsRow, TeamSummary, scorerList } from '../../core/football';
 import { Twins } from '../../core/lab';
 import { dayLabel, fairOdds, kickoffTime, longDate, num, odds, pct } from '../../core/format';
 import { LIVE_REFRESH_MS, liveLabel } from '../../core/live';
@@ -102,6 +102,10 @@ export class MatchPage {
   );
   /** Angoli e cartellini: lo studio non li calcola, restano le probabilità dalle quote (D131) */
   protected readonly statsSuggestions = computed(() => (this.matchPicks.value()?.suggestions ?? []).filter((s) => /^(COR|CRD)/.test(s.market)));
+  /** Marcatori nel tabellone in alto (partita in corso o finita) */
+  protected scorers(side: 'home' | 'away'): string {
+    return scorerList(this.events.value() ?? undefined, side);
+  }
   protected priceList(leg: StudyLeg): [string, number][] {
     return Object.entries(leg.prices);
   }

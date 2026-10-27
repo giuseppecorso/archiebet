@@ -61,7 +61,7 @@ describe('ArchieBet: navigazione', () => {
     const harness = await navigateAs('/partite', true);
 
     const links = [...harness.routeNativeElement!.querySelectorAll('nav.nav a')].map((a) => a.textContent?.trim());
-    expect(links).toEqual(['Home', 'Partite', 'Diretta', 'Pronostici', 'Il mio Archie']);
+    expect(links).toEqual(['Home', 'Partite', 'Pronostici', 'Il mio Archie']); // Diretta dentro Partite
 
     const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
     const premier = { code: 'ENG-1', name: 'Premier League', country: 'Inghilterra', tier: 1 };
@@ -84,11 +84,12 @@ describe('ArchieBet: navigazione', () => {
     const page = harness.routeNativeElement!;
     expect(page.textContent).not.toContain('Prossime'); // niente più divisione tra prossime e risultati
 
-    const row = page.querySelector('ab-match-row a') as HTMLAnchorElement;
+    const row = page.querySelector('ab-diretta-row .row') as HTMLButtonElement;
     expect(row.textContent).toContain('Napoli');
     expect(row.textContent).toContain('20:45'); // 18:45 UTC in ora italiana
-    expect(row.textContent).toContain('1.44');
-    expect(row.getAttribute('href')).toBe('/partite/7');
+    row.click(); // la riga si apre e porta alla partita
+    harness.fixture.detectChanges();
+    expect(page.querySelector('ab-diretta-row a.open')?.getAttribute('href')).toBe('/partite/7');
 
     // Tendina dei campionati: Premier League
     const [daySelect, compSelect] = [...page.querySelectorAll('.toolbar select')] as HTMLSelectElement[];
@@ -121,8 +122,9 @@ describe('ArchieBet: navigazione', () => {
   });
 
   it('la diretta mostra risultati, marcatori e cronaca come un sito di risultati (D133)', async () => {
-    const harness = await navigateAs('/live', true); // il vecchio indirizzo porta alla Diretta
-    expect(TestBed.inject(Router).url).toBe('/diretta');
+    const harness = await navigateAs('/live', true); // i vecchi indirizzi portano a Partite, sulle partite in diretta
+    expect(TestBed.inject(Router).url).toBe('/partite?stato=live');
+    (await nextRequest('/api/competitions')).flush([]);
     const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
     const team = (id: number, name: string) => ({ id, name });
     const card = (id: number, extra: object) => ({
@@ -138,23 +140,27 @@ describe('ArchieBet: navigazione', () => {
     ]);
     await harness.fixture.whenStable();
     const page = harness.routeNativeElement!;
+    expect(page.querySelectorAll('ab-diretta-row').length).toBe(1); // si apre già su "In diretta"
+    expect(page.querySelector('.chips .count')?.textContent).toBe('1');
+    ([...page.querySelectorAll('.chips .chip')] as HTMLButtonElement[]).find((b) => b.textContent?.includes('Tutte'))!.click();
+    harness.fixture.detectChanges();
     const rows = [...page.querySelectorAll('ab-diretta-row')];
     expect(rows.length).toBe(2);
+    expect(rows[0].querySelector('.scorers')?.textContent).toContain("Martínez 20'"); // marcatori sotto la riga
     expect(rows[0].textContent).toContain('Finale');
     expect(rows[0].textContent).toContain('(1-0)');
     expect(rows[1].querySelector('.live')?.textContent).toContain("67'");
 
-    ([...page.querySelectorAll('.toolbar .chip')] as HTMLButtonElement[]).find((b) => b.textContent?.includes('In corso'))!.click();
+    ([...page.querySelectorAll('.chips .chip')] as HTMLButtonElement[]).find((b) => b.textContent?.includes('In diretta'))!.click();
     harness.fixture.detectChanges();
     expect(page.querySelectorAll('ab-diretta-row').length).toBe(1);
-    expect(page.querySelector('.toolbar .count')?.textContent).toBe('1');
 
     (page.querySelector('ab-diretta-row .row') as HTMLButtonElement).click();
     harness.fixture.detectChanges();
     (await nextRequest((r) => r.url.startsWith('/api/matches/2/events'))).flush([goal]);
     await harness.fixture.whenStable();
     expect(page.querySelector('ab-match-events')?.textContent).toContain('Lautaro Martínez');
-    expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Diretta');
+    expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Partite');
   });
 
   it('il generatore propone pronostici studiati con il perché e ne genera altri (D137)', async () => {
