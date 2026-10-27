@@ -161,6 +161,7 @@ describe('ArchieBet: navigazione', () => {
     const harness = await navigateAs('/pronostici', true);
     const serieB = { code: 'ITA-B', name: 'Serie B', country: 'Italia', tier: 2 };
     (await nextRequest('/api/competitions')).flush([serieB]);
+    (await nextRequest('/api/study/themes')).flush({ tutte: 'Tutte', coppe: 'Competizioni internazionali' });
     const first = await nextRequest((r) => r.url.startsWith('/api/study/multiple'));
     expect(first.request.url).toBe('/api/study/multiple?level=equilibrato&legs=4&horizon=2days');
     const leg = {

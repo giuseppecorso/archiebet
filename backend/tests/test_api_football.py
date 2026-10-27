@@ -208,7 +208,7 @@ def test_cup_teams_keep_their_country_and_known_teams_are_reused(db):
     report = import_fixtures(db, cup, {505: "Italy", 211: "Portugal"})
     assert report.created == 1
     teams = {t.name: t.country for t in db.scalars(select(Team))}
-    assert teams["Inter"] == "Italia" and teams["Benfica"] == "Portugal"
+    assert teams["Inter"] == "Italia" and teams["Benfica"] == "Portogallo"
     assert count(db, Team) == 3  # Inter è la stessa della Serie A
 
 

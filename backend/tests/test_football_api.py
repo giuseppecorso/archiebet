@@ -53,7 +53,7 @@ def test_competitions(logged_client, seeded):
     top = ["ITA-A", "EU-CL", "EU-EL", "EU-ECL", "ENG-1", "ESP-1", "GER-1", "FRA-1", "ITA-B"]
     assert codes[: len(top)] == top  # i campionati principali in testa, come su un sito di risultati
     rest = codes[len(top) :]
-    assert rest[:3] == ["BUL-1", "CZE-1", "CRO-1"]  # poi paese per paese in ordine alfabetico: Bulgaria, Cechia, Croazia...
+    assert rest[:4] == ["AUT-1", "AUT-2", "BEL-1", "BEL-2"]  # poi paese per paese in ordine alfabetico (Austria, Belgio...), per categoria
     assert rest.index("FRA-2") < rest.index("ENG-2") < rest.index("ITA-C-A")  # Francia, ..., Inghilterra, ..., Italia (Serie C)
 
 

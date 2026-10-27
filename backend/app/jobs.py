@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from app.adapters.api_football import EAST_NORTH, ApiFootballAdapter
+from app.adapters.api_football import EAST_NORTH, MINOR, MORE_TOP, ApiFootballAdapter
 from app.adapters.cache import FileCache
 from app.adapters.football_data import FootballDataAdapter, season_of
 from app.adapters.oddspapi import OddsPapiAdapter
@@ -73,14 +73,34 @@ def api_football_adapter(db, settings: Settings) -> ApiFootballAdapter:
     )
 
 
+HISTORY_SEASONS = 3  # stagioni passate per lo studio dove football-data non arriva (D146)
+
+
+def followed_leagues(settings: Settings) -> list[int]:
+    """Tutti i campionati e le coppe seguiti con API-Football (id)."""
+    return list(dict.fromkeys([*settings.api_football_league_ids, *settings.api_football_current_league_ids, *EAST_NORTH, *MORE_TOP, *MINOR]))
+
+
 def sync_api_football_all(db, settings: Settings, log=logger.info) -> ImportReport:
-    """Serie C con lo storico; tutti i campionati per la stagione in corso (D80)."""
+    """Serie C con lo storico; tutti i campionati per la stagione in corso (D80); le ultime 3 stagioni dei campionati
+    senza storico da football-data e delle coppe, una volta sola (D146)."""
+    from app.adapters.api_football import LEAGUES
+    from app.adapters.football_data import season_label
+    from sqlalchemy import select
+
+    from app.models import Competition, Match
+
     adapter = api_football_adapter(db, settings)
     current = season_of(datetime.now(UTC).date())
     past = [s for s in settings.api_football_season_years if s < current]
     report = sync_api_football(db, adapter, settings.api_football_league_ids, past, log=log)
-    leagues = [*settings.api_football_league_ids, *settings.api_football_current_league_ids, *EAST_NORTH]
-    report.add(sync_api_football(db, adapter, leagues, [current], log=log))
+    report.add(sync_api_football(db, adapter, followed_leagues(settings), [current], log=log))
+    without_history = [*EAST_NORTH, *MORE_TOP, *MINOR, 2, 3, 848]
+    for season in range(current - HISTORY_SEASONS, current):
+        known = set(db.scalars(select(Competition.code).join(Match, Match.competition_id == Competition.id).where(Match.season == season_label(season)).distinct()))
+        todo = [lg for lg in without_history if LEAGUES[lg] not in known]
+        if todo:
+            report.add(sync_api_football(db, adapter, todo, [season], log=log))
     return report
 
 
@@ -264,7 +284,7 @@ def live_job() -> None:
         with SessionLocal() as db:
             if not needs_live(db, now):
                 return
-            leagues = [*settings.api_football_league_ids, *settings.api_football_current_league_ids, *EAST_NORTH]
+            leagues = followed_leagues(settings)
             report = sync_live(db, api_football_adapter(db, settings), leagues, now)
             if report.finished:
                 settle_radar(db, now)

@@ -408,3 +408,40 @@ def favored_side(market: str, selection: str) -> str | None:
 
 def half_of(market: str) -> str | None:
     return "primo" if market.startswith("1T_") else "secondo" if market.startswith("2T_") else None
+
+
+# --- Multiple a tema ---
+
+THEMES = {
+    "tutte": "Tutte",
+    "primo_tempo": "Solo primo tempo",
+    "gol": "Solo gol",
+    "maggiori": "Campionati maggiori",
+    "minori": "Serie minori",
+    "coppe": "Competizioni internazionali",
+    "notizie": "Partite con più notizie",
+}
+GOAL_MARKETS = ("OU", "GG", "TG", "MG")  # Under/Over, Goal/No goal, gol di una squadra, multigol
+NEWS_MIN = 3  # "più notizie": almeno 3 notizie sulle due squadre
+
+
+def theme_market(theme: str, market: str) -> bool:
+    """Il mercato rientra nel tema?"""
+    if theme == "primo_tempo":
+        return market.startswith("1T_")
+    if theme == "gol":
+        return market.split("_", 1)[-1].startswith(GOAL_MARKETS) if market[:3] in ("1T_", "2T_") else market.startswith(GOAL_MARKETS)
+    return True
+
+
+def theme_match(theme: str, tier: int, cup: bool, news: int) -> bool:
+    """La partita rientra nel tema? `tier`: categoria del campionato (1 = massima serie), `news`: notizie raccolte."""
+    if theme == "maggiori":
+        return tier == 1 and not cup
+    if theme == "minori":
+        return tier >= 2 and not cup
+    if theme == "coppe":
+        return cup
+    if theme == "notizie":
+        return news >= NEWS_MIN
+    return True

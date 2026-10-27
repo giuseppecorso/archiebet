@@ -1,6 +1,6 @@
 """Studio delle partite in programma (D137): dati dal database, modello per paese, salvataggio in `match_studies`."""
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime, timedelta
 
@@ -283,12 +283,90 @@ def weather_reader():
     return read
 
 
-def refresh_studies(db: Session, now: datetime, log=print) -> int:
-    """Studia tutte le partite dei prossimi giorni (coppe europee escluse: squadre di paesi diversi)."""
-    upcoming = list(db.scalars(
+def _aware(when: datetime) -> datetime:
+    return when if when.tzinfo else when.replace(tzinfo=UTC)
+
+
+def cup_fit(db: Session, now: datetime, season: str) -> tuple[DixonColesFit | None, Counter]:
+    """Modello delle coppe (D146): tutti i campionati e le coppe degli ultimi 3 anni in un solo Dixon-Coles,
+    e le partite di campionato di ogni squadra (per la soglia minima). `season`: la stagione in corso."""
+    from app.adapters.api_football import LEAGUES
+    from app.forecast import cup_model
+
+    codes = [LEAGUES[i] for i in cup_model.league_ids()]
+    rows = db.execute(
+        select(Match.id, Match.kickoff_at, Match.season, Match.competition_id, Match.home_team_id, Match.away_team_id,
+               Match.home_goals, Match.away_goals, Competition.country)
+        .join(Competition, Competition.id == Match.competition_id)
+        .where(Match.status == MatchStatus.FINISHED, Match.home_goals.is_not(None), Match.away_goals.is_not(None),
+               Match.kickoff_at >= now - timedelta(days=cup_model.WINDOW_DAYS), Match.kickoff_at < now,
+               or_(Competition.country == CUP_COUNTRY, Competition.code.in_(codes)))
+    ).all()  # fmt: skip
+    finals: dict[tuple[int, str], datetime] = {}  # ultima partita di ogni coppa nelle stagioni concluse: la finale
+    for r in rows:
+        if r.country == CUP_COUNTRY and r.season != season:
+            key = (r.competition_id, r.season)
+            finals[key] = max(finals.get(key, _aware(r.kickoff_at)), _aware(r.kickoff_at))
+    games = [cup_model.R(r.id, _aware(r.kickoff_at), 0, r.home_team_id, r.away_team_id, r.home_goals, r.away_goals,
+                         cup=r.country == CUP_COUNTRY, final=finals.get((r.competition_id, r.season)) == _aware(r.kickoff_at))
+             for r in rows]  # fmt: skip
+    return cup_model.joint_fit(games, now), cup_model.league_games(games, now)
+
+
+def _league_history(db: Session, team_ids: Iterable[int], seasons: Iterable[str], before: datetime) -> list[Match]:
+    """Partite di campionato (coppe escluse) delle squadre indicate, dalla più recente."""
+    ids = list(team_ids)
+    return list(db.scalars(
         select(Match).join(Competition, Competition.id == Match.competition_id)
-        .where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now, Match.kickoff_at <= now + timedelta(days=STUDY_DAYS),
-               Competition.country != CUP_COUNTRY)
+        .where(Competition.country != CUP_COUNTRY, or_(Match.home_team_id.in_(ids), Match.away_team_id.in_(ids)),
+               Match.season.in_(list(seasons)), Match.status == MatchStatus.FINISHED, Match.home_goals.is_not(None),
+               Match.ht_home_goals.is_not(None), Match.kickoff_at < before)
+        .order_by(Match.kickoff_at.desc())
+    ))  # fmt: skip
+
+
+def _save_study(db: Session, m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict, adj: Adjustment,
+                xg: tuple[float, float] | None, insight: MatchInsight | None, weather, now: datetime) -> bool:
+    """Notizie, meteo e prudenza sopra la correzione data, poi lo studio salvato. False se mancano i dati."""
+    home, away = m.home_team.name, m.away_team.name
+    if insight is not None:
+        adj = news_adjustment(insight.side, insight.strength, insight.reason, home, away).then(adj)
+    if _aware(m.kickoff_at) <= now + timedelta(days=WEATHER_DAYS):
+        adj = adj.then(weather_adjustment(*weather(m)))
+    caution = {"home": caution_for(db, m, m.home_team_id, home, insight, "home"), "away": caution_for(db, m, m.away_team_id, away, insight, "away")}
+    data = study_match(m, fit, games, book, adj, xg, caution)
+    if data is None:
+        return False
+    row = db.get(MatchStudy, m.id) or MatchStudy(match_id=m.id)
+    row.computed_at, row.data = now, data
+    db.add(row)
+    return True
+
+
+CUP_NOTE = ("Coppa europea: la forza delle squadre viene da un solo modello con tutti i campionati, collegati dalle partite "
+            "europee degli ultimi anni (prova D146). Forma e fatti del campo vengono dal campionato di ciascuna.")
+
+
+def _refresh_cups(db: Session, matches: Sequence[Match], now: datetime, books: dict, insights: dict, weather, log) -> int:
+    """Partite di coppa: modello collegato (D146), solo se entrambe le squadre hanno abbastanza partite di campionato."""
+    from app.forecast.cup_model import MIN_LEAGUE_GAMES
+
+    fit, league_counts = cup_fit(db, now, matches[0].season)
+    done = 0
+    for m in matches if fit is not None else ():
+        if min(league_counts[m.home_team_id], league_counts[m.away_team_id]) < MIN_LEAGUE_GAMES:
+            continue  # di una delle due sappiamo troppo poco
+        games = _league_history(db, (m.home_team_id, m.away_team_id), (m.season, season_before(m.season)), now)
+        done += _save_study(db, m, fit, games, books.get(m.id, {}), Adjustment(reasons=(CUP_NOTE,)), None, insights.get(m.id), weather, now)
+    db.commit()
+    log(f"studio coppe: {done} partite su {len(matches)}")
+    return done
+
+
+def refresh_studies(db: Session, now: datetime, log=print) -> int:
+    """Studia tutte le partite dei prossimi giorni: un modello per campionato (D140), uno per tutte le coppe (D146)."""
+    upcoming = list(db.scalars(
+        select(Match).where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now, Match.kickoff_at <= now + timedelta(days=STUDY_DAYS))
     ))  # fmt: skip
     by_country: dict[str, list[Match]] = defaultdict(list)
     for m in upcoming:
@@ -301,6 +379,9 @@ def refresh_studies(db: Session, now: datetime, log=print) -> int:
     adapter, af_of_team, af_league_of = _api_football(db)
     done = 0
     for country, matches in by_country.items():
+        if country == CUP_COUNTRY:
+            done += _refresh_cups(db, matches, now, books, insights, weather, log)
+            continue
         country_games = load_games(db, country)
         fits: dict[int, DixonColesFit | None] = {}
         xg_fits: dict[int, DixonColesFit | None] = {}
@@ -320,21 +401,8 @@ def refresh_studies(db: Session, now: datetime, log=print) -> int:
             if key not in history:
                 history[key] = _finished(db, m.competition_id, (m.season, season_before(m.season)), now)
             spots = table(history[key], m.season)
-            home, away = m.home_team.name, m.away_team.name
-            adj = motivation_adjustment(spots.get(m.home_team_id), spots.get(m.away_team_id), home, away)
-            if (ins := insights.get(m.id)) is not None:
-                adj = news_adjustment(ins.side, ins.strength, ins.reason, home, away).then(adj)
-            if m.kickoff_at.replace(tzinfo=m.kickoff_at.tzinfo or UTC) <= now + timedelta(days=WEATHER_DAYS):
-                adj = adj.then(weather_adjustment(*weather(m)))
-            insight = insights.get(m.id)
-            caution = {"home": caution_for(db, m, m.home_team_id, home, insight, "home"), "away": caution_for(db, m, m.away_team_id, away, insight, "away")}
-            data = study_match(m, fit, history[key], books.get(m.id, {}), adj, xg, caution)
-            if data is None:
-                continue
-            row = db.get(MatchStudy, m.id) or MatchStudy(match_id=m.id)
-            row.computed_at, row.data = now, data
-            db.add(row)
-            done += 1
+            adj = motivation_adjustment(spots.get(m.home_team_id), spots.get(m.away_team_id), m.home_team.name, m.away_team.name)
+            done += _save_study(db, m, fit, history[key], books.get(m.id, {}), adj, xg, insights.get(m.id), weather, now)
         db.commit()
         log(f"studio {country}: {len(matches)} partite")
     return done

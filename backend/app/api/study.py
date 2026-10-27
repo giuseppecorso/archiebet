@@ -6,12 +6,13 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from app.api.football import MatchCard, match_cards
+from app.api.football import MatchCard, _news_counts, match_cards
 from app.api.picks import Horizon, horizon_window
 from app.auth.deps import CurrentUser, DbSession
 from app.betting.calc import market_name
-from app.forecast.study import LEVELS, choose_multiple
+from app.forecast.study import LEVELS, THEMES, choose_multiple, theme_market, theme_match
 from app.forecast.study_service import load_studies
+from app.ingest.teams import CUP_COUNTRY
 from app.models import Match, MatchStudy
 
 router = APIRouter(prefix="/api/study", tags=["studio"])
@@ -20,6 +21,7 @@ BOOKMAKER_LABELS = {"sisal": "Sisal", "eurobet": "Eurobet"}
 MAX_LEGS = 30
 
 Level = Literal["cauto", "equilibrato", "rischioso"]
+Theme = Literal["tutte", "primo_tempo", "gol", "maggiori", "minori", "coppe", "notizie"]
 
 
 class StudyLegOut(BaseModel):
@@ -63,6 +65,7 @@ def study_multiple(
     date_to: date | None = None,
     competitions: str | None = Query(None, description="codici separati da virgola"),
     exclude: str | None = Query(None, description="partite già proposte, id separati da virgola"),
+    theme: Theme = "tutte",
 ) -> StudyMultipleOut:
     now = datetime.now(UTC)
     try:
@@ -71,7 +74,10 @@ def study_multiple(
         raise HTTPException(422, str(error)) from error
     studies = load_studies(db, start, end, competitions.split(",") if competitions else None)
     skip = {int(x) for x in exclude.split(",") if x.strip().isdigit()} if exclude else set()
-    chosen = choose_multiple([(m.id, d["picks"]) for m, d in studies], level, legs, skip)
+    news = _news_counts(db, [m for m, _ in studies], now) if theme == "notizie" else {}
+    pool = [(m.id, [p for p in d["picks"] if theme_market(theme, p["market"])]) for m, d in studies
+            if theme_match(theme, m.competition.tier, m.competition.country == CUP_COUNTRY, news.get(m.id, 0))]  # fmt: skip
+    chosen = choose_multiple(pool, level, legs, skip)
     matches = {m.id: m for m, _ in studies}
     chosen.sort(key=lambda c: matches[c[0]].kickoff_at)
     cards = {c.id: c for c in match_cards(db, [matches[mid] for mid, _ in chosen], now)}
@@ -86,7 +92,7 @@ def study_multiple(
             for leg in out:
                 total *= leg.prices[label]
             totals[label] = round(total, 2)
-    remaining = choose_multiple([(m.id, d["picks"]) for m, d in studies], level, 1, skip | {mid for mid, _ in chosen})
+    remaining = choose_multiple(pool, level, 1, skip | {mid for mid, _ in chosen})
     return StudyMultipleOut(level=level, legs=out, win_probability=round(probability, 4) if out else 0.0, totals=totals, more=bool(remaining))
 
 
@@ -102,3 +108,9 @@ def study_match_picks(match_id: int, _: CurrentUser, db: DbSession) -> dict[str,
 
     return {level: [_leg(card, p) for p in sorted((p for p in study.data["picks"] if p["level"] == level), key=pick_strength, reverse=True)[:5]]
             for level in LEVELS}  # fmt: skip
+
+
+@router.get("/themes")
+def study_themes(_: CurrentUser) -> dict[str, str]:
+    """Temi delle multiple: chiave → nome da mostrare."""
+    return THEMES

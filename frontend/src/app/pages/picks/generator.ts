@@ -1,4 +1,5 @@
 import { httpResource } from '@angular/common/http';
+import { KeyValuePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Competition } from '../../core/football';
@@ -28,7 +29,7 @@ const HORIZONS: [Horizon, string][] = [
 /** "Archie, fammi una multipla": i pronostici studiati da Archie (D137), ognuno con il suo perché. */
 @Component({
   selector: 'ab-generator',
-  imports: [Crest, OfferButton, RouterLink],
+  imports: [Crest, KeyValuePipe, OfferButton, RouterLink],
   template: `
     <section class="panel box form" aria-labelledby="gen-title">
       <h2 id="gen-title" class="title">Archie, fammi una multipla</h2>
@@ -45,6 +46,11 @@ const HORIZONS: [Horizon, string][] = [
         <label>Quando
           <select (change)="restart(); horizon.set($any($event.target).value)">
             @for (h of horizons; track h[0]) { <option [value]="h[0]" [selected]="horizon() === h[0]">{{ h[1] }}</option> }
+          </select>
+        </label>
+        <label>Tema
+          <select (change)="restart(); theme.set($any($event.target).value)">
+            @for (t of themes.value() | keyvalue: keep; track t.key) { <option [value]="t.key" [selected]="theme() === t.key">{{ t.value }}</option> }
           </select>
         </label>
         <label>Campionato
@@ -152,14 +158,19 @@ export class Generator {
   protected readonly legs = signal(4);
   protected readonly horizon = signal<Horizon>('2days');
   protected readonly competition = signal('');
+  protected readonly theme = signal('tutte');
   /** Partite già proposte: "genera un'altra multipla" le salta */
   protected readonly excluded = signal<number[]>([]);
 
   protected readonly competitions = httpResource<Competition[]>(() => '/api/competitions', { defaultValue: [] });
+  protected readonly themes = httpResource<Record<string, string>>(() => '/api/study/themes', { defaultValue: { tutte: 'Tutte' } });
+  /** I temi nell'ordine del server */
+  protected readonly keep = () => 0;
   protected readonly hint = computed(() => LEVELS.find((l) => l.key === this.level())!.hint);
   protected readonly result = httpResource<StudyMultiple>(() => {
     const params = new URLSearchParams({ level: this.level(), legs: String(this.legs()), horizon: this.horizon() });
     if (this.competition()) params.set('competitions', this.competition());
+    if (this.theme() !== 'tutte') params.set('theme', this.theme());
     if (this.excluded().length) params.set('exclude', this.excluded().join(','));
     return `/api/study/multiple?${params}`;
   });

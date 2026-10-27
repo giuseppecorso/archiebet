@@ -44,6 +44,32 @@ COMPETITIONS = {
     "SVK-1": {"name": "Niké liga", "country": "Slovacchia", "tier": 1},
     "SVN-1": {"name": "PrvaLiga", "country": "Slovenia", "tier": 1},
     "TUR-1": {"name": "Süper Lig", "country": "Turchia", "tier": 1},
+    # Altre massime serie europee (D146)
+    "POR-1": {"name": "Primeira Liga", "country": "Portogallo", "tier": 1},
+    "NED-1": {"name": "Eredivisie", "country": "Olanda", "tier": 1},
+    "BEL-1": {"name": "Pro League", "country": "Belgio", "tier": 1},
+    "SCO-1": {"name": "Premiership", "country": "Scozia", "tier": 1},
+    "AUT-1": {"name": "Bundesliga", "country": "Austria", "tier": 1},
+    "SUI-1": {"name": "Super League", "country": "Svizzera", "tier": 1},
+    # Serie minori europee
+    "ENG-3": {"name": "League One", "country": "Inghilterra", "tier": 3},
+    "ENG-4": {"name": "League Two", "country": "Inghilterra", "tier": 4},
+    "ENG-5": {"name": "National League", "country": "Inghilterra", "tier": 5},
+    "SCO-2": {"name": "Championship", "country": "Scozia", "tier": 2},
+    "GER-3": {"name": "3. Liga", "country": "Germania", "tier": 3},
+    "ESP-3-1": {"name": "Primera RFEF · Gruppo 1", "country": "Spagna", "tier": 3},
+    "ESP-3-2": {"name": "Primera RFEF · Gruppo 2", "country": "Spagna", "tier": 3},
+    "FRA-3": {"name": "National", "country": "Francia", "tier": 3},
+    "NED-2": {"name": "Eerste Divisie", "country": "Olanda", "tier": 2},
+    "POR-2": {"name": "Liga Portugal 2", "country": "Portogallo", "tier": 2},
+    "BEL-2": {"name": "Challenger Pro League", "country": "Belgio", "tier": 2},
+    "AUT-2": {"name": "2. Liga", "country": "Austria", "tier": 2},
+    "SUI-2": {"name": "Challenge League", "country": "Svizzera", "tier": 2},
+    "DEN-2": {"name": "1. Division", "country": "Danimarca", "tier": 2},
+    "SWE-2": {"name": "Superettan", "country": "Svezia", "tier": 2},
+    "TUR-2": {"name": "1. Lig", "country": "Turchia", "tier": 2},
+    "GRE-2": {"name": "Super League 2", "country": "Grecia", "tier": 2},
+    "CZE-2": {"name": "FNL", "country": "Cechia", "tier": 2},
 }
 
 # Ordine dei paesi nei menu (specifiche, sezione 3)
@@ -52,6 +78,7 @@ CUP_COUNTRY = "Europa"  # "paese" delle coppe europee: le squadre invece restano
 # Paesi come li scrive API-Football -> come li scriviamo noi (gli altri restano in inglese)
 COUNTRY_NAMES = {
     "Italy": "Italia", "England": "Inghilterra", "Spain": "Spagna", "Germany": "Germania", "France": "Francia", "Norway": "Norvegia", "Denmark": "Danimarca", "Sweden": "Svezia", "Finland": "Finlandia", "Iceland": "Islanda", "Poland": "Polonia", "Czech-Republic": "Cechia", "Croatia": "Croazia", "Serbia": "Serbia", "Romania": "Romania", "Hungary": "Ungheria", "Ukraine": "Ucraina", "Greece": "Grecia", "Bulgaria": "Bulgaria", "Slovakia": "Slovacchia", "Slovenia": "Slovenia", "Turkey": "Turchia",
+    "Portugal": "Portogallo", "Netherlands": "Olanda", "Belgium": "Belgio", "Scotland": "Scozia", "Austria": "Austria", "Switzerland": "Svizzera",
 }  # fmt: skip
 
 
@@ -331,6 +358,12 @@ def merge_teams(db: Session, keep: Team, drop: Team) -> None:
 def tidy_teams(db: Session, log=print) -> int:
     """Applica le regole di nomi e unioni alle squadre già nel database. Restituisce quante modifiche ha fatto."""
     changes = 0
+    for team in db.scalars(select(Team).where(Team.country.in_(list(COUNTRY_NAMES)))):
+        # squadre arrivate dalle coppe prima che il loro campionato avesse un nome italiano (D146)
+        if COUNTRY_NAMES[team.country] != team.country:
+            log(f"'{team.name}': paese {team.country} → {COUNTRY_NAMES[team.country]}")
+            team.country = COUNTRY_NAMES[team.country]
+            changes += 1
     for team in db.scalars(select(Team)):
         if team.name in DISPLAY_NAMES and not db.scalar(select(Team).where(Team.name == DISPLAY_NAMES[team.name], Team.country == team.country)):
             log(f"Rinomino '{team.name}' in '{DISPLAY_NAMES[team.name]}'")

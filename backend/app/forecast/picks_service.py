@@ -6,7 +6,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.adapters.api_football import EAST_NORTH
+from app.adapters.api_football import EAST_NORTH, MINOR, MORE_TOP
 from app.forecast.data import STATS_LEAGUES
 from app.forecast.radar_markets import DNB
 from app.forecast.multiple import Leg
@@ -23,7 +23,7 @@ def upcoming_picks(db: Session, now: datetime, until: datetime, bookmakers: Sequ
             select(Match)
             .join(Competition, Competition.id == Match.competition_id)
             .where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now, Match.kickoff_at <= until)
-            .where(Competition.code.not_in(list(EAST_NORTH.values())))  # solo in Partite finché la prova D128 non passa
+            .where(Competition.code.not_in([*EAST_NORTH.values(), *MORE_TOP.values(), *MINOR.values()]))  # solo in Partite e nello studio (D128, D146)
             .order_by(Match.kickoff_at, Match.id)
         )
     )

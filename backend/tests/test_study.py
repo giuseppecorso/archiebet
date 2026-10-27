@@ -165,3 +165,22 @@ def test_favored_side_and_caution_ordering():
     assert st.pick_strength(tired) < st.pick_strength(base) < st.pick_strength(supported)
     # a parità, tra due partite si sceglie quella senza segnali di prudenza
     assert st.choose_multiple([(1, [{**tired, "level": "equilibrato"}]), (2, [{**base, "level": "equilibrato"}])], "equilibrato", 1)[0][0] == 2
+
+
+def test_theme_markets():
+    from app.forecast.study import theme_market
+
+    assert theme_market("primo_tempo", "1T_OU0.5") and not theme_market("primo_tempo", "2T_OU0.5") and not theme_market("primo_tempo", "1X2")
+    assert all(theme_market("gol", m) for m in ("OU2.5", "GG", "TGH0.5", "MG2-4", "1T_OU0.5", "2T_TGA0.5"))
+    assert not any(theme_market("gol", m) for m in ("1X2", "DC", "DNB", "CB_1X_O1.5"))
+    assert theme_market("tutte", "1X2") and theme_market("coppe", "DC")
+
+
+def test_theme_matches():
+    from app.forecast.study import theme_match
+
+    assert theme_match("maggiori", 1, False, 0) and not theme_match("maggiori", 1, True, 0) and not theme_match("maggiori", 2, False, 0)
+    assert theme_match("minori", 3, False, 0) and not theme_match("minori", 1, False, 0)
+    assert theme_match("coppe", 2, True, 0) and not theme_match("coppe", 1, False, 0)
+    assert theme_match("notizie", 1, False, 3) and not theme_match("notizie", 1, False, 2)
+    assert theme_match("primo_tempo", 4, True, 0)

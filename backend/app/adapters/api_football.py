@@ -62,6 +62,16 @@ EAST_NORTH = {
 }  # fmt: skip
 LEAGUES.update(EAST_NORTH)
 
+# Altre massime serie europee: calendario, risultati e storico per lo studio e per collegare le coppe (D146)
+MORE_TOP = {94: "POR-1", 88: "NED-1", 144: "BEL-1", 179: "SCO-1", 218: "AUT-1", 207: "SUI-1"}
+# Serie minori europee: calendario, risultati e storico per lo studio (id verificati con /leagues, 2026-10-27)
+MINOR = {
+    41: "ENG-3", 42: "ENG-4", 43: "ENG-5", 180: "SCO-2", 80: "GER-3", 435: "ESP-3-1", 436: "ESP-3-2", 63: "FRA-3", 89: "NED-2",
+    95: "POR-2", 145: "BEL-2", 219: "AUT-2", 208: "SUI-2", 120: "DEN-2", 114: "SWE-2", 204: "TUR-2", 494: "GRE-2", 346: "CZE-2",
+}  # fmt: skip
+LEAGUES.update(MORE_TOP)
+LEAGUES.update(MINOR)
+
 # Stati API-Football → stato in ArchieBet. Gli stati "in corso" restano "scheduled" finché non c'è il live (Fase 5).
 FINISHED = {"FT", "AET", "PEN", "AWD", "WO"}
 POSTPONED = {"PST", "TBD"}
@@ -271,6 +281,9 @@ def parse_fixtures(body: dict[str, Any]) -> list[AFFixture]:
         status = map_status(fx["status"]["short"])
         finished = status == "finished"
         halftime = (item.get("score") or {}).get("halftime") or {}
+        regular = (item.get("score") or {}).get("fulltime") or {}  # risultato ai 90 minuti: i supplementari non contano
+        if regular.get("home") is None or regular.get("away") is None:
+            regular = item["goals"]
         fixtures.append(
             AFFixture(
                 id=fx["id"],
@@ -284,8 +297,8 @@ def parse_fixtures(body: dict[str, Any]) -> list[AFFixture]:
                 referee=fx.get("referee"),
                 home=AFTeam(teams["home"]["id"], teams["home"]["name"]),
                 away=AFTeam(teams["away"]["id"], teams["away"]["name"]),
-                home_goals=item["goals"]["home"] if finished else None,
-                away_goals=item["goals"]["away"] if finished else None,
+                home_goals=regular["home"] if finished else None,
+                away_goals=regular["away"] if finished else None,
                 ht_home_goals=halftime.get("home") if finished else None,
                 ht_away_goals=halftime.get("away") if finished else None,
                 status_short=fx["status"]["short"],

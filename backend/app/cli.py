@@ -1383,6 +1383,7 @@ def main() -> int:
     commands.add_parser("study-refresh", help="Archie studia le partite dei prossimi giorni (D137)")
     commands.add_parser("study-backtest", help="prova D140: lo studio e le sue varianti sul passato (walk-forward)")
     commands.add_parser("bookmaker-test", help="prova D144: dove sbaglia il bookmaker (studio contro quota media prima della partita)")
+    commands.add_parser("cup-test", help="prova D146: coppe europee con un modello che collega i campionati")
     det = commands.add_parser("af-details", help="scheda completa delle partite finite da API-Football: xG, giocatori, eventi (D140)")
     det.add_argument("--seasons", default="2022,2023,2024,2025,2026")
     det.add_argument("--leagues", default="", help="id API-Football separati da virgola (vuoto = campionati principali e Serie C)")
@@ -1504,6 +1505,40 @@ def main() -> int:
                                                   "tuning": [r.tuning.mean, r.tuning.std_error, r.tuning.n],
                                                   "confirmation": [r.confirmation.mean, r.confirmation.std_error, r.confirmation.n]} for r in results],
                                      "combined": best.__dict__}, ensure_ascii=False), encoding="utf-8")  # fmt: skip
+        return 0
+    if args.command == "cup-test":
+        import json as _json
+        from datetime import timedelta as _td
+
+        from app.forecast import cup_model as cm
+
+        domestic = cm.league_ids()
+        games = []
+        with SessionLocal() as db:
+            adapter = api_football_adapter(db, get_settings())
+            for season in range(2021, 2027):
+                age = _td(days=1) if season == 2026 else _td(days=36500)
+                for league in domestic:
+                    games += cm.from_fixtures(adapter.fixtures(league, season, age), cup=False)
+                if season < 2026:
+                    for cup in (2, 3, 848):
+                        games += cm.from_fixtures(adapter.fixtures(cup, season, age), cup=True)
+        print(f"partite: {len(games)}, di coppa: {sum(g.cup for g in games)}, richieste rimaste oggi: {adapter.remaining_today}")
+        rows = cm.cup_test(games, (*cm.TUNING, *cm.CONFIRMATION))
+        tuning, confirmation = cm.improvement(rows, cm.TUNING), cm.improvement(rows, cm.CONFIRMATION)
+        for name, est in (("taratura", tuning), ("conferma", confirmation)):
+            if est:
+                print(f"{name}: {est.n} partite, miglioramento {est.mean:+.4f} ± {est.std_error:.4f} (t = {est.t:.1f})")
+        for name, seasons in (("taratura", cm.TUNING), ("conferma", cm.CONFIRMATION)):
+            chosen = [r for r in rows if r.season in seasons]
+            if chosen:
+                print(f"{name}: log loss media A {sum(r.unlinked for r in chosen) / len(chosen):.4f}, B {sum(r.linked for r in chosen) / len(chosen):.4f}")
+        print("PASSA" if cm.passed(tuning, confirmation) else "NON PASSA")
+        out = get_settings().data_cache_dir / "learning" / "cup_test.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(_json.dumps({"tuning": tuning and [tuning.mean, tuning.std_error, tuning.n],
+                                    "confirmation": confirmation and [confirmation.mean, confirmation.std_error, confirmation.n],
+                                    "passed": cm.passed(tuning, confirmation)}), encoding="utf-8")  # fmt: skip
         return 0
     if args.command == "af-details":
         from app.ingest.af_detail import download_details
