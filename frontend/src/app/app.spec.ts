@@ -84,12 +84,10 @@ describe('ArchieBet: navigazione', () => {
     const page = harness.routeNativeElement!;
     expect(page.textContent).not.toContain('Prossime'); // niente più divisione tra prossime e risultati
 
-    const row = page.querySelector('ab-diretta-row .row') as HTMLButtonElement;
+    const row = page.querySelector('ab-diretta-row a.row') as HTMLAnchorElement;
     expect(row.textContent).toContain('Napoli');
     expect(row.textContent).toContain('20:45'); // 18:45 UTC in ora italiana
-    row.click(); // la riga si apre e porta alla partita
-    harness.fixture.detectChanges();
-    expect(page.querySelector('ab-diretta-row a.open')?.getAttribute('href')).toBe('/partite/7');
+    expect(row.getAttribute('href')).toBe('/partite/7'); // toccando la riga si apre la partita
 
     // Tendina dei campionati: Premier League
     const [daySelect, compSelect] = [...page.querySelectorAll('.toolbar select')] as HTMLSelectElement[];
@@ -155,11 +153,7 @@ describe('ArchieBet: navigazione', () => {
     harness.fixture.detectChanges();
     expect(page.querySelectorAll('ab-diretta-row').length).toBe(1);
 
-    (page.querySelector('ab-diretta-row .row') as HTMLButtonElement).click();
-    harness.fixture.detectChanges();
-    (await nextRequest((r) => r.url.startsWith('/api/matches/2/events'))).flush([goal]);
-    await harness.fixture.whenStable();
-    expect(page.querySelector('ab-match-events')?.textContent).toContain('Lautaro Martínez');
+    expect(page.querySelector('ab-diretta-row a.row')?.getAttribute('href')).toBe('/partite/2'); // la cronaca sta nella pagina della partita
     expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Partite');
   });
 
