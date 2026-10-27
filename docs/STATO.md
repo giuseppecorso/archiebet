@@ -2,6 +2,14 @@
 
 Ultimo aggiornamento: 2026-10-21
 
+## Lo studio di Archie (2026-10-27)
+
+- [x] **Fammi una multipla** rifatta sullo studio (D137): gol attesi Dixon-Coles con primo tempo, fatti del campo, coerenza modello-campo, tre livelli, spiegazioni, "genera un'altra".
+- [x] **Notizie, classifica e meteo** nello studio (D138), notizie per partita in Partite.
+- [x] **Pagella dei pronostici studiati** e pulizia dei testi (D139); Partite con tendine; Pronostici con due sole schede; gol annullati dal VAR.
+- [ ] Libro di studio del progetto (`docs/libro/`).
+- Test: 469 backend + 29 frontend, tutti verdi.
+
 ## Telefono, gol per squadra, Draw No Bet (2026-10-22)
 
 - [x] **Accesso dal telefono** con Tailscale Serve (HTTPS solo per i dispositivi dell'utente), app installabile (icona, manifest, service worker) e grafica per telefono (menu in basso, partite su una riga).

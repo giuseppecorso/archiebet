@@ -36,7 +36,7 @@ flowchart TB
     AD[Adattatori fonti dati<br/>+ FileCache]
     J[Job APScheduler]
     AI[app/ai: unico punto per Claude<br/>gateway con tetto di spesa]
-    M[(Modelli SQLAlchemy<br/>25 tabelle, Alembic)]
+    M[(Modelli SQLAlchemy<br/>26 tabelle, Alembic)]
   end
   P -- HTTP JSON, cookie di sessione --> R
   R --> SV --> M
@@ -54,7 +54,7 @@ flowchart TB
 | `forecast/` | Modelli e prove: Dixon-Coles, Elo, rimozione del margine, radar delle occasioni, modelli dei conteggi, live, simulatore, ricerca delle strategie, quando giocare |
 | `betting/` | Schedine, chiusura automatica, CLV, autopsie, regolamento personale |
 | `ai/` | Client Claude con output strutturato (Pydantic), strumenti per "Chiedi ad Archie", estrazione di fatti dalle notizie |
-| `api/` | 53 endpoint REST divisi per area |
+| `api/` | 55 endpoint REST divisi per area |
 | `jobs.py` | Aggiornamento dati ogni 6 ore, live ogni minuto, notizie ogni 2 ore, archivio quote e "cosa impara Archie" ogni settimana |
 | `cli.py` | Comandi per sincronizzazioni e per le prove statistiche (`backtest`, `strategy-search`, `timing-test`, ...) |
 
@@ -94,6 +94,22 @@ risultato due ore dopo il fischio si ricontrollano da sole (D133).
 | **Live** | `forecast/live.py` | Gol attesi dalle probabilità pre-partita, Poisson per squadra, 45% dei gol nel primo tempo; verificato all'intervallo (D92) |
 | **Simulatore** | `forecast/simulator.py` | Monte Carlo da 10.000 partite e "E se..." da qualunque minuto e punteggio |
 | **Multipla** | `forecast/multiple.py` | Ricerca combinatoria con limite adattivo; 5 livelli di rischio e profilo personalizzato; fasce dichiarate "valore / nella norma / paga poco"; "1 volta su N" verificato sullo storico (D130) |
+
+### 4.1 Lo studio di Archie (Fammi una multipla)
+
+I pronostici della multipla non partono dalle quote ma da uno studio della partita, calcolato dal codice
+(`forecast/study.py`, `forecast/study_service.py`):
+
+1. **Gol attesi** con Dixon-Coles e pesi nel tempo (in Italia con l'Elo come punto di partenza).
+2. **Primo tempo**: la parte dei gol che ogni squadra segna e subisce nel primo tempo, avvicinata alla media del
+   campionato quando le partite sono poche; da qui Poisson sui gol del primo tempo.
+3. **Probabilità di Archie**: media bayesiana tra il modello (vale come 24 partite) e quello che è successo nelle ultime
+   10 partite in casa della squadra di casa e in trasferta dell'ospite.
+4. **Coerenza**: un pronostico entra solo se modello e campo sono d'accordo.
+5. **Correzioni prudenti**: giudizio delle notizie (±3/6% dei gol attesi), motivazione dalla classifica (+3%), meteo
+   previsto (−4%); dichiarate nella spiegazione e misurate dalla pagella.
+6. **Livelli**: cauto 72–93%, equilibrato 55–72%, rischioso 35–55%; spiegazione scritta dai numeri
+   ("è successo in 8 su 9 partite in casa…").
 
 ## 5. Metodo delle prove
 
@@ -137,7 +153,7 @@ spesa** che registra ogni chiamata e blocca oltre il tetto mensile. Usi:
 
 ## 7. Qualità
 
-- **455 test backend** (pytest) e **31 test frontend** (Vitest): ogni calcolo di probabilità, quota, valore o guadagno ha un test (anche casi limite trovati a mano, es. arrotondamenti).
+- **469 test backend** (pytest) e **29 test frontend** (Vitest): ogni calcolo di probabilità, quota, valore o guadagno ha un test (anche casi limite trovati a mano, es. arrotondamenti).
 - **Test delle API** con database in memoria e client autenticato; adattatori provati con risposte registrate, senza rete.
 - **CI** su GitHub Actions a ogni push (`.github/workflows/ci.yml`): test del backend, build e test del frontend, build delle immagini Docker.
 - **Docker**: `docker compose up --build` avvia backend (FastAPI) e frontend (build Angular servita da nginx, che inoltra `/api`), con un utente dimostrativo e lo storico gratuito di football-data, senza chiavi API.
