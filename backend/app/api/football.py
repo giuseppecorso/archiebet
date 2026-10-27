@@ -26,16 +26,11 @@ BOOKMAKER_LABELS = {
     "pinnacle": "Pinnacle",
     "bet365": "bet365",
     "betfair_ex": "Betfair Exchange",
-    "sisal": "Sisal",
-    "snai": "Snai",
-    "eurobet": "Eurobet",
-    "goldbet": "Goldbet",
-    "lottomatica": "Lottomatica",
-    "betflag": "BetFlag",
-    "bet365_it": "bet365.it",
-    "planetwin365": "Planetwin365",
-    "betsson": "Betsson",
 }
+# I bookmaker italiani dove si gioca non si nominano (D154): l'app mostra "Altri bookmakers" con la quota migliore tra loro.
+# Restano i nomi dei riferimenti per la quota giusta (Pinnacle, bet365, Betfair), che non sono un invito a giocare.
+OTHER_BOOKMAKERS = "Altri bookmakers"
+BOOKMAKER_LABELS.update({bm: OTHER_BOOKMAKERS for bm in ("sisal", "snai", "eurobet", "goldbet", "lottomatica", "betflag", "bet365_it", "planetwin365", "betsson")})
 
 
 # ---------- Modelli di risposta ----------
@@ -495,5 +490,15 @@ def _odds_table(db: Session, match_id: int) -> list[OddsRow]:
             OddsRow(bookmaker=q.bookmaker, label=BOOKMAKER_LABELS.get(q.bookmaker, q.bookmaker), market=q.market, opening={}, closing={}),
         )
         (row.closing if q.is_closing else row.opening)[q.selection] = float(q.price)
+    merged: dict[tuple[str, str], OddsRow] = {}  # una riga per nome mostrato: "Altri bookmakers" tiene la quota migliore
+    for row in rows.values():
+        key = (row.label, row.market)
+        if key not in merged:
+            merged[key] = row
+            continue
+        for side in ("opening", "closing"):
+            target = getattr(merged[key], side)
+            for sel, price in getattr(row, side).items():
+                target[sel] = max(target.get(sel, 0.0), price)
     order = list(BOOKMAKER_LABELS)
-    return sorted(rows.values(), key=lambda r: (r.market, order.index(r.bookmaker) if r.bookmaker in order else 99))
+    return sorted(merged.values(), key=lambda r: (r.market, order.index(r.bookmaker) if r.bookmaker in order else 99))

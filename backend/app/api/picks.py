@@ -79,7 +79,17 @@ def picks(_: CurrentUser, db: DbSession, days: int = Query(7, ge=1, le=14)) -> P
                 signals=signals.get(m.id, 0),
             )
         )
-    return PicksOut(bookmakers=[BOOKMAKER_LABELS.get(b, b) for b in bookmakers], picks=out)
+    return PicksOut(bookmakers=list(dict.fromkeys(BOOKMAKER_LABELS.get(b, b) for b in bookmakers)), picks=out)
+
+
+def offers_out(offers) -> list[OfferOut]:
+    """Una sola offerta per nome mostrato: "Altri bookmakers" tiene la quota migliore (D154)."""
+    best: dict[str, OfferOut] = {}
+    for o in offers:
+        out = offer_out(o)
+        if out.bookmaker not in best or out.price > best[out.bookmaker].price:
+            best[out.bookmaker] = out
+    return list(best.values())
 
 
 def offer_out(o) -> OfferOut:
@@ -92,7 +102,7 @@ def market_out(p: MarketPick) -> MarketOut:
         source=SOURCE_LABELS.get(p.source, p.source) + (" · corretta da Archie" if p.corrected else ""),
         from_model=p.source == MODEL_SOURCE,
         probabilities=p.probabilities,
-        offers={sel: [offer_out(o) for o in offers] for sel, offers in p.offers.items()},
+        offers={sel: offers_out(offers) for sel, offers in p.offers.items()},
     )
 
 
@@ -212,7 +222,13 @@ def match_numbers(match_id: int, _: CurrentUser, db: DbSession) -> list[NumbersO
                 if e.stat in STAT_MARKETS:
                     family = "angoli" if e.stat == "corners" else "cartellini"
                     market = secondary_name(family, side, line)
-                    offers = {BOOKMAKER_LABELS.get(bm, bm): prices[market] for bm, prices in book.items() if market in prices}
+                    offers = {}
+                    for bm, prices in book.items():
+                        if market in prices:
+                            label = BOOKMAKER_LABELS.get(bm, bm)
+                            merged = offers.setdefault(label, {})
+                            for sel, price in prices[market].items():
+                                merged[sel] = max(merged.get(sel, 0.0), price)
                 lines.append(LineOut(side=side, line=line, p_over=p, fair_over=1 / max(p, 1e-6), fair_under=1 / max(1 - p, 1e-6), offers=offers))
         out.append(NumbersOut(stat=e.stat, label=STAT_LABELS[e.stat], home=e.home, away=e.away, lines=lines))
     return out

@@ -29,7 +29,7 @@ export const SECTIONS: Section[] = [
     label: 'Pronostici',
     inMenu: true,
     phase: 4,
-    summary: 'La stima migliore per ogni partita, con le quote di Sisal ed Eurobet.',
+    summary: 'La stima migliore per ogni partita, con le quote dei bookmaker.',
     features: [
       'Probabilità di ogni esito dalla fonte più precisa disponibile',
       'Occasioni: quando il tuo bookmaker paga più del giusto',

@@ -15,7 +15,7 @@ export interface StudyLeg {
   /** [volte in casa, partite in casa, volte in trasferta, partite in trasferta] */
   evidence: number[];
   reasons: string[];
-  /** Quote di Sisal ed Eurobet, se il bookmaker quota il mercato */
+  /** Quota migliore dei bookmaker ("Altri bookmakers"), se quotano il mercato */
   prices: Record<string, number>;
 }
 

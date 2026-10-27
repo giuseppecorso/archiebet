@@ -179,8 +179,8 @@ def radar(_: CurrentUser, db: DbSession) -> RadarOut:
     return RadarOut(
         threshold=RADAR_THRESHOLD,
         max_price=MAX_PRICE,
-        playable=[_label(b) for b in playable],
-        simulation_bookmakers=[_label(b) for b in SIMULATION_BOOKMAKERS],
+        playable=list(dict.fromkeys(_label(b) for b in playable)),
+        simulation_bookmakers=list(dict.fromkeys(_label(b) for b in SIMULATION_BOOKMAKERS)),
         upcoming=upcoming,
         recent=[_signal_out(s, m) for s, m in recent],
         live=_live_out(summary),

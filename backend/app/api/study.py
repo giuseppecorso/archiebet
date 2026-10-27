@@ -6,7 +6,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from app.api.football import MatchCard, _news_counts, match_cards
+from app.api.football import BOOKMAKER_LABELS, MatchCard, _news_counts, match_cards
 from app.api.picks import Horizon, horizon_window
 from app.auth.deps import CurrentUser, DbSession
 from app.betting.calc import market_name
@@ -17,7 +17,6 @@ from app.models import Match, MatchStudy
 
 router = APIRouter(prefix="/api/study", tags=["studio"])
 
-BOOKMAKER_LABELS = {"sisal": "Sisal", "eurobet": "Eurobet"}
 MAX_LEGS = 30
 
 Level = Literal["cauto", "equilibrato", "rischioso"]
@@ -48,11 +47,20 @@ class StudyMultipleOut(BaseModel):
     target_reached: bool = True  # con la quota obiettivo: ci è arrivata?
 
 
+def _labelled(prices: dict[str, float]) -> dict[str, float]:
+    """Quote per nome mostrato: se due bookmaker hanno lo stesso nome ("Altri bookmakers") resta la migliore."""
+    out: dict[str, float] = {}
+    for bm, price in prices.items():
+        label = BOOKMAKER_LABELS.get(bm, bm)
+        out[label] = max(out.get(label, 0.0), price)
+    return out
+
+
 def _leg(card: MatchCard, pick: dict) -> StudyLegOut:
     return StudyLegOut(
         match=card, market=pick["market"], selection=pick["selection"], market_label=market_name(pick["market"]),
         event=pick["event"], level=pick["level"], p_archie=pick["p_archie"], p_model=pick["p_model"],
-        evidence=pick["evidence"], reasons=pick["reasons"], prices={BOOKMAKER_LABELS.get(k, k): v for k, v in pick["prices"].items()},
+        evidence=pick["evidence"], reasons=pick["reasons"], prices=_labelled(pick["prices"]),
     )  # fmt: skip
 
 
@@ -98,7 +106,7 @@ def study_multiple(
     for leg in out:
         probability *= leg.p_archie
     totals = {}
-    for label in BOOKMAKER_LABELS.values():
+    for label in dict.fromkeys(BOOKMAKER_LABELS[bm] for bm in ("sisal", "eurobet")):
         if out and all(label in leg.prices for leg in out):
             total = 1.0
             for leg in out:

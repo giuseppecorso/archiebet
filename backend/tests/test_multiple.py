@@ -81,9 +81,9 @@ def test_multiple_api_per_bookmaker(logged_client, seeded, db):  # noqa: F811
         set_odds(db, m, "pinnacle", {"1": 1.38, "X": 5.0, "2": 9.0})  # 1 giusto ≈ 0,707
         set_odds(db, m, "sisal", {"1": 1.45, "X": 4.5, "2": 8.0})  # 0,707 × 1,45 − 1 ≈ +2,5%
     body = logged_client.get("/api/picks/multiple?horizon=week").json()
-    assert body["missing"] == ["Eurobet"]  # su Eurobet niente quote: nessuna multipla
+    assert body["missing"] == ["Altri bookmakers"]  # su Eurobet niente quote: nessuna multipla (nome nascosto, D154)
     [sisal] = body["multiples"]
-    assert sisal["bookmaker"] == "Sisal" and sisal["with_value"] is True
+    assert sisal["bookmaker"] == "Altri bookmakers" and sisal["with_value"] is True
     assert [leg["match"]["home"]["name"] for leg in sisal["legs"]] == ["Torino", "Napoli", "Juventus", "Atalanta"]
     assert sisal["price"] == pytest.approx(1.45**4)
     p = sisal["legs"][0]["probability"]

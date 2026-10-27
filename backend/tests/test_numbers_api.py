@@ -34,7 +34,7 @@ def test_numbers_endpoint(logged_client, db):
     corners = stats["corners"]
     assert corners["home"] > corners["away"]
     line = next(x for x in corners["lines"] if x["side"] == "totale" and x["line"] == 9.5)
-    assert line["offers"] == {"Sisal": {"over": 1.9, "under": 1.85}}
+    assert line["offers"] == {"Altri bookmakers": {"over": 1.9, "under": 1.85}}  # i bookmaker italiani non si nominano (D154)
     assert abs(1 / line["fair_over"] + 1 / line["fair_under"] - 1) < 1e-9
 
 

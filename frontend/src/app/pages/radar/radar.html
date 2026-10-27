@@ -10,7 +10,7 @@
 
 @if (radar.value(); as r) {
   <p class="intro">
-    Un'<strong>occasione</strong> è una quota di {{ r.playable.join(' o ') }} che paga <strong>più di quanto vale l'evento</strong>
+    Un'<strong>occasione</strong> è una quota che paga <strong>più di quanto vale l'evento</strong>
     secondo Pinnacle, il bookmaker più preciso. Accanto trovi cosa ne pensa lo studio di Archie.
   </p>
 
@@ -71,7 +71,7 @@
   } @else {
     <p class="panel box muted">
       Nessuna occasione adesso. Archie controlla le quote a ogni aggiornamento: le occasioni compaiono quando
-      {{ r.playable.join(' o ') }} pagano abbastanza più del giusto (dall'1,5% sulle quote basse al 3,5% a quota {{ fmt.odds(r.max_price) }}).
+      i bookmaker pagano abbastanza più del giusto (dall'1,5% sulle quote basse al 3,5% a quota {{ fmt.odds(r.max_price) }}).
     </p>
   }
 
@@ -132,7 +132,7 @@
     <summary>Perché un'occasione e non "la più probabile"?</summary>
     <p>
       Una quota alta su un evento probabile è proprio questo: se Pinnacle dice che un pareggio esce il 30% delle volte, la
-      quota giusta è 3,33; se Sisal la paga 3,50, a lungo andare ci guadagni. Chi ha ragione si vede dopo: se poco prima
+      quota giusta è 3,33; se un bookmaker la paga 3,50, a lungo andare ci guadagni. Chi ha ragione si vede dopo: se poco prima
       della partita la quota scende (il mercato si è corretto), avevi preso un prezzo migliore del giusto. È il
       <strong>CLV</strong>, l'unico segnale affidabile nel lungo periodo.
     </p>

@@ -95,14 +95,14 @@ def test_radar_api_lists_signals_and_live_progress(logged_client, seeded, db):  
     body = logged_client.get("/api/radar").json()
     [s] = body["upcoming"]
     assert s["p_study"] == pytest.approx(model_probabilities(1.6, 1.1, -0.05, 0.45, 0.45)["1X2"]["1"])  # lo studio accanto (D152)
-    assert (s["home"]["name"], s["selection"], s["bookmaker"], s["fair_source"]) == ("Milan", "1", "Sisal", "Pinnacle")
+    assert (s["home"]["name"], s["selection"], s["bookmaker"], s["fair_source"]) == ("Milan", "1", "Altri bookmakers", "Pinnacle")
     assert s["price"] == 2.1 and s["suspicious"] is False
     assert s["required_value"] == pytest.approx(0.02 * 1.1**0.5)  # soglia a quota 2,1
     assert body["recent"] == []
     assert body["live"] == {"n": 0, "target": 300, "mean_clv": None, "clv_std_error": None,
                             "share_positive": None, "roi": None, "verdict": "in prova"}
-    assert body["playable"] == ["Sisal", "Eurobet"] and body["threshold"] == 0.02
-    assert "Goldbet" in body["simulation_bookmakers"]
+    assert body["playable"] == ["Altri bookmakers"] and body["threshold"] == 0.02  # un solo nome per i bookmaker italiani (D154)
+    assert body["simulation_bookmakers"] == ["Altri bookmakers"]  # la simulazione resta su tutti, il nome è uno (D154)
 
 
 def test_simulation_on_all_bookmakers_but_giuse_sees_only_his(logged_client, seeded, db):  # noqa: F811

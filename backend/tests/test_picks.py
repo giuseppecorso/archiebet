@@ -67,12 +67,12 @@ def test_picks_api(logged_client, seeded, db):  # noqa: F811
     set_odds(db, milan_inter, "sisal", {"1": 3.1, "X": 3.3, "2": 2.2})
     refresh_predictions(db, datetime.now(UTC))
     body = logged_client.get("/api/picks").json()
-    assert body["bookmakers"] == ["Sisal", "Eurobet"]
+    assert body["bookmakers"] == ["Altri bookmakers"]  # Sisal ed Eurobet sotto un solo nome (D154)
     by_match = {p["match"]["id"]: p for p in body["picks"]}
     mi = by_match[milan_inter]
     one = next(m for m in mi["markets"] if m["market"] == "1X2")
     assert (one["source"], one["from_model"], mi["favorite"]) == ("Pinnacle", False, "2")
-    assert one["offers"]["1"][0]["bookmaker"] == "Sisal"
+    assert one["offers"]["1"][0]["bookmaker"] == "Altri bookmakers"
     # Under/Over: nessuna quota di mercato → modello di Archie
     ou = next(m for m in mi["markets"] if m["market"] == "OU2.5")
     assert ou["from_model"] is True and ou["source"] == "Modello di Archie"
@@ -116,7 +116,7 @@ def test_off_line_api_only_today(logged_client, seeded, db):  # noqa: F811
     match.kickoff_at = now + (horizon_end(now, "today") - now) / 2  # sempre prima della mezzanotte italiana
     db.commit()
     [row] = logged_client.get("/api/picks/off-line").json()
-    assert (row["selection"], row["bookmaker"], row["suspicious"]) == ("1", "Sisal", True)
+    assert (row["selection"], row["bookmaker"], row["suspicious"]) == ("1", "Altri bookmakers", True)
 
 
 def test_model_only_estimates_never_say_value():
