@@ -157,8 +157,27 @@ describe('ArchieBet: navigazione', () => {
     expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Partite');
   });
 
+  it('la bacheca Daily appende le schedine di Archie con le statistiche (D153)', async () => {
+    const harness = await navigateAs('/pronostici', true); // la scheda principale di Pronostici
+    const leg = { match_id: 9, kickoff_at: '2026-10-30T18:00:00Z', competition: 'Serie A', home: 'Inter', away: 'Milan', market: 'GG', selection: 'yes',
+                  event: 'segnano entrambe', p: 0.66, price: 1.7, status: 'won' };
+    const slip = { id: 1, kind: 'giorno', title: 'La schedina del giorno', period: '2026-10-30', published_at: '2026-10-30T09:00:00Z', singles: false,
+                   legs: [leg], total_odds: 1.7, win_probability: 0.66, status: 'won' };
+    (await nextRequest('/api/daily')).flush({
+      board: [slip], today: { legs_won: 1, legs_closed: 1, legs_total: 1 },
+      stats: [{ kind: 'giorno', title: 'La schedina del giorno', published: 1, closed: 1, won: 1, expected: 0.66, legs_won: 1, legs_closed: 1, profit: 0.7 }],
+      history: [slip],
+    });
+    await harness.fixture.whenStable();
+    const page = harness.routeNativeElement!;
+    expect(page.querySelector('.note h2')?.textContent).toContain('La schedina del giorno');
+    expect(page.querySelector('.note .e')?.textContent).toContain('Segnano entrambe');
+    expect(page.querySelector('.stamp')?.textContent).toContain('Vinta');
+    expect(page.querySelector('.stats tbody')?.textContent).toContain('+0,70');
+  });
+
   it('il generatore propone pronostici studiati con il perché e ne genera altri (D137)', async () => {
-    const harness = await navigateAs('/pronostici', true);
+    const harness = await navigateAs('/pronostici?tab=multipla', true);
     const serieB = { code: 'ITA-B', name: 'Serie B', country: 'Italia', tier: 2 };
     (await nextRequest('/api/competitions')).flush([serieB]);
     (await nextRequest('/api/study/themes')).flush({ tutte: 'Tutte', coppe: 'Competizioni internazionali' });

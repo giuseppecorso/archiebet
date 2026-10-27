@@ -193,3 +193,14 @@ def test_auto_legs_stop_when_the_multiple_gets_too_unlikely():
     assert [k for k, _ in auto_legs(ranked, "cauto")] == [0, 1, 2, 3]  # 0,9×0,85×0,8×0,75 = 0,46 ≥ 0,40; con la quinta 0,32
     assert len(auto_legs(ranked, "equilibrato")) == 5  # 0,9×0,85×0,8×0,75×0,7 = 0,32 ≥ 0,20
     assert len(auto_legs([(1, {"p_archie": 0.38})], "cauto")) == 1  # almeno una partita
+
+
+def test_choose_varied_avoids_the_same_pick_three_times():
+    from app.forecast.study import choose_varied
+
+    def p(market, sel, prob):
+        return {"market": market, "selection": sel, "level": "equilibrato", "p_model": prob, "p_archie": prob, "evidence": [5, 10, 5, 10], "prices": {}}
+
+    studies = [(k, [p("2T_OU0.5", "over", 0.72 - k / 100), p("GG", "yes", 0.6)]) for k in range(4)]
+    chosen = choose_varied(studies, "equilibrato", 4)
+    assert [c[1]["market"] for c in chosen] == ["2T_OU0.5", "2T_OU0.5", "GG", "GG"]  # dalla terza si passa al secondo pronostico

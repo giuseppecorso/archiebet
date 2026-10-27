@@ -147,9 +147,26 @@ def sync_oddspapi_job() -> None:
     _tracked("oddspapi", work)
 
 
+def daily_job() -> None:
+    """Ogni ora: pubblica le schedine della bacheca Daily che sono dovute e chiude quelle con i risultati (D153)."""
+    from app.forecast.daily_service import publish_due, settle_daily
+
+    try:
+        with SessionLocal() as db:
+            published = publish_due(db)
+            closed = settle_daily(db)
+        if published or closed:
+            logger.info("Daily: pubblicate %s, chiuse %s", published, closed)
+    except Exception:
+        logger.exception("Bacheca Daily non aggiornata: riprovo tra un'ora")
+
+
 def settle_bets_job() -> None:
     try:
         with SessionLocal() as db:
+            from app.forecast.daily_service import settle_daily
+
+            settle_daily(db)  # anche la bacheca Daily si chiude con gli stessi risultati
             closed = settle_open_bets(db)
         if closed:
             logger.info("Schedine chiuse automaticamente: %s", closed)
@@ -357,6 +374,7 @@ def start_scheduler(settings: Settings) -> BackgroundScheduler | None:
                       id="player-stats", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.add_job(events_job, "interval", minutes=20, next_run_time=datetime.now(UTC) + timedelta(minutes=1),
                       id="events", max_instances=1, coalesce=True)  # fmt: skip
+    scheduler.add_job(daily_job, "interval", hours=1, next_run_time=datetime.now(UTC) + timedelta(minutes=2), id="daily", max_instances=1, coalesce=True)
     scheduler.add_job(news_job, "interval", hours=2, next_run_time=datetime.now(UTC) + timedelta(minutes=3),
                       id="news", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.start()

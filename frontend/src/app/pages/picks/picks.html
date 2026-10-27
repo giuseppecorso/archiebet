@@ -1,11 +1,13 @@
 <header class="hero">
   <h1>Pronostici</h1>
-  <p>Le multiple studiate da Archie e le quote che pagano più del giusto.</p>
+  <p>La bacheca di Archie, le multiple su misura e le quote che pagano più del giusto.</p>
 </header>
 <ab-subnav [items]="tabs" label="Pronostici" />
 
 @if (tab() === 'occasioni') {
   <ab-radar [embedded]="true" />
-} @else {
+} @else if (tab() === 'multipla') {
   <ab-generator />
+} @else {
+  <ab-daily />
 }

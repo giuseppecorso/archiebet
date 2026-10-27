@@ -481,3 +481,30 @@ def auto_legs(ranked: Sequence[tuple[int, dict]], level: str) -> list[tuple[int,
         out.append((match_id, pick))
         p *= pick["p_archie"]
     return out
+
+
+# --- Varietà: la bacheca non ripete lo stesso pronostico (D153) ---
+
+MAX_SAME = 2  # lo stesso tipo di pronostico (mercato ed esito) al massimo due volte in una schedina
+
+
+def choose_varied(studies: Sequence[tuple[int, list[dict]]], level: str, n: int, max_same: int = MAX_SAME) -> list[tuple[int, dict]]:
+    """Come `choose_multiple`, ma se un tipo di pronostico è già uscito `max_same` volte si prende il migliore
+    successivo di quella partita (se c'è) invece di ripeterlo."""
+    options = []
+    for match_id, picks in studies:
+        mine = sorted((p for p in picks if p["level"] == level), key=pick_strength, reverse=True)
+        if mine:
+            options.append((pick_strength(mine[0]), match_id, mine))
+    options.sort(key=lambda x: x[0], reverse=True)
+    used: dict[tuple[str, str], int] = {}
+    out = []
+    for _, match_id, mine in options:
+        pick = next((p for p in mine if used.get((p["market"], p["selection"]), 0) < max_same), None)
+        if pick is None:
+            continue
+        used[(pick["market"], pick["selection"])] = used.get((pick["market"], pick["selection"]), 0) + 1
+        out.append((match_id, pick))
+        if len(out) == n:
+            break
+    return out

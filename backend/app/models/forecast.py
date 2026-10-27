@@ -66,3 +66,20 @@ class RadarSignal(Base):
     closing_fair_probability: Mapped[float | None] = mapped_column(Float)
     clv: Mapped[float | None] = mapped_column(Float)
     won: Mapped[bool | None] = mapped_column(Boolean)  # None = risultato non ancora noto
+
+
+class DailySlip(Base):
+    """Bacheca Daily (D153): una schedina pubblicata da Archie. Una volta pubblicata non cambia più (solo l'esito)."""
+
+    __tablename__ = "daily_slips"
+    __table_args__ = (UniqueConstraint("kind", "period", name="uq_daily_slips_kind_period"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(20))  # giorno | weekend | settimana | colpo | clv
+    period: Mapped[str] = mapped_column(String(20))  # giorno di pubblicazione (AAAA-MM-GG): una per tipo e periodo
+    published_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    legs: Mapped[list[dict[str, Any]]] = mapped_column(JSON)  # partita, mercato, esito, probabilità, quota, stato
+    total_odds: Mapped[float] = mapped_column(Float)
+    win_probability: Mapped[float] = mapped_column(Float)
+    status: Mapped[str] = mapped_column(String(10), default="open")  # open | won | lost | void | done (singole)
+    settled_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
