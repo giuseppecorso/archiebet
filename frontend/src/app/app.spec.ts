@@ -66,6 +66,7 @@ describe('ArchieBet: navigazione', () => {
     const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
     const premier = { code: 'ENG-1', name: 'Premier League', country: 'Inghilterra', tier: 1 };
     (await nextRequest('/api/competitions')).flush([serieA, premier]);
+    (await nextRequest((r) => r.url.startsWith('/api/bets/on-matches'))).flush([]);
     const today = await nextRequest((r) => r.url.startsWith('/api/matches?view=day'));
     expect(today.request.url).not.toContain('competitions='); // tutti i campionati
     today.flush([
@@ -123,6 +124,9 @@ describe('ArchieBet: navigazione', () => {
     const harness = await navigateAs('/live', true); // i vecchi indirizzi portano a Partite, sulle partite in diretta
     expect(TestBed.inject(Router).url).toBe('/partite?stato=live');
     (await nextRequest('/api/competitions')).flush([]);
+    (await nextRequest((r) => r.url.startsWith('/api/bets/on-matches'))).flush([
+      { match_id: 2, bet_id: 5, legs: 3, market: '1X2', pick: '1', state: 'losing', probability: 0.21 },
+    ]);
     const serieA = { code: 'ITA-A', name: 'Serie A', country: 'Italia', tier: 1 };
     const team = (id: number, name: string) => ({ id, name });
     const card = (id: number, extra: object) => ({
@@ -139,6 +143,7 @@ describe('ArchieBet: navigazione', () => {
     await harness.fixture.whenStable();
     const page = harness.routeNativeElement!;
     expect(page.querySelectorAll('ab-diretta-row').length).toBe(1); // si apre già su "In diretta"
+    expect(page.querySelector('ab-diretta-row .mine')?.textContent).toContain('sta perdendo (21%)'); // la mia multipla su questa partita (D155)
     expect(page.querySelector('.chips .count')?.textContent).toBe('1');
     ([...page.querySelectorAll('.chips .chip')] as HTMLButtonElement[]).find((b) => b.textContent?.includes('Tutte'))!.click();
     harness.fixture.detectChanges();

@@ -47,7 +47,7 @@
   <section class="panel group" aria-label="Partite con più notizie">
     <h2 class="group-head">Prima le partite su cui il tifoso sa di più</h2>
     @for (m of byNews(); track m.id) {
-      <ab-diretta-row [match]="m" [tick]="tick()" />
+      <ab-diretta-row [match]="m" [tick]="tick()" [mine]="picksByMatch().get(m.id) ?? []" />
     } @empty {
       <p class="empty">Nessuna notizia sulle squadre di questo giorno.</p>
     }
@@ -61,7 +61,7 @@
         <span class="country">{{ g.competition.country }}:</span> {{ g.competition.name }}
       </h2>
       @for (m of g.matches; track m.id) {
-        <ab-diretta-row [match]="m" [tick]="tick()" />
+        <ab-diretta-row [match]="m" [tick]="tick()" [mine]="picksByMatch().get(m.id) ?? []" />
       }
     </section>
   } @empty {

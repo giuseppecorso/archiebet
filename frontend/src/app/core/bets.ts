@@ -262,3 +262,14 @@ export interface Versus {
   agreed: VersusGroup | null;
   disagreed: VersusGroup | null;
 }
+
+/** Una giocata aperta dell'utente su una partita, con come sta andando adesso (D155) */
+export interface MyPick {
+  match_id: number;
+  bet_id: number;
+  legs: number;
+  market: string;
+  pick: string;
+  state: 'waiting' | 'winning' | 'losing' | 'won' | 'lost' | 'void' | 'unknown';
+  probability: number | null;
+}

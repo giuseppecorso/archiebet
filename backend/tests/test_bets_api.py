@@ -158,3 +158,20 @@ def test_each_user_sees_only_own_bets_and_settings(logged_client, db, matches):
     assert logged_client.post("/api/auth/login", json={"username": "amico", "password": "una-password-lunga"}).status_code == 200
     assert logged_client.get("/api/bets").json() == []
     assert logged_client.delete(f"/api/bets/{bet_id}").status_code == 404  # la schedina di un altro non si tocca
+
+
+def test_my_picks_on_matches_show_how_they_are_going(logged_client, db, matches):
+    from datetime import UTC, datetime
+
+    from app.api.bets import now_state
+    from app.models import MatchLive
+
+    logged_client.post("/api/bets", json=bet_body(matches["Inter"], pick="1"))
+    [mine] = logged_client.get("/api/bets/on-matches").json()
+    assert (mine["match_id"], mine["market"], mine["pick"], mine["state"]) == (matches["Inter"], "1X2", "1", "waiting")
+    db.add(MatchLive(match_id=matches["Inter"], status="2H", minute=60, home_goals=1, away_goals=0, updated_at=datetime.now(UTC)))
+    db.commit()
+    [mine] = logged_client.get("/api/bets/on-matches").json()
+    assert mine["state"] == "winning"  # 1-0 al 60': il "1" sta vincendo
+    assert now_state("OU2.5", "over", "2H", 1, 0) == "losing"
+    assert now_state("COR9.5", "over", "2H", 1, 0) == "unknown"  # gli angoli il punteggio non li dice

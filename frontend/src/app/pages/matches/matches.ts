@@ -1,6 +1,7 @@
 import { httpResource } from '@angular/common/http';
 import { Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MyPick } from '../../core/bets';
 import { Competition, CompetitionGroup, MatchCard } from '../../core/football';
 import { LIVE_REFRESH_MS } from '../../core/live';
 import { LeagueLogo } from '../../shared/crest';
@@ -55,6 +56,14 @@ export class Matches {
     () =>
       `/api/matches?view=day&day=${this.day()}&limit=200${this.competition() ? `&competitions=${this.competition()}` : ''}${this.day() === isoDay() ? `&t=${this.tick()}` : ''}`,
   );
+
+  /** Le mie giocate aperte, partita per partita (D155) */
+  protected readonly myPicks = httpResource<MyPick[]>(() => `/api/bets/on-matches?t=${this.tick()}`, { defaultValue: [] });
+  protected readonly picksByMatch = computed(() => {
+    const out = new Map<number, MyPick[]>();
+    for (const p of this.myPicks.value()) out.set(p.match_id, [...(out.get(p.match_id) ?? []), p]);
+    return out;
+  });
 
   protected readonly liveCount = computed(() => (this.data.value() ?? []).reduce((n, g) => n + g.matches.filter((m) => !!m.live).length, 0));
 

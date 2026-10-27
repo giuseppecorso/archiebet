@@ -14,6 +14,7 @@ from app.betting.analysis import Breakdown, breakdown
 from app.betting.calc import LOST, MARKETS, WON, potential_payout
 from app.betting.service import BetError, BudgetStatus, BetSummary, SelectionInput, budget_status, create_bet, settle_open_bets, summarize
 from app.betting.versus import JudgedPick, Versus, archie_probability, versus
+from app.forecast.radar_markets import is_secondary
 from app.models import Bet, BetSelection, BetSnapshot, Match, MatchOdds, Team, UserSettings
 from app.adapters.football_data import season_of
 
@@ -196,6 +197,57 @@ def list_bets(user: CurrentUser, db: DbSession, kind: Literal["real", "simulated
     if kind:
         query = query.where(Bet.kind == kind)
     return [_bet_out(db, b) for b in db.scalars(query)]
+
+
+class MyPickOut(BaseModel):
+    """Una giocata dell'utente su una partita, per vederla nella lista delle partite (D155)."""
+
+    match_id: int
+    bet_id: int
+    legs: int  # gambe della schedina (1 = singola)
+    market: str
+    pick: str
+    state: Literal["waiting", "winning", "losing", "won", "lost", "void", "unknown"]
+    probability: float | None  # probabilità che vinca adesso (termometro), se calcolabile
+
+
+def now_state(market: str, pick: str, status: str, home_goals: int, away_goals: int) -> str:
+    """Come andrebbe se finisse adesso: "winning" o "losing"; "unknown" per i mercati che il punteggio non decide
+    (angoli, cartellini) o per quelli del secondo tempo prima della fine del primo."""
+    from app.betting.calc import selection_outcome
+
+    if is_secondary(market) or (market.startswith("2T_") and status in ("NS", "1H")):
+        return "unknown"
+    try:
+        ht = (home_goals, away_goals) if market.startswith("1T_") and status == "1H" else None
+        outcome = selection_outcome(market, pick, home_goals, away_goals, ht)
+    except ValueError:
+        return "unknown"
+    return "winning" if outcome == "won" else "losing" if outcome == "lost" else "unknown"
+
+
+@router.get("/bets/on-matches")
+def my_picks_on_matches(user: CurrentUser, db: DbSession) -> list[MyPickOut]:
+    """Le giocate aperte dell'utente, partita per partita, con come stanno andando adesso."""
+    from app.forecast.live import leg_probability
+    from app.forecast.live_service import selection_states
+
+    bets = list(db.scalars(select(Bet).where(Bet.user_id == user.id, Bet.status == "open")))
+    selections = [s for b in bets for s in b.selections]
+    states = selection_states(db, selections, datetime.now(UTC))
+    out = []
+    for b in bets:
+        for sel in b.selections:
+            st = states.get(sel.id)
+            if sel.status in ("won", "lost", "void"):
+                state = sel.status
+            elif st is None or st.status == "NS":
+                state = "waiting"
+            else:
+                state = now_state(sel.market, sel.pick, st.status, st.home_goals, st.away_goals)
+            out.append(MyPickOut(match_id=sel.match_id, bet_id=b.id, legs=len(b.selections), market=sel.market, pick=sel.pick, state=state,
+                                 probability=leg_probability(st) if st is not None and state not in ("waiting",) else None))  # fmt: skip
+    return out
 
 
 @router.post("/bets", status_code=status.HTTP_201_CREATED)
