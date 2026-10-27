@@ -10,7 +10,7 @@ from app.api.football import MatchCard, _news_counts, match_cards
 from app.api.picks import Horizon, horizon_window
 from app.auth.deps import CurrentUser, DbSession
 from app.betting.calc import market_name
-from app.forecast.study import LEVELS, THEMES, choose_multiple, leg_price, theme_market, theme_match, up_to_target
+from app.forecast.study import LEVELS, THEMES, auto_legs, choose_multiple, leg_price, theme_market, theme_match, up_to_target
 from app.forecast.study_service import load_studies
 from app.ingest.teams import CUP_COUNTRY
 from app.models import Match, MatchStudy
@@ -69,6 +69,7 @@ def study_multiple(
     exclude: str | None = Query(None, description="partite già proposte, id separati da virgola"),
     theme: Theme = "tutte",
     target: float | None = Query(None, gt=1, le=100000, description="quota totale obiettivo: Archie aggiunge gambe finché ci arriva"),
+    auto: bool = Query(False, description="Archie decide quante partite: finché la multipla esce abbastanza spesso per il livello"),
 ) -> StudyMultipleOut:
     now = datetime.now(UTC)
     try:
@@ -80,7 +81,9 @@ def study_multiple(
     news = _news_counts(db, [m for m, _ in studies], now) if theme == "notizie" else {}
     pool = [(m.id, [p for p in d["picks"] if theme_market(theme, p["market"])]) for m, d in studies
             if theme_match(theme, m.competition.tier, m.competition.country == CUP_COUNTRY, news.get(m.id, 0))]  # fmt: skip
-    if target:
+    if auto and not target:
+        chosen = auto_legs(choose_multiple(pool, level, MAX_LEGS, skip), level)
+    elif target:
         chosen = up_to_target(choose_multiple(pool, level, MAX_LEGS, skip), target)
     else:
         chosen = choose_multiple(pool, level, legs, skip)

@@ -169,7 +169,7 @@ describe('ArchieBet: navigazione', () => {
     (await nextRequest('/api/competitions')).flush([serieB]);
     (await nextRequest('/api/study/themes')).flush({ tutte: 'Tutte', coppe: 'Competizioni internazionali' });
     const first = await nextRequest((r) => r.url.startsWith('/api/study/multiple'));
-    expect(first.request.url).toBe('/api/study/multiple?level=equilibrato&legs=4&horizon=2days');
+    expect(first.request.url).toBe('/api/study/multiple?level=equilibrato&legs=4&horizon=2days&auto=true'); // Archie decide quante partite
     const leg = {
       match: { id: 9, competition: serieB, season: '2026/27', kickoff_at: '2026-10-25T13:00:00Z', kickoff_has_time: true, status: 'scheduled',
                home: { id: 1, name: 'Brescia' }, away: { id: 2, name: 'Cittadella' }, home_goals: null, away_goals: null, odds_1x2: null },

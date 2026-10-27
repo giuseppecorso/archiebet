@@ -42,7 +42,10 @@ const HORIZONS: [Horizon, string][] = [
       <p class="hint muted small">{{ hint() }}</p>
       <div class="row">
         <label>Partite
-          <input type="number" min="1" max="30" [value]="legs()" [disabled]="!!target()" (change)="restart(); legs.set(clamp(+$any($event.target).value))" />
+          <span class="legs-row">
+            <button type="button" class="chip" [class.on]="auto()" [attr.aria-pressed]="auto()" [disabled]="!!target()" (click)="restart(); auto.set(!auto())" title="Archie aggiunge partite finché la multipla esce abbastanza spesso per il livello">Decide Archie</button>
+            <input type="number" min="1" max="30" [value]="legs()" [disabled]="!!target() || auto()" (change)="restart(); legs.set(clamp(+$any($event.target).value))" aria-label="Numero di partite" />
+          </span>
         </label>
         <label>Quota obiettivo
           <input type="number" min="1.1" step="any" placeholder="es. 50" [value]="target() ?? ''" (change)="restart(); target.set(toTarget($any($event.target).value))" />
@@ -109,7 +112,7 @@ const HORIZONS: [Horizon, string][] = [
             }
             <button type="button" class="again" [disabled]="!r.more" (click)="another(r)">Genera un'altra multipla</button>
           </div>
-          @if (!target() && r.legs.length < legs()) {
+          @if (!target() && !auto() && r.legs.length < legs()) {
             <p class="muted small">Archie ha trovato solo {{ r.legs.length }} partite da proporre a questo livello: le altre non hanno un pronostico su cui modello e campo sono d'accordo.</p>
           }
           <p class="muted small note">La percentuale è quella dello studio di Archie (modello dei gol e fatti del campo), non quella delle quote.</p>
@@ -134,6 +137,9 @@ const HORIZONS: [Horizon, string][] = [
     .chips { display: flex; flex-wrap: wrap; gap: 4px; }
     .chip { min-height: 30px; padding: 1px 12px; font: inherit; font-size: 13px; font-weight: 600; color: var(--text-2); background: transparent; border: 1px solid var(--line-strong); border-radius: 15px; cursor: pointer; }
     .chip.on { color: var(--amber); background: var(--chip); border-color: var(--amber); }
+    .legs-row { display: flex; gap: 6px; align-items: center; }
+    .legs-row input { width: 64px; }
+    .chip:disabled { opacity: 0.4; cursor: default; }
     .hint { margin: 6px 0 8px; }
     .row { display: flex; flex-wrap: wrap; gap: 10px; }
     label { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
@@ -171,6 +177,8 @@ export class Generator {
   /** Quota totale voluta (es. 50): Archie aggiunge partite finché ci arriva */
   protected readonly target = signal<number | null>(null);
   protected readonly stake = signal(5);
+  /** Consigliato: Archie decide quante partite (probabilità che esca almeno 40%, 20% o 8% secondo il livello) */
+  protected readonly auto = signal(true);
   /** Partite già proposte: "genera un'altra multipla" le salta */
   protected readonly excluded = signal<number[]>([]);
 
@@ -184,6 +192,7 @@ export class Generator {
     if (this.competition()) params.set('competitions', this.competition());
     if (this.theme() !== 'tutte') params.set('theme', this.theme());
     if (this.target()) params.set('target', String(this.target()));
+    else if (this.auto()) params.set('auto', 'true');
     if (this.excluded().length) params.set('exclude', this.excluded().join(','));
     return `/api/study/multiple?${params}`;
   });

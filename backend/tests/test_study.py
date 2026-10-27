@@ -184,3 +184,12 @@ def test_theme_matches():
     assert theme_match("coppe", 2, True, 0) and not theme_match("coppe", 1, False, 0)
     assert theme_match("notizie", 1, False, 3) and not theme_match("notizie", 1, False, 2)
     assert theme_match("primo_tempo", 4, True, 0)
+
+
+def test_auto_legs_stop_when_the_multiple_gets_too_unlikely():
+    from app.forecast.study import auto_legs
+
+    ranked = [(k, {"p_archie": p}) for k, p in enumerate([0.9, 0.85, 0.8, 0.75, 0.7])]
+    assert [k for k, _ in auto_legs(ranked, "cauto")] == [0, 1, 2, 3]  # 0,9×0,85×0,8×0,75 = 0,46 ≥ 0,40; con la quinta 0,32
+    assert len(auto_legs(ranked, "equilibrato")) == 5  # 0,9×0,85×0,8×0,75×0,7 = 0,32 ≥ 0,20
+    assert len(auto_legs([(1, {"p_archie": 0.38})], "cauto")) == 1  # almeno una partita

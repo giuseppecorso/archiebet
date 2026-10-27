@@ -464,3 +464,20 @@ def up_to_target(ranked: Sequence[tuple[int, dict]], target: float) -> list[tupl
         out.append((match_id, pick))
         total *= leg_price(pick)
     return out
+
+
+# --- "Lascia decidere ad Archie": quante partite ---
+
+AUTO_FLOOR = {"cauto": 0.40, "equilibrato": 0.20, "rischioso": 0.08}  # probabilità minima che la multipla esca
+
+
+def auto_legs(ranked: Sequence[tuple[int, dict]], level: str) -> list[tuple[int, dict]]:
+    """Dai pronostici più solidi in giù finché la probabilità che esca tutta resta sopra la soglia del livello
+    (almeno una partita)."""
+    out, p = [], 1.0
+    for match_id, pick in ranked:
+        if out and p * pick["p_archie"] < AUTO_FLOOR[level]:
+            break
+        out.append((match_id, pick))
+        p *= pick["p_archie"]
+    return out
