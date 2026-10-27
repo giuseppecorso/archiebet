@@ -7,7 +7,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.143-009688?logo=fastapi&logoColor=white)
 ![Angular](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-469%20backend%20%2B%2029%20frontend-brightgreen)
+![Tests](https://img.shields.io/badge/tests-497%20backend%20%2B%2029%20frontend-brightgreen)
 
 🇮🇹 [Versione italiana](README.md)
 
@@ -28,9 +28,9 @@ but **every number is computed by code**.
 |---|---|
 | **Problem** | Find out, with a sound method, whether and where a model or a piece of information beats a very efficient market |
 | **Solution** | FastAPI backend with 6 data sources and statistical models (Dixon-Coles, Elo, Shin de-margining, negative binomial, in-play Poisson, Monte Carlo), Angular 22 frontend |
-| **Method** | 139 documented decisions; every hypothesis tested with rules written before looking at the data, tuning and confirmation on separate periods, match-clustered standard errors |
+| **Method** | 149 documented decisions; every hypothesis tested with rules written before looking at the data, tuning and confirmation on separate periods, match-clustered standard errors |
 | **Outcome** | One edge confirmed on historical data (CLV +2.5% ± 0.3 over 734 cases), now under live verification; dozens of hypotheses rejected and documented |
-| **Quality** | 498 automated tests, GitHub Actions CI, Alembic migrations, one-command Docker start |
+| **Quality** | 526 automated tests, GitHub Actions CI, Alembic migrations, one-command Docker start |
 
 ## Try it in 2 minutes (Docker)
 
@@ -41,15 +41,27 @@ docker compose up --build
 ```
 
 Open **http://localhost:8080** and log in with **demo / archiebet-demo**. Without API keys the app downloads the free
-football-data.co.uk history (10 leagues, since 2023): statistics, match pages, Archie's forecasts, simulator.
-Live odds, in-play data, news and AI are enabled by adding keys to `backend/.env` (see `.env.example`).
+football-data.co.uk history (10 leagues, since 2023): statistics, match pages, Archie's forecasts, simulator and
+**Build me a multiple** on upcoming matches. Live odds, live scores, news and AI are enabled by adding keys to
+`backend/.env` (see `.env.example`). There is no online demo on purpose: the app is for private use and does not
+publish forecasts or odds on open pages.
 
 ## Why it is interesting
 
 - **Method before results.** A factor enters the model only if a test *written before looking at the data* shows it improves forecasts. Multi-hypothesis searches (e.g. 1,650 automatically generated strategies) use a stricter tuning threshold and confirmation on separate seasons, so that chance is not mistaken for a discovery.
 - **Negative results reported.** Weather, rest days, coaching changes, line-ups, "style match-ups", automated strategies, lower leagues in 23 countries: they do not beat the market, and the numbers are in the [decision log](docs/DECISIONI.md).
 - **The right metrics.** Probability calibration, paired log loss, **closing-line value** (taken price vs. fair closing price). Short-term profit is not a metric.
-- **Full-stack engineering.** Data-source adapters with caching and request quotas, scheduled jobs, 55 REST endpoints, 26 tables, session authentication, AI with a spending cap enforced in code, signal-based frontend with lazy-loaded routes.
+- **Full-stack engineering.** Data-source adapters with caching and request quotas, scheduled jobs, 59 REST endpoints, 26 tables, session authentication, AI with a spending cap enforced in code, signal-based frontend with lazy-loaded routes.
+
+## Screenshots
+
+| Build me a multiple | Match page |
+|---|---|
+| ![Build me a multiple](docs/screenshots/fammi-una-multipla.jpg) | ![Match page](docs/screenshots/pagina-partita.jpg) |
+| **Live scores** | **What Archie learns** |
+| ![Live](docs/screenshots/diretta.jpg) | ![What Archie learns](docs/screenshots/cosa-impara-archie.jpg) |
+| **On the phone (installable app)** | **League statistics** |
+| ![Phone](docs/screenshots/telefono-multipla.jpg) | ![Statistics](docs/screenshots/statistiche-campionati.jpg) |
 
 ## Architecture
 
@@ -68,7 +80,7 @@ flowchart LR
     DB[(SQLite / PostgreSQL<br/>SQLAlchemy + Alembic)]
     FC[Forecasts and experiments<br/>Dixon-Coles, Elo, Shin,<br/>negative binomial, Poisson]
     AI[Single AI module<br/>Claude, spending cap]
-    API[REST API · 55 endpoints]
+    API[REST API · 59 endpoints]
   end
   FE[Frontend · Angular 22]
   Sources --> AD --> JOB --> DB
@@ -98,7 +110,7 @@ implementing under explicit rules.
 
 - **My part:** requirements and specifications, product decisions and priorities, non-negotiable statistical principles, approval of every decision, hands-on validation of the app, review of experiment results.
 - **Rules given to the assistant** ([CLAUDE.md](CLAUDE.md)): every calculation has a test; no look-ahead data; a factor enters only if a historical test justifies it; numbers come from code, never from the AI; secrets only in `.env`; small, documented commits.
-- **Checks:** 498 automated tests and CI on every push; every decision logged with its rationale; heavy experiments run on database copies; progress tracked phase by phase.
+- **Checks:** 526 automated tests and CI on every push; every decision logged with its rationale; heavy experiments run on database copies; progress tracked phase by phase.
 - **Commits** written with the assistant carry the `Co-Authored-By: Claude` trailer.
 
 A goal of the project was also to learn how to lead AI-assisted development professionally: define the problem well,

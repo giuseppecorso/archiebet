@@ -7,7 +7,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.143-009688?logo=fastapi&logoColor=white)
 ![Angular](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
-![Test](https://img.shields.io/badge/test-469%20backend%20%2B%2029%20frontend-brightgreen)
+![Test](https://img.shields.io/badge/test-497%20backend%20%2B%2029%20frontend-brightgreen)
 
 🇬🇧 [English version](README.en.md)
 
@@ -26,9 +26,9 @@ sempre il codice**.
 |---|---|
 | **Problema** | Capire, con metodo, se e dove un modello o un'informazione batte le quote di un mercato molto efficiente |
 | **Soluzione** | Backend FastAPI con 6 fonti dati, modelli statistici (Dixon-Coles, Elo, Shin, binomiale negativa, Poisson live, Monte Carlo), frontend Angular 22 |
-| **Metodo** | 139 decisioni documentate; ogni ipotesi provata con regole scritte prima di vedere i dati, taratura e conferma su periodi separati, errori standard per partita |
+| **Metodo** | 149 decisioni documentate; ogni ipotesi provata con regole scritte prima di vedere i dati, taratura e conferma su periodi separati, errori standard per partita |
 | **Risultato** | Un solo vantaggio confermato sullo storico (CLV +2,5% ± 0,3 su 734 casi), in verifica dal vivo; decine di ipotesi scartate e documentate |
-| **Qualità** | 498 test automatici, CI su GitHub Actions, migrazioni Alembic, avvio con Docker in un comando |
+| **Qualità** | 526 test automatici, CI su GitHub Actions, migrazioni Alembic, avvio con Docker in un comando |
 
 ## Provalo in 2 minuti (Docker)
 
@@ -40,22 +40,26 @@ docker compose up --build
 
 Apri **http://localhost:8080** ed entra con **demo / archiebet-demo**. Senza chiavi API l'app scarica lo storico
 gratuito di football-data.co.uk (10 campionati, dal 2023): statistiche, pagine partita, previsioni di Archie,
-simulatore. Quote attuali, live, notizie e AI si attivano aggiungendo le chiavi in `backend/.env` (vedi `.env.example`).
+simulatore e **Fammi una multipla** sulle partite in programma. Quote attuali, Diretta, notizie e AI si attivano
+aggiungendo le chiavi in `backend/.env` (vedi `.env.example`). Non c'è una demo online di proposito: l'app è a uso
+privato e non pubblica pronostici né quote su pagine aperte a tutti.
 
 ## Perché è interessante
 
 - **Metodo prima dei risultati.** Un fattore entra nel modello solo se una prova *scritta prima di guardare i dati* dimostra che migliora le previsioni. Le prove con molte ipotesi (es. 1.650 strategie generate in automatico) usano una soglia più severa in taratura e una conferma su stagioni separate, per non scambiare il caso per una scoperta.
 - **Risultati negativi dichiarati.** Meteo, riposo, cambio allenatore, formazioni, "incastri di stile", strategie automatiche, serie minori di 23 paesi: non battono il mercato, ed è scritto nel [registro delle decisioni](docs/DECISIONI.md) con i numeri.
 - **Misure corrette.** Calibrazione delle probabilità, log loss appaiata, **CLV** (quota presa rispetto alla quota giusta di chiusura). I soldi vinti in una settimana non sono una misura.
-- **Ingegneria completa.** Adattatori con cache e quote di richieste, job pianificati, 55 endpoint REST, 26 tabelle, autenticazione a sessione, AI con tetto di spesa controllato dal codice, frontend a signal con caricamento pigro delle pagine.
+- **Ingegneria completa.** Adattatori con cache e quote di richieste, job pianificati, 59 endpoint REST, 26 tabelle, autenticazione a sessione, AI con tetto di spesa controllato dal codice, frontend a signal con caricamento pigro delle pagine.
 
 ## Schermate
 
-| Statistiche dei campionati | Cosa impara Archie |
+| Fammi una multipla | Pagina partita |
 |---|---|
-| ![Statistiche](docs/screenshots/statistiche-campionati.jpg) | ![Cosa impara Archie](docs/screenshots/cosa-impara-archie.jpg) |
-| **Pagina partita** | **Storia di una squadra** |
-| ![Pagina partita](docs/screenshots/pagina-partita.jpg) | ![Storia squadra](docs/screenshots/storia-squadra.jpg) |
+| ![Fammi una multipla](docs/screenshots/fammi-una-multipla.jpg) | ![Pagina partita](docs/screenshots/pagina-partita.jpg) |
+| **Diretta** | **Cosa impara Archie** |
+| ![Diretta](docs/screenshots/diretta.jpg) | ![Cosa impara Archie](docs/screenshots/cosa-impara-archie.jpg) |
+| **Sul telefono (app installabile)** | **Statistiche dei campionati** |
+| ![Telefono](docs/screenshots/telefono-multipla.jpg) | ![Statistiche](docs/screenshots/statistiche-campionati.jpg) |
 
 ## Funzioni
 
@@ -85,7 +89,7 @@ flowchart LR
     DB[(SQLite / PostgreSQL<br/>SQLAlchemy + Alembic)]
     FC[Previsioni e prove<br/>Dixon-Coles, Elo, Shin,<br/>binomiale negativa, Poisson]
     AI[Modulo AI unico<br/>Claude, tetto di spesa]
-    API[API REST · 55 endpoint]
+    API[API REST · 59 endpoint]
   end
   FE[Frontend · Angular 22]
   Fonti --> AD --> JOB --> DB

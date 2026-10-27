@@ -29,10 +29,9 @@
 
 /* Intestazione: righe verticali come un campo, in attesa delle foto degli stadi */
 .header {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid; /* casa · risultato · ospite sempre sulla stessa riga */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 24px;
   padding: 32px;
   border: 1px solid var(--line);
@@ -890,9 +889,19 @@ tr.absent td {
     font-size: 9px;
   }
   .center {
-    flex: 0 0 auto;
-    max-width: 44%;
+    justify-self: center; /* sempre in mezzo: casa e ospite alla stessa distanza */
     gap: 4px;
+  }
+  .season {
+    display: none; /* sul telefono basta il campionato */
+  }
+  .live-head {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+  .live-probs {
+    gap: 6px;
+    font-size: 11px;
   }
   .comp {
     font-size: 9px;
@@ -930,4 +939,34 @@ tr.absent td {
   flex-wrap: wrap;
   gap: 6px 14px;
   margin: 0 0 12px;
+}
+
+/* Al centro dell'intestazione i numeri non vanno mai a capo, a qualsiasi larghezza */
+.big-time,
+.big-score,
+.live-head,
+.live-probs,
+.when {
+  white-space: nowrap;
+}
+.comp {
+  justify-content: center;
+  flex-wrap: wrap;
+  text-align: center;
+}
+.card-sub .nowrap {
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .card-sub {
+    display: flex;
+    flex-direction: column; /* quota giusta e mercato su due righe ordinate */
+  }
+  .card-sub .sep,
+  .card-sub .long {
+    display: none;
+  }
+}
+.card-sub .sep {
+  margin: 0 3px 0 4px;
 }

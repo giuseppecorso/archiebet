@@ -21,7 +21,7 @@
     </div>
 
     <div class="center">
-      <div class="label comp"><ab-league-logo [code]="m.competition.code" [size]="20" /> {{ m.competition.name }} · {{ m.season }}</div>
+      <div class="label comp"><ab-league-logo [code]="m.competition.code" [size]="20" /> {{ m.competition.name }}<span class="season"> · {{ m.season }}</span></div>
       @if (m.live; as l) {
         <div class="live-head"><span class="pulse" aria-hidden="true"></span> LIVE · {{ fmt.liveLabel(l) }}</div>
         <div class="led big-score live" [attr.aria-label]="'In corso, ' + l.home_goals + ' a ' + l.away_goals">{{ l.home_goals }}-{{ l.away_goals }}</div>
@@ -76,9 +76,9 @@
             <span class="title card-label">{{ c.sel }} · {{ c.name }}</span>
             <span class="led card-pct">{{ c.pct }}</span>
             <span class="muted card-sub">
-              quota giusta {{ c.fair }}
+              <span class="nowrap"><span class="long">quota </span>giusta {{ c.fair }}</span>
               @if (c.market) {
-                · mercato {{ c.market }}
+                <span class="nowrap"><span class="sep">·</span> mercato {{ c.market }}</span>
               }
             </span>
           </div>
@@ -118,7 +118,7 @@
               <span class="led sugg-pct">{{ fmt.pct(s.leg.p_archie) }}</span>
               <span class="sugg-offer">
                 @for (o of priceList(s.leg); track o[0]) {
-                  <span>quota {{ fmt.odds(o[1]) }} · {{ o[0] }}</span>
+                  <span>{{ o[0] }} <strong>{{ fmt.odds(o[1]) }}</strong></span>
                 } @empty {
                   <span class="muted small">quota da cercare sull'app · giusta secondo lo studio {{ fmt.odds(1 / s.leg.p_archie) }}</span>
                 }

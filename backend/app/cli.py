@@ -81,6 +81,9 @@ def _demo_setup(first_season: int) -> int:
         _sync("football-data", first_season)
     with SessionLocal() as db:
         print(f"Previsioni aggiornate: {refresh_predictions(db, datetime.now(UTC), force=True)}")
+        from app.forecast.study_service import refresh_studies
+
+        print(f"Partite studiate per Fammi una multipla: {refresh_studies(db, datetime.now(UTC))}")
     return 0
 
 

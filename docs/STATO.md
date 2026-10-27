@@ -17,7 +17,7 @@ Ultimo aggiornamento: 2026-10-27
 - [x] **Notizie, classifica e meteo** nello studio (D138), notizie per partita in Partite.
 - [x] **Pagella dei pronostici studiati** e pulizia dei testi (D139); Partite con tendine; Pronostici con due sole schede; gol annullati dal VAR.
 - [x] **Libro di studio** del progetto (`docs/libro/`, 13 capitoli con esempi verificati e domande di ripasso).
-- Test: 469 backend + 29 frontend, tutti verdi.
+- Test: 497 backend + 29 frontend, tutti verdi (2026-10-27).
 
 ## Telefono, gol per squadra, Draw No Bet (2026-10-22)
 
