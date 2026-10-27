@@ -1,37 +1,104 @@
 @if (!embedded()) {
   <div class="head">
     <h1 class="title page-title">Occasioni</h1>
-    <span class="trial">in prova</span>
-    <span class="muted small">Quando Sisal o Eurobet pagano più della quota giusta di Pinnacle</span>
   </div>
 }
 
 @if (radar.error()) {
-  <p class="warn">Il radar non risponde: controlla che il backend sia acceso.</p>
+  <p class="warn">Le occasioni non rispondono: controlla che il backend sia acceso.</p>
 }
 
 @if (radar.value(); as r) {
-  <section class="panel box block" aria-labelledby="live-title">
-    <div class="box-head">
-      <h2 id="live-title" class="title box-title">Simulazione dal vivo</h2>
-      <span class="verdict" [class]="'verdict ' + (r.live.verdict === 'superato' ? 'pos' : r.live.verdict === 'non superato' ? 'neg' : '')">
-        {{ r.live.verdict }}
-      </span>
+  <p class="intro">
+    Un'<strong>occasione</strong> è una quota di {{ r.playable.join(' o ') }} che paga <strong>più di quanto vale l'evento</strong>
+    secondo Pinnacle, il bookmaker più preciso. Accanto trovi cosa ne pensa lo studio di Archie.
+  </p>
+
+  @if (cards().length) {
+    <div class="cards">
+      @for (c of cards(); track c.best.match_id) {
+        @let o = c.best;
+        <article class="panel occ" [class.agree]="agrees(o)">
+          <div class="occ-top muted small">
+            <span>{{ o.competition.name }}</span>
+            <span>{{ fmt.dayLabel(o.kickoff_at) }} {{ fmt.kickoffTime(o.kickoff_at) }}</span>
+          </div>
+          <a class="occ-match" [routerLink]="['/partite', o.match_id]">{{ o.home.name }} – {{ o.away.name }}</a>
+
+          <div class="occ-main">
+            <span class="occ-pick">{{ pick(o) }}</span>
+            <span class="occ-price"><span class="led">{{ fmt.odds(o.price) }}</span> <span class="small">{{ o.bookmaker }}</span></span>
+          </div>
+
+          <p class="occ-why">
+            Paga <strong>{{ fmt.odds(o.price) }}</strong>, ne vale <strong>{{ fmt.fairOdds(o.fair_probability) }}</strong>
+            ({{ fmt.pct(o.fair_probability) }} per Pinnacle):
+            <span class="value pos">{{ fmt.signedPct(o.value) }}</span> di valore.
+          </p>
+
+          @if (o.p_study != null) {
+            <p class="occ-study" [class.yes]="agrees(o)">
+              Studio di Archie: <strong>{{ fmt.pct(o.p_study) }}</strong> ·
+              {{ agrees(o) ? 'd\'accordo: lo ritiene probabile almeno quanto Pinnacle' : 'meno convinto di Pinnacle' }}
+            </p>
+          }
+          @if (o.suspicious) {
+            <p class="occ-warn small">Valore molto alto: prima di giocare controlla notizie e formazioni, la quota potrebbe essere un errore.</p>
+          }
+
+          <div class="occ-actions">
+            <a class="play" [routerLink]="['/schedine/nuova']" [queryParams]="{ m: o.match_id }">Gioca</a>
+            @if (c.others.length) {
+              <button type="button" class="more" [attr.aria-expanded]="isOpen(o.match_id)" (click)="toggle(o.match_id)">
+                {{ isOpen(o.match_id) ? 'Nascondi' : 'Altre ' + c.others.length }}
+              </button>
+            }
+          </div>
+          @if (isOpen(o.match_id)) {
+            <ul class="others">
+              @for (x of c.others; track x.market + x.selection + x.bookmaker) {
+                <li>
+                  <span>{{ pick(x) }}</span>
+                  <span class="muted small">{{ fmt.odds(x.price) }} {{ x.bookmaker }} · <span class="value pos">{{ fmt.signedPct(x.value) }}</span>
+                    @if (x.p_study != null) { · studio {{ fmt.pct(x.p_study) }} }</span>
+                </li>
+              }
+            </ul>
+          }
+        </article>
+      }
     </div>
+  } @else {
+    <p class="panel box muted">
+      Nessuna occasione adesso. Archie controlla le quote a ogni aggiornamento: le occasioni compaiono quando
+      {{ r.playable.join(' o ') }} pagano abbastanza più del giusto (dall'1,5% sulle quote basse al 3,5% a quota {{ fmt.odds(r.max_price) }}).
+    </p>
+  }
+
+  @if (secondary().length) {
+    <details class="panel box fold">
+      <summary>Angoli e cartellini · in prova ({{ secondary().length }})</summary>
+      <p class="muted small">Sullo storico hanno battuto la chiusura di Pinnacle, ma possono avere limiti bassi o quote che spariscono: contano a parte fino a 300 giocate.</p>
+      <ul class="others">
+        @for (x of secondary(); track x.match_id + x.market + x.selection + x.bookmaker) {
+          <li>
+            <a [routerLink]="['/partite', x.match_id]">{{ x.home.name }} – {{ x.away.name }}</a>
+            <span>{{ pick(x) }}</span>
+            <span class="muted small">{{ fmt.odds(x.price) }} {{ x.bookmaker }} · <span class="value pos">{{ fmt.signedPct(x.value) }}</span></span>
+          </li>
+        }
+      </ul>
+    </details>
+  }
+
+  <details class="panel box fold">
+    <summary>Come sta andando · {{ r.live.n }}/{{ r.live.target }} giocate misurate · {{ r.live.verdict }}</summary>
     <div class="tiles">
-      <div class="tile wide">
-        <span class="label">Giocate misurate</span>
-        <span class="led">{{ r.live.n }}<span class="small muted">/{{ r.live.target }}</span></span>
-        <div class="bar" role="progressbar" [attr.aria-valuenow]="r.live.n" aria-valuemin="0" [attr.aria-valuemax]="r.live.target"
-             aria-label="Giocate verso il giudizio">
-          <span [style.width.%]="progress()"></span>
-        </div>
-      </div>
       <div class="tile">
         <span class="label">CLV medio</span>
         <span [class]="'led ' + sign(r.live.mean_clv)">{{ fmt.signedPct(r.live.mean_clv) }}</span>
         <span class="muted small">
-          @if (r.live.clv_std_error != null) { ± {{ unsigned(r.live.clv_std_error) }} di errore } @else { servono più giocate }
+          @if (r.live.clv_std_error != null) { ± {{ unsigned(r.live.clv_std_error) }} } @else { servono più giocate }
         </span>
       </div>
       <div class="tile">
@@ -42,156 +109,36 @@
       <div class="tile">
         <span class="label">Rendimento</span>
         <span [class]="'led ' + sign(r.live.roi)">{{ fmt.signedPct(r.live.roi) }}</span>
-        <span class="muted small">puntata fissa · non è il giudice</span>
+        <span class="muted small">non è il giudice</span>
       </div>
     </div>
-    <p class="note">
-      Misurata su {{ r.simulation_bookmakers.join(', ') }} (quota migliore tra loro): ogni occasione conta come una
-      giocata simulata alla prima quota vista. Il radar esce dalla prova con almeno
-      {{ r.live.target }} giocate e un CLV medio positivo oltre due errori standard.
+    <p class="muted small">
+      Ogni occasione conta come una giocata simulata alla prima quota vista ({{ r.simulation_bookmakers.join(', ') }}).
+      La prova finisce a {{ r.live.target }} giocate: passa se battono la quota di chiusura in media, oltre il caso.
     </p>
-  </section>
-
-  @if (r.live_secondary; as ls) {
-    <section class="panel box block" aria-labelledby="sec-title">
-      <div class="box-head">
-        <h2 id="sec-title" class="title box-title">Angoli e cartellini · simulazione a parte</h2>
-        <span [class]="'verdict ' + (ls.verdict === 'superato' ? 'pos' : ls.verdict === 'non superato' ? 'neg' : '')">{{ ls.verdict }}</span>
-      </div>
-      <div class="tiles">
-        <div class="tile wide">
-          <span class="label">Giocate misurate</span>
-          <span class="led">{{ ls.n }}<span class="small muted">/{{ ls.target }}</span></span>
-          <div class="bar" role="progressbar" [attr.aria-valuenow]="ls.n" aria-valuemin="0" [attr.aria-valuemax]="ls.target" aria-label="Angoli e cartellini: giocate verso il giudizio">
-            <span [style.width.%]="progressOf(ls)"></span>
-          </div>
-        </div>
-        <div class="tile">
-          <span class="label">CLV medio</span>
-          <span [class]="'led ' + sign(ls.mean_clv)">{{ fmt.signedPct(ls.mean_clv) }}</span>
-          <span class="muted small">
-            @if (ls.clv_std_error != null) { ± {{ unsigned(ls.clv_std_error) }} per partita } @else { servono più giocate }
-          </span>
-        </div>
-        <div class="tile">
-          <span class="label">Rendimento</span>
-          <span [class]="'led ' + sign(ls.roi)">{{ fmt.signedPct(ls.roi) }}</span>
-          <span class="muted small">non è il giudice</span>
-        </div>
-      </div>
-      <p class="note">
-        Sullo storico (aprile–ottobre 2026, 1.400 partite) le occasioni su angoli e cartellini di Sisal ed Eurobet hanno battuto
-        la chiusura di Pinnacle del 3-6%. Possono essere quote non più giocabili o con limiti bassi: per questo sono
-        "in prova" e contano a parte fino a 300 giocate misurate.
-      </p>
-    </section>
-  }
-
-  <section class="panel box block" aria-labelledby="up-title">
-    <div class="box-head">
-      <h2 id="up-title" class="title box-title">Le tue occasioni · {{ r.playable.join(' e ') }}</h2>
-      <span class="muted small">quote fino a {{ fmt.odds(r.max_price) }}, valore minimo che cresce con la quota (1,5–3,5%) · aggiornati ogni 6 ore</span>
-    </div>
-    @if (r.upcoming.length) {
-      <div class="table-wrap">
-        <table class="signals">
-          <thead>
-            <tr>
-              <th scope="col">Quando</th>
-              <th scope="col">Partita</th>
-              <th scope="col">Esito</th>
-              <th scope="col">Quota</th>
-              <th scope="col">Quota giusta</th>
-              <th scope="col">Valore</th>
-              <th scope="col">Soglia</th>
-              <th scope="col"><span class="sr-only">Azioni</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (s of r.upcoming; track s.match_id + s.market + s.selection) {
-              <tr>
-                <td class="when">{{ fmt.dayLabel(s.kickoff_at) }} <span class="muted">{{ fmt.kickoffTime(s.kickoff_at) }}</span></td>
-                <td>
-                  <a [routerLink]="['/partite', s.match_id]">{{ s.home.name }} – {{ s.away.name }}</a>
-                  <span class="muted small comp">{{ s.competition.name }}</span>
-                </td>
-                <td>
-                  <strong>{{ pick(s) }}</strong>
-                  @if (s.secondary) {
-                    <span class="trial-tag" title="Angoli e cartellini: superata la prova sullo storico, ora in prova dal vivo con un conteggio a parte">in prova</span>
-                  }
-                  @if (s.strategy) {
-                    <span class="trial-tag" [title]="'Strategia trovata da Archie e confermata sulle stagioni passate : ' + s.strategy">strategia di Archie</span>
-                  }
-                </td>
-                <td><span class="led price">{{ fmt.odds(s.price) }}</span><span class="small book">{{ s.bookmaker }}</span></td>
-                <td>{{ fmt.fairOdds(s.fair_probability) }} <span class="muted small">{{ fmt.pct(s.fair_probability) }} · {{ s.fair_source }}</span></td>
-                <td>
-                  <span [class]="'value ' + sign(s.value)">{{ fmt.signedPct(s.value) }}</span>
-                  @if (s.suspicious) {
-                    <span class="suspicious" title="Valore sopra il 15%: controlla notizie e formazioni, la quota potrebbe essere un errore">sospetto</span>
-                  }
-                </td>
-                <td class="small muted">{{ unsigned(s.required_value) }} a questa quota</td>
-                <td><a class="play" [routerLink]="['/schedine/nuova']" [queryParams]="{ m: s.match_id }">Gioca</a></td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    } @else {
-      <p class="muted">
-        Nessuna occasione per ora. Archie controlla le quote a ogni aggiornamento: le partite compaiono quando sono nel
-        calendario (di solito pochi giorni prima) e Sisal o Eurobet pagano abbastanza più del giusto: almeno l'1,5% sulle quote basse, fino al 3,5% a quota {{ fmt.odds(r.max_price) }}
-        più della quota giusta.
-      </p>
+    @if (r.recent.length) {
+      <ul class="others">
+        @for (s of r.recent; track s.match_id + s.market + s.selection) {
+          <li>
+            <span>{{ fmt.dayLabel(s.kickoff_at) }} · <a [routerLink]="['/partite', s.match_id]">{{ s.home.name }} – {{ s.away.name }}</a> · {{ pick(s) }}</span>
+            <span class="muted small">{{ fmt.odds(s.price) }} · CLV <span [class]="'value ' + sign(s.clv)">{{ s.clv == null ? 'in arrivo' : fmt.signedPct(s.clv) }}</span> · {{ s.won == null ? '–' : s.won ? 'vinta' : 'persa' }}</span>
+          </li>
+        }
+      </ul>
     }
-  </section>
+  </details>
 
-  @if (r.recent.length) {
-    <section class="panel box block" aria-labelledby="rec-title">
-      <div class="box-head">
-        <h2 id="rec-title" class="title box-title">Ultime occasioni della simulazione</h2>
-        <span class="muted small">il CLV arriva con la quota di chiusura di Pinnacle</span>
-      </div>
-      <div class="table-wrap">
-        <table class="signals">
-          <thead>
-            <tr>
-              <th scope="col">Data</th>
-              <th scope="col">Partita</th>
-              <th scope="col">Esito</th>
-              <th scope="col">Quota presa</th>
-              <th scope="col">Valore</th>
-              <th scope="col">CLV</th>
-              <th scope="col">Risultato</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (s of r.recent; track s.match_id + s.market + s.selection) {
-              <tr>
-                <td class="when">{{ fmt.dayLabel(s.kickoff_at) }}</td>
-                <td><a [routerLink]="['/partite', s.match_id]">{{ s.home.name }} – {{ s.away.name }}</a></td>
-                <td>{{ pick(s) }}</td>
-                <td>{{ fmt.odds(s.price) }} <span class="muted small">{{ s.bookmaker }}</span></td>
-                <td>{{ fmt.signedPct(s.value) }}</td>
-                <td><span [class]="'value ' + sign(s.clv)">{{ s.clv == null ? 'in arrivo' : fmt.signedPct(s.clv) }}</span></td>
-                <td>{{ s.won == null ? '–' : s.won ? 'vinta' : 'persa' }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </section>
-  }
-
-  <section class="panel box explain">
-    <h2 class="title box-title">Come funziona</h2>
+  <details class="panel box fold">
+    <summary>Perché un'occasione e non "la più probabile"?</summary>
     <p>
-      Pinnacle è il bookmaker più preciso: le sue quote, tolto il margine, danno la <strong>probabilità giusta</strong>.
-      Quando {{ r.playable.join(' o ') }} pagano di più, c'è <strong>valore</strong> (probabilità × quota − 1).
-      Un'occasione non dice chi vince: dice dove la quota è più alta del giusto. Si giudica sul CLV, cioè se la quota presa batte
-      quella di chiusura, non sui soldi vinti in poche settimane.
+      Una quota alta su un evento probabile è proprio questo: se Pinnacle dice che un pareggio esce il 30% delle volte, la
+      quota giusta è 3,33; se Sisal la paga 3,50, a lungo andare ci guadagni. Chi ha ragione si vede dopo: se poco prima
+      della partita la quota scende (il mercato si è corretto), avevi preso un prezzo migliore del giusto. È il
+      <strong>CLV</strong>, l'unico segnale affidabile nel lungo periodo.
     </p>
-  </section>
+    <p>
+      La probabilità dello studio è un secondo parere. Sul passato le occasioni su cui lo studio era d'accordo sono andate
+      meglio, ma nella stagione di prova i casi erano troppo pochi per confermarlo (D152): per ora è un'informazione, non un filtro.
+    </p>
+  </details>
 }

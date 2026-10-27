@@ -49,6 +49,8 @@ export interface Occasion {
   secondary?: boolean;
   /** Strategia trovata da Archie e confermata sul passato che gioca questo esito (D118) */
   strategy?: string | null;
+  /** Probabilità dello studio di Archie per l'esito, se la partita è studiata (D152) */
+  p_study?: number | null;
 }
 
 export interface RadarLive {

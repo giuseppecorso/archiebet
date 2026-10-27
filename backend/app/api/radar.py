@@ -66,6 +66,7 @@ class OccasionOut(BaseModel):
     suspicious: bool
     secondary: bool = False  # angoli o cartellini, "in prova" (D94)
     strategy: str | None = None  # strategia trovata da Archie e confermata che la gioca (D118)
+    p_study: float | None = None  # probabilità dello studio di Archie per l'esito (modello dei gol), se studiata (D152)
 
 
 class LiveOut(BaseModel):
@@ -132,6 +133,19 @@ def _signal_out(s: RadarSignal, m: Match) -> SignalOut:
     )
 
 
+def _study_probabilities(db, match_ids: list[int]) -> dict[int, dict[str, dict[str, float]]]:
+    """Probabilità del modello dei gol dello studio (D137) per le partite indicate: mercato → esito → probabilità."""
+    from app.forecast.study import model_probabilities
+    from app.models import MatchStudy
+
+    out = {}
+    for row in db.scalars(select(MatchStudy).where(MatchStudy.match_id.in_(match_ids))):
+        d = row.data
+        if all(k in d for k in ("lam", "mu", "rho", "share_home", "share_away")):
+            out[row.match_id] = model_probabilities(d["lam"], d["mu"], d["rho"], d["share_home"], d["share_away"])
+    return out
+
+
 @router.get("")
 def radar(_: CurrentUser, db: DbSession) -> RadarOut:
     now = datetime.now(UTC)
@@ -140,6 +154,7 @@ def radar(_: CurrentUser, db: DbSession) -> RadarOut:
         select(Match).where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > now).order_by(Match.kickoff_at, Match.id)
     ))  # fmt: skip
     books = load_book_odds(db, [m.id for m in matches], closing=False)
+    studies = _study_probabilities(db, [m.id for m in matches])
     strategies = passed_strategies()
     league, moments = strategy_context(db, [m.id for m in matches]) if strategies and matches else ({}, {})
     upcoming = []
@@ -154,7 +169,7 @@ def radar(_: CurrentUser, db: DbSession) -> RadarOut:
                 market=c.market, selection=c.selection, bookmaker=_label(c.bookmaker), price=c.price,
                 fair_probability=c.fair_probability, fair_source=_label(c.fair_source), value=c.value,
                 required_value=required_value(c.price), suspicious=c.suspicious, secondary=is_secondary(c.market),
-                strategy=found.name if found else None,
+                strategy=found.name if found else None, p_study=studies.get(m.id, {}).get(c.market, {}).get(c.selection),
             ))  # fmt: skip
     recent = db.execute(
         select(RadarSignal, Match).join(Match, RadarSignal.match_id == Match.id)

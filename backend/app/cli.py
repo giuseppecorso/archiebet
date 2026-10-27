@@ -1387,6 +1387,7 @@ def main() -> int:
     commands.add_parser("study-backtest", help="prova D140: lo studio e le sue varianti sul passato (walk-forward)")
     commands.add_parser("bookmaker-test", help="prova D144: dove sbaglia il bookmaker (studio contro quota media prima della partita)")
     commands.add_parser("cup-test", help="prova D146: coppe europee con un modello che collega i campionati")
+    commands.add_parser("occasion-test", help="prova D152: le Occasioni confermate dallo studio rendono di più?")
     det = commands.add_parser("af-details", help="scheda completa delle partite finite da API-Football: xG, giocatori, eventi (D140)")
     det.add_argument("--seasons", default="2022,2023,2024,2025,2026")
     det.add_argument("--leagues", default="", help="id API-Football separati da virgola (vuoto = campionati principali e Serie C)")
@@ -1508,6 +1509,46 @@ def main() -> int:
                                                   "tuning": [r.tuning.mean, r.tuning.std_error, r.tuning.n],
                                                   "confirmation": [r.confirmation.mean, r.confirmation.std_error, r.confirmation.n]} for r in results],
                                      "combined": best.__dict__}, ensure_ascii=False), encoding="utf-8")  # fmt: skip
+        return 0
+    if args.command == "occasion-test":
+        import json as _json
+
+        from sqlalchemy import select
+
+        from app.forecast import occasion_test as ot
+        from app.forecast.data import load_games
+        from app.forecast.learning_service import HISTORY_LEAGUES, sim_matches
+        from app.models import Competition
+
+        by_book, _ = sim_matches("2021/22", ot.CONFIRMATION, ("bet365",))
+        sims = by_book["bet365"]
+        with SessionLocal() as db:
+            comps = {c.code: c for c in db.scalars(select(Competition).where(Competition.code.in_(HISTORY_LEAGUES)))}
+            games_by_league = {}
+            for country in {c.country for c in comps.values()}:
+                games = load_games(db, country)
+                for code, c in comps.items():
+                    if c.country == country:
+                        games_by_league[code] = [g for g in games if g.competition_id == c.id]
+        print(f"partite simulate: {len(sims)}")
+        study = ot.study_by_match(games_by_league, sims)
+        rows = ot.check(sims, study)
+        tuning, confirmation = ot.split(rows)
+        out = {}
+        for name, part in (("taratura", tuning), ("conferma", confirmation)):
+            c = ot.compare(part)
+            conf, contra = [r for r in part if r.confirmed], [r for r in part if not r.confirmed]
+            rc, rx = ot.roi(conf), ot.roi(contra)
+            print(f"{name}: occasioni {len(part)} | confermate {len(conf)} CLV {c.confirmed.mean:+.4f} ± {c.confirmed.std_error:.4f}"
+                  f" | contraddette {len(contra)} CLV {c.contradicted.mean:+.4f} ± {c.contradicted.std_error:.4f}"
+                  f" | differenza {c.difference:+.4f} ± {c.std_error:.4f} | rendimento confermate {rc.mean:+.3f} ± {rc.std_error:.3f}, contraddette {rx.mean:+.3f} ± {rx.std_error:.3f}")
+            out[name] = {"confirmed": [c.confirmed.mean, c.confirmed.std_error, len(conf)], "contradicted": [c.contradicted.mean, c.contradicted.std_error, len(contra)],
+                         "difference": [c.difference, c.std_error], "passed": c.passed}
+        verdict = out["taratura"]["passed"] and out["conferma"]["passed"]
+        print("PASSA" if verdict else "NON PASSA")
+        path = get_settings().data_cache_dir / "learning" / "occasion_test.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(_json.dumps({**out, "passed": verdict}), encoding="utf-8")
         return 0
     if args.command == "cup-test":
         import json as _json

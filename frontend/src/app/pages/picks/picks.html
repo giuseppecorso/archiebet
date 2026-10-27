@@ -5,7 +5,6 @@
 <ab-subnav [items]="tabs" label="Pronostici" />
 
 @if (tab() === 'occasioni') {
-  <ab-off-line-card />
   <ab-radar [embedded]="true" />
 } @else {
   <ab-generator />

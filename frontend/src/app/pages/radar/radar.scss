@@ -203,3 +203,25 @@
   border: 1px dashed #2f5a7a;
   border-radius: 3px;
 }
+
+/* Occasioni: una carta per partita (D152) */
+.intro { margin: 0 0 12px; max-width: 760px; color: var(--text-2); line-height: 1.5; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.occ { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-left: 3px solid var(--line-strong); }
+.occ.agree { border-left-color: var(--win); }
+.occ-top { display: flex; justify-content: space-between; gap: 8px; }
+.occ-match { font-weight: 700; font-size: 15px; text-decoration: none; color: var(--text); }
+.occ-main { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 2px; }
+.occ-pick { font-size: 18px; font-weight: 700; color: var(--amber); }
+.occ-price .led { font-size: 22px; }
+.occ-why, .occ-study, .occ-warn { margin: 0; font-size: 13px; line-height: 1.45; }
+.occ-study { color: var(--muted); }
+.occ-study.yes { color: var(--win); }
+.occ-warn { color: var(--amber); }
+.occ-actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.more { min-height: 32px; padding: 0 12px; font: inherit; font-size: 12px; font-weight: 600; color: var(--text-2); background: transparent; border: 1px solid var(--line-strong); border-radius: 4px; cursor: pointer; }
+.others { list-style: none; margin: 6px 0 0; padding: 0; }
+.others li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; padding: 6px 0; border-top: 1px solid var(--line-row); font-size: 13px; }
+.fold { margin-bottom: 10px; }
+.fold summary { cursor: pointer; font-weight: 600; }
+.fold[open] summary { margin-bottom: 8px; }

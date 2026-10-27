@@ -86,8 +86,15 @@ def test_radar_api_lists_signals_and_live_progress(logged_client, seeded, db):  
     set_odds(db, m, "pinnacle", {"1": 2.0, "X": 3.6, "2": 4.0})
     set_odds(db, m, "sisal", {"1": 2.1, "X": 3.4, "2": 3.9})
     refresh_radar(db, datetime.now(UTC))
+    assert logged_client.get("/api/radar").json()["upcoming"][0]["p_study"] is None  # partita non ancora studiata
+    from app.forecast.study import model_probabilities
+    from app.models import MatchStudy
+
+    db.add(MatchStudy(match_id=m, computed_at=datetime.now(UTC), data={"lam": 1.6, "mu": 1.1, "rho": -0.05, "share_home": 0.45, "share_away": 0.45, "picks": []}))
+    db.commit()
     body = logged_client.get("/api/radar").json()
     [s] = body["upcoming"]
+    assert s["p_study"] == pytest.approx(model_probabilities(1.6, 1.1, -0.05, 0.45, 0.45)["1X2"]["1"])  # lo studio accanto (D152)
     assert (s["home"]["name"], s["selection"], s["bookmaker"], s["fair_source"]) == ("Milan", "1", "Sisal", "Pinnacle")
     assert s["price"] == 2.1 and s["suspicious"] is False
     assert s["required_value"] == pytest.approx(0.02 * 1.1**0.5)  # soglia a quota 2,1

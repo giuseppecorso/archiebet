@@ -1,6 +1,5 @@
 import { Component, computed, input } from '@angular/core';
 import { PRONOSTICI_TABS } from '../../core/sections';
-import { OffLineCard } from '../../shared/off-line-card';
 import { Subnav } from '../../shared/subnav';
 import { Radar } from '../radar/radar';
 import { Generator } from './generator';
@@ -10,7 +9,7 @@ type Tab = 'multipla' | 'occasioni';
 /** Pronostici: "Fammi una multipla" (scheda principale) e Occasioni. */
 @Component({
   selector: 'ab-picks',
-  imports: [Radar, Generator, Subnav, OffLineCard],
+  imports: [Radar, Generator, Subnav],
   templateUrl: './picks.html',
 })
 export class Picks {
