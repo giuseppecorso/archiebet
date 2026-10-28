@@ -56,7 +56,7 @@ export class PushToggle {
   protected readonly error = signal<string | null>(null);
 
   constructor() {
-    void this.check();
+    this.check().catch(() => this.state.set('unsupported'));
   }
 
   private async registration(): Promise<ServiceWorkerRegistration | null> {
@@ -65,7 +65,7 @@ export class PushToggle {
 
   private async check(): Promise<void> {
     const ios = /iPhone|iPad/.test(navigator.userAgent);
-    const installed = matchMedia('(display-mode: standalone)').matches;
+    const installed = typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches;
     if (!('PushManager' in window) || !('Notification' in window)) {
       this.state.set(ios && !installed ? 'ios-install' : 'unsupported');
       return;
