@@ -1512,6 +1512,11 @@ def main() -> int:
         rows = ct.build_rows(prepared, games, apps, weather)
         print(f"righe: {len(rows)}, con formazioni: {sum(1 for r in rows if all(r.lineup))}, con meteo: {sum(1 for r in rows if r.bad_weather is not None)}")
         results, together = ct.run(rows)
+        final = (together or next((r for r in results if r.passed), None))
+        confirm = [r for r in rows if r.p.g.season in bt.CONFIRMATION]
+        ct.log_bands("Taratura per fascia di quota, studio di oggi (conferma):", ct.bands(confirm))
+        if final is not None:
+            ct.log_bands(f"Taratura per fascia di quota, con {final.name} (conferma):", ct.bands(confirm, final.weights))
         out = get_settings().data_cache_dir / "learning" / "criteria_test.json"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(_json.dumps({"criteria": [{"name": r.name, "weights": r.weights.__dict__, "passed": r.passed,

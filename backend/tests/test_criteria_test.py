@@ -45,3 +45,12 @@ def test_fit_moves_weight_in_the_direction_of_the_data():
     x = fit(rows, ("a",))
     assert x.a > 0.5
     assert sum(row_loss(r, x) for r in rows) < sum(row_loss(r, Weights()) for r in rows)
+
+
+def test_bands_split_outcomes_by_fair_odds():
+    from app.forecast.criteria_test import bands
+
+    found = bands([row(g(i, i, 1, 2, i % 3, 1)) for i in range(30)])
+    assert [b.name.split()[0] for b in found] == ["bassa", "media", "alta"]
+    assert sum(b.n for b in found) == 30 * sum(len(v) for v in bt.quick_probs(1.4, 1.1, 0.0, 0.45, 0.45).values())
+    assert all(0 <= b.observed <= 1 and 0 < b.predicted < 1 for b in found)

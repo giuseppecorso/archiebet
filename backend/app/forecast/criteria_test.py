@@ -251,3 +251,48 @@ def load_weather(db) -> dict[int, tuple[float, float] | None]:
         if w and s.external_id.isdigit():
             out[int(s.external_id)] = (w[0], w[1])
     return out
+
+
+# --- D156-bis: taratura per fascia di quota giusta ---
+
+BANDS = (("bassa (fino a 1,67)", 0.6, 1.01), ("media (1,67-2,50)", 0.4, 0.6), ("alta (oltre 2,50)", 0.0, 0.4))
+
+
+@dataclass(frozen=True)
+class Band:
+    name: str
+    n: int
+    predicted: float  # probabilità media prevista
+    observed: float  # frequenza con cui è successo
+    gap: Estimate  # osservata − prevista, errore standard per partita
+
+    @property
+    def calibrated(self) -> bool:
+        return abs(self.gap.mean) <= 2 * self.gap.std_error
+
+
+def bands(rows: Sequence[Row], x: Weights = Weights()) -> list[Band]:
+    """Ogni esito degli 8 mercati, per fascia di quota giusta: previsto contro successo."""
+    items: dict[str, list[tuple[float, int, int]]] = defaultdict(list)
+    for r in rows:
+        fh, fa = factors(r, x)
+        probs = bt.with_field(bt.quick_probs(r.lam * fh, r.mu * fa, r.rho, *r.p.shares), r.p.hits, BASE.prior)
+        for market in bt.EVAL_MARKETS:
+            for sel, p in probs[market].items():
+                name = next(n for n, lo, hi in BANDS if lo <= p < hi)
+                items[name].append((p, int(bt.outcome(market, sel, r.p.g)), r.p.g.id))
+    out = []
+    for name, _, _ in BANDS:
+        rows_b = items.get(name, [])
+        if not rows_b:
+            continue
+        gap = clustered_mean([o - p for p, o, _ in rows_b], [i for _, _, i in rows_b])
+        out.append(Band(name, len(rows_b), sum(p for p, _, _ in rows_b) / len(rows_b), sum(o for _, o, _ in rows_b) / len(rows_b), gap))
+    return out
+
+
+def log_bands(title: str, found: Sequence[Band], log: Callable[[str], None] = print) -> None:
+    log(title)
+    for b in found:
+        log(f"  quota {b.name}: {b.n} esiti, previsto {b.predicted:.1%}, successo {b.observed:.1%}, "
+            f"differenza {b.gap.mean:+.1%} ± {b.gap.std_error:.1%} -> {'ben tarato' if b.calibrated else 'NON tarato'}")  # fmt: skip
