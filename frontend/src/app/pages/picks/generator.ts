@@ -4,12 +4,12 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Competition } from '../../core/football';
 import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
-import { Horizon } from '../../core/multiple';
 import { Offer } from '../../core/picks';
 import { SlipService } from '../../core/slip';
 import { StudyLeg, StudyMultiple } from '../../core/study';
 import { Crest } from '../../shared/crest';
 import { OfferButton } from '../../shared/offer-button';
+import { MultiPick, PickOption } from '../../shared/multi-pick';
 import { WhyPopup } from '../../shared/why-popup';
 
 type Level = 'cauto' | 'equilibrato' | 'rischioso';
@@ -19,27 +19,38 @@ const LEVELS: { key: Level; label: string; hint: string }[] = [
   { key: 'equilibrato', label: 'Equilibrato', hint: 'pronostici al 55–72%: più coraggio, quote più alte' },
   { key: 'rischioso', label: 'Rischioso', hint: 'pronostici al 35–55%: escono meno spesso, pagano di più' },
 ];
-const HORIZONS: [Horizon, string][] = [
-  ['today', 'Oggi'],
-  ['tomorrow', 'Domani'],
-  ['2days', 'Oggi e domani'],
-  ['3days', 'Prossimi 3 giorni'],
-  ['week', 'Prossimi 7 giorni'],
-];
+
+/** Livello dei pronostici per un moltiplicatore: poche partite e non troppo azzardate */
+export function levelFor(target: number): Level {
+  return target <= 3 ? 'cauto' : target <= 20 ? 'equilibrato' : 'rischioso';
+}
+
+/** I prossimi giorni come opzioni (Oggi, Domani, ven 30/10…) */
+function nextDays(n: number): PickOption[] {
+  const out: PickOption[] = [];
+  for (let i = 0; i < n; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const label = i === 0 ? 'Oggi' : i === 1 ? 'Domani' : d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'numeric' });
+    out.push({ value, label });
+  }
+  return out;
+}
 
 /** "Archie, fammi una multipla": i pronostici studiati da Archie (D137), ognuno con il suo perché. */
 @Component({
   selector: 'ab-generator',
-  imports: [Crest, KeyValuePipe, OfferButton, RouterLink, WhyPopup],
+  imports: [Crest, KeyValuePipe, MultiPick, OfferButton, RouterLink, WhyPopup],
   template: `
     <section class="panel box form" aria-labelledby="gen-title">
       <h2 id="gen-title" class="title">Archie, fammi una multipla</h2>
       <div class="chips" role="group" aria-label="Livello">
         @for (l of levels; track l.key) {
-          <button type="button" class="chip" [class.on]="level() === l.key" [attr.aria-pressed]="level() === l.key" (click)="level.set(l.key)">{{ l.label }}</button>
+          <button type="button" class="chip" [class.on]="level() === l.key" [attr.aria-pressed]="level() === l.key" [class.locked-chip]="!!target()" (click)="target() ? lockNote.set(levelNote()) : level.set(l.key)">{{ l.label }}</button>
         }
       </div>
-      <p class="hint muted small">{{ hint() }}</p>
+      <p class="hint muted small">{{ target() ? levelNote() : hint() }}</p>
       <div class="row">
         <label>Partite
           <span class="legs-row">
@@ -47,36 +58,31 @@ const HORIZONS: [Horizon, string][] = [
             <input type="number" inputmode="numeric" min="1" max="30" [value]="lockedLegs() ? '' : legs()" [placeholder]="lockedLegs() ? 'auto' : ''" [readonly]="!!lockedLegs()" [class.locked]="!!lockedLegs()" (focus)="lockedLegs() && lockNote.set(lockedLegs())" (click)="lockedLegs() && lockNote.set(lockedLegs())" (input)="legs.set(clamp(+$any($event.target).value))" aria-label="Numero di partite" />
           </span>
         </label>
+      </div>
+      <div class="row">
         <label>Moltiplicatore
           <input type="number" inputmode="decimal" min="1.1" step="any" placeholder="es. 10" [value]="target() ?? ''" (input)="target.set(toTarget($any($event.target).value))" />
         </label>
-      </div>
-      @if (lockedLegs() && lockNote(); as note) {
-        <p class="lock-note" role="status">{{ note }}</p>
-      }
-      <p class="hint muted small">Moltiplicatore: quanto vuoi moltiplicare la puntata (es. 10 = 5 € diventano 50 €). Se lo scrivi, Archie sceglie lui quante partite.</p>
-      <div class="row">
         <label>Puntata €
           <input type="number" inputmode="decimal" min="0.5" step="0.5" [value]="stake()" (input)="stake.set(+$any($event.target).value || 0)" />
         </label>
       </div>
+      <p class="hint muted small">Moltiplicatore: quante volte vuoi moltiplicare la puntata (10 = 5 € diventano 50 €). Se lo scrivi, partite e livello li sceglie Archie.</p>
+      @if ((lockedLegs() || target()) && lockNote(); as note) {
+        <p class="lock-note" role="status">{{ note }}</p>
+      }
       <div class="row">
-        <label>Quando
-          <select (change)="horizon.set($any($event.target).value)">
-            @for (h of horizons; track h[0]) { <option [value]="h[0]" [selected]="horizon() === h[0]">{{ h[1] }}</option> }
-          </select>
-        </label>
+        <div class="field">Giorni
+          <ab-multi-pick label="Giorni" [options]="dayOptions" allLabel="Prossimi 7 giorni" [(selected)]="days" />
+        </div>
         <label>Tema
           <select (change)="theme.set($any($event.target).value)">
             @for (t of themes.value() | keyvalue: keep; track t.key) { <option [value]="t.key" [selected]="theme() === t.key">{{ t.value }}</option> }
           </select>
         </label>
-        <label>Campionato
-          <select (change)="competition.set($any($event.target).value)">
-            <option value="">Tutti</option>
-            @for (c of competitions.value(); track c.code) { <option [value]="c.code">{{ c.country }} · {{ c.name }}</option> }
-          </select>
-        </label>
+        <div class="field wide">Campionati
+          <ab-multi-pick label="Campionati" [options]="leagueOptions()" allLabel="Tutti" [(selected)]="leagues" />
+        </div>
       </div>
       <button type="button" class="btn-primary generate" (click)="generate()">{{ changed() ? 'Genera la multipla' : 'Genera di nuovo' }}</button>
       @if (changed()) {
@@ -156,8 +162,12 @@ const HORIZONS: [Horizon, string][] = [
     .chip:disabled { opacity: 0.4; cursor: default; }
     .hint { margin: 6px 0 8px; }
     .row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
-    .generate { width: 100%; margin-top: 6px; }
-    label { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+    .row label, .row .field { min-width: 120px; }
+    .row .wide { flex: 1 1 100%; }
+    .field ab-multi-pick { letter-spacing: 0; text-transform: none; font-weight: 400; }
+    .generate { display: block; min-height: 38px; margin: 8px auto 0; padding: 6px 26px; font-size: 15px; }
+    .chip.locked-chip { opacity: 0.45; border-style: dashed; }
+    label, .field { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
     select, input { min-height: 30px; padding: 2px 8px; font: inherit; font-size: 13px; color: var(--text); background: var(--bg-deep); border: 1px solid var(--line-strong); border-radius: 4px; }
     input { width: 70px; }
     .legs { margin: 0; padding: 0; list-style: none; }
@@ -183,11 +193,13 @@ const HORIZONS: [Horizon, string][] = [
 export class Generator {
   private readonly slip = inject(SlipService);
   protected readonly levels = LEVELS;
-  protected readonly horizons = HORIZONS;
   protected readonly level = signal<Level>('equilibrato');
   protected readonly legs = signal(4);
-  protected readonly horizon = signal<Horizon>('2days');
-  protected readonly competition = signal('');
+  /** Giorni scelti (AAAA-MM-GG); nessuno = prossimi 7 giorni */
+  protected readonly dayOptions: PickOption[] = nextDays(7);
+  protected readonly days = signal<string[]>(this.dayOptions.slice(0, 2).map((d) => d.value));
+  /** Campionati scelti (codici); nessuno = tutti */
+  protected readonly leagues = signal<string[]>([]);
   protected readonly theme = signal('tutte');
   /** Quota totale voluta (es. 50): Archie aggiunge partite finché ci arriva */
   protected readonly target = signal<number | null>(null);
@@ -204,8 +216,11 @@ export class Generator {
   protected readonly hint = computed(() => LEVELS.find((l) => l.key === this.level())!.hint);
   /** Le scelte come parametri della richiesta (senza le partite già proposte) */
   private readonly choices = computed(() => {
-    const params = new URLSearchParams({ level: this.level(), legs: String(this.legs()), horizon: this.horizon() });
-    if (this.competition()) params.set('competitions', this.competition());
+    const target = this.target();
+    const params = new URLSearchParams({ level: target ? levelFor(target) : this.level(), legs: String(this.legs()) });
+    if (this.days().length) params.set('days', [...this.days()].sort().join(','));
+    else params.set('horizon', 'week');
+    if (this.leagues().length) params.set('competitions', this.leagues().join(','));
     if (this.theme() !== 'tutte') params.set('theme', this.theme());
     if (this.target()) params.set('target', String(this.target()));
     else if (this.auto()) params.set('auto', 'true');
@@ -217,6 +232,16 @@ export class Generator {
     this.target() ? 'Con il moltiplicatore le partite le sceglie Archie: cancella il moltiplicatore per scegliere tu quante.'
     : this.auto() ? 'È attivo «Decide Archie»: toccalo per spegnerlo e scegliere tu quante partite.' : null);
   protected readonly lockNote = signal<string | null>(null);
+  /** Con il moltiplicatore il livello lo sceglie Archie */
+  protected readonly levelNote = computed(() => {
+    const t = this.target();
+    return t ? `Con il moltiplicatore il livello lo sceglie Archie: per ${t} usa pronostici ${levelFor(t)} (cauto fino a 3, equilibrato fino a 20, rischioso oltre).` : '';
+  });
+  protected readonly leagueOptions = computed<PickOption[]>(() => {
+    const all = (this.competitions.value() ?? []).map((c) => ({ value: c.code, label: c.name, group: c.country }));
+    const first = [...new Set(all.map((o) => o.group))]; // ogni paese una volta sola, nell'ordine in cui compare
+    return [...all].sort((x, y) => first.indexOf(x.group) - first.indexOf(y.group));
+  });
   private readonly applied = signal(this.choices());
   protected readonly changed = computed(() => this.applied() !== this.choices());
   protected readonly result = httpResource<StudyMultiple>(() => {

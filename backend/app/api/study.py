@@ -7,11 +7,11 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from app.api.football import BOOKMAKER_LABELS, MatchCard, _news_counts, match_cards
-from app.api.picks import Horizon, horizon_window
+from app.api.picks import ROME, Horizon, horizon_window
 from app.auth.deps import CurrentUser, DbSession
 from app.betting.calc import market_name
 from app.forecast.study import LEVELS, THEMES, auto_legs, choose_multiple, leg_price, theme_market, theme_match, up_to_target
-from app.forecast.study_service import load_studies
+from app.forecast.study_service import _aware, load_studies
 from app.ingest.teams import CUP_COUNTRY
 from app.models import Match, MatchStudy
 
@@ -74,17 +74,25 @@ def study_multiple(
     date_from: date | None = None,
     date_to: date | None = None,
     competitions: str | None = Query(None, description="codici separati da virgola"),
+    days: str | None = Query(None, description="giorni scelti (italiani), AAAA-MM-GG separati da virgola: prevale su horizon"),
     exclude: str | None = Query(None, description="partite già proposte, id separati da virgola"),
     theme: Theme = "tutte",
     target: float | None = Query(None, gt=1, le=100000, description="quota totale obiettivo: Archie aggiunge gambe finché ci arriva"),
     auto: bool = Query(False, description="Archie decide quante partite: finché la multipla esce abbastanza spesso per il livello"),
 ) -> StudyMultipleOut:
     now = datetime.now(UTC)
+    chosen_days: set[date] = set()
     try:
-        start, end = horizon_window(now, horizon, date_from, date_to)
+        if days:
+            chosen_days = {date.fromisoformat(d.strip()) for d in days.split(",") if d.strip()}
+            start, end = horizon_window(now, "range", min(chosen_days), max(chosen_days))
+        else:
+            start, end = horizon_window(now, horizon, date_from, date_to)
     except ValueError as error:
         raise HTTPException(422, str(error)) from error
     studies = load_studies(db, start, end, competitions.split(",") if competitions else None)
+    if chosen_days:  # giorni non consecutivi: solo quelli scelti
+        studies = [(m, d) for m, d in studies if _aware(m.kickoff_at).astimezone(ROME).date() in chosen_days]
     skip = {int(x) for x in exclude.split(",") if x.strip().isdigit()} if exclude else set()
     news = _news_counts(db, [m for m, _ in studies], now) if theme == "notizie" else {}
     pool = [(m.id, [p for p in d["picks"] if theme_market(theme, p["market"])]) for m, d in studies

@@ -50,3 +50,21 @@ def test_target_odds_adds_legs_until_reached(logged_client, seeded, db):  # noqa
     body = logged_client.get("/api/study/multiple?horizon=week&target=50").json()
     assert len(body["legs"]) == 2 and not body["target_reached"]  # solo due partite: a 50 non ci arriva
     assert body["total_odds"] == round(1.8 / 0.58, 2)  # dove manca la quota vale quella giusta dello studio
+
+
+def test_chosen_days_and_several_competitions(logged_client, seeded, db):  # noqa: F811
+    from app.api.picks import ROME
+    from app.models import Match
+
+    now = datetime.now(UTC)
+    milan, palermo = match_id(db, "Milan", "Inter"), match_id(db, "Palermo", "Bari")
+    db.add(MatchStudy(match_id=milan, computed_at=now, data={"picks": [pick("GG", "yes", 0.6)]}))
+    db.add(MatchStudy(match_id=palermo, computed_at=now, data={"picks": [pick("OU2.5", "under", 0.62)]}))
+    db.commit()
+    day = db.get(Match, milan).kickoff_at.replace(tzinfo=UTC).astimezone(ROME).date().isoformat()
+    body = logged_client.get(f"/api/study/multiple?days={day}&legs=5").json()
+    assert milan in [leg["match"]["id"] for leg in body["legs"]]
+    codes = ",".join(c["code"] for c in logged_client.get("/api/competitions").json())
+    body = logged_client.get(f"/api/study/multiple?horizon=week&legs=5&competitions={codes}").json()
+    assert len(body["legs"]) == 2
+    assert logged_client.get("/api/study/multiple?days=ieri").status_code == 422
