@@ -50,7 +50,7 @@ function nextDays(n: number): PickOption[] {
       </div>
       <p class="hint muted small">{{ target() ? levelNote() : hint() }}</p>
       <div class="row">
-        <label>Partite
+        <label>Numero partite della multipla
           <span class="legs-row">
             <button type="button" class="chip" [class.on]="auto()" [attr.aria-pressed]="auto()" [disabled]="!!target()" (click)="auto.set(!auto()); lockNote.set(null)" title="Archie aggiunge partite finché la multipla esce abbastanza spesso per il livello">Decide Archie</button>
             <input type="number" inputmode="numeric" min="1" max="30" [value]="lockedLegs() ? '' : legs()" [placeholder]="lockedLegs() ? 'auto' : ''" [readonly]="!!lockedLegs()" [class.locked]="!!lockedLegs()" (focus)="lockedLegs() && lockNote.set(lockedLegs())" (click)="lockedLegs() && lockNote.set(lockedLegs())" (input)="legs.set(clamp(+$any($event.target).value))" aria-label="Numero di partite" />
