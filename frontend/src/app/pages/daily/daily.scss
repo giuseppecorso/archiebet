@@ -95,8 +95,9 @@ li[data-status='lost'] strong { color: var(--loss); }
 }
 
 .share.play {
-  color: var(--amber);
-  border-color: var(--amber);
+  /* il foglietto è chiaro: tasto pieno verde scuro con testo bianco, ben distinto da "Immagine" */
+  color: #fff;
+  background: #1f7a4a;
 }
 
 .notify {
