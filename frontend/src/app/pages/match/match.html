@@ -177,7 +177,6 @@
               Scrivi l'analisi
             }
           </button>
-          <span class="muted small">circa 3 centesimi; si aggiorna al massimo ogni 3 ore</span>
           @if (analysisError(); as err) {
             <span class="an-error">{{ err }}</span>
           }
@@ -192,7 +191,7 @@
       <div class="box-head">
         <h2 id="po-title" class="title box-title">Gioca questa partita</h2>
         </div>
-      <div class="seg po-tabs" role="tablist" aria-label="Tipo di giocata">
+      <div class="po-tabs" role="tablist" aria-label="Tipo di giocata">
         @for (g of playGroups(); track g) {
           <button type="button" role="tab" [class.on]="playGroup() === g" [attr.aria-selected]="playGroup() === g" (click)="pickGroup(g)">{{ g }}</button>
         }

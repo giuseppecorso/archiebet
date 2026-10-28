@@ -48,7 +48,6 @@ export function answerHtml(text: string): string {
     <section class="panel box ask" aria-labelledby="ask-title">
       <div class="box-head">
         <h2 id="ask-title" class="title box-title">Chiedi ad Archie</h2>
-        <span class="muted small">circa 5 centesimi a domanda</span>
       </div>
       <form (ngSubmit)="send()" class="ask-form">
         <textarea name="q" rows="2" [(ngModel)]="question" [placeholder]="placeholder()" maxlength="600" [disabled]="busy()"></textarea>
