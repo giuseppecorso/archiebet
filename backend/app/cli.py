@@ -1182,7 +1182,7 @@ def _af_stats(seasons: str, leagues: str | None = None, players_only: bool = Fal
     settings = get_settings()
     with SessionLocal() as db:
         adapter = ApiFootballAdapter(FileCache(settings.data_cache_dir, "api-football"), settings.api_football_key,
-                                     on_call=lambda source: record_usage(db, source), daily_reserve=500)
+                                     on_call=lambda source: record_usage(db, source), daily_reserve=3000)  # lascia richieste alla Diretta e ai risultati del giorno
         chosen = [int(x) for x in leagues.split(",")] if leagues else list(STATS_LEAGUES)
         report = download_match_stats(adapter, chosen, [int(x) for x in seasons.split(",")], players_only=players_only)
     print(f"Partite: {report.fixtures}, scaricate {report.done}, non riuscite {report.failed}" + (f"; fermato: {report.stopped}" if report.stopped else ""))
