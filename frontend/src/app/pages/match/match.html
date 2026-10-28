@@ -184,11 +184,11 @@
     <section class="panel box play-odds" aria-labelledby="po-title">
       <div class="box-head">
         <h2 id="po-title" class="title box-title">Gioca questa partita</h2>
-        <select class="po-pick" aria-label="Tipo di giocata" [value]="playGroup()" (change)="pickGroup($any($event.target).value)">
-          @for (g of playGroups(); track g) {
-            <option [value]="g">{{ g }}</option>
-          }
-        </select>
+        </div>
+      <div class="seg po-tabs" role="tablist" aria-label="Tipo di giocata">
+        @for (g of playGroups(); track g) {
+          <button type="button" role="tab" [class.on]="playGroup() === g" [attr.aria-selected]="playGroup() === g" (click)="pickGroup(g)">{{ g }}</button>
+        }
       </div>
       @for (mk of shownMarkets(); track mk.market) {
         <div class="po-market">
@@ -216,16 +216,15 @@
   @if (d.match.status === 'scheduled' && derived.value()?.length) {
     <section class="panel box derived" aria-labelledby="dv-title">
       <div class="box-head">
-        <h2 id="dv-title" class="title box-title">Multigol e combo · quote giuste</h2>
+        <h2 id="dv-title" class="title box-title">Multigol e combo più probabili</h2>
         <span class="trial-tag" title="Calcolate dal mercato (1X2 e Under/Over 2.5 di Pinnacle) con il modello dei gol: non ancora provate sul passato">stima</span>
       </div>
-      <p class="muted small">Queste quote non arrivano dai bookmaker: confrontale tu con l'app. Se il tuo bookmaker paga <strong>di più</strong> della quota giusta, il prezzo è buono.</p>
       <div class="dv-cols">
         @for (g of ['Multigol', 'Combo']; track g) {
           <table class="dv-table">
-            <thead><tr><th>{{ g }}</th><th>Prob.</th><th>Giusta</th></tr></thead>
+            <thead><tr><th>{{ g }}</th><th>Probabilità</th><th>Quota giusta</th></tr></thead>
             <tbody>
-              @for (l of derivedOf(g); track l.label) {
+              @for (l of derivedOf(g).slice(0, 3); track l.label) {
                 <tr><td>{{ l.label }}</td><td class="muted">{{ fmt.pct(l.probability) }}</td><td class="led">{{ fmt.odds(l.fair_odds) }}</td></tr>
               }
             </tbody>
@@ -253,23 +252,23 @@
             <span class="title num-label">{{ n.label }}</span>
             <span class="num-exp">
               <span class="led">{{ fmt.num(n.home, 1) }}</span> – <span class="led">{{ fmt.num(n.away, 1) }}</span>
-              <span class="muted small">attesi ({{ fmt.num(n.home + n.away, 1) }} in tutto)</span>
+              <span class="muted small">attesi</span>
             </span>
             <table class="num-table">
               <thead>
-                <tr><th>Linea</th><th>Over giusta</th><th>Under giusta</th><th>Bookmaker</th></tr>
+                <tr><th>Linea</th><th>Over</th><th>Under</th><th>Bookmaker</th></tr>
               </thead>
               <tbody>
                 @for (l of n.lines; track l.side + l.line) {
                   @if (l.side === numbersSide()) {
                     <tr>
                       <td>{{ fmt.num(l.line, 1) }}</td>
-                      <td>{{ fmt.odds(l.fair_over) }} <span class="muted small">({{ fmt.pct(l.p_over) }})</span></td>
+                      <td>{{ fmt.odds(l.fair_over) }}</td>
                       <td>{{ fmt.odds(l.fair_under) }}</td>
                       <td class="small">
                         @for (o of l.offers | keyvalue; track o.key) {
                           <span class="num-offer"
-                            >{{ o.key }}: O {{ o.value.over ? fmt.odds(o.value.over) : '–' }} · U {{ o.value.under ? fmt.odds(o.value.under) : '–' }}</span
+                            >{{ o.value.over ? fmt.odds(o.value.over) : '–' }} / {{ o.value.under ? fmt.odds(o.value.under) : '–' }}</span
                           >
                         } @empty {
                           <span class="muted">non quotata</span>
@@ -283,11 +282,7 @@
           </div>
         }
       </div>
-      <p class="muted small">
-        Quote giuste di Archie dal modello "fatti × subiti" (medie della stagione di ciascuna squadra e dell'avversaria, verificato
-        su 54.000 partite). Non è ancora messo alla prova contro le quote dei bookmaker: se l'app del bookmaker paga molto
-        più della quota giusta, è un'indicazione, non una certezza. Le occasioni verificate su angoli e cartellini restano quelle del Radar.
-      </p>
+      <p class="muted small">Over e Under: quote giuste di Archie. Se il bookmaker paga di più, il prezzo è buono.</p>
     </section>
   }
 
@@ -295,7 +290,6 @@
     <section class="panel box players" aria-labelledby="pl-title">
       <div class="box-head">
         <h2 id="pl-title" class="title box-title">Tiri dei giocatori</h2>
-        <span class="muted small">quote giuste di Archie: confrontale con l'app del bookmaker</span>
       </div>
       <div class="num-grid">
         @for (list of playersBySide(); track $index) {
@@ -303,15 +297,14 @@
             <h3 class="title fan-team">{{ $index === 0 ? d.match.home.name : d.match.away.name }}</h3>
             <table class="num-table">
               <thead>
-                <tr><th>Giocatore</th><th>Tiri attesi</th><th>Over 0,5</th><th>Over 1,5</th><th>In porta 0,5</th></tr>
+                <tr><th>Giocatore</th><th>Tiri attesi</th><th>Almeno 1 tiro</th><th>Almeno 1 in porta</th></tr>
               </thead>
               <tbody>
                 @for (p of list; track p.name) {
                   <tr [class.absent]="p.absent" [attr.title]="p.absent ?? null">
                     <td>{{ p.name }} @if (p.absent) {<span class="v poco">assente?</span>}</td>
-                    <td>{{ fmt.num(p.exp_shots, 1) }} <span class="muted small">({{ fmt.num(p.exp_on, 1) }} in porta)</span></td>
+                    <td>{{ fmt.num(p.exp_shots, 1) }}</td>
                     <td>{{ fmt.odds(1 / p.p_shot) }}</td>
-                    <td>{{ fmt.odds(1 / p.p_two) }}</td>
                     <td>{{ fmt.odds(1 / p.p_on) }}</td>
                   </tr>
                 }
@@ -320,11 +313,7 @@
           </div>
         }
       </div>
-      <p class="muted small">
-        Tiri a 90 minuti del giocatore in questa stagione, minuti delle ultime 5 presenze, tiri concessi dall'avversaria. Verificato
-        su 22.800 presenze di Serie A e B: quando dice 50% succede il 48-49% delle volte. La quota giusta è il minimo
-        sotto cui non conviene: se il bookmaker paga di più, è un'indicazione. "assente?" = le notizie lo danno fuori.
-      </p>
+      <p class="muted small">Quote giuste di Archie. "assente?" = le notizie lo danno fuori.</p>
     </section>
   }
 

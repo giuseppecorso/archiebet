@@ -983,13 +983,8 @@ tr.absent td {
 
 .sugg ab-why {
   align-self: flex-start;
-  margin-top: 8px;
 }
-.po-pick {
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--text);
-  font: inherit;
+.po-tabs {
+  flex-wrap: wrap;
+  margin: 4px 0 12px;
 }

@@ -21,6 +21,7 @@ import { Component, ElementRef, input, viewChild } from '@angular/core';
     </dialog>
   `,
   styles: `
+    :host { display: block; margin-top: 10px; }
     .why-btn { padding: 2px 10px; min-height: 26px; font: inherit; font-size: 12px; font-weight: 600; color: var(--amber); background: transparent; border: 1px solid var(--line-strong); border-radius: 12px; cursor: pointer; }
     .why-dlg { padding: 0; max-width: min(560px, calc(100vw - 32px)); width: 100%; color: var(--text); background: var(--bg-deep, #0c1410); border: 1px solid var(--line-strong); border-radius: 8px; }
     .why-dlg::backdrop { background: rgb(0 0 0 / 0.6); }

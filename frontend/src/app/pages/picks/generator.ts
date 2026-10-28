@@ -88,7 +88,7 @@ const HORIZONS: [Horizon, string][] = [
                   @for (o of offers(l); track o.bookmaker) {
                     <ab-offer [match]="l.match" [market]="l.market" [pick]="l.selection" [offer]="o" />
                   } @empty {
-                    <span class="muted small">quota da cercare sull'app del bookmaker · giusta secondo lo studio {{ fair(l.p_archie) }}</span>
+                    <span class="muted small">quota giusta {{ fair(l.p_archie) }}</span>
                   }
                 </div>
                 <ab-why [title]="capital(l.event)" [reasons]="l.reasons" />

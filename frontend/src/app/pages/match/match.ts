@@ -117,7 +117,7 @@ export class MatchPage {
   protected readonly derived = httpResource<{ group: string; label: string; probability: number; fair_odds: number }[]>(() => `/api/picks/match/${this.id()}/derived`);
 
   protected derivedOf(group: string) {
-    return (this.derived.value() ?? []).filter((d) => d.group === group);
+    return (this.derived.value() ?? []).filter((d) => d.group === group).sort((a, b) => b.probability - a.probability);
   }
   /** Tiri, angoli e cartellini attesi (D109) */
   protected readonly numbers = httpResource<MatchNumbers[]>(() => `/api/picks/match/${this.id()}/numbers`);
@@ -159,7 +159,11 @@ export class MatchPage {
     const g = this.chosenGroup();
     return g && groups.includes(g) ? g : (groups[0] ?? '');
   });
-  protected readonly shownMarkets = computed(() => (this.matchPicks.value()?.markets ?? []).filter((mk) => playGroupOf(mk.market) === this.playGroup()));
+  protected readonly shownMarkets = computed(() => {
+    const shown = (this.matchPicks.value()?.markets ?? []).filter((mk) => playGroupOf(mk.market) === this.playGroup());
+    if (!['Multigol', 'Combo'].includes(this.playGroup())) return shown;
+    return [...shown].sort((a, b) => (b.probabilities['yes'] ?? 0) - (a.probabilities['yes'] ?? 0)).slice(0, 3); // solo le 3 più probabili
+  });
 
   protected pickGroup(g: string): void {
     this.chosenGroup.set(g);
