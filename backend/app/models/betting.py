@@ -28,6 +28,7 @@ class Bet(Base):
     stake: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     total_odds: Mapped[Decimal] = mapped_column(Numeric(12, 4))
     bookmaker: Mapped[str | None] = mapped_column(String(40))
+    system: Mapped[int | None] = mapped_column()  # sistema "k su n" (D157): multiple da k partite; None = multipla normale
     status: Mapped[str] = mapped_column(String(10), default="open")  # open | won | lost | void
     payout: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))  # quanto è tornato (0 se persa)
     note: Mapped[str | None] = mapped_column(String(300))

@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { BetCreated, BetKind, Market, preview } from './bets';
+import { BetCreated, BetKind, Market, preview, systemPreview } from './bets';
 import { MatchCard } from './football';
 
 /** Una partita nella schedina in costruzione: un solo esito per partita. */
@@ -37,6 +37,18 @@ export class SlipService {
   readonly open = signal(false);
   readonly stake = signal('10');
   readonly kind = signal<BetKind>('simulated');
+  /** Sistema "k su n" (D157), per esempio il sistemone della bacheca; null = multipla normale */
+  readonly system = signal<number | null>(null);
+  /** Il sistema vale solo se le partite sono più di k */
+  readonly activeSystem = computed(() => {
+    const k = this.system();
+    return k !== null && this.legs().length > k ? k : null;
+  });
+  readonly systemSummary = computed(() => {
+    const k = this.activeSystem();
+    const stake = Number(this.stake().replace(',', '.'));
+    return k === null ? null : { k, n: this.legs().length, ...systemPreview(this.legs().map((l) => l.odds), k, stake > 0 ? stake : 0) };
+  });
 
   readonly totalOdds = computed(() => this.legs().reduce((acc, l) => acc * l.odds, 1));
   readonly summary = computed(() => {
@@ -74,6 +86,14 @@ export class SlipService {
 
   clear(): void {
     this.save([]);
+    this.system.set(null);
+  }
+
+  /** Riempie la schedina con una schedina già pronta (bacheca) e la apre */
+  fill(legs: SlipLeg[], system: number | null = null): void {
+    this.save(legs);
+    this.system.set(system);
+    this.open.set(true);
   }
 
   /** Avvisi del regolamento personale (D114) per la schedina com'è adesso */
@@ -90,6 +110,7 @@ export class SlipService {
       bookmaker: this.bookmaker(),
       note: null,
       selections: this.selections(true),
+      system: this.activeSystem(),
     };
     const created = await firstValueFrom(this.http.post<BetCreated>('/api/bets', body));
     this.clear();

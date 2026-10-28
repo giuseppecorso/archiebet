@@ -11,8 +11,10 @@ Mercati gestiti e loro esiti:
 - dallo studio (D137): primo tempo ("1T_OU0.5", "1T_TGH0.5", ...), multigol ("MG2-4") e combo ("CB_1X_O1.5") con "yes"
 """
 
+import math
 from collections.abc import Iterable, Sequence
 from decimal import ROUND_HALF_UP, Decimal
+from itertools import combinations
 
 from app.forecast.study import MARKETS as STUDY_MARKETS
 from app.forecast.radar_markets import DNB, DNB_SELECTIONS, OVER_UNDER, is_secondary, is_team_goals, parse_secondary, parse_team_goals, secondary_won
@@ -206,3 +208,58 @@ def clv(taken_odds: Decimal, fair_closing: Decimal | None) -> Decimal | None:
     if fair_closing is None:
         return None
     return (taken_odds / fair_closing - 1).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+
+
+# ---------- Sistemi (D157): "k su n" = tutte le multiple da k partite scelte tra le n ----------
+
+
+def system_combinations(n: int, k: int) -> int:
+    """Quante multiple ha un sistema k su n (4 su 6 = 15)."""
+    if not 1 <= k <= n:
+        raise ValueError("Il sistema chiede da 1 a n partite per multipla")
+    return math.comb(n, k)
+
+
+def system_status(selection_statuses: Sequence[str], k: int) -> str:
+    """Persa appena le sbagliate sono troppe perché resti una multipla buona; chiusa quando tutte hanno l'esito.
+    Vinta se almeno una multipla paga; annullata se tutte le selezioni sono annullate."""
+    n = len(selection_statuses)
+    if selection_statuses.count(LOST) > n - k:
+        return LOST
+    if OPEN in selection_statuses:
+        return OPEN
+    if all(s == VOID for s in selection_statuses):
+        return VOID
+    return WON
+
+
+def system_payout(stake: Decimal, selections: Sequence[tuple[str, Decimal]], k: int) -> Decimal:
+    """Quanto torna un sistema chiuso: la puntata si divide in parti uguali tra le multiple; paga ogni multipla senza
+    selezioni perse (le annullate valgono quota 1)."""
+    status = system_status([s for s, _ in selections], k)
+    if status == OPEN:
+        raise ValueError("Il sistema non è ancora chiuso")
+    if status == VOID:
+        return stake.quantize(CENT)
+    per_bet = stake / system_combinations(len(selections), k)
+    total = Decimal(0)
+    for combo in combinations(selections, k):
+        if all(s != LOST for s, _ in combo):
+            total += per_bet * _won_odds(combo)
+    return total.quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def system_range(stake: Decimal, odds: Sequence[Decimal], k: int) -> tuple[Decimal, Decimal]:
+    """Vincita minima (indovinate solo le k quote più basse) e massima (tutte indovinate)."""
+    per_bet = stake / system_combinations(len(odds), k)
+    low = per_bet * math.prod(sorted(odds)[:k])
+    high = per_bet * sum((math.prod(c) for c in combinations(odds, k)), Decimal(0))
+    return low.quantize(CENT, rounding=ROUND_HALF_UP), high.quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def at_least(probabilities: Sequence[float], k: int) -> float:
+    """Probabilità di indovinarne almeno k (eventi indipendenti con probabilità diverse: conto esatto)."""
+    dist = [1.0]  # dist[j] = probabilità di j indovinate finora
+    for p in probabilities:
+        dist = [(dist[j] if j < len(dist) else 0.0) * (1 - p) + (dist[j - 1] * p if j >= 1 else 0.0) for j in range(len(dist) + 1)]
+    return sum(dist[k:])

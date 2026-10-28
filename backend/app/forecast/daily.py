@@ -7,7 +7,10 @@ Una schedina pubblicata non cambia più: si aggiorna solo l'esito di ogni pronos
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
+from decimal import Decimal
 from zoneinfo import ZoneInfo
+
+from app.betting.calc import system_payout, system_status
 
 ROME = ZoneInfo("Europe/Rome")
 PUBLISH_AT = time(10, 0)  # ora di pubblicazione (italiana)
@@ -25,6 +28,7 @@ class Kind:
     max_legs: int = 30
     target: float | None = None  # quota obiettivo
     singles: bool = False  # pronostici da giocare uno per uno (occasioni)
+    system: int | None = None  # sistema "k su n" (D157): multiple da k partite
 
 
 KINDS = {
@@ -33,6 +37,9 @@ KINDS = {
     "settimana": Kind("settimana", "La schedina della settimana", 0, 7, "cauto"),
     "colpo": Kind("colpo", "Il colpo", None, 3, "rischioso", target=20.0),
     "clv": Kind("clv", "La schedina del CLV", None, 1, None, max_legs=3, singles=True),
+    # D157: per divertirsi, con la probabilità vera in vista
+    "pazza": Kind("pazza", "La pazza della settimana", 0, 7, "rischioso", min_legs=4, target=400.0),
+    "sistema": Kind("sistema", "Il sistemone del weekend", 4, 3, "rischioso", min_legs=6, max_legs=6, system=4),  # quote basse: con 4 giuste non tornerebbe la puntata
 }
 
 
@@ -61,10 +68,12 @@ def leg_status(match_status: str, outcome: str | None) -> str:
     return OPEN
 
 
-def slip_status(legs: Sequence[dict], singles: bool) -> str:
+def slip_status(legs: Sequence[dict], singles: bool, system: int | None = None) -> str:
     """Multipla: persa al primo pronostico sbagliato, vinta quando sono tutti giusti (i nulli non contano).
     Singole: chiusa quando ogni pronostico ha il suo esito."""
     states = [leg["status"] for leg in legs]
+    if system is not None:
+        return system_status(states, system)
     if singles:
         return OPEN if OPEN in states else DONE
     if LOST in states:
@@ -74,8 +83,11 @@ def slip_status(legs: Sequence[dict], singles: bool) -> str:
     return VOID if all(s == VOID for s in states) else WON
 
 
-def profit(slip_legs: Sequence[dict], status: str, total_odds: float, singles: bool) -> float:
+def profit(slip_legs: Sequence[dict], status: str, total_odds: float, singles: bool, system: int | None = None) -> float:
     """Guadagno con 1 € a schedina (o 1 € a pronostico per le singole); nullo = quota 1."""
+    if system is not None and status != OPEN:
+        sels = [(leg["status"] if leg["status"] != OPEN else LOST, Decimal(str(leg["price"]))) for leg in slip_legs]
+        return float(system_payout(Decimal(1), sels, system)) - 1
     if singles:
         return sum((leg["price"] - 1 if leg["status"] == WON else -1.0 if leg["status"] == LOST else 0.0) for leg in slip_legs)
     if status == WON:
@@ -109,7 +121,7 @@ def stats(slips: Iterable) -> dict[str, KindStats]:
         if s.status == OPEN:
             continue
         st.closed += 1
-        st.profit += profit(s.legs, s.status, s.total_odds, k.singles)
+        st.profit += profit(s.legs, s.status, s.total_odds, k.singles, k.system)
         if k.singles:
             st.won += sum(1 for leg in settled if leg["status"] == WON)
             st.expected += sum(leg["p"] for leg in settled)

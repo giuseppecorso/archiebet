@@ -274,3 +274,21 @@ export interface MyPick {
   state: 'waiting' | 'winning' | 'losing' | 'won' | 'lost' | 'void' | 'unknown';
   probability: number | null;
 }
+
+/** Sistema "k su n" (D157): quante multiple, vincita minima (indovinate solo le k quote più basse) e massima (tutte). */
+export function systemPreview(odds: number[], k: number, stake: number): { combos: number; min: number; max: number } {
+  const combos: number[][] = [];
+  const pick = (start: number, chosen: number[]) => {
+    if (chosen.length === k) {
+      combos.push(chosen);
+      return;
+    }
+    for (let i = start; i < odds.length; i++) pick(i + 1, [...chosen, odds[i]]);
+  };
+  pick(0, []);
+  if (!combos.length) return { combos: 0, min: 0, max: 0 };
+  const perBet = stake / combos.length;
+  const low = [...odds].sort((a, b) => a - b).slice(0, k).reduce((p, o) => p * o, 1);
+  const high = combos.reduce((sum, c) => sum + c.reduce((p, o) => p * o, 1), 0);
+  return { combos: combos.length, min: roundHalfUp(perBet * low, 2), max: roundHalfUp(perBet * high, 2) };
+}

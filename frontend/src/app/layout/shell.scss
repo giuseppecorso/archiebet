@@ -159,7 +159,8 @@
     bottom: 0;
     left: 0;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr; /* tante colonne quante voci: il menu riempie tutta la larghezza */
     gap: 0;
     padding: 0 0 env(safe-area-inset-bottom);
     background: var(--bg-header);
@@ -167,8 +168,8 @@
     backdrop-filter: blur(8px);
   }
   .nav-link {
-    padding: 14px 2px 12px;
-    font-size: 12px;
+    padding: 15px 2px 13px;
+    font-size: 14px;
     letter-spacing: 0.5px;
     text-align: center;
     white-space: nowrap;

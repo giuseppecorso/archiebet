@@ -33,7 +33,12 @@
             <button type="button" [class.on]="slip.kind() === 'real'" (click)="slip.kind.set('real')">Reale</button>
           </div>
           <label class="stake">Importo € <input inputmode="decimal" [ngModel]="slip.stake()" (ngModelChange)="slip.stake.set($event)" name="stake" /></label>
-          <p class="sum">Quota <strong class="led">{{ fmt.odds(slip.summary().total) }}</strong> · vincita {{ fmt.euro(slip.summary().payout) }}</p>
+          @if (slip.systemSummary(); as s) {
+            <p class="sum">Sistema <strong>{{ s.k }} su {{ s.n }}</strong> · {{ s.combos }} multiple · vincita da {{ fmt.euro(s.min) }} a {{ fmt.euro(s.max) }}
+              <button type="button" class="ghost small" (click)="slip.system.set(null)">gioca come multipla</button></p>
+          } @else {
+            <p class="sum">Quota <strong class="led">{{ fmt.odds(slip.summary().total) }}</strong> · vincita {{ fmt.euro(slip.summary().payout) }}</p>
+          }
           @if (warnings().length) {
             <ul class="warn">
               @for (w of warnings(); track w) {

@@ -93,3 +93,8 @@ li[data-status='lost'] strong { color: var(--loss); }
 @media (max-width: 600px) {
   .cork { padding: 22px 12px 24px; border-width: 6px; }
 }
+
+.share.play {
+  color: var(--amber);
+  border-color: var(--amber);
+}

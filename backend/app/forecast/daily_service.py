@@ -1,11 +1,12 @@
 """Bacheca Daily (D153): pubblica le schedine del giorno dallo studio e dalle occasioni, poi le chiude con i risultati."""
 
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.betting.calc import selection_outcome
+from app.betting.calc import at_least, selection_outcome, system_range
 from app.config import get_settings
 from app.forecast.daily import KINDS, OPEN, Kind, due, leg_status, slip_status
 from app.forecast.radar import qualifies, scan
@@ -75,6 +76,12 @@ def publish_due(db: Session, now: datetime | None = None) -> list[str]:
             p *= leg["p"]
         if kind.singles:
             total, p = 1.0, sum(leg["p"] for leg in legs) / len(legs)  # singole: niente quota totale, probabilità media
+        if kind.system:
+            if len(legs) <= kind.system:
+                continue  # troppe poche partite per il sistema: si riprova al prossimo giro
+            # quota = quanto torna 1 € con tutto indovinato; probabilità = indovinarne almeno k
+            total = float(system_range(Decimal(100), [Decimal(str(leg["price"])) for leg in legs], kind.system)[1]) / 100
+            p = at_least([leg["p"] for leg in legs], kind.system)
         db.add(DailySlip(kind=kind.key, period=period, published_at=now, legs=legs, total_odds=round(total, 2), win_probability=round(p, 4), status=OPEN))
         published.append(kind.key)
     db.commit()
@@ -103,7 +110,7 @@ def settle_daily(db: Session, now: datetime | None = None) -> int:
                 leg = {**leg, "status": leg_status(m.status, outcome)}
             legs.append(leg)
         s.legs = legs  # lista nuova: SQLAlchemy salva il JSON cambiato
-        s.status = slip_status(legs, KINDS[s.kind].singles)
+        s.status = slip_status(legs, KINDS[s.kind].singles, KINDS[s.kind].system)
         if s.status != OPEN:
             s.settled_at = now
             closed += 1

@@ -11,7 +11,7 @@ from sqlalchemy import select
 from app.api.football import MatchCard, match_cards, match_detail
 from app.auth.deps import CurrentUser, DbSession
 from app.betting.analysis import Breakdown, breakdown
-from app.betting.calc import LOST, MARKETS, WON, potential_payout
+from app.betting.calc import LOST, MARKETS, WON, at_least, potential_payout
 from app.betting.service import BetError, BudgetStatus, BetSummary, SelectionInput, budget_status, create_bet, settle_open_bets, summarize
 from app.betting.versus import JudgedPick, Versus, archie_probability, versus
 from app.forecast.radar_markets import is_secondary
@@ -44,6 +44,7 @@ class BetIn(BaseModel):
     bookmaker: str | None = Field(None, max_length=40)
     note: str | None = Field(None, max_length=300)
     selections: list[SelectionIn] = Field(min_length=1, max_length=20)
+    system: int | None = Field(None, ge=2, le=19)  # sistema "k su n" (D157)
 
 
 class SelectionOut(BaseModel):
@@ -78,6 +79,7 @@ class BetOut(BaseModel):
     placed_at: datetime
     settled_at: datetime | None
     selections: list[SelectionOut]
+    system: int | None = None  # sistema "k su n" (D157)
     hope: float | None = None  # termometro della speranza: probabilità di vincere adesso (solo aperte)
     live: bool = False  # almeno una partita della schedina è in corso
 
@@ -120,8 +122,13 @@ def _bet_out(db, bet: Bet) -> BetOut:
     now = datetime.now(UTC)
     cards = {c.id: c for c in match_cards(db, [s.match for s in bet.selections], now)}
     states = selection_states(db, bet.selections, now) if bet.status == "open" else {}
+    chance = hope(states.values()) if states else None
+    if states and bet.system is not None:  # sistema: probabilità di indovinarne almeno k
+        legs = [leg_probability(x) for x in states.values()]
+        chance = None if None in legs else at_least(legs, bet.system)
     return BetOut(
-        hope=hope(states.values()) if states else None,
+        hope=chance,
+        system=bet.system,
         live=any(c.live is not None for c in cards.values()),
         id=bet.id,
         kind=bet.kind,
@@ -272,6 +279,7 @@ def place_bet(body: BetIn, user: CurrentUser, db: DbSession) -> BetCreated:
             bookmaker=body.bookmaker,
             note=body.note,
             snapshot=snapshot,
+            system=body.system,
         )
     except BetError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None

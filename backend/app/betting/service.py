@@ -23,6 +23,9 @@ from app.betting.calc import (
     secondary_outcome,
     selection_outcome,
     settled_payout,
+    system_payout,
+    system_range,
+    system_status,
     total_odds,
 )
 from app.models import Bet, BetKind, BetSelection, BetSnapshot, Match, MatchOdds, MatchStatus, UserSettings
@@ -56,6 +59,7 @@ def create_bet(
     note: str | None = None,
     snapshot: dict | None = None,
     now: datetime | None = None,
+    system: int | None = None,
 ) -> Bet:
     now = now or datetime.now(UTC)
     if kind not in (BetKind.REAL, BetKind.SIMULATED):
@@ -64,6 +68,8 @@ def create_bet(
         raise BetError("L'importo deve essere maggiore di zero")
     if not 1 <= len(selections) <= MAX_SELECTIONS:
         raise BetError(f"Una schedina ha da 1 a {MAX_SELECTIONS} partite")
+    if system is not None and not (len(selections) >= 3 and 2 <= system < len(selections)):
+        raise BetError("Un sistema ha almeno 3 partite e multiple da 2 fino a una partita in meno del totale")
     if len({s.match_id for s in selections}) != len(selections):
         raise BetError("La stessa partita compare due volte: una selezione per partita")
     for s in selections:
@@ -81,7 +87,10 @@ def create_bet(
         user_id=user_id,
         kind=kind,
         stake=stake,
-        total_odds=total_odds([s.odds for s in selections]),
+        system=system,
+        # sistema: quota = quanto torna con tutto indovinato diviso la puntata (D157)
+        total_odds=total_odds([s.odds for s in selections]) if system is None
+        else (system_range(Decimal(100), [s.odds for s in selections], system)[1] / 100).quantize(Decimal("0.0001")),
         bookmaker=bookmaker,
         note=note,
         placed_at=now,
@@ -222,10 +231,15 @@ def settle_open_bets(db: Session, now: datetime | None = None) -> int:
     closed = 0
     for bet_id in touched:
         bet = db.get(Bet, bet_id)
-        status = bet_status([s.status for s in bet.selections])
+        statuses = [s.status for s in bet.selections]
+        status = bet_status(statuses) if bet.system is None else system_status(statuses, bet.system)
         if status != OPEN:
             bet.status = status
-            bet.payout = settled_payout(bet.stake, [(s.status, s.odds) for s in bet.selections])
+            pairs = [(s.status, s.odds) for s in bet.selections]
+            if bet.system is None:
+                bet.payout = settled_payout(bet.stake, pairs)
+            else:  # le selezioni ancora aperte di un sistema già perso non cambiano niente
+                bet.payout = system_payout(bet.stake, [(LOST if st == OPEN else st, o) for st, o in pairs], bet.system)
             bet.settled_at = now
             closed += 1
     db.commit()

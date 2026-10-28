@@ -1,4 +1,4 @@
-import { euro, marketFamily, marketLabel, marketSelections, pickLabel, preview } from './bets';
+import { euro, marketFamily, marketLabel, marketSelections, pickLabel, preview, systemPreview } from './bets';
 
 describe('giocate: etichette e anteprima', () => {
   it('etichetta gli esiti in italiano', () => {
@@ -41,5 +41,12 @@ describe('giocate: etichette e anteprima', () => {
     expect(euro(-3, true)).toBe('−3,00 €');
     expect(euro('0', true)).toBe('0,00 €');
     expect(euro(null)).toBe('–');
+  });
+});
+
+describe('systemPreview', () => {
+  it('sistema 2 su 3 con 9 €: 3 doppie, minimo 18, massimo 78', () => {
+    expect(systemPreview([2, 3, 4], 2, 9)).toEqual({ combos: 3, min: 18, max: 78 });
+    expect(systemPreview([2, 2, 2, 2, 2, 2], 4, 15).combos).toBe(15);
   });
 });

@@ -25,6 +25,8 @@ export interface DailySlip {
   published_at: string;
   /** true = pronostici da giocare uno per uno (la schedina del CLV) */
   singles: boolean;
+  /** Sistema "k su n" (D157): il sistemone */
+  system?: number | null;
   legs: DailyLeg[];
   total_odds: number;
   win_probability: number;

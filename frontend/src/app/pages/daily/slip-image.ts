@@ -81,7 +81,9 @@ export async function slipImage(s: DailySlip): Promise<Blob> {
   ctx.font = "44px 'Bebas Neue', sans-serif";
   const summary = s.singles
     ? `${s.legs.length} occasioni da giocare singole`
-    : `Quota ${s.total_odds.toFixed(2)} · esce 1 volta su ${Math.max(1, Math.round(1 / s.win_probability))}`;
+    : s.system
+      ? `Sistema ${s.system} su ${s.legs.length} · incassi il ${Math.round(s.win_probability * 100)}% delle volte`
+      : `Quota ${s.total_odds.toFixed(2)} · esce 1 volta su ${Math.max(1, Math.round(1 / s.win_probability))}`;
   ctx.fillText(summary, 80, H - 140);
   ctx.fillStyle = MUTED;
   ctx.font = "28px 'Barlow', sans-serif";

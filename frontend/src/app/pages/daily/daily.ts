@@ -1,7 +1,8 @@
 import { httpResource } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { DailyOut, DailySlip } from '../../core/daily';
+import { DailyLeg, DailyOut, DailySlip } from '../../core/daily';
+import { SlipLeg, SlipService } from '../../core/slip';
 import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
 import { slipImage } from './slip-image';
 
@@ -43,8 +44,16 @@ import { slipImage } from './slip-image';
             <footer>
               @if (s.singles) {
                 <span>Da giocare singole · 1 € ciascuna</span>
+              } @else if (s.system) {
+                <span>Sistema <strong>{{ s.system }} su {{ s.legs.length }}</strong> · con almeno {{ s.system }} giuste incassi qualcosa:
+                  {{ pct(s.win_probability) }} delle volte · con 1 € al massimo {{ fmtOdds(s.total_odds) }} €</span>
+              } @else if (s.kind === 'pazza') {
+                <span>Quota <strong>{{ fmtOdds(s.total_odds) }}</strong> · esce circa 1 volta su {{ oneIn(s.win_probability) }}: è un gioco, punta poco</span>
               } @else {
                 <span>Quota <strong>{{ fmtOdds(s.total_odds) }}</strong> · esce 1 volta su {{ oneIn(s.win_probability) }}</span>
+              }
+              @if (playable(s).length) {
+                <button type="button" class="share play" (click)="play(s)">Gioca</button>
               }
               <button type="button" class="share" (click)="share(s)">Immagine</button>
             </footer>
@@ -104,11 +113,33 @@ import { slipImage } from './slip-image';
   styleUrl: './daily.scss',
 })
 export class Daily {
+  private readonly slip = inject(SlipService);
   protected readonly data = httpResource<DailyOut>(() => '/api/daily');
   protected readonly pct = pct;
   protected readonly fmtOdds = odds;
   protected readonly dayLabel = dayLabel;
   protected readonly time = (iso: string) => kickoffTime(iso);
+
+  /** Pronostici ancora da giocare (partita non iniziata) */
+  protected playable(s: DailySlip): DailyLeg[] {
+    return s.status === 'open' ? s.legs.filter((l) => l.status === 'open' && new Date(l.kickoff_at).getTime() > Date.now()) : [];
+  }
+
+  /** Mette la schedina nella Schedina: lì si sceglie simulata o reale e l'importo. Il sistema resta tale se tutte le partite sono ancora da giocare. */
+  protected play(s: DailySlip): void {
+    const legs = this.playable(s);
+    const team = (name: string) => ({ id: 0, name }) as SlipLeg['match']['home'];
+    this.slip.fill(
+      legs.map((l) => ({
+        match: { id: l.match_id, home: team(l.home), away: team(l.away), kickoff_at: l.kickoff_at, competition: { name: l.competition } as SlipLeg['match']['competition'] },
+        market: l.market,
+        pick: l.selection,
+        odds: l.price,
+        bookmaker: null,
+      })),
+      s.system && legs.length === s.legs.length ? s.system : null,
+    );
+  }
 
   protected capital(text: string): string {
     return text.charAt(0).toUpperCase() + text.slice(1);

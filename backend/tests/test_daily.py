@@ -15,11 +15,11 @@ MONDAY_11 = datetime(2026, 11, 2, 10, 0, tzinfo=UTC)
 def test_publication_calendar():
     assert due(FRIDAY_9) == []  # prima delle 10 niente
     friday = {k.key: (period, end) for k, period, _, end in due(FRIDAY_11)}
-    assert set(friday) == {"giorno", "weekend", "colpo", "clv"}  # il venerdì esce anche il weekend
+    assert set(friday) == {"giorno", "weekend", "colpo", "clv", "sistema"}  # il venerdì escono anche weekend e sistemone
     assert friday["weekend"][1].date().isoformat() == "2026-11-01"  # fino a domenica
     assert friday["giorno"][0] == "2026-10-30"
     monday = {k.key: end for k, _, _, end in due(MONDAY_11)}
-    assert "settimana" in monday and "weekend" not in monday
+    assert "settimana" in monday and "pazza" in monday and "weekend" not in monday
     assert monday["settimana"].date().isoformat() == "2026-11-08"
 
 
@@ -116,3 +116,15 @@ def test_daily_api_board_and_stats(logged_client, db):
     giorno = next(s for s in body["stats"] if s["kind"] == "giorno")
     assert (giorno["published"], giorno["won"], giorno["profit"]) == (2, 1, pytest.approx(0.7))
     assert [h["period"] for h in body["history"]] == ["2026-10-29"]
+
+
+def test_system_slip_status_and_profit():
+    from app.forecast.daily import profit
+
+    legs = lambda *s: [{"status": x, "price": 2.0, "p": 0.5} for x in s]  # noqa: E731
+    assert slip_status(legs(LOST, LOST, LOST, OPEN, OPEN, OPEN), False, 4) == LOST
+    assert slip_status(legs(WON, WON, WON, WON, LOST, OPEN), False, 4) == OPEN
+    four = legs(WON, WON, WON, WON, LOST, LOST)
+    assert slip_status(four, False, 4) == WON
+    # 1 € su 15 quaterne, ne vince una sola a quota 16: torna 16/15
+    assert profit(four, WON, 0.0, False, 4) == pytest.approx(16 / 15 - 1, abs=0.01)

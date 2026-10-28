@@ -35,6 +35,7 @@ class DailySlipOut(BaseModel):
     period: str
     published_at: datetime
     singles: bool
+    system: int | None = None  # sistema "k su n" (D157)
     legs: list[DailyLegOut]
     total_odds: float
     win_probability: float
@@ -68,7 +69,7 @@ class DailyOut(BaseModel):
 
 def _out(s: DailySlip) -> DailySlipOut:
     k = KINDS[s.kind]
-    return DailySlipOut(id=s.id, kind=s.kind, title=k.title, period=s.period, published_at=s.published_at, singles=k.singles,
+    return DailySlipOut(id=s.id, kind=s.kind, title=k.title, period=s.period, published_at=s.published_at, singles=k.singles, system=k.system,
                         legs=[DailyLegOut(**leg) for leg in s.legs], total_odds=s.total_odds, win_probability=s.win_probability, status=s.status)  # fmt: skip
 
 

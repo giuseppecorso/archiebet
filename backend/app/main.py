@@ -67,6 +67,7 @@ if _dist is not None and (_dist / "index.html").is_file():
         if path.startswith("api/"):
             raise HTTPException(404, "Non trovato")
         file = (_dist / path).resolve()
+        fresh = {"Cache-Control": "no-cache"}  # la pagina si ricontrolla sempre: dopo un aggiornamento il telefono vede subito la versione nuova
         if path and file.is_file() and file.is_relative_to(_dist):  # solo file dentro la cartella dell'app
-            return FileResponse(file)
-        return FileResponse(_dist / "index.html")  # le pagine dell'app (es. /partite/12) le gestisce Angular
+            return FileResponse(file, headers=None if file.name.startswith(("chunk-", "main-", "styles-", "polyfills-")) else fresh)
+        return FileResponse(_dist / "index.html", headers=fresh)  # le pagine dell'app (es. /partite/12) le gestisce Angular

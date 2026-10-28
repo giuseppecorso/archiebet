@@ -180,3 +180,24 @@ def test_clv_filled_when_closing_arrives_later(db, world):
     db.commit()
     db.refresh(bet)
     assert bet.selections[0].clv == D("0.0000")  # 2,00 contro la quota giusta 2,00
+
+
+def test_system_2_of_3_registers_and_settles(db, world):
+    user, m = world
+    sels = [SelectionInput(m["Inter"].id, "1X2", "1", D("2")), SelectionInput(m["Milan"].id, "1X2", "1", D("3")),
+            SelectionInput(m["Napoli"].id, "1X2", "1", D("4"))]  # fmt: skip
+    bet = create_bet(db, user.id, "simulated", D("9"), sels, now=NOW, system=2)
+    assert bet.system == 2 and bet.total_odds == D("8.6667")  # (6 + 8 + 12) / 3: tutto indovinato rende 78 su 9
+    finish(db, m["Inter"], 2, 0)
+    finish(db, m["Milan"], 1, 0)
+    assert settle_open_bets(db, NOW) == 0  # una doppia è già vinta, ma il sistema si chiude con l'ultima partita
+    finish(db, m["Napoli"], 0, 1)
+    assert settle_open_bets(db, NOW) == 1
+    db.refresh(bet)
+    assert (bet.status, bet.payout) == ("won", D("18.00"))  # solo la doppia Inter-Milan: 3 × 2 × 3
+
+
+def test_system_needs_at_least_three_matches(db, world):
+    user, m = world
+    with pytest.raises(BetError):
+        create_bet(db, user.id, "simulated", D("9"), [SelectionInput(m["Inter"].id, "1X2", "1", D("2")), SelectionInput(m["Milan"].id, "1X2", "1", D("3"))], now=NOW, system=2)
