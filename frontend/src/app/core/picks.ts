@@ -113,3 +113,22 @@ export interface TeamLineup {
   out: LineupPlayer[];
   based_on: number;
 }
+
+/** Un consiglio da giocare tra le linee di tiri, angoli o cartellini: l'esito con probabilità più vicina al 70%,
+ * tra il 60% e l'85% (sotto è un azzardo, sopra la quota non vale la pena). Null se nessuna linea è in quella fascia. */
+export function countTip(lines: CountLine[]): { pick: 'Over' | 'Under'; line: number; p: number; fair: number } | null {
+  const options = lines
+    .filter((l) => l.side === 'totale')
+    .flatMap((l) => [
+      { pick: 'Over' as const, line: l.line, p: l.p_over, fair: l.fair_over },
+      { pick: 'Under' as const, line: l.line, p: 1 - l.p_over, fair: l.fair_under },
+    ])
+    .filter((o) => o.p >= 0.6 && o.p <= 0.85);
+  if (!options.length) return null;
+  return options.reduce((a, b) => (Math.abs(b.p - 0.7) < Math.abs(a.p - 0.7) ? b : a));
+}
+
+/** I due giocatori (non assenti) più probabili a fare almeno un tiro in porta */
+export function playerTips(players: PlayerShots[]): PlayerShots[] {
+  return players.filter((p) => !p.absent).sort((a, b) => b.p_on - a.p_on).slice(0, 2);
+}

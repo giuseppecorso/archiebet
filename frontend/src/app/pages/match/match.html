@@ -262,6 +262,9 @@
               <span class="led">{{ fmt.num(n.home, 1) }}</span> – <span class="led">{{ fmt.num(n.away, 1) }}</span>
               &nbsp;<span class="muted small">attesi</span>
             </span>
+            @if (countTip(n.lines); as t) {
+              <span class="tip">Consiglio: <strong>{{ t.pick }} {{ fmt.num(t.line, 1) }} {{ n.label.toLowerCase() }}</strong> · {{ fmt.pct(t.p) }} · quota giusta {{ fmt.odds(t.fair) }}</span>
+            }
             <table class="num-table">
               <thead>
                 <tr><th>Linea</th><th>Over</th><th>Under</th><th>Bookmaker</th></tr>
@@ -299,6 +302,9 @@
       <div class="box-head">
         <h2 id="pl-title" class="title box-title">Tiri dei giocatori</h2>
       </div>
+      @for (p of playerTips(); track p.name) {
+        <p class="tip">Consiglio: <strong>{{ p.name }} almeno 1 tiro in porta</strong> · {{ fmt.pct(p.p_on) }} · quota giusta {{ fmt.odds(1 / p.p_on) }}</p>
+      }
       <div class="num-grid">
         @for (list of playersBySide(); track $index) {
           <div>

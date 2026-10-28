@@ -1014,3 +1014,15 @@ tr.absent td {
     flex: 1;
   }
 }
+.tip {
+  display: block;
+  margin: 6px 0 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-left: 3px solid var(--amber);
+  background: rgb(255 200 40 / 0.06);
+
+  strong {
+    color: var(--amber);
+  }
+}

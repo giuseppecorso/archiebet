@@ -8,7 +8,7 @@ import { Component, computed, effect, inject, input, signal } from '@angular/cor
 import { KeyValuePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { Market, marketLabel, marketSelections, parseSecondary, parseTeamGoals, pickLabel } from '../../core/bets';
-import { MatchAnalysis, MatchNumbers, MatchPicks, PlayerShots, TeamLineup, verdictClass } from '../../core/picks';
+import { MatchAnalysis, MatchNumbers, MatchPicks, PlayerShots, TeamLineup, verdictClass, countTip, playerTips } from '../../core/picks';
 import { RouterLink } from '@angular/router';
 import { FanFact, MatchFan, SOURCE_LABELS, factTone } from '../../core/fan';
 import { MatchDetail, MatchEvent, OddsRow, TeamSummary, scorerList } from '../../core/football';
@@ -143,6 +143,8 @@ export class MatchPage {
     };
     return [pick('casa'), pick('ospite')];
   });
+  protected readonly countTip = countTip;
+  protected readonly playerTips = computed(() => playerTips(this.players.value() ?? []));
   protected readonly writing = signal(false);
   protected readonly analysisError = signal<string | null>(null);
   protected readonly verdictClass = verdictClass;
