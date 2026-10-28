@@ -1,5 +1,6 @@
 @if (slip.legs().length || slip.open()) {
   <aside class="slip" [class.open]="slip.open()" aria-label="La tua schedina">
+    <div class="slip-top">
     <button type="button" class="slip-bar" (click)="slip.open.set(!slip.open())" [attr.aria-expanded]="slip.open()">
       <span class="title">Schedina</span>
       <span class="count">{{ slip.legs().length }}</span>
@@ -8,6 +9,10 @@
       }
       <span class="chev" aria-hidden="true">{{ slip.open() ? '▾' : '▴' }}</span>
     </button>
+    @if (slip.open()) {
+      <button type="button" class="slip-x" aria-label="Chiudi la schedina" (click)="slip.open.set(false)">✕</button>
+    }
+    </div>
 
     @if (slip.open()) {
       <div class="slip-body">

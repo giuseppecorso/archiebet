@@ -142,3 +142,24 @@
     width: calc(100vw - 16px);
   }
 }
+
+.slip-top {
+  display: flex;
+  align-items: center;
+}
+.slip-x {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  margin-right: 6px;
+  font-size: 18px;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--amber);
+  }
+}

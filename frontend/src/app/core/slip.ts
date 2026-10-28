@@ -87,6 +87,7 @@ export class SlipService {
   clear(): void {
     this.save([]);
     this.system.set(null);
+    this.open.set(false); // vuota non serve tenerla aperta
   }
 
   /** Riempie la schedina con una schedina già pronta (bacheca) e la apre */
