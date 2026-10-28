@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Archie, il gufo inventore di ArchieBet">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="70%">
+      <stop offset="0" stop-color="#123323"/>
+      <stop offset="1" stop-color="#06120c"/>
+    </radialGradient>
+    <radialGradient id="lens" cx="45%" cy="40%" r="60%">
+      <stop offset="0" stop-color="#2a2208"/>
+      <stop offset="1" stop-color="#0b0a04"/>
+    </radialGradient>
+    <pattern id="led" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="3.2" fill="#ffc61a"/>
+    </pattern>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="lensL"><circle cx="196" cy="226" r="54"/></clipPath>
+    <clipPath id="lensR"><circle cx="316" cy="226" r="54"/></clipPath>
+  </defs>
+
+  <!-- sfondo -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- camice da laboratorio -->
+  <path d="M120 512 C 126 420 170 372 256 372 C 342 372 386 420 392 512 Z" fill="#eef2ec"/>
+  <path d="M256 372 L 222 430 L 256 512 L 290 430 Z" fill="#8a5a2b"/>
+  <path d="M256 372 L 214 392 L 230 452 Z M256 372 L 298 392 L 282 452 Z" fill="#d6ddd3"/>
+  <!-- taschino con un grafico -->
+  <rect x="300" y="450" width="56" height="44" rx="6" fill="#d6ddd3"/>
+  <polyline points="308,484 320,474 332,478 346,460" fill="none" stroke="#1f7a4a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- corpo e testa -->
+  <ellipse cx="256" cy="250" rx="150" ry="140" fill="#8a5a2b"/>
+  <!-- ciuffi (orecchie) -->
+  <path d="M136 168 L 118 92 L 190 138 Z" fill="#6e4520"/>
+  <path d="M376 168 L 394 92 L 322 138 Z" fill="#6e4520"/>
+  <!-- matita dietro il ciuffo -->
+  <g transform="rotate(-38 400 120)">
+    <rect x="360" y="112" width="84" height="16" rx="3" fill="#ffc61a"/>
+    <polygon points="444,112 466,120 444,128" fill="#f1d9a8"/>
+    <polygon points="458,117.5 466,120 458,122.5" fill="#333"/>
+    <rect x="352" y="112" width="10" height="16" rx="2" fill="#e57373"/>
+  </g>
+
+  <!-- disco del viso -->
+  <path d="M256 150 C 330 150 380 192 380 250 C 380 316 322 352 256 352 C 190 352 132 316 132 250 C 132 192 182 150 256 150 Z" fill="#f1d9a8"/>
+
+  <!-- occhialoni da inventore con lenti a tabellone LED -->
+  <rect x="236" y="214" width="40" height="16" rx="6" fill="#2b2b2b"/>
+  <path d="M138 214 L 106 206" stroke="#2b2b2b" stroke-width="14" stroke-linecap="round"/>
+  <path d="M374 214 L 406 206" stroke="#2b2b2b" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="196" cy="226" r="66" fill="#2b2b2b"/>
+  <circle cx="316" cy="226" r="66" fill="#2b2b2b"/>
+  <circle cx="196" cy="226" r="58" fill="#b8860b"/>
+  <circle cx="316" cy="226" r="58" fill="#b8860b"/>
+  <circle cx="196" cy="226" r="54" fill="url(#lens)"/>
+  <circle cx="316" cy="226" r="54" fill="url(#lens)"/>
+  <!-- pupille fatte di LED -->
+  <g filter="url(#glow)"><circle cx="169" cy="219" r="4" fill="#ffd54a"/><circle cx="169" cy="230" r="4" fill="#ffd54a"/><circle cx="169" cy="241" r="4" fill="#ffd54a"/><circle cx="180" cy="208" r="4" fill="#ffd54a"/><circle cx="180" cy="219" r="4" fill="#ffd54a"/><circle cx="180" cy="230" r="4" fill="#ffd54a"/><circle cx="180" cy="241" r="4" fill="#ffd54a"/><circle cx="180" cy="252" r="4" fill="#ffd54a"/><circle cx="191" cy="197" r="4" fill="#ffd54a"/><circle cx="191" cy="208" r="4" fill="#ffd54a"/><circle cx="191" cy="219" r="4" fill="#ffd54a"/><circle cx="191" cy="230" r="4" fill="#ffd54a"/><circle cx="191" cy="241" r="4" fill="#ffd54a"/><circle cx="191" cy="252" r="4" fill="#ffd54a"/><circle cx="191" cy="263" r="4" fill="#ffd54a"/><circle cx="202" cy="197" r="4" fill="#ffd54a"/><circle cx="202" cy="208" r="4" fill="#ffd54a"/><circle cx="202" cy="219" r="4" fill="#ffd54a"/><circle cx="202" cy="230" r="4" fill="#ffd54a"/><circle cx="202" cy="241" r="4" fill="#ffd54a"/><circle cx="202" cy="252" r="4" fill="#ffd54a"/><circle cx="202" cy="263" r="4" fill="#ffd54a"/><circle cx="213" cy="197" r="4" fill="#ffd54a"/><circle cx="213" cy="208" r="4" fill="#ffd54a"/><circle cx="213" cy="219" r="4" fill="#ffd54a"/><circle cx="213" cy="230" r="4" fill="#ffd54a"/><circle cx="213" cy="241" r="4" fill="#ffd54a"/><circle cx="213" cy="252" r="4" fill="#ffd54a"/><circle cx="213" cy="263" r="4" fill="#ffd54a"/><circle cx="224" cy="208" r="4" fill="#ffd54a"/><circle cx="224" cy="219" r="4" fill="#ffd54a"/><circle cx="224" cy="230" r="4" fill="#ffd54a"/><circle cx="224" cy="241" r="4" fill="#ffd54a"/><circle cx="224" cy="252" r="4" fill="#ffd54a"/><circle cx="235" cy="219" r="4" fill="#ffd54a"/><circle cx="235" cy="230" r="4" fill="#ffd54a"/><circle cx="235" cy="241" r="4" fill="#ffd54a"/></g>
+  <g filter="url(#glow)"><circle cx="289" cy="219" r="4" fill="#ffd54a"/><circle cx="289" cy="230" r="4" fill="#ffd54a"/><circle cx="289" cy="241" r="4" fill="#ffd54a"/><circle cx="300" cy="208" r="4" fill="#ffd54a"/><circle cx="300" cy="219" r="4" fill="#ffd54a"/><circle cx="300" cy="230" r="4" fill="#ffd54a"/><circle cx="300" cy="241" r="4" fill="#ffd54a"/><circle cx="300" cy="252" r="4" fill="#ffd54a"/><circle cx="311" cy="197" r="4" fill="#ffd54a"/><circle cx="311" cy="208" r="4" fill="#ffd54a"/><circle cx="311" cy="219" r="4" fill="#ffd54a"/><circle cx="311" cy="230" r="4" fill="#ffd54a"/><circle cx="311" cy="241" r="4" fill="#ffd54a"/><circle cx="311" cy="252" r="4" fill="#ffd54a"/><circle cx="311" cy="263" r="4" fill="#ffd54a"/><circle cx="322" cy="197" r="4" fill="#ffd54a"/><circle cx="322" cy="208" r="4" fill="#ffd54a"/><circle cx="322" cy="219" r="4" fill="#ffd54a"/><circle cx="322" cy="230" r="4" fill="#ffd54a"/><circle cx="322" cy="241" r="4" fill="#ffd54a"/><circle cx="322" cy="252" r="4" fill="#ffd54a"/><circle cx="322" cy="263" r="4" fill="#ffd54a"/><circle cx="333" cy="197" r="4" fill="#ffd54a"/><circle cx="333" cy="208" r="4" fill="#ffd54a"/><circle cx="333" cy="219" r="4" fill="#ffd54a"/><circle cx="333" cy="230" r="4" fill="#ffd54a"/><circle cx="333" cy="241" r="4" fill="#ffd54a"/><circle cx="333" cy="252" r="4" fill="#ffd54a"/><circle cx="333" cy="263" r="4" fill="#ffd54a"/><circle cx="344" cy="208" r="4" fill="#ffd54a"/><circle cx="344" cy="219" r="4" fill="#ffd54a"/><circle cx="344" cy="230" r="4" fill="#ffd54a"/><circle cx="344" cy="241" r="4" fill="#ffd54a"/><circle cx="344" cy="252" r="4" fill="#ffd54a"/><circle cx="355" cy="219" r="4" fill="#ffd54a"/><circle cx="355" cy="230" r="4" fill="#ffd54a"/><circle cx="355" cy="241" r="4" fill="#ffd54a"/></g>
+  <!-- riflessi -->
+  <ellipse cx="174" cy="200" rx="14" ry="9" fill="#ffffff" opacity="0.35" transform="rotate(-30 174 200)"/>
+  <ellipse cx="294" cy="200" rx="14" ry="9" fill="#ffffff" opacity="0.35" transform="rotate(-30 294 200)"/>
+
+  <!-- becco -->
+  <path d="M256 280 L 236 300 L 256 334 L 276 300 Z" fill="#ffb02e"/>
+  <path d="M256 300 L 236 300 L 256 334 Z" fill="#e8971a"/>
+
+  <!-- piume sul petto -->
+  <path d="M206 356 q 12 12 24 0 q 12 12 24 0 q 12 12 24 0 q 12 12 24 0" fill="none" stroke="#6e4520" stroke-width="5" stroke-linecap="round"/>
+</svg>
