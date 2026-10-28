@@ -36,40 +36,52 @@ const HORIZONS: [Horizon, string][] = [
       <h2 id="gen-title" class="title">Archie, fammi una multipla</h2>
       <div class="chips" role="group" aria-label="Livello">
         @for (l of levels; track l.key) {
-          <button type="button" class="chip" [class.on]="level() === l.key" [attr.aria-pressed]="level() === l.key" (click)="restart(); level.set(l.key)">{{ l.label }}</button>
+          <button type="button" class="chip" [class.on]="level() === l.key" [attr.aria-pressed]="level() === l.key" (click)="level.set(l.key)">{{ l.label }}</button>
         }
       </div>
       <p class="hint muted small">{{ hint() }}</p>
       <div class="row">
         <label>Partite
           <span class="legs-row">
-            <button type="button" class="chip" [class.on]="auto()" [attr.aria-pressed]="auto()" [disabled]="!!target()" (click)="restart(); auto.set(!auto())" title="Archie aggiunge partite finché la multipla esce abbastanza spesso per il livello">Decide Archie</button>
-            <input type="number" min="1" max="30" [value]="legs()" [disabled]="!!target() || auto()" (change)="restart(); legs.set(clamp(+$any($event.target).value))" aria-label="Numero di partite" />
+            <button type="button" class="chip" [class.on]="auto()" [attr.aria-pressed]="auto()" [disabled]="!!target()" (click)="auto.set(!auto()); lockNote.set(null)" title="Archie aggiunge partite finché la multipla esce abbastanza spesso per il livello">Decide Archie</button>
+            <input type="number" inputmode="numeric" min="1" max="30" [value]="lockedLegs() ? '' : legs()" [placeholder]="lockedLegs() ? 'auto' : ''" [readonly]="!!lockedLegs()" [class.locked]="!!lockedLegs()" (focus)="lockedLegs() && lockNote.set(lockedLegs())" (click)="lockedLegs() && lockNote.set(lockedLegs())" (input)="legs.set(clamp(+$any($event.target).value))" aria-label="Numero di partite" />
           </span>
         </label>
-        <label>Quota obiettivo
-          <input type="number" min="1.1" step="any" placeholder="es. 50" [value]="target() ?? ''" (change)="restart(); target.set(toTarget($any($event.target).value))" />
+        <label>Moltiplicatore
+          <input type="number" inputmode="decimal" min="1.1" step="any" placeholder="es. 10" [value]="target() ?? ''" (input)="target.set(toTarget($any($event.target).value))" />
         </label>
+      </div>
+      @if (lockedLegs() && lockNote(); as note) {
+        <p class="lock-note" role="status">{{ note }}</p>
+      }
+      <p class="hint muted small">Moltiplicatore: quanto vuoi moltiplicare la puntata (es. 10 = 5 € diventano 50 €). Se lo scrivi, Archie sceglie lui quante partite.</p>
+      <div class="row">
         <label>Puntata €
-          <input type="number" min="0.5" step="0.5" [value]="stake()" (input)="stake.set(+$any($event.target).value || 0)" />
+          <input type="number" inputmode="decimal" min="0.5" step="0.5" [value]="stake()" (input)="stake.set(+$any($event.target).value || 0)" />
         </label>
+      </div>
+      <div class="row">
         <label>Quando
-          <select (change)="restart(); horizon.set($any($event.target).value)">
+          <select (change)="horizon.set($any($event.target).value)">
             @for (h of horizons; track h[0]) { <option [value]="h[0]" [selected]="horizon() === h[0]">{{ h[1] }}</option> }
           </select>
         </label>
         <label>Tema
-          <select (change)="restart(); theme.set($any($event.target).value)">
+          <select (change)="theme.set($any($event.target).value)">
             @for (t of themes.value() | keyvalue: keep; track t.key) { <option [value]="t.key" [selected]="theme() === t.key">{{ t.value }}</option> }
           </select>
         </label>
         <label>Campionato
-          <select (change)="restart(); competition.set($any($event.target).value)">
+          <select (change)="competition.set($any($event.target).value)">
             <option value="">Tutti</option>
             @for (c of competitions.value(); track c.code) { <option [value]="c.code">{{ c.country }} · {{ c.name }}</option> }
           </select>
         </label>
       </div>
+      <button type="button" class="btn-primary generate" (click)="generate()">{{ changed() ? 'Genera la multipla' : 'Genera di nuovo' }}</button>
+      @if (changed()) {
+        <p class="hint muted small">Hai cambiato le scelte: premi Genera per vedere la multipla nuova.</p>
+      }
     </section>
 
     <section class="panel box result" aria-live="polite" aria-label="Multipla studiata">
@@ -139,9 +151,12 @@ const HORIZONS: [Horizon, string][] = [
     .chip.on { color: var(--amber); background: var(--chip); border-color: var(--amber); }
     .legs-row { display: flex; gap: 6px; align-items: center; }
     .legs-row input { width: 64px; }
+    input.locked { opacity: 0.45; text-decoration: line-through; cursor: not-allowed; border-style: dashed; }
+    .lock-note { margin: 0 0 8px; padding: 6px 10px; font-size: 12px; color: var(--amber); border-left: 3px solid var(--amber); background: rgb(255 200 40 / 0.06); }
     .chip:disabled { opacity: 0.4; cursor: default; }
     .hint { margin: 6px 0 8px; }
-    .row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+    .generate { width: 100%; margin-top: 6px; }
     label { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
     select, input { min-height: 30px; padding: 2px 8px; font: inherit; font-size: 13px; color: var(--text); background: var(--bg-deep); border: 1px solid var(--line-strong); border-radius: 4px; }
     input { width: 70px; }
@@ -187,15 +202,34 @@ export class Generator {
   /** I temi nell'ordine del server */
   protected readonly keep = () => 0;
   protected readonly hint = computed(() => LEVELS.find((l) => l.key === this.level())!.hint);
-  protected readonly result = httpResource<StudyMultiple>(() => {
+  /** Le scelte come parametri della richiesta (senza le partite già proposte) */
+  private readonly choices = computed(() => {
     const params = new URLSearchParams({ level: this.level(), legs: String(this.legs()), horizon: this.horizon() });
     if (this.competition()) params.set('competitions', this.competition());
     if (this.theme() !== 'tutte') params.set('theme', this.theme());
     if (this.target()) params.set('target', String(this.target()));
     else if (this.auto()) params.set('auto', 'true');
+    return params.toString();
+  });
+  /** Le scelte usate dall'ultima multipla: cambiano solo con "Genera" */
+  /** Perché il numero di partite non si può scrivere (null = si può) */
+  protected readonly lockedLegs = computed(() =>
+    this.target() ? 'Con il moltiplicatore le partite le sceglie Archie: cancella il moltiplicatore per scegliere tu quante.'
+    : this.auto() ? 'È attivo «Decide Archie»: toccalo per spegnerlo e scegliere tu quante partite.' : null);
+  protected readonly lockNote = signal<string | null>(null);
+  private readonly applied = signal(this.choices());
+  protected readonly changed = computed(() => this.applied() !== this.choices());
+  protected readonly result = httpResource<StudyMultiple>(() => {
+    const params = new URLSearchParams(this.applied());
     if (this.excluded().length) params.set('exclude', this.excluded().join(','));
     return `/api/study/multiple?${params}`;
   });
+
+  protected generate(): void {
+    this.restart();
+    this.applied.set(this.choices());
+    this.result.reload();
+  }
 
   protected readonly pct = pct;
   protected readonly fmtOdds = odds;
