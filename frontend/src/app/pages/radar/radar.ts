@@ -33,7 +33,6 @@ export class Radar {
       .sort((a, b) => a.best.kickoff_at.localeCompare(b.best.kickoff_at));
   });
   /** Angoli e cartellini: in prova, in fondo */
-  protected readonly secondary = computed(() => (this.radar.value()?.upcoming ?? []).filter((o) => o.secondary));
   private readonly opened = signal<number[]>([]);
 
   /** Lo studio ritiene l'esito probabile almeno quanto Pinnacle */

@@ -75,22 +75,6 @@
     </p>
   }
 
-  @if (secondary().length) {
-    <details class="panel box fold">
-      <summary>Angoli e cartellini · in prova ({{ secondary().length }})</summary>
-      <p class="muted small">Sullo storico hanno battuto la chiusura di Pinnacle, ma possono avere limiti bassi o quote che spariscono: contano a parte fino a 300 giocate.</p>
-      <ul class="others">
-        @for (x of secondary(); track x.match_id + x.market + x.selection + x.bookmaker) {
-          <li>
-            <a [routerLink]="['/partite', x.match_id]">{{ x.home.name }} – {{ x.away.name }}</a>
-            <span>{{ pick(x) }}</span>
-            <span class="muted small">{{ fmt.odds(x.price) }} {{ x.bookmaker }} · <span class="value pos">{{ fmt.signedPct(x.value) }}</span></span>
-          </li>
-        }
-      </ul>
-    </details>
-  }
-
   <details class="panel box fold">
     <summary>Come sta andando · {{ r.live.n }}/{{ r.live.target }} giocate misurate · {{ r.live.verdict }}</summary>
     <div class="tiles">
