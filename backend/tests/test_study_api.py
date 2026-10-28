@@ -68,3 +68,12 @@ def test_chosen_days_and_several_competitions(logged_client, seeded, db):  # noq
     body = logged_client.get(f"/api/study/multiple?horizon=week&legs=5&competitions={codes}").json()
     assert len(body["legs"]) == 2
     assert logged_client.get("/api/study/multiple?days=ieri").status_code == 422
+
+
+def test_average_price_of_the_bookmakers(logged_client, seeded, db):  # noqa: F811
+    db.add(MatchStudy(match_id=match_id(db, "Milan", "Inter"), computed_at=datetime.now(UTC),
+                      data={"picks": [pick("GG", "yes", 0.6) | {"prices": {"sisal": 1.8, "eurobet": 1.7}}]}))  # fmt: skip
+    db.add(MatchStudy(match_id=match_id(db, "Palermo", "Bari"), computed_at=datetime.now(UTC), data={"picks": [pick("OU2.5", "under", 0.62)]}))
+    db.commit()
+    legs = {leg["market"]: leg for leg in logged_client.get("/api/study/multiple?horizon=week&legs=5").json()["legs"]}
+    assert legs["GG"]["avg_price"] == 1.75 and legs["OU2.5"]["avg_price"] is None

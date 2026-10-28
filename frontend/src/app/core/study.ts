@@ -17,6 +17,8 @@ export interface StudyLeg {
   reasons: string[];
   /** Quota migliore dei bookmaker ("Altri bookmakers"), se quotano il mercato */
   prices: Record<string, number>;
+  /** Quota media dei bookmaker che quotano il pronostico */
+  avg_price?: number | null;
 }
 
 export interface StudyMultiple {

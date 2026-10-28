@@ -105,6 +105,9 @@ function nextDays(n: number): PickOption[] {
                   <span class="event">{{ capital(l.event) }}</span>
                   <span class="led prob" title="Probabilità dello studio di Archie">{{ pct(l.p_archie) }}</span>
                 </div>
+                <span class="price muted small">
+                  @if (l.avg_price) { quota media <strong>{{ fmtOdds(l.avg_price) }}</strong> } @else { quota stimata da Archie <strong>{{ fmtOdds(1 / l.p_archie) }}</strong> }
+                </span>
                 <ab-why [title]="capital(l.event)" [reasons]="l.reasons" />
               </li>
             }
@@ -178,6 +181,8 @@ function nextDays(n: number): PickOption[] {
     .pick-line { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: 2px; }
     .event { font-size: 14px; font-weight: 600; color: var(--amber); }
     .prob { font-size: 16px; }
+    .price { display: block; margin: 2px 0 4px; }
+    .price strong { color: var(--text); }
     .offers { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
     .why { margin-top: 4px; font-size: 12px; color: var(--text-2); }
     .why summary { color: var(--muted); cursor: pointer; }

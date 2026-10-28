@@ -35,6 +35,7 @@ class StudyLegOut(BaseModel):
     evidence: list[int]  # [volte in casa, partite in casa, volte in trasferta, partite in trasferta]
     reasons: list[str]
     prices: dict[str, float]  # quote di Sisal ed Eurobet, se il bookmaker quota il mercato
+    avg_price: float | None = None  # quota media dei bookmaker che quotano il pronostico
 
 
 class StudyMultipleOut(BaseModel):
@@ -61,6 +62,7 @@ def _leg(card: MatchCard, pick: dict) -> StudyLegOut:
         match=card, market=pick["market"], selection=pick["selection"], market_label=market_name(pick["market"]),
         event=pick["event"], level=pick["level"], p_archie=pick["p_archie"], p_model=pick["p_model"],
         evidence=pick["evidence"], reasons=pick["reasons"], prices=_labelled(pick["prices"]),
+        avg_price=round(sum(pick["prices"].values()) / len(pick["prices"]), 2) if pick["prices"] else None,
     )  # fmt: skip
 
 
