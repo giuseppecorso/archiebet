@@ -4,18 +4,20 @@ import { RouterLink } from '@angular/router';
 import { DailyLeg, DailyOut, DailySlip } from '../../core/daily';
 import { SlipLeg, SlipService } from '../../core/slip';
 import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
+import { PushToggle } from '../../shared/push-toggle';
 import { slipImage } from './slip-image';
 
 /** Bacheca Daily (D153): le schedine pubblicate da Archie, appese come foglietti, con le statistiche per tutti. */
 @Component({
   selector: 'ab-daily',
-  imports: [RouterLink],
+  imports: [PushToggle, RouterLink],
   template: `
     @if (data.value(); as d) {
       <p class="intro">
         Ogni mattina alle 10 Archie appende qui le sue schedine. <strong>Una volta pubblicate non cambiano più</strong>:
         sotto trovi quante sono uscite davvero, contro quante dovevano uscire secondo le sue probabilità.
       </p>
+      <div class="panel box notify"><ab-push-toggle /></div>
       @if (d.today.legs_total) {
         <p class="today">
           Oggi: <strong class="led">{{ d.today.legs_won }}/{{ d.today.legs_closed }}</strong> pronostici azzeccati tra quelli già finiti

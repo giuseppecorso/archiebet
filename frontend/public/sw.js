@@ -13,3 +13,25 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode !== 'navigate') return; // dati e file: come sempre, direttamente dalla rete
   event.respondWith(fetch(event.request).catch(() => new Response(OFFLINE, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })));
 });
+
+// Notifiche (D158): Archie avvisa quando escono le schedine; toccandola si apre la pagina indicata
+self.addEventListener('push', (event) => {
+  let msg = { title: 'ArchieBet', body: '', url: '/' };
+  try {
+    msg = { ...msg, ...event.data.json() };
+  } catch {
+    // notifica senza dati: titolo generico
+  }
+  event.waitUntil(self.registration.showNotification(msg.title, { body: msg.body, icon: '/icon-192.png', badge: '/icon-192.png', data: { url: msg.url } }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      const open = wins.find((w) => 'focus' in w);
+      return open ? open.navigate(url).then((w) => w && w.focus()) : self.clients.openWindow(url);
+    }),
+  );
+});

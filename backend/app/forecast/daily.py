@@ -129,3 +129,13 @@ def stats(slips: Iterable) -> dict[str, KindStats]:
             st.won += s.status == WON
             st.expected += s.win_probability
     return out
+
+
+def announcement(published: Sequence[str]) -> tuple[str, str] | None:
+    """Testo della notifica quando escono schedine nuove (D158), None se non è uscito niente."""
+    names = [KINDS[k].title for k in KINDS if k in published]
+    if not names:
+        return None
+    if len(names) == 1:
+        return "Nuova schedina in bacheca", f"{names[0]}: guardala su ArchieBet."
+    return f"{len(names)} nuove schedine in bacheca", ", ".join(names[:-1]) + f" e {names[-1].lower()}."

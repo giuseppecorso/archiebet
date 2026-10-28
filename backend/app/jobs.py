@@ -147,18 +147,36 @@ def sync_oddspapi_job() -> None:
     _tracked("oddspapi", work)
 
 
+_DAILY_LOCK = threading.Lock()  # il giro delle 10 e quello orario non devono pubblicare insieme (doppioni)
+
+
 def daily_job() -> None:
-    """Ogni ora: pubblica le schedine della bacheca Daily che sono dovute e chiude quelle con i risultati (D153)."""
+    """Ogni ora e alle 10: pubblica le schedine della bacheca Daily che sono dovute e chiude quelle con i risultati (D153)."""
     from app.forecast.daily_service import publish_due, settle_daily
 
     try:
-        with SessionLocal() as db:
+        with _DAILY_LOCK, SessionLocal() as db:
             published = publish_due(db)
             closed = settle_daily(db)
+            _announce(db, published)
         if published or closed:
             logger.info("Daily: pubblicate %s, chiuse %s", published, closed)
     except Exception:
         logger.exception("Bacheca Daily non aggiornata: riprovo tra un'ora")
+
+
+def _announce(db, published: list[str]) -> None:
+    """Notifica sul telefono a chi l'ha attivata (D158); un errore qui non ferma la bacheca."""
+    from app.forecast.daily import announcement
+    from app.notify.push import send
+
+    text = announcement(published)
+    if text is None:
+        return
+    try:
+        logger.info("Notifiche bacheca: %s dispositivi", send(db, *text, url="/pronostici"))
+    except Exception:
+        logger.exception("Notifiche della bacheca non inviate")
 
 
 def settle_bets_job() -> None:
@@ -375,6 +393,8 @@ def start_scheduler(settings: Settings) -> BackgroundScheduler | None:
     scheduler.add_job(events_job, "interval", minutes=20, next_run_time=datetime.now(UTC) + timedelta(minutes=1),
                       id="events", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.add_job(daily_job, "interval", hours=1, next_run_time=datetime.now(UTC) + timedelta(minutes=2), id="daily", max_instances=1, coalesce=True)
+    # alle 10 in punto (ora italiana) le schedine escono subito, non al giro orario successivo
+    scheduler.add_job(daily_job, "cron", hour=10, minute=0, second=30, timezone="Europe/Rome", id="daily-10", max_instances=1, coalesce=True)
     scheduler.add_job(news_job, "interval", hours=2, next_run_time=datetime.now(UTC) + timedelta(minutes=3),
                       id="news", max_instances=1, coalesce=True)  # fmt: skip
     scheduler.start()

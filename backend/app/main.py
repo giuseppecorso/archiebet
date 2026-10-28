@@ -20,6 +20,7 @@ from app.api.picks import router as picks_router
 from app.api.radar import router as radar_router
 from app.api.study import router as study_router
 from app.api.daily import router as daily_router
+from app.api.push import router as push_router
 from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.jobs import start_scheduler
@@ -41,6 +42,7 @@ app.include_router(football_router)
 app.include_router(lab_router)
 app.include_router(study_router)
 app.include_router(daily_router)
+app.include_router(push_router)
 app.include_router(bets_router)
 app.include_router(status_router)
 app.include_router(radar_router)

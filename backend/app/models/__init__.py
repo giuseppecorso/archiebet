@@ -14,7 +14,7 @@ from app.models.sync import SyncRun
 from app.models.news import MatchAnalysis, MatchInsight, NewsItem, TeamFact
 from app.models.football import Competition, Match, MatchEvent, MatchLive, MatchOdds, MatchSource, MatchStatus, Team, TeamAlias
 from app.models.usage import UsageEvent
-from app.models.user import User, UserSession
+from app.models.user import PushSubscription, User, UserSession
 
 __all__ = [
     "AiQuestion",
@@ -37,6 +37,7 @@ __all__ = [
     "MatchSource",
     "MatchStatus",
     "NewsItem",
+    "PushSubscription",
     "RadarSignal",
     "SyncRun",
     "Team",

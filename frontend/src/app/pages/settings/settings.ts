@@ -3,10 +3,12 @@ import { Component, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { UserSettings } from '../../core/bets';
 import { TeamListItem } from '../../core/lab';
+import { PushToggle } from '../../shared/push-toggle';
 
 /** Impostazioni personali: limiti (solo avvisi), bookmaker, squadra del cuore. */
 @Component({
   selector: 'ab-settings',
+  imports: [PushToggle],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })

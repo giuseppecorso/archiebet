@@ -1,5 +1,10 @@
 <h1 class="title page-title">Impostazioni</h1>
 
+<section class="panel box notify" aria-labelledby="push-title">
+  <h2 id="push-title" class="title box-title">Avvisi sul telefono</h2>
+  <ab-push-toggle />
+</section>
+
 <form class="stack" (submit)="$event.preventDefault(); save()">
   <section class="panel box" aria-labelledby="limits-title">
     <h2 id="limits-title" class="title box-title">Limiti di gioco</h2>

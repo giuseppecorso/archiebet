@@ -98,3 +98,9 @@ li[data-status='lost'] strong { color: var(--loss); }
   color: var(--amber);
   border-color: var(--amber);
 }
+
+.notify {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
