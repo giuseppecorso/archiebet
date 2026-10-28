@@ -1387,6 +1387,7 @@ def main() -> int:
     commands.add_parser("review-refresh", help="pagella settimanale di Archie e correzioni automatiche (D132)")
     commands.add_parser("study-refresh", help="Archie studia le partite dei prossimi giorni (D137)")
     commands.add_parser("study-backtest", help="prova D140: lo studio e le sue varianti sul passato (walk-forward)")
+    commands.add_parser("criteria-test", help="prova D156: peso dei giocatori, motivazione e meteo stimati sul passato")
     commands.add_parser("bookmaker-test", help="prova D144: dove sbaglia il bookmaker (studio contro quota media prima della partita)")
     commands.add_parser("cup-test", help="prova D146: coppe europee con un modello che collega i campionati")
     commands.add_parser("occasion-test", help="prova D152: le Occasioni confermate dallo studio rendono di più?")
@@ -1491,6 +1492,32 @@ def main() -> int:
         print(f"controllo: rendimento in conferma giocando tutti i disaccordi alla quota media {roi:+.3f}")
         out = get_settings().data_cache_dir / "learning" / "bookmaker_test.json"
         out.write_text(_json.dumps({"passed": [[s.league, s.market] for s in segs if s.passed]}), encoding="utf-8")
+        return 0
+    if args.command == "criteria-test":
+        import json as _json
+        from datetime import timedelta as _td
+
+        from app.forecast import criteria_test as ct
+        from app.forecast import study_backtest as bt
+
+        with SessionLocal() as db:
+            adapter = api_football_adapter(db, get_settings())
+            weather = ct.load_weather(db)
+        fixtures_for = lambda league, season: adapter.fixtures(league, season, _td(days=36500))  # noqa: E731
+        games, calendar = bt.load(adapter.cache, fixtures_for)
+        games = [g for g in games if g.league in ct.LEAGUES]
+        apps = ct.load_appearances(adapter.cache, fixtures_for)
+        print(f"partite: {len(games)}, presenze dei giocatori: {sum(len(a) for a in apps.values())}, meteo: {len(weather)}")
+        prepared = bt.prepare(games, calendar, (*bt.TUNING, *bt.CONFIRMATION))
+        rows = ct.build_rows(prepared, games, apps, weather)
+        print(f"righe: {len(rows)}, con formazioni: {sum(1 for r in rows if all(r.lineup))}, con meteo: {sum(1 for r in rows if r.bad_weather is not None)}")
+        results, together = ct.run(rows)
+        out = get_settings().data_cache_dir / "learning" / "criteria_test.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(_json.dumps({"criteria": [{"name": r.name, "weights": r.weights.__dict__, "passed": r.passed,
+                                                   "tuning": [r.tuning.mean, r.tuning.std_error, r.tuning.n],
+                                                   "confirmation": [r.confirmation.mean, r.confirmation.std_error, r.confirmation.n]}
+                                                  for r in [*results, *([together] if together else [])]]}, ensure_ascii=False), encoding="utf-8")  # fmt: skip
         return 0
     if args.command == "study-backtest":
         import json as _json

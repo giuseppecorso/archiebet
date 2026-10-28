@@ -9,6 +9,8 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import timedelta
 
+import httpx2
+
 from app.adapters.api_football import AFFixture, ApiFootballAdapter, ApiFootballError, QuotaExhausted, parse_fixtures
 from app.adapters.cache import MISSING, FileCache
 from app.forecast.player_props import PlayerGame, parse_players
@@ -44,6 +46,9 @@ def download_match_stats(adapter: ApiFootballAdapter, leagues: Iterable[int], se
                     except ApiFootballError as exc:
                         report.failed += 1
                         log(f"partita {fx.id}: {exc}")
+                    except httpx2.TransportError as exc:  # rete instabile (timeout, connessione caduta): si salta, al prossimo giro si riprende
+                        report.failed += 1
+                        log(f"partita {fx.id}: rete {exc}")
                     if n % 100 == 0:
                         log(f"{STATS_LEAGUES.get(league, league)} {season}: {n}/{len(fixtures)}")
     except QuotaExhausted as exc:

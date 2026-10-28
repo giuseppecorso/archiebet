@@ -1,0 +1,253 @@
+"""Prova D156: ogni criterio col suo peso, stimato sul passato sopra lo studio attuale (D142).
+
+Criteri: (C1) peso dei giocatori in attacco, (C2) qualità complessiva dei titolari, (C3) motivazione di classifica,
+(C4) meteo. Walk-forward settimanale di D140 (study_backtest.prepare), stessi 8 mercati e stessa log loss.
+Pesi per minima log loss sulle stagioni di taratura; miglioramento in taratura fuori campione (stimati su una stagione,
+misurati sull'altra), conferma sulla stagione successiva con i pesi di tutta la taratura. Legge solo la cache.
+"""
+
+import math
+from bisect import bisect_left
+from collections import defaultdict
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, replace
+from datetime import datetime, timedelta
+
+from scipy.optimize import minimize
+
+from app.forecast import study_backtest as bt
+from app.forecast.history_sim import Estimate, clustered_mean
+from app.forecast.player_weight import WINDOW_DAYS, Appearance, LineupChange, PlayerBook, RoleMeans, lineup_change, role_means
+from app.forecast.study import BAD_WEATHER, TableSpot, goal_of
+
+LEAGUES = (135, 136, 39, 140, 78, 61)  # campionati con le statistiche dei giocatori
+PLAYER_SEASONS = (2021, 2022, 2023, 2024, 2025)  # 2021/22 solo come storico dei giocatori
+BASE = bt.Config(per_league=True, xg_weight=0.75, prior=192.0)  # lo studio di oggi (D142)
+MOTIVATED = ("vertice", "salvezza")
+
+
+@dataclass(frozen=True)
+class Weights:
+    a: float = 0.0  # C1 attacco dei titolari
+    b: float = 0.0  # C2 qualità propria sui gol fatti
+    c: float = 0.0  # C2 qualità avversaria sui gol subiti
+    m: float = 0.0  # C3 motivazione
+    w: float = 0.0  # C4 meteo
+
+
+@dataclass
+class Row:
+    p: bt.Prepared
+    lam: float  # gol attesi della base (modello per campionato, 75% xG)
+    mu: float
+    rho: float
+    lineup: tuple[LineupChange | None, LineupChange | None]
+    motivated: tuple[int, int]  # 1 se la squadra lotta per qualcosa e l'avversaria non ha più obiettivi
+    bad_weather: int | None  # 1 pioggia o vento forti, 0 no, None meteo sconosciuto
+
+
+def factors(r: Row, x: Weights) -> tuple[float, float]:
+    lh, la = r.lineup
+    ah, rh = (lh.attack, lh.quality) if lh else (0.0, 0.0)
+    aa, ra = (la.attack, la.quality) if la else (0.0, 0.0)
+    bad = r.bad_weather or 0
+    home = x.a * ah + x.b * rh - x.c * ra + x.m * r.motivated[0] + x.w * bad
+    away = x.a * aa + x.b * ra - x.c * rh + x.m * r.motivated[1] + x.w * bad
+    return math.exp(home), math.exp(away)
+
+
+def row_loss(r: Row, x: Weights) -> float:
+    fh, fa = factors(r, x)
+    return bt.match_loss(bt.with_field(bt.quick_probs(r.lam * fh, r.mu * fa, r.rho, *r.p.shares), r.p.hits, BASE.prior), r.p.g)
+
+
+# --- Ingredienti per partita ---
+
+def base_goals(p: bt.Prepared) -> tuple[float, float, float]:
+    lam, mu, rho = p.goals_league
+    if p.xg_league is not None:
+        lam = (1 - BASE.xg_weight) * lam + BASE.xg_weight * p.xg_league[0]
+        mu = (1 - BASE.xg_weight) * mu + BASE.xg_weight * p.xg_league[1]
+    return lam, mu, rho
+
+
+def motivation_flags(games: Sequence[bt.G]) -> dict[int, tuple[int, int]]:
+    """Per ogni partita, la classifica della stagione prima del calcio d'inizio (regola D138)."""
+    out = {}
+    by_season: dict[tuple[int, int], list[bt.G]] = defaultdict(list)
+    for g in games:
+        by_season[(g.league, g.season)].append(g)
+    for season_games in by_season.values():
+        season_games.sort(key=lambda g: g.date)
+        pts, played, diff = defaultdict(int), defaultdict(int), defaultdict(int)
+        for g in season_games:
+            order = sorted(played, key=lambda t: (pts[t], diff[t]), reverse=True)
+            n = len(order)
+            flags = (0, 0)
+            if n >= 6 and g.home in played and g.away in played:
+                top, safe = pts[order[1]], pts[order[n - 4]]
+                spot = {t: TableSpot(i + 1, n, pts[t], played[t], top, safe) for i, t in enumerate(order)}
+                gh, ga = goal_of(spot[g.home]), goal_of(spot[g.away])
+                flags = (int(gh in MOTIVATED and ga == "nessun obiettivo"), int(ga in MOTIVATED and gh == "nessun obiettivo"))
+            out[g.id] = flags
+            for team, mine, theirs in ((g.home, g.hg, g.ag), (g.away, g.ag, g.hg)):
+                played[team] += 1
+                diff[team] += mine - theirs
+                pts[team] += 3 if mine > theirs else 1 if mine == theirs else 0
+    return out
+
+
+class _Means:
+    """Medie del ruolo per campionato con le presenze dei 365 giorni prima (una volta per settimana)."""
+
+    def __init__(self, apps_by_league: Mapping[int, Sequence[Appearance]]):
+        self.apps = {lg: sorted(a, key=lambda x: x.date) for lg, a in apps_by_league.items()}
+        self.dates = {lg: [x.date for x in a] for lg, a in self.apps.items()}
+        self.memo: dict[tuple[int, int, int], RoleMeans] = {}
+
+    def at(self, league: int, when: datetime) -> RoleMeans:
+        year, week, _ = when.isocalendar()
+        key = (league, year, week)
+        if key not in self.memo:
+            start = when - timedelta(days=when.weekday())
+            start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+            d = self.dates[league]
+            self.memo[key] = role_means(self.apps[league][bisect_left(d, start - timedelta(days=WINDOW_DAYS)) : bisect_left(d, start)])
+        return self.memo[key]
+
+
+def build_rows(prepared: Sequence[bt.Prepared], games: Sequence[bt.G], apps_by_league: Mapping[int, Sequence[Appearance]],
+               weather: Mapping[int, tuple[float, float] | None]) -> list[Row]:  # fmt: skip
+    book = PlayerBook(a for apps in apps_by_league.values() for a in apps)
+    means = _Means(apps_by_league)
+    motivation = motivation_flags(games)
+    rows = []
+    for p in prepared:
+        g = p.g
+        if g.league not in LEAGUES:
+            continue
+        m = means.at(g.league, g.date)
+        lineup = []
+        for team in (g.home, g.away):
+            starters = book.starters(team, g.id)
+            lineup.append(lineup_change(book, team, [(a.player, a.position) for a in starters], g.date, m) if len(starters) == 11 else None)
+        w = weather.get(g.id)
+        bad = None if w is None else int(w[0] >= BAD_WEATHER[0] or w[1] >= BAD_WEATHER[1])
+        rows.append(Row(p, *base_goals(p), tuple(lineup), motivation.get(g.id, (0, 0)), bad))
+    return rows
+
+
+# --- Stima e misura ---
+
+CRITERIA: dict[str, tuple[str, ...]] = {
+    "C1 peso dei giocatori in attacco": ("a",),
+    "C2 qualità dei titolari": ("b", "c"),
+    "C3 motivazione": ("m",),
+    "C4 meteo": ("w",),
+}
+
+
+def _relevant(r: Row, free: Sequence[str]) -> bool:
+    """Le partite in cui i parametri liberi cambiano qualcosa (le altre hanno perdita costante: non servono alla stima)."""
+    if {"a", "b", "c"} & set(free) and any(r.lineup):
+        return True
+    if "m" in free and any(r.motivated):
+        return True
+    return "w" in free and bool(r.bad_weather)
+
+
+def fit(rows: Sequence[Row], free: Sequence[str], start: Weights = Weights()) -> Weights:
+    """Pesi liberi per minima log loss totale (gli altri restano quelli di `start`)."""
+    used = [r for r in rows if _relevant(r, free)]
+    if not used:
+        return start
+
+    def objective(v):
+        x = replace(start, **dict(zip(free, v)))
+        return sum(row_loss(r, x) for r in used)
+
+    res = minimize(objective, [getattr(start, f) for f in free], method="Nelder-Mead", options={"xatol": 1e-3, "fatol": 1e-3, "maxiter": 400})
+    return replace(start, **dict(zip(free, res.x)))
+
+
+def improvement(rows: Sequence[Row], x: Weights, base: Weights = Weights()) -> list[float]:
+    return [row_loss(r, base) - row_loss(r, x) for r in rows]
+
+
+@dataclass(frozen=True)
+class CriterionResult:
+    name: str
+    weights: Weights
+    tuning: Estimate
+    confirmation: Estimate
+
+    @property
+    def passed(self) -> bool:
+        return self.tuning.mean > 2 * self.tuning.std_error and self.confirmation.mean > 2 * self.confirmation.std_error
+
+
+def evaluate(rows: Sequence[Row], name: str, free: Sequence[str], only: Callable[[Row], bool] = lambda r: True,
+             log: Callable[[str], None] = print) -> CriterionResult:  # fmt: skip
+    """Taratura fuori campione (stima su una stagione, misura sull'altra), poi conferma con la stima di tutta la taratura."""
+    rows = [r for r in rows if only(r)]
+    first, second = ([r for r in rows if r.p.g.season == s] for s in bt.TUNING)
+    diffs, ids = [], []
+    for train, test in ((first, second), (second, first)):
+        x = fit(train, free)
+        diffs += improvement(test, x)
+        ids += [r.p.g.id for r in test]
+    tuning = clustered_mean(diffs, ids)
+    x = fit(first + second, free)
+    confirm = [r for r in rows if r.p.g.season in bt.CONFIRMATION]
+    result = CriterionResult(name, x, tuning, clustered_mean(improvement(confirm, x), [r.p.g.id for r in confirm]))
+    log(f"{name}: pesi {x} | taratura {tuning.mean:+.4f} ± {tuning.std_error:.4f} | conferma {result.confirmation.mean:+.4f} "
+        f"± {result.confirmation.std_error:.4f} | {'PASSA' if result.passed else 'non passa'}")  # fmt: skip
+    return result
+
+
+def run(rows: Sequence[Row], log: Callable[[str], None] = print) -> tuple[list[CriterionResult], CriterionResult | None]:
+    results = []
+    for name, free in CRITERIA.items():
+        only = (lambda r: r.bad_weather is not None) if free == ("w",) else (lambda r: True)
+        results.append(evaluate(rows, name, free, only, log))
+    passing = [f for r, (_, free) in zip(results, CRITERIA.items()) if r.passed for f in free]
+    together = evaluate(rows, "Insieme quelli che passano", passing, log=log) if len(passing) > 1 else None
+    return results, together
+
+
+# --- Caricamento dalla cache ---
+
+def load_appearances(cache, fixtures_for: Callable[[int, int], list]) -> dict[int, list[Appearance]]:
+    from app.adapters.cache import MISSING
+    from app.forecast.player_weight import parse_appearances
+    from app.ingest.af_stats import FOREVER
+
+    out: dict[int, list[Appearance]] = defaultdict(list)
+    for league in LEAGUES:
+        for season in PLAYER_SEASONS:
+            for f in fixtures_for(league, season):
+                if f.status != "finished":
+                    continue
+                body = cache.get(f"fixtures/players?fixture={f.id}", FOREVER)
+                if body is not MISSING:
+                    out[league] += parse_appearances(body, f.id, f.kickoff_at)
+    return out
+
+
+def load_weather(db) -> dict[int, tuple[float, float] | None]:
+    """Pioggia e vento di D76 (archivio Open-Meteo, per partita del database) con l'id della partita API-Football."""
+    import json
+
+    from sqlalchemy import select
+
+    from app.config import get_settings
+    from app.models import MatchSource
+
+    path = get_settings().data_cache_dir / "weather" / "raw.json"
+    raw = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    out: dict[int, tuple[float, float] | None] = {}
+    for s in db.scalars(select(MatchSource).where(MatchSource.source == "api-football")):
+        w = raw.get(str(s.match_id))
+        if w and s.external_id.isdigit():
+            out[int(s.external_id)] = (w[0], w[1])
+    return out
