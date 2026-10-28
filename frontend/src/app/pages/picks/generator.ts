@@ -4,11 +4,9 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Competition } from '../../core/football';
 import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
-import { Offer } from '../../core/picks';
 import { SlipService } from '../../core/slip';
 import { StudyLeg, StudyMultiple } from '../../core/study';
 import { Crest } from '../../shared/crest';
-import { OfferButton } from '../../shared/offer-button';
 import { MultiPick, PickOption } from '../../shared/multi-pick';
 import { WhyPopup } from '../../shared/why-popup';
 
@@ -41,7 +39,7 @@ function nextDays(n: number): PickOption[] {
 /** "Archie, fammi una multipla": i pronostici studiati da Archie (D137), ognuno con il suo perché. */
 @Component({
   selector: 'ab-generator',
-  imports: [Crest, KeyValuePipe, MultiPick, OfferButton, RouterLink, WhyPopup],
+  imports: [Crest, KeyValuePipe, MultiPick, RouterLink, WhyPopup],
   template: `
     <section class="panel box form" aria-labelledby="gen-title">
       <h2 id="gen-title" class="title">Archie, fammi una multipla</h2>
@@ -60,18 +58,23 @@ function nextDays(n: number): PickOption[] {
         </label>
       </div>
       <div class="row">
-        <label>Moltiplicatore
-          <input type="number" inputmode="decimal" min="1.1" step="any" placeholder="es. 10" [value]="target() ?? ''" (input)="target.set(toTarget($any($event.target).value))" />
-        </label>
+        <div class="field">Moltiplicatore
+          <span class="range">
+            <span class="muted">da</span>
+            <input type="number" inputmode="decimal" min="1.1" step="any" placeholder="8" [value]="target() ?? ''" (input)="target.set(toTarget($any($event.target).value))" aria-label="Moltiplicatore da" />
+            <span class="muted">a</span>
+            <input type="number" inputmode="decimal" min="1.1" step="any" placeholder="12" [value]="targetMax() ?? ''" (input)="targetMax.set(toTarget($any($event.target).value))" aria-label="Moltiplicatore a" />
+          </span>
+        </div>
         <label>Puntata €
           <input type="number" inputmode="decimal" min="0.5" step="0.5" [value]="stake()" (input)="stake.set(+$any($event.target).value || 0)" />
         </label>
       </div>
-      <p class="hint muted small">Moltiplicatore: quante volte vuoi moltiplicare la puntata (10 = 5 € diventano 50 €). Se lo scrivi, partite e livello li sceglie Archie.</p>
+      <p class="hint muted small">Moltiplicatore: quante volte vuoi moltiplicare la puntata, da… a… (da 8 a 12 = 5 € diventano 40-60 €; il secondo si può lasciare vuoto). Se lo scrivi, partite e livello li sceglie Archie.</p>
       @if ((lockedLegs() || target()) && lockNote(); as note) {
         <p class="lock-note" role="status">{{ note }}</p>
       }
-      <div class="row">
+      <div class="row grid2">
         <div class="field">Giorni
           <ab-multi-pick label="Giorni" [options]="dayOptions" allLabel="Prossimi 7 giorni" [(selected)]="days" />
         </div>
@@ -102,13 +105,6 @@ function nextDays(n: number): PickOption[] {
                   <span class="event">{{ capital(l.event) }}</span>
                   <span class="led prob" title="Probabilità dello studio di Archie">{{ pct(l.p_archie) }}</span>
                 </div>
-                <div class="offers">
-                  @for (o of offers(l); track o.bookmaker) {
-                    <ab-offer [match]="l.match" [market]="l.market" [pick]="l.selection" [offer]="o" />
-                  } @empty {
-                    <span class="muted small">quota giusta {{ fair(l.p_archie) }}</span>
-                  }
-                </div>
                 <ab-why [title]="capital(l.event)" [reasons]="l.reasons" />
               </li>
             }
@@ -122,7 +118,7 @@ function nextDays(n: number): PickOption[] {
             }
           </div>
           @if (target() && !r.target_reached) {
-            <p class="muted small warn">Con queste scelte Archie arriva solo a quota {{ fmtOdds(r.total_odds) }}: prova più giorni, tutti i campionati o un livello più rischioso.</p>
+            <p class="muted small warn">Con queste scelte Archie arriva a quota {{ fmtOdds(r.total_odds) }}, fuori da quella chiesta: prova più giorni, più campionati o un intervallo più largo.</p>
           }
           <div class="actions">
             @if (totalsList(r).length) {
@@ -164,6 +160,11 @@ function nextDays(n: number): PickOption[] {
     .row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
     .row label, .row .field { min-width: 120px; }
     .row .wide { flex: 1 1 100%; }
+    .row.grid2 { display: grid; grid-template-columns: 1fr 1fr; }
+    .row.grid2 .wide { grid-column: 1 / -1; }
+    .row.grid2 select { width: 100%; }
+    .range { display: flex; align-items: center; gap: 6px; font-size: 13px; letter-spacing: 0; text-transform: none; }
+    .range input { width: 64px; }
     .field ab-multi-pick { letter-spacing: 0; text-transform: none; font-weight: 400; }
     .generate { display: block; min-height: 38px; margin: 8px auto 0; padding: 6px 26px; font-size: 15px; }
     .chip.locked-chip { opacity: 0.45; border-style: dashed; }
@@ -203,6 +204,8 @@ export class Generator {
   protected readonly theme = signal('tutte');
   /** Quota totale voluta (es. 50): Archie aggiunge partite finché ci arriva */
   protected readonly target = signal<number | null>(null);
+  /** Moltiplicatore massimo ("da 8 a 12"); vuoto = nessun limite */
+  protected readonly targetMax = signal<number | null>(null);
   protected readonly stake = signal(5);
   /** Consigliato: Archie decide quante partite (probabilità che esca almeno 40%, 20% o 8% secondo il livello) */
   protected readonly auto = signal(true);
@@ -223,6 +226,7 @@ export class Generator {
     if (this.leagues().length) params.set('competitions', this.leagues().join(','));
     if (this.theme() !== 'tutte') params.set('theme', this.theme());
     if (this.target()) params.set('target', String(this.target()));
+    if (this.target() && this.targetMax()) params.set('target_max', String(this.targetMax()));
     else if (this.auto()) params.set('auto', 'true');
     return params.toString();
   });
@@ -278,17 +282,8 @@ export class Generator {
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
-  protected fair(p: number): string {
-    return odds(1 / p);
-  }
-
   protected oneIn(p: number): string {
     return p > 0 ? (1 / p).toFixed(p > 0.1 ? 1 : 0) : '–';
-  }
-
-  /** Le quote del bookmaker come pulsanti della schedina; la differenza con lo studio è solo un'informazione */
-  protected offers(l: StudyLeg): Offer[] {
-    return Object.entries(l.prices).map(([bookmaker, price]) => ({ bookmaker, price, value: l.p_archie * price - 1, verdict: 'nella norma' }));
   }
 
   protected totalsList(r: StudyMultiple): [string, number][] {

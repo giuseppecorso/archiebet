@@ -204,3 +204,14 @@ def test_choose_varied_avoids_the_same_pick_three_times():
     studies = [(k, [p("2T_OU0.5", "over", 0.72 - k / 100), p("GG", "yes", 0.6)]) for k in range(4)]
     chosen = choose_varied(studies, "equilibrato", 4)
     assert [c[1]["market"] for c in chosen] == ["2T_OU0.5", "2T_OU0.5", "GG", "GG"]  # dalla terza si passa al secondo pronostico
+
+
+def test_within_range_skips_legs_that_overshoot():
+    from app.forecast.study import within_range
+
+    ranked = [(i, {"prices": {"sisal": price}, "p_archie": 0.5}) for i, price in enumerate((3.0, 3.0, 5.0, 1.5, 1.2))]
+    chosen = within_range(ranked, 8, 12)
+    assert [i for i, _ in chosen] == [0, 1]  # 3 × 3 = 9: dentro 8–12
+    chosen = within_range(ranked, 10, 12)
+    assert [i for i, _ in chosen] == [0, 1, 4]  # 9 × 5 = 45 e 9 × 1,5 = 13,5 sono troppo: 9 × 1,2 = 10,8
+    assert within_range(ranked, 500, 600) == ranked  # non ci arriva: restano tutti (81 in tutto)

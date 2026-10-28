@@ -201,7 +201,7 @@ describe('ArchieBet: navigazione', () => {
     const page = harness.routeNativeElement!;
     expect(page.querySelector('.event')?.textContent).toContain('Brescia segna nel primo tempo');
     expect(page.querySelector('.why-dlg')?.textContent).toContain('8 su 9 partite in casa del Brescia'); // il perché sta nel popup
-    expect(page.querySelector('.offers')?.textContent).toContain("quota giusta");
+    expect(page.querySelector('.offers')).toBeNull(); // nella multipla solo partita, orario, pronostico e perché
     expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Pronostici');
 
     (page.querySelector('.again') as HTMLButtonElement).click(); // un'altra multipla, con altre partite

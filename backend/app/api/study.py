@@ -10,7 +10,7 @@ from app.api.football import BOOKMAKER_LABELS, MatchCard, _news_counts, match_ca
 from app.api.picks import ROME, Horizon, horizon_window
 from app.auth.deps import CurrentUser, DbSession
 from app.betting.calc import market_name
-from app.forecast.study import LEVELS, THEMES, auto_legs, choose_multiple, leg_price, theme_market, theme_match, up_to_target
+from app.forecast.study import LEVELS, THEMES, auto_legs, choose_multiple, leg_price, theme_market, theme_match, up_to_target, within_range
 from app.forecast.study_service import _aware, load_studies
 from app.ingest.teams import CUP_COUNTRY
 from app.models import Match, MatchStudy
@@ -78,6 +78,7 @@ def study_multiple(
     exclude: str | None = Query(None, description="partite già proposte, id separati da virgola"),
     theme: Theme = "tutte",
     target: float | None = Query(None, gt=1, le=100000, description="quota totale obiettivo: Archie aggiunge gambe finché ci arriva"),
+    target_max: float | None = Query(None, gt=1, le=100000, description="con target: quota totale massima (moltiplicatore da target a target_max)"),
     auto: bool = Query(False, description="Archie decide quante partite: finché la multipla esce abbastanza spesso per il livello"),
 ) -> StudyMultipleOut:
     now = datetime.now(UTC)
@@ -99,6 +100,8 @@ def study_multiple(
             if theme_match(theme, m.competition.tier, m.competition.country == CUP_COUNTRY, news.get(m.id, 0))]  # fmt: skip
     if auto and not target:
         chosen = auto_legs(choose_multiple(pool, level, MAX_LEGS, skip), level)
+    elif target and target_max and target_max >= target:
+        chosen = within_range(choose_multiple(pool, level, MAX_LEGS, skip), target, target_max)
     elif target:
         chosen = up_to_target(choose_multiple(pool, level, MAX_LEGS, skip), target)
     else:
@@ -122,7 +125,7 @@ def study_multiple(
             totals[label] = round(total, 2)
     remaining = choose_multiple(pool, level, 1, skip | {mid for mid, _ in chosen})
     return StudyMultipleOut(level=level, legs=out, win_probability=round(probability, 4) if out else 0.0, totals=totals, more=bool(remaining),
-                            total_odds=round(total_odds, 2) if chosen else 0.0, target_reached=not target or total_odds >= target)
+                            total_odds=round(total_odds, 2) if chosen else 0.0, target_reached=not target or (total_odds >= target and (not target_max or total_odds <= target_max)))
 
 
 @router.get("/match/{match_id}")

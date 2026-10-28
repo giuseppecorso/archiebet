@@ -455,6 +455,21 @@ def leg_price(pick: dict) -> float:
     return max(pick["prices"].values(), default=0.0) or 1 / pick["p_archie"]
 
 
+def within_range(ranked: Sequence[tuple[int, dict]], low: float, high: float) -> list[tuple[int, dict]]:
+    """Moltiplicatore "da… a…": dai pronostici più solidi in giù, salta quelli che porterebbero la quota oltre `high`
+    e si ferma appena arriva almeno a `low` (se non ci arriva, restituisce quelli trovati)."""
+    out, total = [], 1.0
+    for match_id, pick in ranked:
+        if total >= low:
+            break
+        price = leg_price(pick)
+        if total * price > high:
+            continue  # troppo: si prova un pronostico con la quota più bassa
+        out.append((match_id, pick))
+        total *= price
+    return out
+
+
 def up_to_target(ranked: Sequence[tuple[int, dict]], target: float) -> list[tuple[int, dict]]:
     """Dai pronostici più solidi in giù finché la quota totale arriva all'obiettivo (tutti, se non ci arriva)."""
     out, total = [], 1.0
