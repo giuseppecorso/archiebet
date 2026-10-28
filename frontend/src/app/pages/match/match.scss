@@ -166,9 +166,6 @@
 .card-sub {
   font-size: 13px;
 }
-.archie-note {
-  margin: 10px 0 0;
-}
 .markets {
   .price {
     font-size: 15px;
@@ -982,4 +979,17 @@ tr.absent td {
   .head-scorers {
     font-size: 10px;
   }
+}
+
+.sugg ab-why {
+  align-self: flex-start;
+  margin-top: 8px;
+}
+.po-pick {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
 }

@@ -7,7 +7,7 @@ import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/htt
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { KeyValuePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
-import { Market, marketLabel, marketSelections, pickLabel } from '../../core/bets';
+import { Market, marketLabel, marketSelections, parseSecondary, parseTeamGoals, pickLabel } from '../../core/bets';
 import { MatchAnalysis, MatchNumbers, MatchPicks, PlayerShots, TeamLineup, verdictClass } from '../../core/picks';
 import { RouterLink } from '@angular/router';
 import { FanFact, MatchFan, SOURCE_LABELS, factTone } from '../../core/fan';
@@ -151,6 +151,20 @@ export class MatchPage {
   private readonly auth = inject(AuthService);
   protected readonly admin = computed(() => !!this.auth.user()?.is_admin);
 
+  /** Giocate raggruppate per tipo, una tendina sceglie quale gruppo vedere */
+  protected readonly playGroups = computed(() => [...new Set((this.matchPicks.value()?.markets ?? []).map((mk) => playGroupOf(mk.market)))]);
+  private readonly chosenGroup = signal<string | null>(null);
+  protected readonly playGroup = computed(() => {
+    const groups = this.playGroups();
+    const g = this.chosenGroup();
+    return g && groups.includes(g) ? g : (groups[0] ?? '');
+  });
+  protected readonly shownMarkets = computed(() => (this.matchPicks.value()?.markets ?? []).filter((mk) => playGroupOf(mk.market) === this.playGroup()));
+
+  protected pickGroup(g: string): void {
+    this.chosenGroup.set(g);
+  }
+
   protected marketName(market: string): string {
     return marketLabel(market, this.detail.value()?.match);
   }
@@ -285,4 +299,16 @@ export class MatchPage {
     const m = this.detail.value()?.match;
     return !!m && (m.home.id === teamId || m.away.id === teamId);
   }
+}
+
+/** Tipo di giocata per la tendina di «Gioca questa partita» */
+export function playGroupOf(market: string): string {
+  if (market.startsWith('1T_') || market.startsWith('2T_')) return 'Primo e secondo tempo';
+  if (market.startsWith('OU')) return 'Under / Over';
+  if (market === 'GG') return 'Goal / No goal';
+  if (market.startsWith('MG')) return 'Multigol';
+  if (market.startsWith('CB_')) return 'Combo';
+  if (parseTeamGoals(market)) return 'Gol delle squadre';
+  if (parseSecondary(market)) return 'Angoli e cartellini';
+  return 'Esito finale';
 }

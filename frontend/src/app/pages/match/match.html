@@ -101,13 +101,6 @@
           </div>
         }
       </div>
-      <p class="muted small archie-note">
-        Modello verificato sulla stagione 2025/26 (ben calibrato). In Serie A, B e C però il mercato è più preciso di Archie:
-        dove non sono d'accordo, di solito ha ragione il mercato.
-        @if (p.market['1X2']; as ref) {
-          Mercato: {{ ref.source }}, senza margine.
-        }
-      </p>
     </section>
   } @else {
     <section class="panel archie-soon" aria-label="Probabilità di Archie">
@@ -124,7 +117,7 @@
     <section class="panel box analysis" aria-labelledby="an-title">
       <div class="box-head">
         <h2 id="an-title" class="title box-title">Analisi di Archie</h2>
-        <span class="muted small">percentuali dello studio di Archie (modello dei gol e fatti del campo), non delle quote</span>
+        <span class="muted small">dallo studio di Archie</span>
       </div>
       @if (studyLegs().length) {
         <div class="sugg-cards">
@@ -137,7 +130,7 @@
                 @for (o of priceList(s.leg); track o[0]) {
                   <span>{{ o[0] }} <strong>{{ fmt.odds(o[1]) }}</strong></span>
                 } @empty {
-                  <span class="muted small">quota da cercare sull'app · giusta secondo lo studio {{ fmt.odds(1 / s.leg.p_archie) }}</span>
+                  <span class="muted small">quota giusta {{ fmt.odds(1 / s.leg.p_archie) }}</span>
                 }
               </span>
               <ab-why [title]="capital(s.leg.event)" [reasons]="s.leg.reasons" />
@@ -191,9 +184,13 @@
     <section class="panel box play-odds" aria-labelledby="po-title">
       <div class="box-head">
         <h2 id="po-title" class="title box-title">Gioca questa partita</h2>
-        <span class="muted small">clicca una quota: va nella tua schedina</span>
+        <select class="po-pick" aria-label="Tipo di giocata" [value]="playGroup()" (change)="pickGroup($any($event.target).value)">
+          @for (g of playGroups(); track g) {
+            <option [value]="g">{{ g }}</option>
+          }
+        </select>
       </div>
-      @for (mk of matchPicks.value()!.markets; track mk.market) {
+      @for (mk of shownMarkets(); track mk.market) {
         <div class="po-market">
           <span class="title po-title">{{ marketName(mk.market) }}</span>
           <div class="po-cells">
