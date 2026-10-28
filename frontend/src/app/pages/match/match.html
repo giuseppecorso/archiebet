@@ -120,7 +120,7 @@
     </section>
   }
 
-  @if (studyLegs().length || statsSuggestions().length || analysis.value()) {
+  @if (d.match.status === 'scheduled' || studyLegs().length || analysis.value()) {
     <section class="panel box analysis" aria-labelledby="an-title">
       <div class="box-head">
         <h2 id="an-title" class="title box-title">Analisi di Archie</h2>
@@ -144,6 +144,8 @@
             </div>
           }
         </div>
+      } @else if (study.hasValue()) {
+        <p class="muted">Per questa partita Archie non trova pronostici solidi: il modello dei gol e i fatti del campo non vanno d'accordo. Meglio lasciarla stare.</p>
       }
       @if (statsSuggestions().length) {
         <p class="stats-sugg small">
