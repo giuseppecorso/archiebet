@@ -988,3 +988,10 @@ tr.absent td {
   flex-wrap: wrap;
   margin: 4px 0 12px;
 }
+.page-tabs {
+  margin: 14px 0;
+
+  button {
+    flex: 1;
+  }
+}

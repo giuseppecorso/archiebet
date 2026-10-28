@@ -151,6 +151,14 @@ export class MatchPage {
   private readonly auth = inject(AuthService);
   protected readonly admin = computed(() => !!this.auth.user()?.is_admin);
 
+  /** La pagina è divisa in tre schede: si vede una sola parte alla volta */
+  protected readonly tabs = [
+    { key: 'pronostici', label: 'Pronostici' },
+    { key: 'numeri', label: 'Numeri' },
+    { key: 'squadre', label: 'Squadre' },
+  ] as const;
+  protected readonly tab = signal<'pronostici' | 'numeri' | 'squadre'>('pronostici');
+
   /** Giocate raggruppate per tipo, una tendina sceglie quale gruppo vedere */
   protected readonly playGroups = computed(() => [...new Set((this.matchPicks.value()?.markets ?? []).map((mk) => playGroupOf(mk.market)))]);
   private readonly chosenGroup = signal<string | null>(null);

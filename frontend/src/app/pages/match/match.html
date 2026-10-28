@@ -70,6 +70,13 @@
 
   <!-- Partita finita: solo il tabellino (risultato, marcatori, cronaca). In corso o da giocare: tutto il resto -->
   @if (m.status !== 'finished') {
+  <div class="seg page-tabs" role="tablist" aria-label="Sezioni della partita">
+    @for (t of tabs; track t.key) {
+      <button type="button" role="tab" [class.on]="tab() === t.key" [attr.aria-selected]="tab() === t.key" (click)="tab.set(t.key)">{{ t.label }}</button>
+    }
+  </div>
+
+  @if (tab() === 'pronostici') {
   @if (d.missing_results > 0) {
     <p class="warning" role="status">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l10 18H2z"></path><path d="M12 10v5"></path><path d="M12 18h.01"></path></svg>
@@ -212,7 +219,9 @@
       }
     </section>
   }
+  }
 
+  @if (tab() === 'numeri') {
   @if (d.match.status === 'scheduled' && derived.value()?.length) {
     <section class="panel box derived" aria-labelledby="dv-title">
       <div class="box-head">
@@ -252,7 +261,7 @@
             <span class="title num-label">{{ n.label }}</span>
             <span class="num-exp">
               <span class="led">{{ fmt.num(n.home, 1) }}</span> – <span class="led">{{ fmt.num(n.away, 1) }}</span>
-              <span class="muted small">attesi</span>
+              &nbsp;<span class="muted small">attesi</span>
             </span>
             <table class="num-table">
               <thead>
@@ -355,9 +364,11 @@
       </p>
     </section>
   }
+  }
 
   <ab-ask-archie [matchId]="d.match.id" placeholder="Es. Conviene l'Over angoli? Chi tira di più?" />
 
+  @if (tab() === 'squadre') {
   @if (d.match.competition.code.startsWith('ITA-') || fan.value()?.facts?.length) {
     <section class="panel box fan" aria-labelledby="fan-title">
       <div class="box-head">
@@ -613,5 +624,6 @@
       </section>
     </aside>
   </div>
+  }
   }
 }
