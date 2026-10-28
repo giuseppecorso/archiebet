@@ -102,7 +102,6 @@ Il processo principale in **BPMN 2.0** (sorgente: [docs/bpmn/ciclo-previsione.bp
 
 ![Ciclo di una previsione (BPMN)](docs/bpmn/ciclo-previsione.svg)
 
-Per imparare il progetto da zero c'è **[il libro di ArchieBet](docs/libro/00-indice.md)**: concetti, esempi e ogni parte del programma.
 
 Dettagli nel **[documento tecnico](docs/DOCUMENTO-TECNICO.md)**: architettura, modello dei dati, modelli statistici, metodo delle prove, qualità, limiti.
 

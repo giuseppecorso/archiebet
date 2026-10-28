@@ -18,7 +18,7 @@ Ultimo aggiornamento: 2026-10-27
 - [x] **Fammi una multipla** rifatta sullo studio (D137): gol attesi Dixon-Coles con primo tempo, fatti del campo, coerenza modello-campo, tre livelli, spiegazioni, "genera un'altra".
 - [x] **Notizie, classifica e meteo** nello studio (D138), notizie per partita in Partite.
 - [x] **Pagella dei pronostici studiati** e pulizia dei testi (D139); Partite con tendine; Pronostici con due sole schede; gol annullati dal VAR.
-- [x] **Libro di studio** del progetto (`docs/libro/`, 13 capitoli con esempi verificati e domande di ripasso).
+- [x] **Libro di studio** del progetto (nella cartella privata `privato/libro/`, 13 capitoli con esempi verificati e domande di ripasso).
 - Test: 497 backend + 29 frontend, tutti verdi (2026-10-27).
 
 ## Telefono, gol per squadra, Draw No Bet (2026-10-22)
