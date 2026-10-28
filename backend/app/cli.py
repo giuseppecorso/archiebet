@@ -1173,8 +1173,9 @@ def _player_test() -> int:
     return 0
 
 
-def _af_stats(seasons: str) -> int:
-    """Scarica tiri, angoli, falli e cartellini di squadre e giocatori (Serie A e B) per i modelli dei mercati secondari."""
+def _af_stats(seasons: str, leagues: str | None = None, players_only: bool = False) -> int:
+    """Scarica tiri, angoli, falli e cartellini di squadre e giocatori (di base Serie A e B) per i modelli dei mercati secondari
+    e per il peso dei giocatori (D156)."""
     from app.adapters.api_football import ApiFootballAdapter
     from app.ingest.af_stats import STATS_LEAGUES, download_match_stats
 
@@ -1182,7 +1183,8 @@ def _af_stats(seasons: str) -> int:
     with SessionLocal() as db:
         adapter = ApiFootballAdapter(FileCache(settings.data_cache_dir, "api-football"), settings.api_football_key,
                                      on_call=lambda source: record_usage(db, source), daily_reserve=500)
-        report = download_match_stats(adapter, STATS_LEAGUES, [int(x) for x in seasons.split(",")])
+        chosen = [int(x) for x in leagues.split(",")] if leagues else list(STATS_LEAGUES)
+        report = download_match_stats(adapter, chosen, [int(x) for x in seasons.split(",")], players_only=players_only)
     print(f"Partite: {report.fixtures}, scaricate {report.done}, non riuscite {report.failed}" + (f"; fermato: {report.stopped}" if report.stopped else ""))
     return 0
 
@@ -1412,6 +1414,8 @@ def main() -> int:
     commands.add_parser("player-test", help="prova D110: tiri dei giocatori (dati di API-Football in cache)")
     afs = commands.add_parser("af-stats", help="statistiche di squadre e giocatori da API-Football (Serie A e B)")
     afs.add_argument("--seasons", default="2026,2025,2024")
+    afs.add_argument("--leagues", help="id API-Football separati da virgola (di base Serie A e B)")
+    afs.add_argument("--players-only", action="store_true", help="solo i giocatori: una richiesta per partita")
     commands.add_parser("af-history", help="storico API-Football per le prove dei fattori D89 (coppe, allenatori, formazioni)")
     commands.add_parser("venues", help="stadi di casa delle squadre (città, campo, coordinate)")
     dm = commands.add_parser("demargin-test", help="prova del nove dei metodi per togliere il margine (D72)")
@@ -1629,7 +1633,7 @@ def main() -> int:
     if args.command == "player-test":
         return _player_test()
     if args.command == "af-stats":
-        return _af_stats(args.seasons)
+        return _af_stats(args.seasons, args.leagues, args.players_only)
     if args.command == "af-history":
         return _af_history()
     if args.command == "venues":

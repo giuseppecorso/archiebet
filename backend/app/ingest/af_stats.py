@@ -26,7 +26,7 @@ class StatsReport:
 
 
 def download_match_stats(adapter: ApiFootballAdapter, leagues: Iterable[int], seasons: Iterable[int],
-                         log: Callable[[str], None] = print) -> StatsReport:  # fmt: skip
+                         log: Callable[[str], None] = print, players_only: bool = False) -> StatsReport:  # fmt: skip
     report = StatsReport()
     try:
         for season in seasons:
@@ -35,7 +35,8 @@ def download_match_stats(adapter: ApiFootballAdapter, leagues: Iterable[int], se
                 report.fixtures += len(fixtures)
                 for n, fx in enumerate(fixtures, 1):
                     try:
-                        adapter.fixture_statistics(fx.id, FOREVER)
+                        if not players_only:
+                            adapter.fixture_statistics(fx.id, FOREVER)
                         adapter.fixture_players(fx.id, FOREVER)
                         report.done += 1
                     except QuotaExhausted:
