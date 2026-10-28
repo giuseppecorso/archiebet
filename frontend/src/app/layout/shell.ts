@@ -5,11 +5,12 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { AuthService } from '../core/auth.service';
 import { MENU, MenuItem } from '../core/sections';
 import { SlipPanel } from '../shared/slip-panel';
+import { InstallBanner } from '../shared/install-banner';
 
 /** Cornice comune: intestazione con logo e menu, contenuto della sezione, piè di pagina. */
 @Component({
   selector: 'ab-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, SlipPanel],
+  imports: [InstallBanner, RouterOutlet, RouterLink, RouterLinkActive, SlipPanel],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })
