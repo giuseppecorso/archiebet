@@ -4,13 +4,12 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { Bet, BudgetStatus, KIND_LABEL, STATUS_LABEL, euro, marketLabel, pickLabel } from '../../core/bets';
+import { Bet, STATUS_LABEL, euro, marketLabel, pickLabel } from '../../core/bets';
 import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
 import { LIVE_REFRESH_MS, liveLabel } from '../../core/live';
 import { ShowMore } from '../../shared/show-more';
 
 type StatusFilter = 'open' | 'closed' | 'all';
-type KindFilter = 'all' | 'real' | 'simulated';
 
 /** Le mie schedine: elenco a destra, dettaglio a sinistra (come nel mockup). */
 @Component({
@@ -28,9 +27,7 @@ export class Bets {
   readonly id = input<string>();
 
   protected readonly bets = httpResource<Bet[]>(() => '/api/bets', { defaultValue: [] });
-  protected readonly budget = httpResource<BudgetStatus>(() => '/api/budget');
   protected readonly statusFilter = signal<StatusFilter>('open');
-  protected readonly kindFilter = signal<KindFilter>('all');
   protected readonly listOpen = signal(false);
   protected readonly error = signal<string | null>(null);
 
@@ -46,13 +43,12 @@ export class Bets {
       onCleanup(() => clearInterval(timer));
     });
   }
-  protected readonly labels = { KIND_LABEL, STATUS_LABEL };
+  protected readonly labels = { STATUS_LABEL };
 
   protected readonly filtered = computed(() =>
     this.bets.value().filter(
       (b) =>
-        (this.statusFilter() === 'all' || (this.statusFilter() === 'open') === (b.status === 'open')) &&
-        (this.kindFilter() === 'all' || b.kind === this.kindFilter()),
+        (this.statusFilter() === 'all' || (this.statusFilter() === 'open') === (b.status === 'open')),
     ),
   );
   protected readonly counts = computed(() => {
@@ -92,7 +88,6 @@ export class Bets {
     try {
       await firstValueFrom(this.http.delete(`/api/bets/${bet.id}`));
       this.bets.reload();
-      this.budget.reload();
       await this.router.navigate(['/schedine']);
     } catch {
       this.error.set('Non sono riuscito a cancellarla: forse una partita è già iniziata.');

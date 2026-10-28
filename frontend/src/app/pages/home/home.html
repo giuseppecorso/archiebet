@@ -41,7 +41,7 @@
       @for (b of openBets(); track b.id) {
         <a class="bet" [routerLink]="['/schedine', b.id]">
           <span>{{ b.selections.length === 1 ? b.selections[0].match.home.name + ' – ' + b.selections[0].match.away.name : b.selections.length + ' partite' }}</span>
-          <span class="muted small">{{ b.kind === 'real' ? 'reale' : 'simulata' }} · {{ fmt.euro(b.stake) }} a quota {{ b.total_odds }}</span>
+          <span class="muted small">{{ fmt.euro(b.stake) }} a quota {{ b.total_odds }}</span>
           @if (b.hope != null) {
             <span class="small">speranza <span class="led">{{ fmt.pct(b.hope) }}</span>{{ b.live ? ' · live' : '' }}</span>
           }

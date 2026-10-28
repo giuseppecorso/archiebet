@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from app.api.football import BOOKMAKER_LABELS, CompetitionOut, TeamRef, competition_out
-from app.auth.deps import CurrentUser, DbSession
+from app.auth.deps import DbSession, PremiumUser
 from app.config import get_settings
 from app.forecast.clv import SUSPICIOUS_VALUE
 from app.forecast.radar_markets import is_secondary
@@ -147,7 +147,7 @@ def _study_probabilities(db, match_ids: list[int]) -> dict[int, dict[str, dict[s
 
 
 @router.get("")
-def radar(_: CurrentUser, db: DbSession) -> RadarOut:
+def radar(_: PremiumUser, db: DbSession) -> RadarOut:  # Premium (D159)
     now = datetime.now(UTC)
     playable = get_settings().radar_bookmaker_list
     matches = list(db.scalars(

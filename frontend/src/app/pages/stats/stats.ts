@@ -4,7 +4,8 @@ import { RulesPanel } from '../../shared/rules-panel';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { BetGroup, BetKind, BetSummary, Breakdown, BudgetStatus, SelectionGroup, SummaryOut, Versus, VersusGroup, euro } from '../../core/bets';
+import { BetGroup, BetSummary, Breakdown, SelectionGroup, SummaryOut, Versus, VersusGroup, euro } from '../../core/bets';
+import { CoinsCard } from '../../shared/coins-card';
 import { num, pct } from '../../core/format';
 import { ShowMore } from '../../shared/show-more';
 
@@ -14,7 +15,7 @@ type Dim = 'by_size' | 'by_market' | 'by_competition' | 'by_bookmaker';
 /** Le mie statistiche: riepilogo, dove vinci e dove perdi, abitudini. Reali e simulate sempre separate. */
 @Component({
   selector: 'ab-stats',
-  imports: [RouterLink, ShowMore, RulesPanel, Subnav],
+  imports: [CoinsCard, RouterLink, ShowMore, RulesPanel, Subnav],
   templateUrl: './stats.html',
   styleUrl: './stats.scss',
 })
@@ -28,7 +29,6 @@ export class Stats {
   ];
   protected readonly period = signal<Period>('all');
   protected readonly summary = httpResource<SummaryOut>(() => `/api/bets/summary?period=${this.period()}`);
-  protected readonly budget = httpResource<BudgetStatus>(() => '/api/budget');
 
   /** Dove vinci e dove perdi */
   protected readonly dims: [Dim, string][] = [
@@ -38,10 +38,9 @@ export class Stats {
     ['by_bookmaker', 'Bookmaker'],
   ];
   protected readonly dim = signal<Dim>('by_size');
-  protected readonly kind = signal<BetKind>('real');
   protected readonly groupsOpen = signal(false);
-  protected readonly breakdown = httpResource<Breakdown>(() => `/api/bets/breakdown?kind=${this.kind()}&period=${this.period()}`);
-  protected readonly versus = httpResource<Versus>(() => `/api/bets/versus?kind=${this.kind()}&period=${this.period()}`);
+  protected readonly breakdown = httpResource<Breakdown>(() => `/api/bets/breakdown?period=${this.period()}`);
+  protected readonly versus = httpResource<Versus>(() => `/api/bets/versus?period=${this.period()}`);
 
   /** Numero di partite e bookmaker guardano la schedina intera; mercato e campionato le singole selezioni */
   protected readonly betRows = computed<BetGroup[] | null>(() => {
@@ -91,9 +90,6 @@ export class Stats {
   }
 
   protected cards(s: SummaryOut): [string, string, BetSummary][] {
-    return [
-      ['Reali', 'Soldi veri', s.real],
-      ['Simulate', 'Crediti finti, portafoglio separato', s.simulated],
-    ];
+    return [['Le tue giocate', 'tutte quelle registrate', s.total]];
   }
 }

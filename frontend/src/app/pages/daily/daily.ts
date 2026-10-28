@@ -68,6 +68,11 @@ import { slipImage } from './slip-image';
         }
       </div>
 
+      <p class="next muted small">
+        <strong>Quando escono:</strong> ogni giorno alle 10 la schedina del giorno, il colpo e la schedina del CLV ·
+        il venerdì il weekend e il sistemone · il lunedì la settimana e la pazza della settimana.
+      </p>
+
       <section class="panel box stats" aria-labelledby="st-title">
         <h2 id="st-title" class="title box-title">Statistiche della bacheca</h2>
         <div class="table-wrap">

@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     ai_monthly_budget_eur: float = 10.0  # tetto di spesa: 10-15 € al mese (D97, D103)
     ai_user_monthly_quota_eur: float = 10.0  # amministratore: tutto il tetto
     ai_friend_monthly_quota_eur: float = 0.0  # gli amici non usano l'AI: paga solo l'amministratore
+    subscriptions_enabled: bool = False  # D159: Premium e prova gratuita si fanno valere solo al lancio (servono i pagamenti)
     ai_budget_warning_ratio: float = 0.8
 
     @property

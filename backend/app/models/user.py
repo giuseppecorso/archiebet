@@ -14,6 +14,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+    premium_paid_until: Mapped[datetime | None] = mapped_column(UTCDateTime)  # mesi riscattati con gli ArchieCoins o pagati (D159)
 
 
 class UserSession(Base):
@@ -38,4 +39,16 @@ class PushSubscription(Base):
     endpoint: Mapped[str] = mapped_column(String(1000), unique=True)
     p256dh: Mapped[str] = mapped_column(String(200))
     auth: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+
+
+class CoinRedemption(Base):
+    """ArchieCoins spesi (D159): per ora solo mesi di Premium."""
+
+    __tablename__ = "coin_redemptions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    coins: Mapped[int] = mapped_column()
+    what: Mapped[str] = mapped_column(String(40))  # "premium-month"
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)

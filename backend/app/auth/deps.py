@@ -29,3 +29,19 @@ def get_admin_user(user: CurrentUser) -> User:
 
 
 AdminUser = Annotated[User, Depends(get_admin_user)]
+
+
+def get_premium_user(user: CurrentUser) -> User:
+    """Funzioni Premium (D159): prova di 15 giorni, poi mesi riscattati o pagati. Finché gli abbonamenti non sono attivi, tutti."""
+    from datetime import UTC, datetime
+
+    from app.betting.coins import premium_until
+
+    if not get_settings().subscriptions_enabled or user.is_admin:
+        return user
+    if premium_until(user.created_at, user.premium_paid_until) < datetime.now(UTC):
+        raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, "Funzione Premium: la prova gratuita è finita")
+    return user
+
+
+PremiumUser = Annotated[User, Depends(get_premium_user)]

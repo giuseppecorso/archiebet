@@ -39,7 +39,7 @@ class SelectionIn(BaseModel):
 
 
 class BetIn(BaseModel):
-    kind: Literal["real", "simulated"]
+    kind: Literal["real", "simulated"] = "simulated"  # D159: niente più reale/simulata, resta per le giocate vecchie
     stake: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
     bookmaker: str | None = Field(None, max_length=40)
     note: str | None = Field(None, max_length=300)
@@ -91,6 +91,7 @@ class BetCreated(BaseModel):
 
 class SummaryOut(BaseModel):
     period: str
+    total: BetSummary  # tutte le giocate (D159)
     real: BetSummary
     simulated: BetSummary
 
@@ -283,7 +284,7 @@ def place_bet(body: BetIn, user: CurrentUser, db: DbSession) -> BetCreated:
         )
     except BetError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    return BetCreated(bet=_bet_out(db, bet), warnings=budget_status(db, user.id).warnings if body.kind == "real" else [])
+    return BetCreated(bet=_bet_out(db, bet), warnings=[])  # D159: niente più limiti di spesa
 
 
 @router.get("/bets/summary")
@@ -296,6 +297,7 @@ def bets_summary(user: CurrentUser, db: DbSession, period: Literal["week", "30d"
     bets = db.scalars(query).all()
     return SummaryOut(
         period=period,
+        total=summarize(list(bets)),
         real=summarize([b for b in bets if b.kind == "real"]),
         simulated=summarize([b for b in bets if b.kind == "simulated"]),
     )
@@ -305,12 +307,14 @@ def bets_summary(user: CurrentUser, db: DbSession, period: Literal["week", "30d"
 def bets_breakdown(
     user: CurrentUser,
     db: DbSession,
-    kind: Literal["real", "simulated"] = "real",
+    kind: Literal["real", "simulated"] | None = None,  # None = tutte (D159)
     period: Literal["week", "30d", "season", "all"] = "all",
 ) -> Breakdown:
     """Dove vinci e dove perdi + abitudini, per un tipo di giocata e un periodo."""
     settle_open_bets(db)
-    query = select(Bet).where(Bet.user_id == user.id, Bet.kind == kind)
+    query = select(Bet).where(Bet.user_id == user.id)
+    if kind:
+        query = query.where(Bet.kind == kind)
     since = _period_start(period, datetime.now(UTC))
     if since:
         query = query.where(Bet.placed_at >= since)
@@ -321,12 +325,14 @@ def bets_breakdown(
 def bets_versus(
     user: CurrentUser,
     db: DbSession,
-    kind: Literal["real", "simulated"] = "real",
+    kind: Literal["real", "simulated"] | None = None,  # None = tutte (D159)
     period: Literal["week", "30d", "season", "all"] = "all",
 ) -> Versus:
     """Io contro Archie: selezioni chiuse giudicate con le probabilità di Archie al momento della giocata."""
     settle_open_bets(db)
-    query = select(Bet).where(Bet.user_id == user.id, Bet.kind == kind)
+    query = select(Bet).where(Bet.user_id == user.id)
+    if kind:
+        query = query.where(Bet.kind == kind)
     since = _period_start(period, datetime.now(UTC))
     if since:
         query = query.where(Bet.placed_at >= since)

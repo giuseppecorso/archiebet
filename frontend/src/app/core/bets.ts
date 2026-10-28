@@ -63,6 +63,8 @@ export interface SummaryOut {
   period: 'week' | '30d' | 'season' | 'all';
   real: BetSummary;
   simulated: BetSummary;
+  /** Tutte le giocate (D159) */
+  total: BetSummary;
 }
 
 /** Rendimento di un gruppo di schedine chiuse (per numero di partite o bookmaker) */

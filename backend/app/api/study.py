@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from app.api.football import BOOKMAKER_LABELS, MatchCard, _news_counts, match_cards
 from app.api.picks import ROME, Horizon, horizon_window
-from app.auth.deps import CurrentUser, DbSession
+from app.auth.deps import CurrentUser, DbSession, PremiumUser
 from app.betting.calc import market_name
 from app.forecast.study import LEVELS, THEMES, auto_legs, choose_multiple, leg_price, theme_market, theme_match, up_to_target, within_range
 from app.forecast.study_service import _aware, load_studies
@@ -68,7 +68,7 @@ def _leg(card: MatchCard, pick: dict) -> StudyLegOut:
 
 @router.get("/multiple")
 def study_multiple(
-    _: CurrentUser,
+    _: PremiumUser,  # Premium (D159)
     db: DbSession,
     level: Level = "equilibrato",
     legs: int = Query(4, ge=1, le=MAX_LEGS),

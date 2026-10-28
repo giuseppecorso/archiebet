@@ -66,14 +66,6 @@ def test_bets_are_private(logged_client, client, db, matches):
     assert client.delete(f"/api/bets/{bet_id}").status_code == 404
 
 
-def test_budget_warning_on_real_bets(logged_client, matches):
-    assert logged_client.put("/api/settings", json={"weekly_budget": "15", "monthly_budget": None, "bookmakers": ["Snai"]}).status_code == 200
-    assert logged_client.post("/api/bets", json=bet_body(matches["Inter"], kind="simulated", stake="100")).json()["warnings"] == []
-    assert logged_client.post("/api/bets", json=bet_body(matches["Inter"], stake="10")).json()["warnings"] == []
-    warnings = logged_client.post("/api/bets", json=bet_body(matches["Milan"], stake="10")).json()["warnings"]
-    assert len(warnings) == 1 and "20.00" in warnings[0]  # avviso, ma la giocata è registrata
-    assert len(logged_client.get("/api/bets?kind=real").json()) == 2
-
 
 def test_settings_validation(logged_client):
     assert logged_client.put("/api/settings", json={"bookmakers": ["BancoLotto"]}).status_code == 422

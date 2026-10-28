@@ -6,21 +6,6 @@
 </section>
 
 <form class="stack" (submit)="$event.preventDefault(); save()">
-  <section class="panel box" aria-labelledby="limits-title">
-    <h2 id="limits-title" class="title box-title">Limiti di gioco</h2>
-    <p class="muted small">Valgono solo per le giocate <strong>reali</strong>. Non bloccano nulla: se li superi, Archie ti avvisa chiaramente. Lascia vuoto per nessun limite.</p>
-    <div class="fields">
-      <label>
-        <span class="label">Budget settimanale €</span>
-        <input class="led" inputmode="decimal" placeholder="es. 30" [value]="weekly()" (input)="weekly.set($any($event.target).value)" />
-      </label>
-      <label>
-        <span class="label">Budget mensile €</span>
-        <input class="led" inputmode="decimal" placeholder="es. 100" [value]="monthly()" (input)="monthly.set($any($event.target).value)" />
-      </label>
-    </div>
-  </section>
-
   <section class="panel box" aria-labelledby="books-title">
     <h2 id="books-title" class="title box-title">I tuoi bookmaker</h2>
     <p class="muted small">Compaiono per primi quando registri una giocata.</p>

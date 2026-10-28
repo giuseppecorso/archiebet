@@ -215,14 +215,14 @@ describe('ArchieBet: navigazione', () => {
   it("tu contro Archie: fiuto e giocate d'accordo o contrarie", async () => {
     const harness = await navigateAs('/statistiche', true);
     const empty = { bets: 0, open: 0, settled: 0, won: 0, staked: '0', returned: '0', profit: '0', roi: null, win_rate: null, avg_clv: null, clv_count: 0 };
-    (await nextRequest((r) => r.url.startsWith('/api/bets/summary'))).flush({ period: 'all', real: empty, simulated: empty });
-    (await nextRequest('/api/budget')).flush({ week_staked: '0', week_budget: null, month_staked: '0', month_budget: null, warnings: [] });
+    (await nextRequest((r) => r.url.startsWith('/api/bets/summary'))).flush({ period: 'all', total: empty, real: empty, simulated: empty });
+    (await nextRequest('/api/coins')).flush({ balance: 0, earned: 0, spent: 0, month_cost: 1000, counted_per_day: 10, trial_days: 15, premium_until: '2026-11-12T00:00:00Z', premium_active: true, subscriptions_enabled: false, recent: [] });
     (await nextRequest((r) => r.url.startsWith('/api/bets/breakdown'))).flush({
       by_size: [], by_bookmaker: [], by_market: [], by_competition: [],
       habits: { bets: 0, avg_stake: null, avg_odds: null, multiple_share: null, avg_selections: null, top_market: null, top_bookmaker: null, top_teams: [] },
     });
     const versus = await nextRequest((r) => r.url.startsWith('/api/bets/versus'));
-    expect(versus.request.url).toBe('/api/bets/versus?kind=real&period=all');
+    expect(versus.request.url).toBe('/api/bets/versus?period=all');
     versus.flush({
       judged: 40, without_archie: 2, skill: 3.2, skill_std_error: 2.9,
       agreed: { n: 25, won: 14, expected_wins: 12.1, roi: 0.08, avg_value: 0.04 },
