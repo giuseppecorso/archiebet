@@ -2,7 +2,6 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed } from '@angular/core';
 import { MIO_ARCHIE_TABS } from '../../core/sections';
 import { dayLabel, pct } from '../../core/format';
-import { AccountCard } from '../../shared/account-card';
 import { CoinsCard } from '../../shared/coins-card';
 import { Subnav } from '../../shared/subnav';
 
@@ -37,7 +36,7 @@ const ICONS: Record<string, string> = { prima: '🎯', dieci: '📒', serie: '�
 /** Il tuo profilo (D161): chi sei, monete, specialità, traguardi, andamento, squadra del cuore, classifica tra amici. */
 @Component({
   selector: 'ab-profile',
-  imports: [AccountCard, CoinsCard, Subnav],
+  imports: [CoinsCard, Subnav],
   template: `
     <h1 class="title page-title">Il mio Archie</h1>
     <ab-subnav [items]="tabs" label="Il mio Archie" />
@@ -57,7 +56,6 @@ const ICONS: Record<string, string> = { prima: '🎯', dieci: '📒', serie: '�
       </section>
 
       <ab-coins-card />
-      <ab-account-card />
 
       <section class="panel box">
         <h2 class="title box-title">Traguardi</h2>
