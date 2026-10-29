@@ -124,9 +124,7 @@ function nextDays(n: number): PickOption[] {
             <p class="muted small warn">Con queste scelte Archie arriva a quota {{ fmtOdds(r.total_odds) }}, fuori da quella chiesta: prova più giorni, più campionati o un intervallo più largo.</p>
           }
           <div class="actions">
-            @if (totalsList(r).length) {
-              <button type="button" class="btn-primary" (click)="toSlip(r, totalsList(r)[0][0])">Metti nella schedina ({{ totalsList(r)[0][0] }})</button>
-            }
+            <button type="button" class="btn-primary" (click)="play(r)">Gioca questa multipla</button>
             <button type="button" class="again" [disabled]="!r.more" (click)="another(r)">Genera un'altra multipla</button>
           </div>
           @if (!target() && !auto() && r.legs.length < legs()) {
@@ -303,13 +301,19 @@ export class Generator {
     this.excluded.set([]);
   }
 
-  protected toSlip(r: StudyMultiple, bookmaker: string): void {
-    for (const l of r.legs) {
-      if (!this.slip.has(l.match.id, l.market, l.selection, bookmaker)) {
-        this.slip.toggle({ match: l.match, market: l.market, pick: l.selection, odds: l.prices[bookmaker], bookmaker });
-      }
-    }
+  /** Mette la multipla nella Schedina: quota del bookmaker se c'è, altrimenti la media, altrimenti quella stimata da Archie
+   * (nella Schedina si può correggere con quella vera prima di registrare). */
+  protected play(r: StudyMultiple): void {
+    const bookmaker = this.totalsList(r)[0]?.[0] ?? null;
+    this.slip.fill(
+      r.legs.map((l) => ({
+        match: l.match,
+        market: l.market,
+        pick: l.selection,
+        odds: +((bookmaker ? l.prices[bookmaker] : null) ?? l.avg_price ?? 1 / l.p_archie).toFixed(2),
+        bookmaker,
+      })),
+    );
     this.slip.stake.set(String(this.stake())); // la puntata scelta qui passa alla schedina
-    this.slip.open.set(true);
   }
 }
