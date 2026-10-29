@@ -116,16 +116,16 @@ def test_motivation_from_the_table():
     assert st.goal_of(spot(10, 28, played=34)) == "nessun obiettivo"  # lontana da tutto con 4 giornate alla fine
     assert st.goal_of(spot(18, 19, played=5)) is None  # a inizio stagione la classifica non dice niente
     adj = st.motivation_adjustment(spot(18, 19, played=34), spot(10, 28, played=34), "Brescia", "Cittadella")
-    assert (adj.home, adj.away) == pytest.approx((1.03, 1.0)) and "lotta per la salvezza" in adj.reasons[0]
+    assert (adj.home, adj.away) == (1.0, 1.0) and "lotta per la salvezza" in adj.reasons[0]  # D156: solo spiegazione
 
 
 def test_weather_and_chaining():
-    assert st.weather_adjustment(6.0, 10.0).home == pytest.approx(0.96)
+    assert st.weather_adjustment(6.0, 10.0).home == 1.0  # D156: il meteo non pesa
     assert st.weather_adjustment(0.0, 40.0).reasons[0].startswith("Meteo previsto: vento forte")
     assert st.weather_adjustment(0.5, 10.0) == st.Adjustment()
     assert st.weather_adjustment(None, None) == st.Adjustment()
     both = st.news_adjustment("home", "lieve", "", "A", "B").then(st.weather_adjustment(6.0, 0.0))
-    assert both.home == pytest.approx(1.03 * 0.96) and len(both.reasons) == 2
+    assert both.home == pytest.approx(1.03) and len(both.reasons) == 2  # le notizie pesano ancora, il meteo no
 
 
 def test_scorecard_compares_promised_and_won():

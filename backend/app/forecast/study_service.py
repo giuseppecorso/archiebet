@@ -212,7 +212,7 @@ def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict
     form_home, form_away = form(games, m.home_team_id), form(games, m.away_team_id)
     context = [f"Forma nelle ultime 5 di campionato: {home} {form_home or '—'}, {away} {form_away or '—'}.", *adjustment.reasons]
     if (adjustment.home, adjustment.away) != (1.0, 1.0):
-        context.append("Notizie, classifica e meteo correggono di poco i gol attesi: correzioni prudenti, non ancora verificate sul passato.")
+        context.append("Le notizie correggono di poco i gol attesi (prudente, in verifica). Classifica, meteo e assenze sono solo informazione: sul passato non migliorano le previsioni (D156).")
     caution = caution or {}
     team_traits = {"home": traits(games, m.home_team_id, home), "away": traits(games, m.away_team_id, away)}
     picks = []

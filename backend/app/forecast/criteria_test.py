@@ -117,7 +117,7 @@ class _Means:
 
 
 def build_rows(prepared: Sequence[bt.Prepared], games: Sequence[bt.G], apps_by_league: Mapping[int, Sequence[Appearance]],
-               weather: Mapping[int, tuple[float, float] | None]) -> list[Row]:  # fmt: skip
+               weather: Mapping[tuple[str, int, int], tuple[float, float]]) -> list[Row]:  # fmt: skip
     book = PlayerBook(a for apps in apps_by_league.values() for a in apps)
     means = _Means(apps_by_league)
     motivation = motivation_flags(games)
@@ -131,7 +131,7 @@ def build_rows(prepared: Sequence[bt.Prepared], games: Sequence[bt.G], apps_by_l
         for team in (g.home, g.away):
             starters = book.starters(team, g.id)
             lineup.append(lineup_change(book, team, [(a.player, a.position) for a in starters], g.date, m) if len(starters) == 11 else None)
-        w = weather.get(g.id)
+        w = next((weather[k] for d in (0, -1, 1) if (k := ((g.date + timedelta(days=d)).date().isoformat(), g.home, g.away)) in weather), None)
         bad = None if w is None else int(w[0] >= BAD_WEATHER[0] or w[1] >= BAD_WEATHER[1])
         rows.append(Row(p, *base_goals(p), tuple(lineup), motivation.get(g.id, (0, 0)), bad))
     return rows
@@ -234,22 +234,27 @@ def load_appearances(cache, fixtures_for: Callable[[int, int], list]) -> dict[in
     return out
 
 
-def load_weather(db) -> dict[int, tuple[float, float] | None]:
-    """Pioggia e vento di D76 (archivio Open-Meteo, per partita del database) con l'id della partita API-Football."""
+def load_weather(db) -> dict[tuple[str, int, int], tuple[float, float]]:
+    """Pioggia e vento di D76 (archivio Open-Meteo, salvato per le partite di football-data), indicizzati per
+    (giorno, squadra di casa, squadra ospite) con gli id di API-Football: le stesse partite stanno in righe diverse."""
     import json
 
     from sqlalchemy import select
 
     from app.config import get_settings
-    from app.models import MatchSource
+    from app.models import Match, TeamAlias
 
     path = get_settings().data_cache_dir / "weather" / "raw.json"
     raw = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
-    out: dict[int, tuple[float, float] | None] = {}
-    for s in db.scalars(select(MatchSource).where(MatchSource.source == "api-football")):
-        w = raw.get(str(s.match_id))
-        if w and s.external_id.isdigit():
-            out[int(s.external_id)] = (w[0], w[1])
+    af = {a.team_id: int(a.alias) for a in db.scalars(select(TeamAlias).where(TeamAlias.source == "api-football")) if a.alias.isdigit()}
+    out: dict[tuple[str, int, int], tuple[float, float]] = {}
+    ids = [int(k) for k in raw]
+    for i in range(0, len(ids), 900):
+        for m in db.scalars(select(Match).where(Match.id.in_(ids[i : i + 900]))):
+            h, a = af.get(m.home_team_id), af.get(m.away_team_id)
+            if h is not None and a is not None:
+                w = raw[str(m.id)]
+                out[(m.kickoff_at.date().isoformat(), h, a)] = (w[0], w[1])
     return out
 
 

@@ -265,10 +265,10 @@ def choose_multiple(studies: Sequence[tuple[int, list[dict]]], level: str, n: in
 # --- Correzioni prudenti dello studio: notizie, motivazione, meteo (D138, non provate sul passato) ---
 
 NEWS_EFFECT = {"netta": 0.06, "lieve": 0.03}  # gol attesi: +x a chi le notizie favoriscono, −x all'altra
-MOTIVATION_EFFECT = 0.03  # chi lotta per qualcosa contro chi non ha più obiettivi
+MOTIVATION_EFFECT = 0.0  # D156: sul passato non migliora le previsioni, resta solo nella spiegazione
 MOTIVATION_MIN_PLAYED = 8  # a inizio stagione la classifica non dice ancora niente
 BAD_WEATHER = (4.0, 35.0)  # pioggia in mm nelle due ore di gioco, vento medio in km/h
-WEATHER_EFFECT = 0.04  # meno gol attesi con pioggia o vento forti
+WEATHER_EFFECT = 0.0  # D156: sul passato non migliora le previsioni, resta solo nella spiegazione
 
 
 @dataclass(frozen=True)
@@ -334,7 +334,7 @@ def weather_adjustment(rain_mm: float | None, wind_kmh: float | None) -> Adjustm
         return Adjustment()
     if rain_mm >= BAD_WEATHER[0] or wind_kmh >= BAD_WEATHER[1]:
         what = f"pioggia forte ({rain_mm:.0f} mm)" if rain_mm >= BAD_WEATHER[0] else f"vento forte ({wind_kmh:.0f} km/h)"
-        return Adjustment(1 - WEATHER_EFFECT, 1 - WEATHER_EFFECT, (f"Meteo previsto: {what}, di solito si segna un po' meno.",))
+        return Adjustment(1 - WEATHER_EFFECT, 1 - WEATHER_EFFECT, (f"Meteo previsto: {what}, sul passato non cambia i gol (D156).",))
     return Adjustment()
 
 
