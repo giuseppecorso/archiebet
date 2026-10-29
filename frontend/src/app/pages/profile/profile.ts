@@ -2,11 +2,13 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed } from '@angular/core';
 import { MIO_ARCHIE_TABS } from '../../core/sections';
 import { dayLabel, pct } from '../../core/format';
+import { AccountCard } from '../../shared/account-card';
 import { CoinsCard } from '../../shared/coins-card';
 import { Subnav } from '../../shared/subnav';
 
 interface ProfileOut {
   username: string;
+  display_name: string | null;
   since: string;
   bets: number;
   won: number;
@@ -35,7 +37,7 @@ const ICONS: Record<string, string> = { prima: '🎯', dieci: '📒', serie: '�
 /** Il tuo profilo (D161): chi sei, monete, specialità, traguardi, andamento, squadra del cuore, classifica tra amici. */
 @Component({
   selector: 'ab-profile',
-  imports: [CoinsCard, Subnav],
+  imports: [AccountCard, CoinsCard, Subnav],
   template: `
     <h1 class="title page-title">Il mio Archie</h1>
     <ab-subnav [items]="tabs" label="Il mio Archie" />
@@ -44,10 +46,10 @@ const ICONS: Record<string, string> = { prima: '🎯', dieci: '📒', serie: '�
       <section class="panel box who">
         <img src="archie-512.png" alt="" width="56" height="56" />
         <div>
-          <h2 class="title name">{{ p.username }}</h2>
+          <h2 class="title name">{{ p.display_name || p.username }}</h2>
           <p class="muted small">Gioca con Archie da {{ day(p.since).toLowerCase() }} · {{ p.bets }} giocate · {{ p.won }} vinte · {{ p.lost }} perse</p>
           @if (p.specialty; as s) {
-            <p class="spec">La tua specialità: <strong>{{ s.name }}</strong> <span class="muted small">({{ s.won }} azzeccati su {{ s.closed }})</span></p>
+            <p class="spec">La tua specialità: <strong>{{ s.name }}</strong>&nbsp;<span class="muted small">({{ s.won }} azzeccati su {{ s.closed }})</span></p>
           } @else {
             <p class="muted small">La tua specialità compare dopo 5 pronostici chiusi dello stesso tipo.</p>
           }
@@ -55,6 +57,7 @@ const ICONS: Record<string, string> = { prima: '🎯', dieci: '📒', serie: '�
       </section>
 
       <ab-coins-card />
+      <ab-account-card />
 
       <section class="panel box">
         <h2 class="title box-title">Traguardi</h2>

@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException, Request, Response, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.auth.deps import CurrentUser, DbSession
 from app.auth.limiter import limiter
-from app.auth.service import authenticate, close_session, open_session
+from app.auth.service import authenticate, close_session, open_session, set_password
 from app.config import get_settings
 from app.models import User
 
@@ -58,3 +60,47 @@ def logout(request: Request, response: Response, db: DbSession) -> None:
 @router.get("/me")
 def me(user: CurrentUser) -> UserOut:
     return UserOut.of(user)
+
+
+# --- Account (D162): nome da mostrare, email, cambio password ---
+
+class AccountOut(BaseModel):
+    username: str
+    display_name: str | None
+    email: str | None
+    created_at: datetime
+
+
+class AccountIn(BaseModel):
+    display_name: str | None = Field(None, max_length=60)
+    email: str | None = Field(None, max_length=120, pattern=r"^$|^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+class PasswordIn(BaseModel):
+    old: str
+    new: str = Field(min_length=10, max_length=200)
+
+
+def _account(user: User) -> AccountOut:
+    return AccountOut(username=user.username, display_name=user.display_name, email=user.email, created_at=user.created_at)
+
+
+@router.get("/account")
+def account(user: CurrentUser) -> AccountOut:
+    return _account(user)
+
+
+@router.put("/account")
+def update_account(body: AccountIn, user: CurrentUser, db: DbSession) -> AccountOut:
+    user.display_name = (body.display_name or "").strip() or None
+    user.email = (body.email or "").strip().lower() or None
+    db.commit()
+    return _account(user)
+
+
+@router.post("/password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(body: PasswordIn, user: CurrentUser, db: DbSession) -> None:
+    """Cambia la password (serve quella vecchia); chiude tutte le sessioni: si rientra con la nuova."""
+    if authenticate(db, user.username, body.old) is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "La password attuale non è giusta")
+    set_password(db, user.username, body.new)

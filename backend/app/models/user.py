@@ -14,6 +14,8 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+    display_name: Mapped[str | None] = mapped_column(String(60))  # nome da mostrare (D162), facoltativo
+    email: Mapped[str | None] = mapped_column(String(120))  # facoltativa, solo per contatti futuri
     premium_paid_until: Mapped[datetime | None] = mapped_column(UTCDateTime)  # mesi riscattati con gli ArchieCoins o pagati (D159)
 
 

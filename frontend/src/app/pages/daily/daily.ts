@@ -98,34 +98,29 @@ import { slipImage } from './slip-image';
       </section>
 
       @if (d.history.length) {
-        <section class="panel box" aria-labelledby="hi-title">
-          <h2 id="hi-title" class="title box-title">Archivio delle schedine</h2>
-          <ul class="history">
+        <details class="archive">
+          <summary class="title">Archivio delle schedine <span class="muted small">({{ d.history.length }})</span></summary>
+          <div class="cork small-cork">
             @for (s of d.history; track s.id) {
-              <li [attr.data-status]="s.status">
-                <details>
-                  <summary>
-                    <span>{{ s.title }} · {{ dayLabel(s.period + 'T12:00:00') }}</span>
-                    <span class="small">
-                      @for (l of s.legs; track l.match_id + l.market) { <span [attr.data-status]="l.status" class="dot"></span> }
-                      <strong>{{ stamp(s.status) }}</strong>
-                    </span>
-                  </summary>
-                  <ul class="arch-legs">
-                    @for (l of s.legs; track l.match_id + l.market) {
-                      <li [attr.data-status]="l.status">
-                        <span class="mark">{{ mark(l.status) }}</span>
-                        <span><a [routerLink]="['/partite', l.match_id]">{{ l.home }} – {{ l.away }}</a>
-                          @if (l.score) { <strong>{{ l.score }}</strong> }
-                          <span class="muted small"> · {{ capital(l.event) }} · quota {{ fmtOdds(l.price) }}</span></span>
-                      </li>
-                    }
-                  </ul>
-                </details>
-              </li>
+              <article class="note mini" [attr.data-status]="s.status">
+                <header>
+                  <h2>{{ s.title }}</h2>
+                  <span class="when">{{ dayLabel(s.period + 'T12:00:00') }}</span>
+                </header>
+                <ol>
+                  @for (l of s.legs; track l.match_id + l.market) {
+                    <li [attr.data-status]="l.status">
+                      <span class="m">{{ l.home }} – {{ l.away }} @if (l.score) { <strong class="score">{{ l.score }}</strong> }</span>
+                      <span class="e">{{ capital(l.event) }}</span>
+                      <span class="mark" aria-hidden="true">{{ mark(l.status) }}</span>
+                    </li>
+                  }
+                </ol>
+                <span class="stamp" [attr.data-status]="s.status">{{ stamp(s.status) }}</span>
+              </article>
             }
-          </ul>
-        </section>
+          </div>
+        </details>
       }
     } @else if (data.isLoading()) {
       <p class="muted">Carico la bacheca…</p>

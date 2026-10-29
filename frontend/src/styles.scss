@@ -387,3 +387,21 @@ body {
     display: none; /* sul telefono basta il titolo */
   }
 }
+
+/* Spazio interno uguale per tutti i riquadri: le scritte non toccano mai i bordi */
+.box {
+  padding: 16px 18px;
+}
+th:first-child,
+td:first-child {
+  padding-left: 10px;
+}
+th:last-child,
+td:last-child {
+  padding-right: 10px;
+}
+@media (max-width: 600px) {
+  .box {
+    padding: 14px 14px;
+  }
+}

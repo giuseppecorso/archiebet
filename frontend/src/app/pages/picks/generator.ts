@@ -149,7 +149,7 @@ function nextDays(n: number): PickOption[] {
   styles: `
     :host { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 12px; align-items: start; }
     @media (max-width: 860px) { :host { grid-template-columns: 1fr; } }
-    .box { padding: 10px 14px; }
+    .box { padding: 16px 18px; }
     h2 { margin: 0 0 8px; font-size: 16px; color: var(--amber); }
     .chips { display: flex; flex-wrap: wrap; gap: 4px; }
     .chip { min-height: 30px; padding: 1px 12px; font: inherit; font-size: 13px; font-weight: 600; color: var(--text-2); background: transparent; border: 1px solid var(--line-strong); border-radius: 15px; cursor: pointer; }

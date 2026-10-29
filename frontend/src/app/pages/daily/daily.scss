@@ -117,3 +117,11 @@ li[data-status='lost'] strong { color: var(--loss); }
 .arch-legs .mark { width: 14px; }
 .arch-legs li[data-status='won'] .mark { color: var(--win, #3ddc84); }
 .arch-legs li[data-status='lost'] .mark { color: var(--loss); }
+
+.archive { margin-top: 16px; }
+.archive > summary { padding: 12px 4px; font-size: 18px; color: var(--amber); cursor: pointer; }
+.small-cork { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.note.mini { padding: 14px 16px 18px; font-size: 13px; transform: none; }
+.note.mini h2 { font-size: 18px; }
+.note.mini .stamp { top: 40%; font-size: 22px; }
+.note.mini .score { margin-left: 4px; }
