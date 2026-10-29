@@ -57,7 +57,7 @@ function nextDays(n: number): PickOption[] {
         <label>Numero partite della multipla
           <span class="legs-row">
             <button type="button" class="chip" [class.on]="auto()" [attr.aria-pressed]="auto()" (click)="auto.set(!auto()); lockNote.set(null)" title="Archie aggiunge partite finché la multipla esce abbastanza spesso per il livello">Decide Archie</button>
-            <input type="number" inputmode="numeric" min="1" max="30" [value]="lockedLegs() ? '' : legs()" [placeholder]="lockedLegs() ? 'auto' : ''" [readonly]="!!lockedLegs()" [class.locked]="!!lockedLegs()" (focus)="lockedLegs() && lockNote.set(lockedLegs())" (click)="lockedLegs() && lockNote.set(lockedLegs())" (input)="legs.set(clamp(+$any($event.target).value))" aria-label="Numero di partite" />
+            <input type="number" inputmode="numeric" min="1" max="30" [value]="lockedLegs() ? '' : legs()" [placeholder]="lockedLegs() ? 'auto' : ''" [readonly]="!!lockedLegs()" [class.locked]="!!lockedLegs()" (focus)="takeLegs()" (click)="takeLegs()" (input)="legs.set(clamp(+$any($event.target).value))" aria-label="Numero di partite" />
           </span>
         </label>
       </div>
@@ -242,6 +242,14 @@ export class Generator {
   protected readonly lockedLegs = computed(() =>
     this.auto() ? 'È attivo «Decide Archie»: toccalo per spegnerlo e scegliere tu quante partite.' : null);
   protected readonly lockNote = signal<string | null>(null);
+
+  /** Toccare il numero di partite vuol dire sceglierle: "Decide Archie" si spegne da solo */
+  protected takeLegs(): void {
+    if (this.auto()) {
+      this.auto.set(false);
+      this.lockNote.set(null);
+    }
+  }
   /** Con il moltiplicatore il livello lo sceglie Archie */
   protected readonly levelNote = computed(() => {
     const t = this.target();
