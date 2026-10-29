@@ -1,6 +1,17 @@
 # ArchieBet — Stato del progetto
 
-Ultimo aggiornamento: 2026-10-27
+Ultimo aggiornamento: 2026-10-29
+
+## Più precisione e un'app da usare con gli amici (2026-10-28/29)
+
+- [x] **D163: lo studio parte dai gol attesi del mercato** (Pinnacle pre-partita) dove ci sono le quote: il miglioramento più grande del progetto (taratura +0,067, conferma +0,050 di log loss per partita). Altrove resta lo studio puro.
+- [x] Prove che **non passano** (regole scritte prima dei dati): D156 peso dei giocatori, qualità dei titolari, motivazione, meteo (motivazione e meteo tolti dai numeri); D160 ricalibrazione (per poco: si ripete a fine stagione sopra lo studio con il mercato); D164 pi-rating + gradient boosting.
+- [x] Bacheca: pazza della settimana, sistemone 4 su 6, "Gioca", archivio a foglietti con i risultati, notifiche push alle 10 (D157-D158).
+- [x] Una sola giocata (niente reale/simulata, niente limiti), **ArchieCoins**, Premium con prova di 15 giorni (abbonamenti spenti finché non ci sono i pagamenti) (D159); **Profilo** con specialità, traguardi, classifica tra amici, andamento; dati personali e cambio password in Impostazioni (D161-D162).
+- [x] Pagina partita a schede (Pronostici · Numeri · Squadre), consigli su tiri/angoli/cartellini; Fammi una multipla con tasto Genera, moltiplicatore da… a…, più giorni e campionati; gufo Archie come logo e icona; banner per installare l'app.
+- [ ] Verdetti dal vivo: Occasioni 300, angoli e cartellini 300, Archie tifoso 150×2; D160 di nuovo a fine stagione 2026/27.
+- [ ] Da decidere (spese): quote Pinnacle per più campionati (OddsPapi a pagamento), server Hetzner, pagamenti per il Premium (chiedere prima ad API-Football per iscritto, D159).
+- Test: 555 backend + 34 frontend, tutti verdi (2026-10-29).
 
 ## Studio provato sul passato (2026-10-27)
 
