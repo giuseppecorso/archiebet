@@ -19,6 +19,7 @@
       <h1 class="title team-name">{{ m.home.name }}</h1>
       @if (scorers('home'); as s) { <p class="head-scorers">⚽ {{ s }}</p> }
       <ab-form-badges [outcomes]="outcomes('home')" [team]="m.home.name" />
+      @if (rankOf(m.home.id); as r) { <p class="head-rank">{{ r.rank }}° in classifica · {{ r.points }} pt</p> }
     </div>
 
     <div class="center">
@@ -52,6 +53,7 @@
       <h1 class="title team-name">{{ m.away.name }}</h1>
       @if (scorers('away'); as s) { <p class="head-scorers">⚽ {{ s }}</p> }
       <ab-form-badges [outcomes]="outcomes('away')" [team]="m.away.name" />
+      @if (rankOf(m.away.id); as r) { <p class="head-rank">{{ r.rank }}° in classifica · {{ r.points }} pt</p> }
     </div>
   </section>
 
@@ -223,11 +225,14 @@
   }
 
   @if (tab() === 'numeri') {
+  @if (!derived.value()?.length && !numbers.value()?.length && !players.value()?.length && !lineups.value()?.length) {
+    <section class="panel box"><p class="muted">Per questo campionato non ci sono ancora numeri dettagliati: tiri, angoli e cartellini attesi e tiri dei giocatori ci sono per Serie A e B; multigol e combo compaiono quando Archie ha studiato la partita.</p></section>
+  }
   @if (d.match.status === 'scheduled' && derived.value()?.length) {
     <section class="panel box derived" aria-labelledby="dv-title">
       <div class="box-head">
         <h2 id="dv-title" class="title box-title">Multigol e combo più probabili</h2>
-        <span class="trial-tag" title="Calcolate dal mercato (1X2 e Under/Over 2.5 di Pinnacle) con il modello dei gol: non ancora provate sul passato">stima</span>
+        <span class="trial-tag" title="Calcolate dai gol attesi (del mercato se ci sono le quote, altrimenti dello studio di Archie): non ancora provate sul passato">stima</span>
       </div>
       <div class="dv-cols">
         @for (g of ['Multigol', 'Combo']; track g) {

@@ -103,3 +103,11 @@ def test_saved_study_keeps_the_market_name(db):
 
     src = inspect.getsource(study_match)
     assert '"market": p.market' in src and '"market": market is not None' not in src
+
+
+def test_derived_falls_back_to_the_study_without_odds(logged_client, seeded, db):  # noqa: F811
+    mid = match_id(db, "Palermo", "Bari")
+    db.add(MatchStudy(match_id=mid, computed_at=datetime.now(UTC), data={"lam": 1.4, "mu": 1.0, "picks": []}))
+    db.commit()
+    rows = logged_client.get(f"/api/picks/match/{mid}/derived").json()
+    assert rows and all(0 < r["probability"] < 1 for r in rows)

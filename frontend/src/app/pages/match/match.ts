@@ -179,6 +179,11 @@ export class MatchPage {
     this.chosenGroup.set(g);
   }
 
+  /** Posizione in classifica di una squadra (dalla classifica del campionato della partita) */
+  protected rankOf(teamId: number) {
+    return this.detail.value()?.standings.find((r) => r.team.id === teamId) ?? null;
+  }
+
   protected marketName(market: string): string {
     return marketLabel(market, this.detail.value()?.match);
   }

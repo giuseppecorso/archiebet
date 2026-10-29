@@ -177,10 +177,18 @@ def match_derived(match_id: int, _: CurrentUser, db: DbSession) -> list[DerivedO
     if match is None:
         raise HTTPException(404, "Partita non trovata")
     picks = {p.market: p for p in match_market_picks(db, match, get_settings().radar_bookmaker_list)}
-    if "1X2" not in picks or picks["1X2"].source == MODEL_SOURCE:
-        return []  # senza un mercato di riferimento la stima non avrebbe base
-    p = picks["1X2"].probabilities
-    over = picks["OU2.5"].probabilities.get("over") if "OU2.5" in picks else None
+    if "1X2" in picks and picks["1X2"].source != MODEL_SOURCE:
+        p = picks["1X2"].probabilities
+        over = picks["OU2.5"].probabilities.get("over") if "OU2.5" in picks else None
+    else:  # senza quote: dai gol attesi dello studio di Archie (D169)
+        from app.forecast.live import outcome_probabilities
+        from app.models import MatchStudy
+
+        study = db.get(MatchStudy, match_id)
+        if study is None or "lam" not in study.data:
+            return []
+        p = outcome_probabilities(study.data["lam"], study.data["mu"])
+        over = p["over"]
     return [DerivedOut(group=d.group, label=d.label, probability=round(d.probability, 4), fair_odds=round(d.fair_odds, 2))
             for d in derived_lines(p["1"], p["2"], over)]
 
