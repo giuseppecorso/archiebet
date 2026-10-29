@@ -247,3 +247,18 @@ def test_match_picks_and_analysis_endpoints(logged_client, db, monkeypatch):
     logged_client.post(f"/api/fan/match/{m.id}/analysis")  # ancora fresca: nessuna nuova chiamata
     assert len(calls) == 1
     assert logged_client.get(f"/api/fan/match/{m.id}/analysis").json()["summary"] == "Partita equilibrata."
+
+
+def test_speculative_headlines_cannot_sack_a_coach():
+    from app.ai.news import guarded_kind
+
+    assert guarded_kind("allenatore_nuovo", "Sarri esonero Atalanta nuove quote: salta un'altra panchina in A?") == "allenatore_in_bilico"
+    assert guarded_kind("allenatore_nuovo", "Atalanta, ufficiale: esonerato Sarri") == "allenatore_nuovo"
+    assert guarded_kind("assente", "Scamacca out, a rischio la sfida con la Fiorentina") == "assente"
+
+
+def test_confirmed_sackings_stay_facts_even_with_a_question():
+    from app.ai.news import guarded_kind
+
+    assert guarded_kind("allenatore_nuovo", "Qui Picerno, esonerato De Luca: con la Salernitana tocca a un ex granata?") == "allenatore_nuovo"
+    assert guarded_kind("allenatore_nuovo", "Sampdoria, accordo vicino con D'Angelo: firma a un passo?") == "allenatore_in_bilico"

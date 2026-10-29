@@ -368,13 +368,16 @@ BOOK_GAP = 0.05  # lo studio crede almeno 5 punti più della quota: prova D144, 
 def book_probability(book: dict, market: str, selection: str, bookmakers: Sequence[str]) -> float | None:
     """Probabilità della quota senza margine (proporzionale), media tra i bookmaker che quotano tutto il mercato."""
     sels = MARKETS[market].selections if market in MARKETS else {}
+    if len(sels) < 2:
+        return None  # un solo esito (multigol, combo): il margine non si può togliere
+    covered = 2 if market == "DC" else 1  # doppia chance: ogni risultato vince due esiti su tre, le probabilità sommano a 2
     found = []
     for bm in bookmakers:
         prices = book.get(bm, {}).get(market, {})
         if sels and set(prices) >= set(sels) and all(prices[s] > 1 for s in sels):
             implied = {s: 1 / prices[s] for s in sels}
             total = sum(implied.values())
-            found.append(implied[selection] / total)
+            found.append(covered * implied[selection] / total)
     return sum(found) / len(found) if found else None
 
 

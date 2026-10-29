@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.adapters.news import FeedItem, NewsAdapter
 from app.ai.client import Ai, AiError
 from app.ai.gateway import BudgetExceeded
-from app.ai.news import FactText, NewsText, extract_facts, judge_match
+from app.ai.news import guarded_kind, FactText, NewsText, extract_facts, judge_match
 from app.forecast.history_sim import Estimate, clustered_mean
 from app.forecast.picks import italian_consensus
 from app.forecast.radar_service import load_book_odds
@@ -111,7 +111,7 @@ def process_news(db: Session, ai: Ai, model: str, now: datetime, report: NewsRep
             if team_id is None or not 1 <= f.item <= len(batch):
                 continue  # squadra fuori lista o notizia inesistente: si scarta
             item = batch[f.item - 1]
-            db.add(TeamFact(team_id=team_id, news_id=item.id, kind=f.kind, player=f.player, detail=f.detail[:300],
+            db.add(TeamFact(team_id=team_id, news_id=item.id, kind=guarded_kind(f.kind, item.title), player=f.player, detail=f.detail[:300],
                             published_at=item.published_at, created_at=now))  # fmt: skip
             report.facts += 1
         for item in batch:

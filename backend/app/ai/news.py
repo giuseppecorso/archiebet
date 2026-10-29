@@ -60,7 +60,11 @@ Regole:
 - player: il giocatore o l'allenatore coinvolto, se c'è; altrimenti null.
 - detail: una frase breve in italiano (al massimo 20 parole), con i tempi se scritti (es. "fuori 3 settimane").
 - item: il numero della notizia da cui viene il fatto.
-- Un esonero è allenatore_nuovo anche se il sostituto non è ancora scelto; allenatore_in_bilico solo se è a rischio.
+- Un esonero è allenatore_nuovo SOLO se la notizia lo dà per avvenuto (es. "esonerato", "ufficiale", "il club ha sollevato");
+  se è un'ipotesi è allenatore_in_bilico.
+- Titoli con una domanda, un'ipotesi o un pronostico ("?", "a rischio", "potrebbe", "verso", "valuta", "ipotesi", "voci",
+  "nuove quote", "si gioca la panchina") NON sono fatti avvenuti: un allenatore diventa allenatore_in_bilico, un giocatore
+  si ignora salvo che sia scritto chiaramente che non giocherà.
 
 Squadre di Serie A, B e C (attenzione: "Inter" e "Inter U23", "Juventus" e "Juventus U23" ecc. sono squadre diverse; le U23 sono le seconde squadre in Serie C):
 {teams}"""
@@ -75,7 +79,9 @@ per QUESTA partita?
 - strength: "netta" se il fatto è importante (più titolari fuori, allenatore appena cambiato, società nel caos),
   "lieve" se conta poco; "nessuna" quando side è "none".
 - Pesa di più i titolari che le riserve e le notizie più recenti; un rientro annulla un'assenza dello stesso giocatore.
-- reason: una o due frasi in italiano, semplici, che spiegano il giudizio."""
+- reason: una o due frasi in italiano, semplici, che spiegano il giudizio.
+- Racconta i fatti esattamente come sono scritti: "allenatore_in_bilico" vuol dire a rischio, non esonerato. Se due fatti
+  si contraddicono (es. in bilico e nuovo allenatore), di' che la situazione non è chiara. Non aggiungere niente che non sia nei fatti."""
 
 
 @dataclass(frozen=True)
@@ -128,3 +134,16 @@ def judge_match(ai: Ai, model: str, home: str, away: str, kickoff: datetime,
     if j.side == "none" or j.strength == "nessuna":  # coerenza: niente lato senza forza e viceversa
         return Judgment(side="none", strength="nessuna", reason=j.reason)
     return j
+
+
+SPECULATIVE = ("?", "a rischio", "rischia", "potrebbe", "verso ", "valuta", "ipotesi", "voci", "quote", "si gioca la panchina", "in bilico", "possibil")
+CONFIRMED = ("esonerat", "ufficiale", "sollevato", "ha scelto", "addio", "è il nuovo", "nuovo allenatore", "senza allenatore")  # il titolo lo dà per avvenuto
+CERTAIN_ONLY = {"allenatore_nuovo": "allenatore_in_bilico"}  # fatti che un titolo ipotetico non può dare per avvenuti
+
+
+def guarded_kind(kind: str, title: str) -> str:
+    """Il codice controlla l'AI: da un titolo ipotetico un esonero diventa "in bilico" (principio 4)."""
+    low = title.lower()
+    if kind in CERTAIN_ONLY and any(w in low for w in SPECULATIVE) and not any(w in low for w in CONFIRMED):
+        return CERTAIN_ONLY[kind]
+    return kind

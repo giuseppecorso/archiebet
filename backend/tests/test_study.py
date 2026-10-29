@@ -226,3 +226,12 @@ def test_market_goals_and_blend():
     assert blend_with_market(1.2, 1.0, (2.0, 1.0)) == pytest.approx((2.0, 1.0))
     assert blend_with_market(1.2, 1.0, None) == (1.2, 1.0)
     assert blend_with_market(1.0, 1.0, (4.0, 1.0), 0.5) == pytest.approx((2.0, 1.0))
+
+
+def test_book_probability_double_chance_sums_to_two():
+    from app.forecast.study import book_probability
+
+    book = {"pinnacle": {"DC": {"1X": 1.414, "12": 1.313, "X2": 1.657}, "MG1-3": {"yes": 1.5}}}
+    p = book_probability(book, "DC", "1X", ("pinnacle",))
+    assert p == pytest.approx(0.68, abs=0.01)  # prima del fix veniva 34%
+    assert book_probability(book, "MG1-3", "yes", ("pinnacle",)) is None
