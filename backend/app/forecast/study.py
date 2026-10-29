@@ -28,6 +28,7 @@ LEVELS = {  # probabilità di Archie per livello
     "equilibrato": (0.55, 0.72),
     "rischioso": (0.35, 0.55),
 }
+AZZARDO, AZZARDO_RANGE = "azzardo", (0.15, 0.35)  # usato solo per arrivare a un moltiplicatore alto con poche partite
 CONTRADICTED = 0.15  # il campo smentisce se la frequenza osservata sta sotto la soglia del livello di oltre 15 punti
 
 
@@ -216,10 +217,10 @@ def study_picks(
         for sel, p_model in sels.items():
             ev = Evidence(hits(market, sel, home_games, True), len(home_games), hits(market, sel, away_games, False), len(away_games))
             p = archie_probability(p_model, ev)
-            level = level_of(p)
+            level = level_of(p) or (AZZARDO if AZZARDO_RANGE[0] <= p < AZZARDO_RANGE[1] else None)
             if level is None:
                 continue
-            floor = LEVELS[level][0]
+            floor = LEVELS[level][0] if level in LEVELS else AZZARDO_RANGE[0]
             if p_model < floor - MODEL_TOLERANCE:
                 continue  # solo il campo recente lo sostiene: troppo poco
             # Il campo deve essere d'accordo da tutte e due le parti
@@ -245,7 +246,7 @@ def pick_strength(pick: dict) -> float:
     frequency = (hh + ah) / (hn + an) if hn + an else 0.0
     return (pick["p_archie"] + 0.1 * (1 - abs(frequency - pick["p_model"])) + 0.002 * (hn + an)
             + TRAIT_BONUS * len(pick.get("traits", [])) - CAUTION_PENALTY * len(pick.get("caution", []))
-            + MARKET_BONUS * bool(pick.get("market")))
+            + MARKET_BONUS * bool(pick.get("from_market")))
 
 
 MARKET_BONUS = 0.08  # D167: prima i pronostici con i gol del mercato (D163, più affidabili); senza, vincevano i campionati senza quote
@@ -560,7 +561,8 @@ def blend_with_market(lam: float, mu: float, market: tuple[float, float] | None,
 
 # --- Numero di partite e moltiplicatore insieme ---
 
-RANGE_POOL = 18  # si cercano le combinazioni tra i 18 pronostici più solidi (una partita ciascuno)
+NO_MARKET_DOUBT = 0.15  # come perdere circa 14% di probabilità per ogni partita senza quote Pinnacle
+RANGE_POOL = 18  # si cercano le combinazioni tra i 18 pronostici con la quota più vicina a quella che serve (una partita ciascuno)
 
 
 def legs_in_range(ranked: Sequence[tuple[int, dict]], n: int, low: float, high: float | None) -> list[tuple[int, dict]]:
@@ -568,14 +570,29 @@ def legs_in_range(ranked: Sequence[tuple[int, dict]], n: int, low: float, high: 
     stanno, la più probabile. Se nessuna ci sta, quella con la quota più vicina all'intervallo."""
     from itertools import combinations
 
-    pool = list(ranked[:RANGE_POOL])
+    per_leg = math.log(math.sqrt(low * high) if high else low) / n  # quota di ogni partita che serve, in scala logaritmica
+    pool = sorted(ranked, key=lambda c: abs(math.log(leg_price(c[1])) - per_leg))[:RANGE_POOL]  # i pronostici con la quota giusta
     if len(pool) <= n:
         return pool
     best, best_key = None, None
     for combo in combinations(pool, n):
         total = math.prod(leg_price(p) for _, p in combo)
         miss = max(0.0, math.log(low) - math.log(total), math.log(total) - math.log(high) if high else 0.0)
-        key = (miss, -sum(math.log(p["p_archie"]) for _, p in combo))  # prima dentro l'intervallo, poi la più probabile
+        doubt = sum(not p.get("from_market") for _, p in combo) * NO_MARKET_DOUBT  # senza mercato lo studio è meno preciso (D163)
+        key = (round(miss, 6), -sum(math.log(p["p_archie"]) for _, p in combo) + doubt)  # prima dentro l'intervallo, poi la più probabile
         if best_key is None or key < best_key:
             best, best_key = list(combo), key
     return best or []
+
+
+def closest_per_match(studies: Sequence[tuple[int, list[dict]]], n: int, low: float, high: float | None,
+                      exclude: set[int] = frozenset()) -> list[tuple[int, dict]]:
+    """Per ogni partita, tra tutti i pronostici di ogni livello, quello con la quota più vicina a quella che serve
+    (n partite tra low e high): così Archie arriva a qualunque moltiplicatore, abbassando la probabilità se serve."""
+    per_leg = math.log(math.sqrt(low * high) if high else low) / n
+    out = []
+    for match_id, picks in studies:
+        if match_id in exclude or not picks:
+            continue
+        out.append((match_id, min(picks, key=lambda p: (abs(math.log(leg_price(p)) - per_leg), -pick_strength(p)))))
+    return out

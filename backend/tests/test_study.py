@@ -254,4 +254,22 @@ def test_market_backed_picks_come_first():
     from app.forecast.study import pick_strength
 
     base = {"p_archie": 0.55, "p_model": 0.55, "evidence": [5, 10, 5, 10]}
-    assert pick_strength(base | {"market": True}) > pick_strength(base | {"caution": ["x"]} | {"market": True}) > pick_strength(base)
+    assert pick_strength(base | {"from_market": True}) > pick_strength(base | {"caution": ["x"]} | {"from_market": True}) > pick_strength(base)
+
+
+def test_legs_in_range_looks_beyond_the_safest_picks():
+    from app.forecast.study import legs_in_range
+
+    safe = [(i, {"prices": {"sisal": 1.3}, "p_archie": 0.75}) for i in range(30)]  # tanti pronostici sicuri a quota bassa
+    bold = [(100 + i, {"prices": {"sisal": 1.8}, "p_archie": 0.55}) for i in range(4)]
+    chosen = legs_in_range(safe + bold, 4, 10.0, 12.0)
+    assert sorted(i for i, _ in chosen) == [100, 101, 102, 103]  # 1,8^4 = 10,5: solo così si arriva
+
+
+def test_closest_per_match_crosses_levels():
+    from app.forecast.study import closest_per_match
+
+    picks = [{"prices": {"sisal": 1.3}, "p_archie": 0.75, "level": "cauto", "evidence": [5, 10, 5, 10], "p_model": 0.75},
+             {"prices": {"sisal": 2.6}, "p_archie": 0.38, "level": "rischioso", "evidence": [5, 10, 5, 10], "p_model": 0.38}]  # fmt: skip
+    [(_, chosen)] = closest_per_match([(1, picks)], 3, 15.0, 20.0)  # servono circa 2,6 a partita
+    assert chosen["level"] == "rischioso"

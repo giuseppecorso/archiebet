@@ -94,3 +94,12 @@ def test_fixed_legs_with_a_multiplier(logged_client, seeded, db):  # noqa: F811
     db.commit()
     body = logged_client.get("/api/study/multiple?horizon=week&legs=1&target=1.75&target_max=1.9").json()
     assert len(body["legs"]) == 1 and body["total_odds"] == 1.8 and body["target_reached"]
+
+
+def test_saved_study_keeps_the_market_name(db):
+    """Regressione D167: il campo del mercato del pronostico non deve mai essere sovrascritto."""
+    from app.forecast.study_service import study_match
+    import inspect
+
+    src = inspect.getsource(study_match)
+    assert '"market": p.market' in src and '"market": market is not None' not in src
