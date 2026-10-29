@@ -235,3 +235,16 @@ def test_book_probability_double_chance_sums_to_two():
     p = book_probability(book, "DC", "1X", ("pinnacle",))
     assert p == pytest.approx(0.68, abs=0.01)  # prima del fix veniva 34%
     assert book_probability(book, "MG1-3", "yes", ("pinnacle",)) is None
+
+
+def test_legs_in_range_picks_the_most_likely_combo_inside():
+    from app.forecast.study import legs_in_range
+
+    def p(price, prob):
+        return {"prices": {"sisal": price}, "p_archie": prob}
+
+    ranked = [(1, p(1.5, 0.66)), (2, p(2.0, 0.5)), (3, p(3.0, 0.33)), (4, p(1.3, 0.77)), (5, p(4.0, 0.22))]
+    chosen = legs_in_range(ranked, 2, 4.0, 6.5)
+    assert sorted(i for i, _ in chosen) == [1, 3]  # 1,5 × 3 = 4,5: dentro e la più probabile (66% × 33%)
+    far = legs_in_range(ranked, 2, 100.0, None)
+    assert sorted(i for i, _ in far) == [3, 5]  # nessuna arriva a 100: la più alta (12)

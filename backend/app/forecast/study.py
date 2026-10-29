@@ -552,3 +552,26 @@ def blend_with_market(lam: float, mu: float, market: tuple[float, float] | None,
     if market is None or weight <= 0:
         return lam, mu
     return lam ** (1 - weight) * market[0] ** weight, mu ** (1 - weight) * market[1] ** weight
+
+
+# --- Numero di partite e moltiplicatore insieme ---
+
+RANGE_POOL = 18  # si cercano le combinazioni tra i 18 pronostici più solidi (una partita ciascuno)
+
+
+def legs_in_range(ranked: Sequence[tuple[int, dict]], n: int, low: float, high: float | None) -> list[tuple[int, dict]]:
+    """Esattamente n pronostici con la quota totale tra low e high (high None = nessun tetto): tra le combinazioni che ci
+    stanno, la più probabile. Se nessuna ci sta, quella con la quota più vicina all'intervallo."""
+    from itertools import combinations
+
+    pool = list(ranked[:RANGE_POOL])
+    if len(pool) <= n:
+        return pool
+    best, best_key = None, None
+    for combo in combinations(pool, n):
+        total = math.prod(leg_price(p) for _, p in combo)
+        miss = max(0.0, math.log(low) - math.log(total), math.log(total) - math.log(high) if high else 0.0)
+        key = (miss, -sum(math.log(p["p_archie"]) for _, p in combo))  # prima dentro l'intervallo, poi la più probabile
+        if best_key is None or key < best_key:
+            best, best_key = list(combo), key
+    return best or []

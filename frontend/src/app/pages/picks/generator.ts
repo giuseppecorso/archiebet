@@ -19,7 +19,11 @@ const LEVELS: { key: Level; label: string; hint: string }[] = [
 ];
 
 /** Livello dei pronostici per un moltiplicatore: poche partite e non troppo azzardate */
-export function levelFor(target: number): Level {
+export function levelFor(target: number, legs: number | null = null): Level {
+  if (legs) {
+    const perLeg = target ** (1 / legs); // quota media di ogni partita per arrivare al moltiplicatore
+    return perLeg <= 1.45 ? 'cauto' : perLeg <= 1.9 ? 'equilibrato' : 'rischioso';
+  }
   return target <= 3 ? 'cauto' : target <= 20 ? 'equilibrato' : 'rischioso';
 }
 
@@ -52,7 +56,7 @@ function nextDays(n: number): PickOption[] {
       <div class="row">
         <label>Numero partite della multipla
           <span class="legs-row">
-            <button type="button" class="chip" [class.on]="auto()" [attr.aria-pressed]="auto()" [disabled]="!!target()" (click)="auto.set(!auto()); lockNote.set(null)" title="Archie aggiunge partite finché la multipla esce abbastanza spesso per il livello">Decide Archie</button>
+            <button type="button" class="chip" [class.on]="auto()" [attr.aria-pressed]="auto()" (click)="auto.set(!auto()); lockNote.set(null)" title="Archie aggiunge partite finché la multipla esce abbastanza spesso per il livello">Decide Archie</button>
             <input type="number" inputmode="numeric" min="1" max="30" [value]="lockedLegs() ? '' : legs()" [placeholder]="lockedLegs() ? 'auto' : ''" [readonly]="!!lockedLegs()" [class.locked]="!!lockedLegs()" (focus)="lockedLegs() && lockNote.set(lockedLegs())" (click)="lockedLegs() && lockNote.set(lockedLegs())" (input)="legs.set(clamp(+$any($event.target).value))" aria-label="Numero di partite" />
           </span>
         </label>
@@ -70,7 +74,7 @@ function nextDays(n: number): PickOption[] {
           <input type="number" inputmode="decimal" min="0.5" step="0.5" [value]="stake()" (input)="stake.set(+$any($event.target).value || 0)" />
         </label>
       </div>
-      <p class="hint muted small">Moltiplicatore: quante volte vuoi moltiplicare la puntata, da… a… (da 8 a 12 = 5 € diventano 40-60 €; il secondo si può lasciare vuoto). Se lo scrivi, partite e livello li sceglie Archie.</p>
+      <p class="hint muted small">Moltiplicatore: quante volte vuoi moltiplicare la puntata, da… a… (da 8 a 12 = 5 € diventano 40-60 €; il secondo si può lasciare vuoto). Con «Decide Archie» sceglie lui quante partite; spento, usa esattamente il numero che scrivi.</p>
       @if ((lockedLegs() || target()) && lockNote(); as note) {
         <p class="lock-note" role="status">{{ note }}</p>
       }
@@ -223,26 +227,29 @@ export class Generator {
   /** Le scelte come parametri della richiesta (senza le partite già proposte) */
   private readonly choices = computed(() => {
     const target = this.target();
-    const params = new URLSearchParams({ level: target ? levelFor(target) : this.level(), legs: String(this.legs()) });
+    const params = new URLSearchParams({ level: target ? levelFor(target, this.auto() ? null : this.legs()) : this.level(), legs: String(this.legs()) });
     if (this.days().length) params.set('days', [...this.days()].sort().join(','));
     else params.set('horizon', 'week');
     if (this.leagues().length) params.set('competitions', this.leagues().join(','));
     if (this.theme() !== 'tutte') params.set('theme', this.theme());
     if (this.target()) params.set('target', String(this.target()));
     if (this.target() && this.targetMax()) params.set('target_max', String(this.targetMax()));
-    else if (this.auto()) params.set('auto', 'true');
+    if (this.auto()) params.set('auto', 'true'); // con il moltiplicatore: Archie decide quante partite; spento = esattamente quelle scelte
     return params.toString();
   });
   /** Le scelte usate dall'ultima multipla: cambiano solo con "Genera" */
   /** Perché il numero di partite non si può scrivere (null = si può) */
   protected readonly lockedLegs = computed(() =>
-    this.target() ? 'Con il moltiplicatore le partite le sceglie Archie: cancella il moltiplicatore per scegliere tu quante.'
-    : this.auto() ? 'È attivo «Decide Archie»: toccalo per spegnerlo e scegliere tu quante partite.' : null);
+    this.auto() ? 'È attivo «Decide Archie»: toccalo per spegnerlo e scegliere tu quante partite.' : null);
   protected readonly lockNote = signal<string | null>(null);
   /** Con il moltiplicatore il livello lo sceglie Archie */
   protected readonly levelNote = computed(() => {
     const t = this.target();
-    return t ? `Con il moltiplicatore il livello lo sceglie Archie: per ${t} usa pronostici ${levelFor(t)} (cauto fino a 3, equilibrato fino a 20, rischioso oltre).` : '';
+    if (!t) return '';
+    const lv = levelFor(t, this.auto() ? null : this.legs());
+    return this.auto()
+      ? `Con il moltiplicatore il livello lo sceglie Archie: per ${t} usa pronostici ${lv}.`
+      : `${this.legs()} partite per arrivare a ${t}: Archie usa pronostici ${lv} e sceglie la combinazione più probabile.`;
   });
   protected readonly leagueOptions = computed<PickOption[]>(() => {
     const all = (this.competitions.value() ?? []).map((c) => ({ value: c.code, label: c.name, group: c.country }));

@@ -45,9 +45,9 @@ def test_target_odds_adds_legs_until_reached(logged_client, seeded, db):  # noqa
     db.add(MatchStudy(match_id=match_id(db, "Milan", "Inter"), computed_at=now, data={"picks": [pick("GG", "yes", 0.6) | {"prices": {"sisal": 1.8}}]}))
     db.add(MatchStudy(match_id=match_id(db, "Palermo", "Bari"), computed_at=now, data={"picks": [pick("OU2.5", "under", 0.58)]}))
     db.commit()
-    body = logged_client.get("/api/study/multiple?horizon=week&target=1.5").json()
+    body = logged_client.get("/api/study/multiple?horizon=week&auto=true&target=1.5").json()
     assert len(body["legs"]) == 1 and body["total_odds"] == 1.8 and body["target_reached"]
-    body = logged_client.get("/api/study/multiple?horizon=week&target=50").json()
+    body = logged_client.get("/api/study/multiple?horizon=week&auto=true&target=50").json()
     assert len(body["legs"]) == 2 and not body["target_reached"]  # solo due partite: a 50 non ci arriva
     assert body["total_odds"] == round(1.8 / 0.58, 2)  # dove manca la quota vale quella giusta dello studio
 
@@ -85,3 +85,12 @@ def test_headlines_give_the_strongest_pick_per_match(logged_client, seeded, db):
     db.commit()
     body = logged_client.get("/api/study/headlines?horizon=week").json()
     assert body[str(mid)]["event"] == "GG yes"
+
+
+def test_fixed_legs_with_a_multiplier(logged_client, seeded, db):  # noqa: F811
+    now = datetime.now(UTC)
+    db.add(MatchStudy(match_id=match_id(db, "Milan", "Inter"), computed_at=now, data={"picks": [pick("GG", "yes", 0.6) | {"prices": {"sisal": 1.8}}]}))
+    db.add(MatchStudy(match_id=match_id(db, "Palermo", "Bari"), computed_at=now, data={"picks": [pick("OU2.5", "under", 0.58) | {"prices": {"sisal": 1.7}}]}))
+    db.commit()
+    body = logged_client.get("/api/study/multiple?horizon=week&legs=1&target=1.75&target_max=1.9").json()
+    assert len(body["legs"]) == 1 and body["total_odds"] == 1.8 and body["target_reached"]

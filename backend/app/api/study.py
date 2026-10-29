@@ -10,7 +10,7 @@ from app.api.football import BOOKMAKER_LABELS, MatchCard, _news_counts, match_ca
 from app.api.picks import ROME, Horizon, horizon_window
 from app.auth.deps import CurrentUser, DbSession, PremiumUser
 from app.betting.calc import market_name
-from app.forecast.study import LEVELS, THEMES, auto_legs, choose_multiple, leg_price, theme_market, theme_match, up_to_target, within_range
+from app.forecast.study import LEVELS, THEMES, auto_legs, choose_multiple, leg_price, legs_in_range, theme_market, theme_match, up_to_target, within_range
 from app.forecast.study_service import _aware, load_studies
 from app.ingest.teams import CUP_COUNTRY
 from app.models import Match, MatchStudy
@@ -102,6 +102,8 @@ def study_multiple(
             if theme_match(theme, m.competition.tier, m.competition.country == CUP_COUNTRY, news.get(m.id, 0))]  # fmt: skip
     if auto and not target:
         chosen = auto_legs(choose_multiple(pool, level, MAX_LEGS, skip), level)
+    elif target and not auto:  # numero di partite e moltiplicatore insieme: la combinazione più probabile dentro l'intervallo
+        chosen = legs_in_range(choose_multiple(pool, level, MAX_LEGS, skip), legs, target, target_max if target_max and target_max >= target else None)
     elif target and target_max and target_max >= target:
         chosen = within_range(choose_multiple(pool, level, MAX_LEGS, skip), target, target_max)
     elif target:
