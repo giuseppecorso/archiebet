@@ -264,7 +264,7 @@ def choose_multiple(studies: Sequence[tuple[int, list[dict]]], level: str, n: in
 
 # --- Correzioni prudenti dello studio: notizie, motivazione, meteo (D138, non provate sul passato) ---
 
-NEWS_EFFECT = {"netta": 0.06, "lieve": 0.03}  # gol attesi: +x a chi le notizie favoriscono, −x all'altra
+NEWS_EFFECT = {"netta": 0.0, "lieve": 0.0}  # D166: le notizie non spostano i numeri finché la verifica dal vivo (D105) non dice che servono
 MOTIVATION_EFFECT = 0.0  # D156: sul passato non migliora le previsioni, resta solo nella spiegazione
 MOTIVATION_MIN_PLAYED = 8  # a inizio stagione la classifica non dice ancora niente
 BAD_WEATHER = (4.0, 35.0)  # pioggia in mm nelle due ore di gioco, vento medio in km/h
@@ -283,10 +283,10 @@ class Adjustment:
 
 def news_adjustment(side: str, strength: str, reason: str, home: str, away: str) -> Adjustment:
     effect = NEWS_EFFECT.get(strength, 0.0)
-    if side not in ("home", "away") or not effect:
+    if side not in ("home", "away") or strength not in NEWS_EFFECT:
         return Adjustment()
     team = home if side == "home" else away
-    text = f"Notizie: favoriscono {team} ({strength}). {reason}".strip()
+    text = f"Notizie (solo informazione, non cambiano i numeri): favoriscono {team} ({strength}). {reason}".strip()
     return Adjustment(1 + effect, 1 - effect, (text,)) if side == "home" else Adjustment(1 - effect, 1 + effect, (text,))
 
 

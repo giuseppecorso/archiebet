@@ -217,8 +217,8 @@ def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict
     context = [f"Forma nelle ultime 5 di campionato: {home} {form_home or '—'}, {away} {form_away or '—'}.", *adjustment.reasons]
     if market is not None:
         context.append(f"Gol attesi dal mercato (Pinnacle): {market[0]:.1f} – {market[1]:.1f}. Sul passato unire lo studio al mercato migliora le previsioni (D163); primo tempo e fatti del campo restano di Archie.")
-    if (adjustment.home, adjustment.away) != (1.0, 1.0):
-        context.append("Le notizie correggono di poco i gol attesi (prudente, in verifica). Classifica, meteo e assenze sono solo informazione: sul passato non migliorano le previsioni (D156).")
+    if adjustment.reasons:
+        context.append("Notizie, classifica, meteo e assenze sono solo informazione: sul passato non migliorano le previsioni (D156), le notizie sono in verifica dal vivo (D166).")
     caution = caution or {}
     team_traits = {"home": traits(games, m.home_team_id, home), "away": traits(games, m.away_team_id, away)}
     picks = []

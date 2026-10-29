@@ -100,10 +100,10 @@ def test_study_markets_settle_and_have_names():
 # --- Correzioni prudenti: notizie, motivazione, meteo (D138) ---
 
 
-def test_news_adjustment_moves_expected_goals():
+def test_news_are_only_information():
     adj = st.news_adjustment("away", "netta", "Il Brescia perde il bomber.", "Brescia", "Cittadella")
-    assert (adj.home, adj.away) == pytest.approx((0.94, 1.06))
-    assert adj.reasons[0].startswith("Notizie: favoriscono Cittadella (netta)")
+    assert (adj.home, adj.away) == (1.0, 1.0)  # D166: non spostano i numeri
+    assert adj.reasons[0].startswith("Notizie (solo informazione, non cambiano i numeri): favoriscono Cittadella (netta)")
     assert st.news_adjustment("none", "", "", "A", "B") == st.Adjustment()
 
 
@@ -125,7 +125,7 @@ def test_weather_and_chaining():
     assert st.weather_adjustment(0.5, 10.0) == st.Adjustment()
     assert st.weather_adjustment(None, None) == st.Adjustment()
     both = st.news_adjustment("home", "lieve", "", "A", "B").then(st.weather_adjustment(6.0, 0.0))
-    assert both.home == pytest.approx(1.03) and len(both.reasons) == 2  # le notizie pesano ancora, il meteo no
+    assert both.home == 1.0 and len(both.reasons) == 2  # notizie e meteo: solo spiegazione
 
 
 def test_scorecard_compares_promised_and_won():
