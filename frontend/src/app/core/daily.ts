@@ -15,6 +15,8 @@ export interface DailyLeg {
   /** Quota al momento della pubblicazione */
   price: number;
   status: 'open' | 'won' | 'lost' | 'void';
+  /** Risultato finale, quando la partita è finita */
+  score?: string | null;
 }
 
 export interface DailySlip {

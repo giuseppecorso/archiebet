@@ -109,3 +109,11 @@ li[data-status='lost'] strong { color: var(--loss); }
 .next {
   margin: 4px 0 14px;
 }
+
+.history details { width: 100%; }
+.history summary { display: flex; justify-content: space-between; gap: 8px; cursor: pointer; list-style: none; }
+.arch-legs { margin: 8px 0 4px; padding: 0; list-style: none; font-size: 13px; }
+.arch-legs li { display: flex; gap: 8px; padding: 3px 0; }
+.arch-legs .mark { width: 14px; }
+.arch-legs li[data-status='won'] .mark { color: var(--win, #3ddc84); }
+.arch-legs li[data-status='lost'] .mark { color: var(--loss); }

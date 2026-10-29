@@ -38,7 +38,7 @@ import { slipImage } from './slip-image';
                 <li [attr.data-status]="l.status">
                   <a [routerLink]="['/partite', l.match_id]" class="m">{{ l.home }} – {{ l.away }}</a>
                   <span class="e">{{ capital(l.event) }}</span>
-                  <span class="meta">{{ dayLabel(l.kickoff_at) }} {{ time(l.kickoff_at) }} · {{ pct(l.p) }} · quota {{ fmtOdds(l.price) }}</span>
+                  <span class="meta">{{ dayLabel(l.kickoff_at) }} {{ time(l.kickoff_at) }} · {{ pct(l.p) }} · quota {{ fmtOdds(l.price) }}@if (l.score) { · <strong>finita {{ l.score }}</strong> }</span>
                   <span class="mark" aria-hidden="true">{{ mark(l.status) }}</span>
                 </li>
               }
@@ -99,15 +99,29 @@ import { slipImage } from './slip-image';
 
       @if (d.history.length) {
         <section class="panel box" aria-labelledby="hi-title">
-          <h2 id="hi-title" class="title box-title">Le ultime chiuse</h2>
+          <h2 id="hi-title" class="title box-title">Archivio delle schedine</h2>
           <ul class="history">
             @for (s of d.history; track s.id) {
               <li [attr.data-status]="s.status">
-                <span>{{ s.title }} · {{ dayLabel(s.period + 'T12:00:00') }}</span>
-                <span class="small">
-                  @for (l of s.legs; track l.match_id + l.market) { <span [attr.data-status]="l.status" class="dot" [title]="l.home + ' – ' + l.away + ': ' + l.event"></span> }
-                  <strong>{{ stamp(s.status) }}</strong>
-                </span>
+                <details>
+                  <summary>
+                    <span>{{ s.title }} · {{ dayLabel(s.period + 'T12:00:00') }}</span>
+                    <span class="small">
+                      @for (l of s.legs; track l.match_id + l.market) { <span [attr.data-status]="l.status" class="dot"></span> }
+                      <strong>{{ stamp(s.status) }}</strong>
+                    </span>
+                  </summary>
+                  <ul class="arch-legs">
+                    @for (l of s.legs; track l.match_id + l.market) {
+                      <li [attr.data-status]="l.status">
+                        <span class="mark">{{ mark(l.status) }}</span>
+                        <span><a [routerLink]="['/partite', l.match_id]">{{ l.home }} – {{ l.away }}</a>
+                          @if (l.score) { <strong>{{ l.score }}</strong> }
+                          <span class="muted small"> · {{ capital(l.event) }} · quota {{ fmtOdds(l.price) }}</span></span>
+                      </li>
+                    }
+                  </ul>
+                </details>
               </li>
             }
           </ul>

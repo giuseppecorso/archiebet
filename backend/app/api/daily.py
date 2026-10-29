@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from app.auth.deps import CurrentUser, DbSession
 from app.forecast.daily import KINDS, LOST, OPEN, ROME, WON, stats
-from app.models import DailySlip
+from app.models import DailySlip, Match, MatchStatus
 
 router = APIRouter(prefix="/api/daily", tags=["daily"])
 HISTORY = 30
@@ -26,6 +26,7 @@ class DailyLegOut(BaseModel):
     p: float  # probabilità di Archie (per il CLV: quella giusta di Pinnacle)
     price: float  # quota al momento della pubblicazione
     status: str  # open | won | lost | void
+    score: str | None = None  # risultato finale della partita, quando è finita
 
 
 class DailySlipOut(BaseModel):
@@ -67,27 +68,31 @@ class DailyOut(BaseModel):
     history: list[DailySlipOut]  # le ultime chiuse
 
 
-def _out(s: DailySlip) -> DailySlipOut:
+def _out(s: DailySlip, scores: dict[int, str] | None = None) -> DailySlipOut:
     k = KINDS[s.kind]
+    scores = scores or {}
     return DailySlipOut(id=s.id, kind=s.kind, title=k.title, period=s.period, published_at=s.published_at, singles=k.singles, system=k.system,
-                        legs=[DailyLegOut(**leg) for leg in s.legs], total_odds=s.total_odds, win_probability=s.win_probability, status=s.status)  # fmt: skip
+                        legs=[DailyLegOut(**leg, score=scores.get(leg["match_id"])) for leg in s.legs], total_odds=s.total_odds, win_probability=s.win_probability, status=s.status)  # fmt: skip
 
 
 @router.get("")
 def daily(_: CurrentUser, db: DbSession) -> DailyOut:
     slips = list(db.scalars(select(DailySlip).order_by(DailySlip.published_at.desc(), DailySlip.id.desc())))
+    today = datetime.now(UTC).astimezone(ROME).date().isoformat()
     board, seen = [], set()
-    for s in slips:
+    for s in slips:  # in bacheca l'ultima di ogni tipo, se è di oggi o ancora in corso; le altre vanno nell'archivio
         if s.kind not in seen:
             seen.add(s.kind)
-            board.append(s)
+            if s.period == today or s.status == OPEN:
+                board.append(s)
     board.sort(key=lambda s: list(KINDS).index(s.kind))
-    today = datetime.now(UTC).astimezone(ROME).date().isoformat()
+    ids = {leg["match_id"] for s in slips for leg in s.legs}
+    scores = {m.id: f"{m.home_goals}-{m.away_goals}" for m in db.scalars(select(Match).where(Match.id.in_(ids))) if m.home_goals is not None and m.status == MatchStatus.FINISHED}
     legs = [leg for s in slips if s.period == today for leg in s.legs]
     per_kind = stats(slips)
     return DailyOut(
-        board=[_out(s) for s in board],
+        board=[_out(s, scores) for s in board],
         today=TodayOut(legs_won=sum(leg["status"] == WON for leg in legs), legs_closed=sum(leg["status"] in (WON, LOST) for leg in legs), legs_total=len(legs)),
         stats=[KindStatsOut(kind=k, title=KINDS[k].title, **vars(v)) for k, v in per_kind.items()],
-        history=[_out(s) for s in slips if s.status != OPEN][:HISTORY],
+        history=[_out(s, scores) for s in slips if s.status != OPEN and s not in board][:HISTORY],
     )
