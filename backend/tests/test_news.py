@@ -262,3 +262,15 @@ def test_confirmed_sackings_stay_facts_even_with_a_question():
 
     assert guarded_kind("allenatore_nuovo", "Qui Picerno, esonerato De Luca: con la Salernitana tocca a un ex granata?") == "allenatore_nuovo"
     assert guarded_kind("allenatore_nuovo", "Sampdoria, accordo vicino con D'Angelo: firma a un passo?") == "allenatore_in_bilico"
+
+
+def test_player_facts_must_match_the_squad():
+    from app.ingest.news import name_tokens, plays_for
+
+    squads = {1: name_tokens("D. Vlahović") | name_tokens("Moise Kean"), 2: name_tokens("Paulo Dybala"), 3: name_tokens("Lautaro Martínez")}
+    assert not plays_for(squads, 1, "assente", "Dybala")  # gioca nella Roma, non nella Fiorentina
+    assert plays_for(squads, 1, "assente", "Kean")
+    assert plays_for(squads, 3, "assente", "Lautaro")  # il nome di battesimo basta
+    assert plays_for(squads, 1, "assente", "Kvaratskhelia")  # sconosciuto (infortunato lungo, altra lega): si tiene
+    assert plays_for(squads, 1, "squalifica", "Allegri")  # allenatore: non è in nessuna rosa, si tiene
+    assert plays_for(squads, 9, "assente", "Mario Rossi")  # squadra senza rosa (Serie C): si tiene

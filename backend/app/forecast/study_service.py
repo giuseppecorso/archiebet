@@ -214,11 +214,9 @@ def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict
     away_games = played(games, m.away_team_id, False, m.season)
     home, away = m.home_team.name, m.away_team.name
     form_home, form_away = form(games, m.home_team_id), form(games, m.away_team_id)
-    context = [f"Forma nelle ultime 5 di campionato: {home} {form_home or '—'}, {away} {form_away or '—'}.", *adjustment.reasons]
+    context = [f"Ultime 5 partite (V vinta, N pari, P persa): {home} {form_home or '—'}, {away} {form_away or '—'}.", *adjustment.reasons]
     if market is not None:
-        context.append(f"Gol attesi dal mercato (Pinnacle): {market[0]:.1f} – {market[1]:.1f}. Sul passato unire lo studio al mercato migliora le previsioni (D163); primo tempo e fatti del campo restano di Archie.")
-    if adjustment.reasons:
-        context.append("Notizie, classifica, meteo e assenze sono solo informazione: sul passato non migliorano le previsioni (D156), le notizie sono in verifica dal vivo (D166).")
+        context.append(f"Secondo le quote dei bookmaker la partita vale circa {market[0]:.1f} gol per {home} e {market[1]:.1f} per {away}: Archie parte da qui.")
     caution = caution or {}
     team_traits = {"home": traits(games, m.home_team_id, home), "away": traits(games, m.away_team_id, away)}
     picks = []
@@ -236,7 +234,7 @@ def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict
         warned = list(caution.get(favored_side(p.market, p.selection) or "", []))
         p_book = book_probability(book, p.market, p.selection, PLAYABLE)
         if p_book is not None and p.p_archie - p_book >= BOOK_GAP:
-            warned.append(f"⚠ Il bookmaker non è d'accordo: la quota dice {p_book:.0%}. Sul passato, in questi casi ha avuto ragione quasi sempre lui.")
+            warned.append(f"⚠ Le quote dei bookmaker sono meno ottimiste: danno il {p_book:.0%}. Quando non sono d'accordo, di solito hanno ragione loro.")
         picks.append({
             "market": p.market, "selection": p.selection, "level": p.level, "event": p.event,
             "p_model": round(p.p_model, 4), "p_archie": round(p.p_archie, 4),
@@ -351,7 +349,7 @@ def _save_study(db: Session, m: Match, fit: DixonColesFit, games: Sequence[Match
 
 
 CUP_NOTE = ("Coppa europea: la forza delle squadre viene da un solo modello con tutti i campionati, collegati dalle partite "
-            "europee degli ultimi anni (prova D146). Forma e fatti del campo vengono dal campionato di ciascuna.")
+            "europee degli ultimi anni. Forma e risultati recenti vengono dal campionato di ciascuna.")
 
 
 def _refresh_cups(db: Session, matches: Sequence[Match], now: datetime, books: dict, insights: dict, weather, log) -> int:

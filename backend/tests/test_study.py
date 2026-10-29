@@ -50,7 +50,7 @@ def test_picks_need_model_and_field_agreeing():
     first = by[("1T_TGH0.5", "over")]
     assert first.event == "Brescia segna nel primo tempo"
     assert first.evidence == st.Evidence(10, 10, 10, 10)
-    assert "10 su 10 partite in casa del Brescia" in first.reasons[0]
+    assert "10 su 10 nelle ultime partite in casa di Brescia" in first.reasons[1]
     # Vittoria dell'ospite: il modello non ci crede e il campo nemmeno → mai proposta
     assert ("1X2", "2") not in by
     # Troppe poche partite: nessun pronostico
@@ -103,7 +103,7 @@ def test_study_markets_settle_and_have_names():
 def test_news_are_only_information():
     adj = st.news_adjustment("away", "netta", "Il Brescia perde il bomber.", "Brescia", "Cittadella")
     assert (adj.home, adj.away) == (1.0, 1.0)  # D166: non spostano i numeri
-    assert adj.reasons[0].startswith("Notizie (solo informazione, non cambiano i numeri): favoriscono Cittadella (netta)")
+    assert adj.reasons[0] == "Dalle notizie: Il Brescia perde il bomber."
     assert st.news_adjustment("none", "", "", "A", "B") == st.Adjustment()
 
 

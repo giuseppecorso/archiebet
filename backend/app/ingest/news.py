@@ -2,6 +2,7 @@
 se poi le quote si muovono verso il suo giudizio."""
 
 import logging
+import unicodedata
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -101,6 +102,7 @@ def process_news(db: Session, ai: Ai, model: str, now: datetime, report: NewsRep
     """Fatti dalle notizie non ancora lette, a blocchi di 40."""
     teams = italian_teams(db, now)
     by_name = {normalize(name): team_id for team_id, name in teams.items()}
+    squad_of = squads(db, now)
     todo = list(db.scalars(select(NewsItem).where(NewsItem.processed_at.is_(None), NewsItem.published_at >= now - ITEMS_MAX_AGE)
                           .order_by(NewsItem.published_at)))  # fmt: skip
     for start in range(0, len(todo), BATCH):
@@ -111,6 +113,8 @@ def process_news(db: Session, ai: Ai, model: str, now: datetime, report: NewsRep
             if team_id is None or not 1 <= f.item <= len(batch):
                 continue  # squadra fuori lista o notizia inesistente: si scarta
             item = batch[f.item - 1]
+            if not plays_for(squad_of, team_id, f.kind, f.player):
+                continue  # il giocatore non gioca in quella squadra (es. Dybala attribuito alla Fiorentina): si scarta
             db.add(TeamFact(team_id=team_id, news_id=item.id, kind=guarded_kind(f.kind, item.title), player=f.player, detail=f.detail[:300],
                             published_at=item.published_at, created_at=now))  # fmt: skip
             report.facts += 1
@@ -118,6 +122,48 @@ def process_news(db: Session, ai: Ai, model: str, now: datetime, report: NewsRep
             item.processed_at = now
         db.commit()
         report.processed += len(batch)
+
+
+PLAYER_KINDS = ("assente", "rientro", "squalifica")  # fatti su un giocatore che si possono controllare con la rosa
+SQUAD_LEAGUES = (135, 136)  # Serie A e B: i giocatori di ogni partita sono nella cache di API-Football
+
+
+def name_tokens(name: str) -> set[str]:
+    """Parti del nome normalizzate, almeno 3 lettere ("Lautaro Martínez" → {"lautaro", "martinez"}, "Loftus-Cheek" → {"loftus", "cheek"})."""
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().lower()
+    for ch in ".-'":
+        plain = plain.replace(ch, " ")
+    return {t for t in plain.split() if len(t) >= 3}
+
+
+def squads(db: Session, now: datetime) -> dict[int, set[str]]:
+    """Squadra del database → parti dei nomi dei giocatori scesi in campo con lei nella stagione in corso (Serie A e B)."""
+    from app.adapters.cache import FileCache
+    from app.config import get_settings
+    from app.ingest.af_stats import load_player_games
+    from app.models import TeamAlias
+
+    season = now.year if now.month >= 7 else now.year - 1
+    af_to_db = {int(a.alias): a.team_id for a in db.scalars(select(TeamAlias).where(TeamAlias.source == "api-football")) if a.alias.isdigit()}
+    cache = FileCache(get_settings().data_cache_dir, "api-football")
+    out: dict[int, set[str]] = {}
+    for league in SQUAD_LEAGUES:
+        for g in load_player_games(cache, league, season):
+            team = af_to_db.get(g.team)
+            if team is not None:
+                out.setdefault(team, set()).update(name_tokens(g.name))
+    return out
+
+
+def plays_for(squads_by_team: dict[int, set[str]], team_id: int, kind: str, player: str | None) -> bool:
+    """Un fatto su un giocatore si scarta solo con la prova che gioca altrove: il nome è nella rosa di un'altra squadra e
+    non in quella indicata (es. Dybala attribuito alla Fiorentina). Nomi sconosciuti, allenatori e infortunati lunghi restano."""
+    if kind not in PLAYER_KINDS or not player:
+        return True
+    tokens = name_tokens(player)
+    if not tokens or tokens & squads_by_team.get(team_id, set()):
+        return True
+    return not any(tokens & squad for other, squad in squads_by_team.items() if other != team_id)
 
 
 def team_facts(db: Session, team_id: int, now: datetime) -> list[TeamFact]:

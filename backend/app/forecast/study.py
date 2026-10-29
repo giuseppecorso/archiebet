@@ -200,9 +200,9 @@ def _count(k: int, n: int) -> str:
 
 def explain(event: str, ev: Evidence, home: str, away: str, p_model: float, p_archie: float) -> tuple[str, ...]:
     return (
-        f"«{event[0].upper() + event[1:]}»: è successo in {_count(ev.home_hits, ev.home_n)} partite in casa del {home} "
-        f"e in {_count(ev.away_hits, ev.away_n)} in trasferta del {away}.",
-        f"Il modello dei gol dà il {p_model:.0%}; con i fatti del campo Archie arriva al {p_archie:.0%}.",
+        f"Archie lo stima al {p_archie:.0%}: su 10 partite così, succede circa {round(p_archie * 10)} volte.",
+        f"Com'è andata di recente: {_count(ev.home_hits, ev.home_n)} nelle ultime partite in casa di {home}, "
+        f"{_count(ev.away_hits, ev.away_n)} nelle ultime in trasferta di {away}.",
     )
 
 
@@ -291,7 +291,7 @@ def news_adjustment(side: str, strength: str, reason: str, home: str, away: str)
     if side not in ("home", "away") or strength not in NEWS_EFFECT:
         return Adjustment()
     team = home if side == "home" else away
-    text = f"Notizie (solo informazione, non cambiano i numeri): favoriscono {team} ({strength}). {reason}".strip()
+    text = f"Dalle notizie: {reason}".strip()
     return Adjustment(1 + effect, 1 - effect, (text,)) if side == "home" else Adjustment(1 - effect, 1 + effect, (text,))
 
 
@@ -339,7 +339,7 @@ def weather_adjustment(rain_mm: float | None, wind_kmh: float | None) -> Adjustm
         return Adjustment()
     if rain_mm >= BAD_WEATHER[0] or wind_kmh >= BAD_WEATHER[1]:
         what = f"pioggia forte ({rain_mm:.0f} mm)" if rain_mm >= BAD_WEATHER[0] else f"vento forte ({wind_kmh:.0f} km/h)"
-        return Adjustment(1 - WEATHER_EFFECT, 1 - WEATHER_EFFECT, (f"Meteo previsto: {what}, sul passato non cambia i gol (D156).",))
+        return Adjustment(1 - WEATHER_EFFECT, 1 - WEATHER_EFFECT, (f"Meteo previsto: {what}.",))
     return Adjustment()
 
 
