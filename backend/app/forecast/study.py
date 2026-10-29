@@ -244,7 +244,11 @@ def pick_strength(pick: dict) -> float:
     hh, hn, ah, an = pick["evidence"]
     frequency = (hh + ah) / (hn + an) if hn + an else 0.0
     return (pick["p_archie"] + 0.1 * (1 - abs(frequency - pick["p_model"])) + 0.002 * (hn + an)
-            + TRAIT_BONUS * len(pick.get("traits", [])) - CAUTION_PENALTY * len(pick.get("caution", [])))
+            + TRAIT_BONUS * len(pick.get("traits", [])) - CAUTION_PENALTY * len(pick.get("caution", []))
+            + MARKET_BONUS * bool(pick.get("market")))
+
+
+MARKET_BONUS = 0.08  # D167: prima i pronostici con i gol del mercato (D163, più affidabili); senza, vincevano i campionati senza quote
 
 
 def choose_multiple(studies: Sequence[tuple[int, list[dict]]], level: str, n: int, exclude: set[int] = frozenset()) -> list[tuple[int, dict]]:

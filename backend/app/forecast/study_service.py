@@ -243,6 +243,7 @@ def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict
             "evidence": [p.evidence.home_hits, p.evidence.home_n, p.evidence.away_hits, p.evidence.away_n],
             "reasons": [*p.reasons, *supporting, *warned, *context], "prices": prices,
             "traits": supporting, "caution": warned, "p_book": round(p_book, 4) if p_book is not None else None,
+            "market": market is not None,  # gol attesi dal mercato (D163)
         })  # fmt: skip
     return {
         "lam": round(lam, 3), "mu": round(mu, 3), "rho": round(fit.rho, 4), "xg": xg is not None,

@@ -248,3 +248,10 @@ def test_legs_in_range_picks_the_most_likely_combo_inside():
     assert sorted(i for i, _ in chosen) == [1, 3]  # 1,5 × 3 = 4,5: dentro e la più probabile (66% × 33%)
     far = legs_in_range(ranked, 2, 100.0, None)
     assert sorted(i for i, _ in far) == [3, 5]  # nessuna arriva a 100: la più alta (12)
+
+
+def test_market_backed_picks_come_first():
+    from app.forecast.study import pick_strength
+
+    base = {"p_archie": 0.55, "p_model": 0.55, "evidence": [5, 10, 5, 10]}
+    assert pick_strength(base | {"market": True}) > pick_strength(base | {"caution": ["x"]} | {"market": True}) > pick_strength(base)
