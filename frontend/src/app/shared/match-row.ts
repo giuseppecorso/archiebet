@@ -1,7 +1,7 @@
 import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatchCard, eventMinute, shortName } from '../core/football';
-import { dayLabel, kickoffTime, odds } from '../core/format';
+import { dayLabel, kickoffTime, odds, pct } from '../core/format';
 import { Crest } from './crest';
 import { liveShort } from '../core/live';
 
@@ -48,6 +48,11 @@ import { liveShort } from '../core/live';
           <div class="line">{{ scorers('home') }}</div>
           <div class="line">{{ scorers('away') }}</div>
         </div>
+      } @else if (!m.odds_1x2 && headline(); as h) {
+        <div class="headline" [title]="'Pronostico dello studio di Archie: ' + h.event">
+          <span class="h-event">{{ capital(h.event) }}</span>
+          <span class="led h-p">{{ pctFmt(h.p_archie) }}</span>
+        </div>
       } @else {
         <div class="odds" [attr.aria-label]="oddsLabel()">
           @for (sel of selections; track sel) {
@@ -77,6 +82,13 @@ import { liveShort } from '../core/live';
 export class MatchRow {
   protected readonly minute = liveShort;
   readonly match = input.required<MatchCard>();
+  /** Il pronostico più solido di Archie: si mostra al posto delle quote quando mancano */
+  readonly headline = input<{ event: string; p_archie: number } | null | undefined>(null);
+  protected readonly pctFmt = pct;
+
+  protected capital(text: string): string {
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
   protected readonly selections = ['1', 'X', '2'] as const;
   protected readonly format = odds;
 

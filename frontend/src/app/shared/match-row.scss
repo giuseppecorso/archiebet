@@ -200,3 +200,22 @@
   border-radius: 3px;
   white-space: nowrap;
 }
+
+/* Pronostico di Archie al posto delle quote che mancano */
+.headline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  max-width: 170px;
+  text-align: right;
+  .h-event {
+    font-size: 12px;
+    line-height: 1.2;
+    color: var(--text-2);
+  }
+  .h-p {
+    font-size: 16px;
+  }
+}

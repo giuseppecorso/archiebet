@@ -34,6 +34,7 @@ class Weights:
     m: float = 0.0  # C3 motivazione
     w: float = 0.0  # C4 meteo
     alpha: float = 1.0  # D160 ricalibrazione: p' ∝ p^alpha in ogni mercato
+    market: float = 0.0  # D163 peso del mercato: λ = λ_studio^(1−w) · λ_mercato^w
 
 
 @dataclass
@@ -45,6 +46,7 @@ class Row:
     lineup: tuple[LineupChange | None, LineupChange | None]
     motivated: tuple[int, int]  # 1 se la squadra lotta per qualcosa e l'avversaria non ha più obiettivi
     bad_weather: int | None  # 1 pioggia o vento forti, 0 no, None meteo sconosciuto
+    market: tuple[float, float] | None = None  # gol attesi del mercato (Pinnacle pre-partita), D163
 
 
 def factors(r: Row, x: Weights) -> tuple[float, float]:
@@ -58,8 +60,22 @@ def factors(r: Row, x: Weights) -> tuple[float, float]:
 
 
 def row_loss(r: Row, x: Weights) -> float:
+    return bt.match_loss(probabilities(r, x), r.p.g)
+
+
+def blended(r: Row, x: Weights) -> tuple[float, float]:
+    """Gol attesi dello studio uniti a quelli del mercato (media geometrica con peso x.market), poi gli altri criteri."""
+    lam, mu = r.lam, r.mu
+    if x.market and r.market is not None:
+        lam = lam ** (1 - x.market) * r.market[0] ** x.market
+        mu = mu ** (1 - x.market) * r.market[1] ** x.market
     fh, fa = factors(r, x)
-    return bt.match_loss(recalibrate(bt.with_field(bt.quick_probs(r.lam * fh, r.mu * fa, r.rho, *r.p.shares), r.p.hits, BASE.prior), x.alpha), r.p.g)
+    return lam * fh, mu * fa
+
+
+def probabilities(r: Row, x: Weights) -> dict[str, dict[str, float]]:
+    lam, mu = blended(r, x)
+    return recalibrate(bt.with_field(bt.quick_probs(lam, mu, r.rho, *r.p.shares), r.p.hits, BASE.prior), x.alpha)
 
 
 def recalibrate(probs: dict[str, dict[str, float]], alpha: float) -> dict[str, dict[str, float]]:
@@ -130,7 +146,8 @@ class _Means:
 
 
 def build_rows(prepared: Sequence[bt.Prepared], games: Sequence[bt.G], apps_by_league: Mapping[int, Sequence[Appearance]],
-               weather: Mapping[tuple[str, int, int], tuple[float, float]]) -> list[Row]:  # fmt: skip
+               weather: Mapping[tuple[str, int, int], tuple[float, float]],
+               market: Mapping[tuple[str, int, int], tuple[float, float]] | None = None) -> list[Row]:  # fmt: skip
     book = PlayerBook(a for apps in apps_by_league.values() for a in apps)
     means = _Means(apps_by_league)
     motivation = motivation_flags(games)
@@ -146,7 +163,8 @@ def build_rows(prepared: Sequence[bt.Prepared], games: Sequence[bt.G], apps_by_l
             lineup.append(lineup_change(book, team, [(a.player, a.position) for a in starters], g.date, m) if len(starters) == 11 else None)
         w = next((weather[k] for d in (0, -1, 1) if (k := ((g.date + timedelta(days=d)).date().isoformat(), g.home, g.away)) in weather), None)
         bad = None if w is None else int(w[0] >= BAD_WEATHER[0] or w[1] >= BAD_WEATHER[1])
-        rows.append(Row(p, *base_goals(p), tuple(lineup), motivation.get(g.id, (0, 0)), bad))
+        mk = next((market[k] for d in (0, -1, 1) if (k := ((g.date + timedelta(days=d)).date().isoformat(), g.home, g.away)) in market), None) if market else None
+        rows.append(Row(p, *base_goals(p), tuple(lineup), motivation.get(g.id, (0, 0)), bad, mk))
     return rows
 
 
@@ -158,6 +176,7 @@ CRITERIA: dict[str, tuple[str, ...]] = {
     "C3 motivazione": ("m",),
     "C4 meteo": ("w",),
     "C5 ricalibrazione (D160)": ("alpha",),
+    "C6 unione con il mercato (D163)": ("market",),
 }
 
 
@@ -169,6 +188,8 @@ def _relevant(r: Row, free: Sequence[str]) -> bool:
         return True
     if "alpha" in free:
         return True
+    if "market" in free:
+        return r.market is not None
     return "w" in free and bool(r.bad_weather)
 
 
@@ -224,7 +245,7 @@ def evaluate(rows: Sequence[Row], name: str, free: Sequence[str], only: Callable
 def run(rows: Sequence[Row], log: Callable[[str], None] = print) -> tuple[list[CriterionResult], CriterionResult | None]:
     results = []
     for name, free in CRITERIA.items():
-        only = (lambda r: r.bad_weather is not None) if free == ("w",) else (lambda r: True)
+        only = (lambda r: r.bad_weather is not None) if free == ("w",) else (lambda r: r.market is not None) if free == ("market",) else (lambda r: True)
         results.append(evaluate(rows, name, free, only, log))
     passing = [f for r, (_, free) in zip(results, CRITERIA.items()) if r.passed for f in free]
     together = evaluate(rows, "Insieme quelli che passano", passing, log=log) if len(passing) > 1 else None
@@ -274,6 +295,37 @@ def load_weather(db) -> dict[tuple[str, int, int], tuple[float, float]]:
     return out
 
 
+def load_market(db) -> dict[tuple[str, int, int], tuple[float, float]]:
+    """Gol attesi del mercato (D163) dalle quote Pinnacle pre-partita di football-data: 1X2 senza margine (Shin) e
+    Under/Over 2.5 (proporzionale), indicizzati come il meteo per (giorno, casa, ospite) con gli id di API-Football."""
+    from collections import defaultdict as dd
+
+    from sqlalchemy import select
+
+    from app.forecast.demargin import proportional, shin
+    from app.forecast.live import fit_rates
+    from app.models import Match, MatchOdds, TeamAlias
+
+    af = {a.team_id: int(a.alias) for a in db.scalars(select(TeamAlias).where(TeamAlias.source == "api-football")) if a.alias.isdigit()}
+    prices: dict[int, dict[str, dict[str, float]]] = dd(lambda: dd(dict))
+    for o in db.scalars(select(MatchOdds).where(MatchOdds.source == "football-data", MatchOdds.bookmaker == "pinnacle", MatchOdds.is_closing.is_(False),
+                                                 MatchOdds.market.in_(("1X2", "OU2.5")))):  # fmt: skip
+        prices[o.match_id][o.market][o.selection] = float(o.price)
+    out: dict[tuple[str, int, int], tuple[float, float]] = {}
+    ids = [mid for mid, mk in prices.items() if len(mk.get("1X2", {})) == 3]
+    for i in range(0, len(ids), 900):
+        for m in db.scalars(select(Match).where(Match.id.in_(ids[i : i + 900]), Match.season >= "2022/23")):
+            h, a = af.get(m.home_team_id), af.get(m.away_team_id)
+            if h is None or a is None:
+                continue
+            x = prices[m.id]["1X2"]
+            p1, _, p2 = shin([x["1"], x["X"], x["2"]])
+            ou = prices[m.id].get("OU2.5", {})
+            p_over = proportional([ou["over"], ou["under"]])[0] if len(ou) == 2 else None
+            out[(m.kickoff_at.date().isoformat(), h, a)] = fit_rates(p1, p2, p_over)
+    return out
+
+
 # --- D156-bis: taratura per fascia di quota giusta ---
 
 BANDS = (("bassa (fino a 1,67)", 0.6, 1.01), ("media (1,67-2,50)", 0.4, 0.6), ("alta (oltre 2,50)", 0.0, 0.4))
@@ -296,8 +348,7 @@ def bands(rows: Sequence[Row], x: Weights = Weights()) -> list[Band]:
     """Ogni esito degli 8 mercati, per fascia di quota giusta: previsto contro successo."""
     items: dict[str, list[tuple[float, int, int]]] = defaultdict(list)
     for r in rows:
-        fh, fa = factors(r, x)
-        probs = recalibrate(bt.with_field(bt.quick_probs(r.lam * fh, r.mu * fa, r.rho, *r.p.shares), r.p.hits, BASE.prior), x.alpha)
+        probs = probabilities(r, x)
         for market in bt.EVAL_MARKETS:
             for sel, p in probs[market].items():
                 name = next(n for n, lo, hi in BANDS if lo <= p < hi)

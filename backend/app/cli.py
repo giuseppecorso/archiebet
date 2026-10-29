@@ -1503,13 +1503,15 @@ def main() -> int:
         with SessionLocal() as db:
             adapter = api_football_adapter(db, get_settings())
             weather = ct.load_weather(db)
+            market = ct.load_market(db)
         fixtures_for = lambda league, season: adapter.fixtures(league, season, _td(days=36500))  # noqa: E731
         games, calendar = bt.load(adapter.cache, fixtures_for)
         games = [g for g in games if g.league in ct.LEAGUES]
         apps = ct.load_appearances(adapter.cache, fixtures_for)
         print(f"partite: {len(games)}, presenze dei giocatori: {sum(len(a) for a in apps.values())}, meteo: {len(weather)}")
         prepared = bt.prepare(games, calendar, (*bt.TUNING, *bt.CONFIRMATION))
-        rows = ct.build_rows(prepared, games, apps, weather)
+        rows = ct.build_rows(prepared, games, apps, weather, market)
+        print(f"con le quote Pinnacle pre-partita: {sum(1 for r in rows if r.market is not None)}")
         print(f"righe: {len(rows)}, con formazioni: {sum(1 for r in rows if all(r.lineup))}, con meteo: {sum(1 for r in rows if r.bad_weather is not None)}")
         results, together = ct.run(rows)
         final = (together or next((r for r in results if r.passed), None))

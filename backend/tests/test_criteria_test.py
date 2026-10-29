@@ -62,3 +62,13 @@ def test_recalibration_sharpens_and_keeps_sums():
     out = recalibrate({"OU2.5": {"over": 0.7, "under": 0.3}}, 2.0)["OU2.5"]
     assert out["over"] == pytest.approx(0.49 / 0.58) and sum(out.values()) == pytest.approx(1.0)
     assert recalibrate({"m": {"a": 0.6, "b": 0.4}}, 1.0) == {"m": {"a": 0.6, "b": 0.4}}
+
+
+def test_market_blend_is_a_geometric_mean():
+    from app.forecast.criteria_test import blended
+
+    r = row(g(1, 0, 1, 2, 1, 0))
+    r.market = (2.0, 0.8)
+    lam, mu = blended(r, Weights(market=0.5))
+    assert lam == pytest.approx((1.4 * 2.0) ** 0.5) and mu == pytest.approx((1.1 * 0.8) ** 0.5)
+    assert blended(r, Weights()) == (1.4, 1.1)

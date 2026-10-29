@@ -108,6 +108,7 @@ describe('ArchieBet: navigazione', () => {
     const harness = await navigateAs('/', true);
     expect(TestBed.inject(Router).url).toBe('/');
     (await nextRequest((r) => r.url.startsWith('/api/matches?view=upcoming'))).flush([]);
+    (await nextRequest('/api/study/headlines?horizon=today')).flush({});
     (await nextRequest('/api/radar')).flush({ threshold: 0.02, max_price: 4, playable: [], simulation_bookmakers: [], upcoming: [], recent: [], live: null, live_secondary: null });
     (await nextRequest('/api/bets')).flush([]);
     (await nextRequest('/api/tv')).flush([

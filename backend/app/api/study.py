@@ -148,3 +148,24 @@ def study_match_picks(match_id: int, _: CurrentUser, db: DbSession) -> dict[str,
 def study_themes(_: CurrentUser) -> dict[str, str]:
     """Temi delle multiple: chiave → nome da mostrare."""
     return THEMES
+
+
+class HeadlineOut(BaseModel):
+    event: str
+    p_archie: float
+
+
+@router.get("/headlines")
+def study_headlines(_: CurrentUser, db: DbSession, horizon: Horizon = "today") -> dict[int, HeadlineOut]:
+    """Per ogni partita dell'orizzonte, il pronostico più solido dello studio (per la Home: righe senza quote)."""
+    from app.forecast.study import pick_strength
+
+    now = datetime.now(UTC)
+    start, end = horizon_window(now, horizon)
+    out = {}
+    for m, d in load_studies(db, start, end):
+        picks = [p for p in d.get("picks", []) if p["level"] in ("cauto", "equilibrato")]
+        if picks:
+            best = max(picks, key=pick_strength)
+            out[m.id] = HeadlineOut(event=best["event"], p_archie=best["p_archie"])
+    return out

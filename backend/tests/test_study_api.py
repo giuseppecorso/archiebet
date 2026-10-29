@@ -77,3 +77,11 @@ def test_average_price_of_the_bookmakers(logged_client, seeded, db):  # noqa: F8
     db.commit()
     legs = {leg["market"]: leg for leg in logged_client.get("/api/study/multiple?horizon=week&legs=5").json()["legs"]}
     assert legs["GG"]["avg_price"] == 1.75 and legs["OU2.5"]["avg_price"] is None
+
+
+def test_headlines_give_the_strongest_pick_per_match(logged_client, seeded, db):  # noqa: F811
+    mid = match_id(db, "Milan", "Inter")
+    db.add(MatchStudy(match_id=mid, computed_at=datetime.now(UTC), data={"picks": [pick("GG", "yes", 0.6), pick("1X2", "2", 0.58)]}))
+    db.commit()
+    body = logged_client.get("/api/study/headlines?horizon=week").json()
+    assert body[str(mid)]["event"] == "GG yes"

@@ -26,7 +26,10 @@ export class Home {
   protected readonly bets = httpResource<Bet[]>(() => '/api/bets', { defaultValue: [] });
 
   /** Partite di oggi, l'Italia in testa, al massimo 12 */
+  /** Il pronostico più solido di Archie per ogni partita di oggi */
+  protected readonly headlines = httpResource<Record<number, { event: string; p_archie: number }>>(() => '/api/study/headlines?horizon=today', { defaultValue: {} });
   protected readonly todayMatches = computed(() => {
+    const picks = this.headlines.value();
     const end = new Date();
     end.setHours(24, 0, 0, 0);
     const groups = this.upcoming.value();
@@ -34,7 +37,8 @@ export class Home {
     return groups
       .flatMap((g) => g.matches)
       .filter((m) => new Date(m.kickoff_at).getTime() < end.getTime())
-      .sort((a, b) => rank(a.competition.code) - rank(b.competition.code) || a.kickoff_at.localeCompare(b.kickoff_at))
+      .filter((m) => !!m.odds_1x2 || !!picks[m.id]) // solo partite con le quote o con un pronostico di Archie
+      .sort((a, b) => rank(a.competition.code) - rank(b.competition.code) || Number(!a.odds_1x2) - Number(!b.odds_1x2) || a.kickoff_at.localeCompare(b.kickoff_at))
       .slice(0, 12);
   });
   protected readonly occasions = computed(() => (this.radar.value()?.upcoming ?? []).filter((o) => !o.secondary).slice(0, 5));

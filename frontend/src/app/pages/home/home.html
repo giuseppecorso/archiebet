@@ -10,7 +10,7 @@
       <a routerLink="/partite" class="small">Tutte le partite</a>
     </div>
     @for (m of todayMatches(); track m.id) {
-      <ab-match-row [match]="m" />
+      <ab-match-row [match]="m" [headline]="headlines.value()[m.id]" />
     } @empty {
       <p class="muted small">{{ upcoming.isLoading() ? 'Carico…' : 'Oggi niente partite nei campionati seguiti.' }} <a routerLink="/partite">Guarda i prossimi giorni</a></p>
     }
