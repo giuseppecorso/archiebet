@@ -215,3 +215,14 @@ def test_within_range_skips_legs_that_overshoot():
     chosen = within_range(ranked, 10, 12)
     assert [i for i, _ in chosen] == [0, 1, 4]  # 9 × 5 = 45 e 9 × 1,5 = 13,5 sono troppo: 9 × 1,2 = 10,8
     assert within_range(ranked, 500, 600) == ranked  # non ci arriva: restano tutti (81 in tutto)
+
+
+def test_market_goals_and_blend():
+    from app.forecast.study import blend_with_market, market_goals
+
+    assert market_goals({"bet365": {"1X2": {"1": 2.0, "X": 3.4, "2": 4.0}}}) is None
+    lam, mu = market_goals({"pinnacle": {"1X2": {"1": 1.72, "X": 4.2, "2": 4.6}, "OU2.5": {"over": 1.4, "under": 3.1}}})
+    assert lam > mu and 2.5 < lam + mu < 4.5  # favorita in casa, partita da molti gol
+    assert blend_with_market(1.2, 1.0, (2.0, 1.0)) == pytest.approx((2.0, 1.0))
+    assert blend_with_market(1.2, 1.0, None) == (1.2, 1.0)
+    assert blend_with_market(1.0, 1.0, (4.0, 1.0), 0.5) == pytest.approx((2.0, 1.0))

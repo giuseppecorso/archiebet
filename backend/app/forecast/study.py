@@ -523,3 +523,29 @@ def choose_varied(studies: Sequence[tuple[int, list[dict]]], level: str, n: int,
         if len(out) == n:
             break
     return out
+
+
+# --- D163: i gol attesi del mercato ---
+
+MARKET_WEIGHT = 1.0  # D163: con le quote Pinnacle pre-partita i gol attesi sono quelli del mercato (peso stimato sul passato)
+
+
+def market_goals(book: dict) -> tuple[float, float] | None:
+    """Gol attesi che riproducono 1X2 (senza margine, Shin) e Under/Over 2.5 di Pinnacle; None senza quote Pinnacle."""
+    from app.forecast.demargin import proportional, shin
+    from app.forecast.live import fit_rates
+
+    pin = book.get("pinnacle", {})
+    x = pin.get("1X2", {})
+    if not all(x.get(k) for k in ("1", "X", "2")):
+        return None
+    p1, _, p2 = shin([x["1"], x["X"], x["2"]])
+    ou = pin.get("OU2.5", {})
+    p_over = proportional([ou["over"], ou["under"]])[0] if ou.get("over") and ou.get("under") else None
+    return fit_rates(p1, p2, p_over)
+
+
+def blend_with_market(lam: float, mu: float, market: tuple[float, float] | None, weight: float = MARKET_WEIGHT) -> tuple[float, float]:
+    if market is None or weight <= 0:
+        return lam, mu
+    return lam ** (1 - weight) * market[0] ** weight, mu ** (1 - weight) * market[1] ** weight

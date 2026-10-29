@@ -66,9 +66,10 @@ def row_loss(r: Row, x: Weights) -> float:
 def blended(r: Row, x: Weights) -> tuple[float, float]:
     """Gol attesi dello studio uniti a quelli del mercato (media geometrica con peso x.market), poi gli altri criteri."""
     lam, mu = r.lam, r.mu
-    if x.market and r.market is not None:
-        lam = lam ** (1 - x.market) * r.market[0] ** x.market
-        mu = mu ** (1 - x.market) * r.market[1] ** x.market
+    w = min(max(x.market, 0.0), 1.0)  # D163: il peso sta tra 0 (solo studio) e 1 (solo mercato), come pre-registrato
+    if w and r.market is not None:
+        lam = lam ** (1 - w) * r.market[0] ** w
+        mu = mu ** (1 - w) * r.market[1] ** w
     fh, fa = factors(r, x)
     return lam * fh, mu * fa
 

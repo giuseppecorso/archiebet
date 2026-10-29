@@ -17,7 +17,9 @@ from app.forecast.study import (
     Played,
     TableSpot,
     BOOK_GAP,
+    blend_with_market,
     book_probability,
+    market_goals,
     favored_side,
     first_half_share,
     half_of,
@@ -203,6 +205,8 @@ def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict
     lam, mu = fit.expected_goals(m.home_team_id, m.away_team_id)
     if xg is not None:
         lam, mu = (1 - XG_WEIGHT) * lam + XG_WEIGHT * xg[0], (1 - XG_WEIGHT) * mu + XG_WEIGHT * xg[1]
+    market = market_goals(book)
+    lam, mu = blend_with_market(lam, mu, market)  # D163: dove ci sono le quote Pinnacle, gol attesi del mercato
     lam, mu = lam * adjustment.home, mu * adjustment.away
     share_home, share_away = shares(games, m.home_team_id, m.away_team_id)
     probs = model_probabilities(lam, mu, fit.rho, share_home, share_away)
@@ -211,6 +215,8 @@ def study_match(m: Match, fit: DixonColesFit, games: Sequence[Match], book: dict
     home, away = m.home_team.name, m.away_team.name
     form_home, form_away = form(games, m.home_team_id), form(games, m.away_team_id)
     context = [f"Forma nelle ultime 5 di campionato: {home} {form_home or '—'}, {away} {form_away or '—'}.", *adjustment.reasons]
+    if market is not None:
+        context.append(f"Gol attesi dal mercato (Pinnacle): {market[0]:.1f} – {market[1]:.1f}. Sul passato unire lo studio al mercato migliora le previsioni (D163); primo tempo e fatti del campo restano di Archie.")
     if (adjustment.home, adjustment.away) != (1.0, 1.0):
         context.append("Le notizie correggono di poco i gol attesi (prudente, in verifica). Classifica, meteo e assenze sono solo informazione: sul passato non migliorano le previsioni (D156).")
     caution = caution or {}
