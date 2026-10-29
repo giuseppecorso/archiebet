@@ -103,7 +103,7 @@ export const MENU: MenuItem[] = [
   { label: 'Home', link: '/', prefixes: ['/'] },
   { label: 'Partite', link: '/partite', prefixes: ['/partite'] },
   { label: 'Pronostici', link: '/pronostici', prefixes: ['/pronostici'] },
-  { label: 'Il mio Archie', link: '/schedine', prefixes: ['/schedine', '/statistiche', '/chiedi'] },
+  { label: 'Il mio Archie', link: '/profilo', prefixes: ['/schedine', '/statistiche', '/chiedi', '/profilo'] },
 ];
 
 /** Schede interne di una voce del menu */
@@ -122,6 +122,7 @@ export const PRONOSTICI_TABS: SubItem[] = [
 ];
 
 export const MIO_ARCHIE_TABS: SubItem[] = [
+  { label: 'Profilo', link: '/profilo' },
   { label: 'Le mie schedine', link: '/schedine', subtree: true },
   { label: 'Statistiche e regolamento', link: '/statistiche' },
 ];

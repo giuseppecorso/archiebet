@@ -30,3 +30,10 @@ def test_premium_gate_only_when_subscriptions_are_on(logged_client, db, monkeypa
     monkeypatch.setattr(get_settings(), "subscriptions_enabled", True)
     assert logged_client.get("/api/study/multiple?horizon=week").status_code == 402  # prova finita
     assert logged_client.get("/api/coins").status_code == 200  # monete e saldo restano visibili
+
+
+def test_profile_and_leaderboard(logged_client):
+    body = logged_client.get("/api/profile").json()
+    assert body["bets"] == 0 and len(body["badges"]) == 6 and body["specialty"] is None
+    board = logged_client.get("/api/profile/leaderboard").json()
+    assert board[0]["me"] and board[0]["coins"] == 0

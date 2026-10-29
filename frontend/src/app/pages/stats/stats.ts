@@ -5,7 +5,6 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { BetGroup, BetSummary, Breakdown, SelectionGroup, SummaryOut, Versus, VersusGroup, euro } from '../../core/bets';
-import { CoinsCard } from '../../shared/coins-card';
 import { num, pct } from '../../core/format';
 import { ShowMore } from '../../shared/show-more';
 
@@ -15,7 +14,7 @@ type Dim = 'by_size' | 'by_market' | 'by_competition' | 'by_bookmaker';
 /** Le mie statistiche: riepilogo, dove vinci e dove perdi, abitudini. Reali e simulate sempre separate. */
 @Component({
   selector: 'ab-stats',
-  imports: [CoinsCard, RouterLink, ShowMore, RulesPanel, Subnav],
+  imports: [RouterLink, ShowMore, RulesPanel, Subnav],
   templateUrl: './stats.html',
   styleUrl: './stats.scss',
 })

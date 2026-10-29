@@ -32,6 +32,7 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', loadComponent: () => import('./pages/home/home').then((m) => m.Home), title: 'Oggi · ArchieBet' },
       { path: 'partite', component: Matches, title: 'Partite · ArchieBet', data: { section: SECTIONS[0] } },
       { path: 'partite/:id', loadComponent: () => import('./pages/match/match').then((m) => m.MatchPage), title: 'Partita · ArchieBet' },
+      { path: 'profilo', loadComponent: () => import('./pages/profile/profile').then((m) => m.ProfilePage), title: 'Il mio profilo · ArchieBet' },
       { path: 'schedine/nuova', loadComponent: () => import('./pages/bets/new-bet').then((m) => m.NewBet), title: 'Registra una giocata · ArchieBet' },
       { path: 'schedine/:id', loadComponent: BUILT['schedine'], title: 'Le mie schedine · ArchieBet' },
       { path: 'radar', redirectTo: () => '/pronostici?tab=occasioni' },

@@ -54,3 +54,11 @@ def test_bands_split_outcomes_by_fair_odds():
     assert [b.name.split()[0] for b in found] == ["bassa", "media", "alta"]
     assert sum(b.n for b in found) == 30 * sum(len(v) for v in bt.quick_probs(1.4, 1.1, 0.0, 0.45, 0.45).values())
     assert all(0 <= b.observed <= 1 and 0 < b.predicted < 1 for b in found)
+
+
+def test_recalibration_sharpens_and_keeps_sums():
+    from app.forecast.criteria_test import recalibrate
+
+    out = recalibrate({"OU2.5": {"over": 0.7, "under": 0.3}}, 2.0)["OU2.5"]
+    assert out["over"] == pytest.approx(0.49 / 0.58) and sum(out.values()) == pytest.approx(1.0)
+    assert recalibrate({"m": {"a": 0.6, "b": 0.4}}, 1.0) == {"m": {"a": 0.6, "b": 0.4}}

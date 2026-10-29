@@ -33,6 +33,7 @@ class Weights:
     c: float = 0.0  # C2 qualità avversaria sui gol subiti
     m: float = 0.0  # C3 motivazione
     w: float = 0.0  # C4 meteo
+    alpha: float = 1.0  # D160 ricalibrazione: p' ∝ p^alpha in ogni mercato
 
 
 @dataclass
@@ -58,7 +59,19 @@ def factors(r: Row, x: Weights) -> tuple[float, float]:
 
 def row_loss(r: Row, x: Weights) -> float:
     fh, fa = factors(r, x)
-    return bt.match_loss(bt.with_field(bt.quick_probs(r.lam * fh, r.mu * fa, r.rho, *r.p.shares), r.p.hits, BASE.prior), r.p.g)
+    return bt.match_loss(recalibrate(bt.with_field(bt.quick_probs(r.lam * fh, r.mu * fa, r.rho, *r.p.shares), r.p.hits, BASE.prior), x.alpha), r.p.g)
+
+
+def recalibrate(probs: dict[str, dict[str, float]], alpha: float) -> dict[str, dict[str, float]]:
+    """Calibrazione a potenza (D160): alpha > 1 allontana le probabilità da 50%, alpha < 1 le avvicina."""
+    if alpha == 1.0:
+        return probs
+    out = {}
+    for market, sels in probs.items():
+        powered = {k: max(v, 1e-12) ** alpha for k, v in sels.items()}
+        total = sum(powered.values())
+        out[market] = {k: v / total for k, v in powered.items()}
+    return out
 
 
 # --- Ingredienti per partita ---
@@ -144,6 +157,7 @@ CRITERIA: dict[str, tuple[str, ...]] = {
     "C2 qualità dei titolari": ("b", "c"),
     "C3 motivazione": ("m",),
     "C4 meteo": ("w",),
+    "C5 ricalibrazione (D160)": ("alpha",),
 }
 
 
@@ -152,6 +166,8 @@ def _relevant(r: Row, free: Sequence[str]) -> bool:
     if {"a", "b", "c"} & set(free) and any(r.lineup):
         return True
     if "m" in free and any(r.motivated):
+        return True
+    if "alpha" in free:
         return True
     return "w" in free and bool(r.bad_weather)
 
@@ -281,7 +297,7 @@ def bands(rows: Sequence[Row], x: Weights = Weights()) -> list[Band]:
     items: dict[str, list[tuple[float, int, int]]] = defaultdict(list)
     for r in rows:
         fh, fa = factors(r, x)
-        probs = bt.with_field(bt.quick_probs(r.lam * fh, r.mu * fa, r.rho, *r.p.shares), r.p.hits, BASE.prior)
+        probs = recalibrate(bt.with_field(bt.quick_probs(r.lam * fh, r.mu * fa, r.rho, *r.p.shares), r.p.hits, BASE.prior), x.alpha)
         for market in bt.EVAL_MARKETS:
             for sel, p in probs[market].items():
                 name = next(n for n, lo, hi in BANDS if lo <= p < hi)

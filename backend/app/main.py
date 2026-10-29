@@ -22,6 +22,7 @@ from app.api.study import router as study_router
 from app.api.daily import router as daily_router
 from app.api.push import router as push_router
 from app.api.coins import router as coins_router
+from app.api.profile import router as profile_router
 from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.jobs import start_scheduler
@@ -45,6 +46,7 @@ app.include_router(study_router)
 app.include_router(daily_router)
 app.include_router(push_router)
 app.include_router(coins_router)
+app.include_router(profile_router)
 app.include_router(bets_router)
 app.include_router(status_router)
 app.include_router(radar_router)
