@@ -96,15 +96,15 @@ export class MatchPage {
   protected readonly study = httpResource<Record<string, StudyLeg[]>>(() => `/api/study/match/${this.id()}`);
   protected readonly studyLegs = computed(() =>
     (['cauto', 'equilibrato', 'rischioso'] as const).flatMap((level) => {
-      const leg = this.study.value()?.[level]?.[0];
+      const leg = this.ok(this.study)?.[level]?.[0];
       return leg ? [{ level, leg }] : [];
     }),
   );
   /** Angoli e cartellini: lo studio non li calcola, restano le probabilità dalle quote (D131) */
-  protected readonly statsSuggestions = computed(() => (this.matchPicks.value()?.suggestions ?? []).filter((s) => /^(COR|CRD)/.test(s.market)));
+  protected readonly statsSuggestions = computed(() => (this.ok(this.matchPicks)?.suggestions ?? []).filter((s) => /^(COR|CRD)/.test(s.market)));
   /** Marcatori nel tabellone in alto (partita in corso o finita) */
   protected scorers(side: 'home' | 'away'): string {
-    return scorerList(this.events.value() ?? undefined, side);
+    return scorerList(this.ok(this.events) ?? undefined, side);
   }
   protected priceList(leg: StudyLeg): [string, number][] {
     return Object.entries(leg.prices);
@@ -117,7 +117,7 @@ export class MatchPage {
   protected readonly derived = httpResource<{ group: string; label: string; probability: number; fair_odds: number }[]>(() => `/api/picks/match/${this.id()}/derived`);
 
   protected derivedOf(group: string) {
-    return (this.derived.value() ?? []).filter((d) => d.group === group).sort((a, b) => b.probability - a.probability);
+    return (this.ok(this.derived) ?? []).filter((d) => d.group === group).sort((a, b) => b.probability - a.probability);
   }
   /** Tiri, angoli e cartellini attesi (D109) */
   protected readonly numbers = httpResource<MatchNumbers[]>(() => `/api/picks/match/${this.id()}/numbers`);
@@ -136,7 +136,7 @@ export class MatchPage {
   /** Partite gemelle (D121): le 100 partite passate più simili e come sono finite */
   protected readonly twins = httpResource<Twins>(() => `/api/lab/twins/${this.id()}`);
   protected readonly playersBySide = computed(() => {
-    const all = this.players.value() ?? [];
+    const all = this.ok(this.players) ?? [];
     const pick = (side: 'casa' | 'ospite') => {
       const list = all.filter((p) => p.side === side);
       return [...list.filter((p) => !p.absent).slice(0, 6), ...list.filter((p) => p.absent)];
@@ -144,7 +144,7 @@ export class MatchPage {
     return [pick('casa'), pick('ospite')];
   });
   protected readonly countTip = countTip;
-  protected readonly playerTips = computed(() => playerTips(this.players.value() ?? []));
+  protected readonly playerTips = computed(() => playerTips(this.ok(this.players) ?? []));
   protected readonly writing = signal(false);
   protected readonly analysisError = signal<string | null>(null);
   protected readonly verdictClass = verdictClass;
@@ -162,7 +162,7 @@ export class MatchPage {
   protected readonly tab = signal<'pronostici' | 'numeri' | 'squadre'>('pronostici');
 
   /** Giocate raggruppate per tipo, una tendina sceglie quale gruppo vedere */
-  protected readonly playGroups = computed(() => [...new Set((this.matchPicks.value()?.markets ?? []).map((mk) => playGroupOf(mk.market)))]);
+  protected readonly playGroups = computed(() => [...new Set((this.ok(this.matchPicks)?.markets ?? []).map((mk) => playGroupOf(mk.market)))]);
   private readonly chosenGroup = signal<string | null>(null);
   protected readonly playGroup = computed(() => {
     const groups = this.playGroups();
@@ -170,7 +170,7 @@ export class MatchPage {
     return g && groups.includes(g) ? g : (groups[0] ?? '');
   });
   protected readonly shownMarkets = computed(() => {
-    const shown = (this.matchPicks.value()?.markets ?? []).filter((mk) => playGroupOf(mk.market) === this.playGroup());
+    const shown = (this.ok(this.matchPicks)?.markets ?? []).filter((mk) => playGroupOf(mk.market) === this.playGroup());
     if (!['Multigol', 'Combo'].includes(this.playGroup())) return shown;
     return [...shown].sort((a, b) => (b.probabilities['yes'] ?? 0) - (a.probabilities['yes'] ?? 0)).slice(0, 3); // solo le 3 più probabili
   });
@@ -182,6 +182,11 @@ export class MatchPage {
   /** Posizione in classifica di una squadra (dalla classifica del campionato della partita) */
   protected rankOf(teamId: number) {
     return this.detail.value()?.standings.find((r) => r.team.id === teamId) ?? null;
+  }
+
+  /** Il valore di una sezione, o undefined se è in errore: una sezione che fallisce non deve svuotare la pagina */
+  protected ok<T>(r: { hasValue(): boolean; value(): T }): T | undefined {
+    return r.hasValue() ? r.value() : undefined;
   }
 
   protected marketName(market: string): string {
@@ -211,7 +216,7 @@ export class MatchPage {
   /** I fatti divisi per squadra: [casa, ospite] */
   protected readonly fanFacts = computed<[FanFact[], FanFact[]]>(() => {
     const d = this.detail.value();
-    const facts = this.fan.value()?.facts ?? [];
+    const facts = this.ok(this.fan)?.facts ?? [];
     if (!d) return [[], []];
     return [facts.filter((f) => f.team_id === d.match.home.id), facts.filter((f) => f.team_id === d.match.away.id)];
   });

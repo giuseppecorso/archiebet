@@ -19,7 +19,7 @@
       <h1 class="title team-name">{{ m.home.name }}</h1>
       @if (scorers('home'); as s) { <p class="head-scorers">⚽ {{ s }}</p> }
       <ab-form-badges [outcomes]="outcomes('home')" [team]="m.home.name" />
-      @if (rankOf(m.home.id); as r) { <p class="head-rank">{{ r.rank }}° in classifica · {{ r.points }} pt</p> }
+      @if (rankOf(m.home.id); as r) { <p class="head-rank">{{ r.rank }}° · {{ r.points }} pt</p> }
     </div>
 
     <div class="center">
@@ -53,7 +53,7 @@
       <h1 class="title team-name">{{ m.away.name }}</h1>
       @if (scorers('away'); as s) { <p class="head-scorers">⚽ {{ s }}</p> }
       <ab-form-badges [outcomes]="outcomes('away')" [team]="m.away.name" />
-      @if (rankOf(m.away.id); as r) { <p class="head-rank">{{ r.rank }}° in classifica · {{ r.points }} pt</p> }
+      @if (rankOf(m.away.id); as r) { <p class="head-rank">{{ r.rank }}° · {{ r.points }} pt</p> }
     </div>
   </section>
 
@@ -64,7 +64,7 @@
         @if (d.match.ht_home_goals != null) { <span class="muted small">primo tempo {{ d.match.ht_home_goals }}-{{ d.match.ht_away_goals }}</span> }
       </div>
       <div class="cr-teams small muted"><span>{{ d.match.home.name }}</span><span>{{ d.match.away.name }}</span></div>
-      @if (events.value(); as list) {
+      @if (ok(events); as list) {
         <ab-match-events [events]="list" />
       }
     </section>
@@ -122,7 +122,7 @@
     </section>
   }
 
-  @if (d.match.status === 'scheduled' || studyLegs().length || analysis.value()) {
+  @if (d.match.status === 'scheduled' || studyLegs().length || ok(analysis)) {
     <section class="panel box analysis" aria-labelledby="an-title">
       <div class="box-head">
         <h2 id="an-title" class="title box-title">Analisi di Archie</h2>
@@ -158,7 +158,7 @@
           }
         </p>
       }
-      @if (analysis.value(); as a) {
+      @if (ok(analysis); as a) {
         <div class="an-text">
           <p class="an-summary">{{ a.summary }}</p>
           <ul class="an-points">
@@ -175,7 +175,7 @@
           <button type="button" class="btn-primary" (click)="writeAnalysis()" [disabled]="writing()">
             @if (writing()) {
               Archie sta scrivendo…
-            } @else if (analysis.value()) {
+            } @else if (ok(analysis)) {
               Aggiorna l'analisi
             } @else {
               Scrivi l'analisi
@@ -190,7 +190,7 @@
   }
 
 
-  @if (d.match.status === 'scheduled' && matchPicks.value()?.markets?.length) {
+  @if (d.match.status === 'scheduled' && ok(matchPicks)?.markets?.length) {
     <section class="panel box play-odds" aria-labelledby="po-title">
       <div class="box-head">
         <h2 id="po-title" class="title box-title">Gioca questa partita</h2>
@@ -225,10 +225,10 @@
   }
 
   @if (tab() === 'numeri') {
-  @if (!derived.value()?.length && !numbers.value()?.length && !players.value()?.length && !lineups.value()?.length) {
+  @if (!ok(derived)?.length && !ok(numbers)?.length && !ok(players)?.length && !ok(lineups)?.length) {
     <section class="panel box"><p class="muted">Per questo campionato non ci sono ancora numeri dettagliati: tiri, angoli e cartellini attesi e tiri dei giocatori ci sono per Serie A e B; multigol e combo compaiono quando Archie ha studiato la partita.</p></section>
   }
-  @if (d.match.status === 'scheduled' && derived.value()?.length) {
+  @if (d.match.status === 'scheduled' && ok(derived)?.length) {
     <section class="panel box derived" aria-labelledby="dv-title">
       <div class="box-head">
         <h2 id="dv-title" class="title box-title">Multigol e combo più probabili</h2>
@@ -249,7 +249,7 @@
     </section>
   }
 
-  @if (d.match.status === 'scheduled' && numbers.value()?.length) {
+  @if (d.match.status === 'scheduled' && ok(numbers)?.length) {
     <section class="panel box numbers" aria-labelledby="num-title">
       <div class="box-head">
         <h2 id="num-title" class="title box-title">Tiri, angoli e cartellini attesi</h2>
@@ -262,7 +262,7 @@
         </div>
       </div>
       <div class="num-grid">
-        @for (n of numbers.value(); track n.stat) {
+        @for (n of ok(numbers); track n.stat) {
           <div class="num-card">
             <span class="title num-label">{{ n.label }}</span>
             <span class="num-exp">
@@ -304,7 +304,7 @@
     </section>
   }
 
-  @if (d.match.status === 'scheduled' && players.value()?.length) {
+  @if (d.match.status === 'scheduled' && ok(players)?.length) {
     <section class="panel box players" aria-labelledby="pl-title">
       <div class="box-head">
         <h2 id="pl-title" class="title box-title">Tiri dei giocatori</h2>
@@ -338,14 +338,14 @@
     </section>
   }
 
-  @if (lineups.value()?.length) {
+  @if (ok(lineups)?.length) {
     <section class="panel box lineups" aria-labelledby="lu-title">
       <div class="box-head">
         <h2 id="lu-title" class="title box-title">Formazioni</h2>
-        <span class="muted small">{{ lineups.value()![0].official ? 'ufficiali' : 'previste da Archie' }}</span>
+        <span class="muted small">{{ ok(lineups)![0].official ? 'ufficiali' : 'previste da Archie' }}</span>
       </div>
       <div class="num-grid">
-        @for (t of lineups.value(); track t.side) {
+        @for (t of ok(lineups); track t.side) {
           <div>
             <h3 class="title fan-team">
               {{ t.side === 'casa' ? d.match.home.name : d.match.away.name }}
@@ -381,13 +381,13 @@
   <ab-ask-archie [matchId]="d.match.id" placeholder="Es. Conviene l'Over angoli? Chi tira di più?" />
 
   @if (tab() === 'squadre') {
-  @if (d.match.competition.code.startsWith('ITA-') || fan.value()?.facts?.length) {
+  @if (d.match.competition.code.startsWith('ITA-') || ok(fan)?.facts?.length) {
     <section class="panel box fan" aria-labelledby="fan-title">
       <div class="box-head">
         <h2 id="fan-title" class="title box-title">Cosa sa il tifoso</h2>
         <span class="trial-tag" title="Archie legge le notizie di Serie A, B e C e giudica chi favoriscono. Si misura se poi le quote si muovono verso il suo giudizio: verdetto a 150 partite, Serie C e Serie A-B contate a parte">in prova</span>
       </div>
-      @if (fan.value(); as f) {
+      @if (ok(fan); as f) {
         @if (f.insight; as ins) {
           <p class="fan-verdict" [class.none]="ins.side === 'none'">
             @if (ins.side === 'none') {
@@ -437,7 +437,7 @@
     </section>
   }
 
-  @if (twins.value(); as tw) {
+  @if (ok(twins); as tw) {
     <section class="panel box twins" aria-labelledby="tw-title">
       <div class="box-head">
         <h2 id="tw-title" class="title box-title">Partite gemelle</h2>
