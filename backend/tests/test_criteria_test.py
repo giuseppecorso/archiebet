@@ -72,3 +72,14 @@ def test_market_blend_is_a_geometric_mean():
     lam, mu = blended(r, Weights(market=0.5))
     assert lam == pytest.approx((1.4 * 2.0) ** 0.5) and mu == pytest.approx((1.1 * 0.8) ** 0.5)
     assert blended(r, Weights()) == (1.4, 1.1)
+
+
+def test_boost_features_use_only_the_past_and_train_on_earlier_seasons():
+    from app.forecast.boost_test import features, predictions
+
+    games = [g(i, i * 3, 1 + i % 4, 1 + (i + 1) % 4, i % 3, (i + 1) % 2, season=2022 + i // 120) for i in range(480)]
+    feats = features(games, {})
+    assert feats[games[0].id][:5] == [0.0, 0.0, 0.0, 0.0, 0.0]  # prima partita: nessuna storia
+    preds = predictions(games, feats)
+    assert set(preds) == {x.id for x in games if x.season in (2023, 2024, 2025)}
+    assert all(lam > 0 and mu > 0 for lam, mu in preds.values())

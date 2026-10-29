@@ -1387,6 +1387,7 @@ def main() -> int:
     commands.add_parser("review-refresh", help="pagella settimanale di Archie e correzioni automatiche (D132)")
     commands.add_parser("study-refresh", help="Archie studia le partite dei prossimi giorni (D137)")
     commands.add_parser("study-backtest", help="prova D140: lo studio e le sue varianti sul passato (walk-forward)")
+    commands.add_parser("boost-test", help="prova D164: pi-rating e gradient boosting come terza previsione")
     commands.add_parser("criteria-test", help="prova D156: peso dei giocatori, motivazione e meteo stimati sul passato")
     commands.add_parser("bookmaker-test", help="prova D144: dove sbaglia il bookmaker (studio contro quota media prima della partita)")
     commands.add_parser("cup-test", help="prova D146: coppe europee con un modello che collega i campionati")
@@ -1492,6 +1493,32 @@ def main() -> int:
         print(f"controllo: rendimento in conferma giocando tutti i disaccordi alla quota media {roi:+.3f}")
         out = get_settings().data_cache_dir / "learning" / "bookmaker_test.json"
         out.write_text(_json.dumps({"passed": [[s.league, s.market] for s in segs if s.passed]}), encoding="utf-8")
+        return 0
+    if args.command == "boost-test":
+        from datetime import timedelta as _td
+
+        from app.forecast import boost_test as bx
+        from app.forecast import criteria_test as ct
+        from app.forecast import study_backtest as bt
+
+        with SessionLocal() as db:
+            adapter = api_football_adapter(db, get_settings())
+            market = ct.load_market(db)
+        fixtures_for = lambda league, season: adapter.fixtures(league, season, _td(days=36500))  # noqa: E731
+        games, calendar = bt.load(adapter.cache, fixtures_for)
+        games = [g for g in games if g.league in ct.LEAGUES]
+        feats = bx.features(games, market)
+        preds = bx.predictions(games, feats)
+        print(f"partite: {len(games)}, previsioni del boosting: {len(preds)}")
+        prepared = bt.prepare(games, calendar, (*bt.TUNING, *bt.CONFIRMATION))
+        rows = ct.build_rows(prepared, games, {}, {}, market)
+        for r in rows:
+            r.boost = preds.get(r.p.g.id)
+        today = ct.Weights(market=1.0)  # lo studio di oggi (D163)
+        result = ct.evaluate(rows, "C7 pi-rating + gradient boosting (D164)", ("boost",), lambda r: r.boost is not None, base=today)
+        confirm = [r for r in rows if r.p.g.season in bt.CONFIRMATION]
+        ct.log_bands("Fasce di quota, studio di oggi (conferma):", ct.bands(confirm, today))
+        ct.log_bands("Fasce di quota, con la terza previsione (conferma):", ct.bands(confirm, result.weights))
         return 0
     if args.command == "criteria-test":
         import json as _json

@@ -35,6 +35,7 @@ class Weights:
     w: float = 0.0  # C4 meteo
     alpha: float = 1.0  # D160 ricalibrazione: p' ∝ p^alpha in ogni mercato
     market: float = 0.0  # D163 peso del mercato: λ = λ_studio^(1−w) · λ_mercato^w
+    boost: float = 0.0  # D164 peso della terza previsione (pi-rating + gradient boosting)
 
 
 @dataclass
@@ -47,6 +48,7 @@ class Row:
     motivated: tuple[int, int]  # 1 se la squadra lotta per qualcosa e l'avversaria non ha più obiettivi
     bad_weather: int | None  # 1 pioggia o vento forti, 0 no, None meteo sconosciuto
     market: tuple[float, float] | None = None  # gol attesi del mercato (Pinnacle pre-partita), D163
+    boost: tuple[float, float] | None = None  # gol attesi del gradient boosting, D164
 
 
 def factors(r: Row, x: Weights) -> tuple[float, float]:
@@ -70,6 +72,10 @@ def blended(r: Row, x: Weights) -> tuple[float, float]:
     if w and r.market is not None:
         lam = lam ** (1 - w) * r.market[0] ** w
         mu = mu ** (1 - w) * r.market[1] ** w
+    v = min(max(x.boost, 0.0), 1.0)
+    if v and r.boost is not None:
+        lam = lam ** (1 - v) * r.boost[0] ** v
+        mu = mu ** (1 - v) * r.boost[1] ** v
     fh, fa = factors(r, x)
     return lam * fh, mu * fa
 
@@ -138,6 +144,8 @@ class _Means:
     def at(self, league: int, when: datetime) -> RoleMeans:
         year, week, _ = when.isocalendar()
         key = (league, year, week)
+        if league not in self.apps:
+            return role_means([])  # senza dati dei giocatori (prove che non li usano)
         if key not in self.memo:
             start = when - timedelta(days=when.weekday())
             start = start.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -191,6 +199,8 @@ def _relevant(r: Row, free: Sequence[str]) -> bool:
         return True
     if "market" in free:
         return r.market is not None
+    if "boost" in free:
+        return r.boost is not None
     return "w" in free and bool(r.bad_weather)
 
 
@@ -225,19 +235,19 @@ class CriterionResult:
 
 
 def evaluate(rows: Sequence[Row], name: str, free: Sequence[str], only: Callable[[Row], bool] = lambda r: True,
-             log: Callable[[str], None] = print) -> CriterionResult:  # fmt: skip
+             log: Callable[[str], None] = print, base: Weights = Weights()) -> CriterionResult:  # fmt: skip
     """Taratura fuori campione (stima su una stagione, misura sull'altra), poi conferma con la stima di tutta la taratura."""
     rows = [r for r in rows if only(r)]
     first, second = ([r for r in rows if r.p.g.season == s] for s in bt.TUNING)
     diffs, ids = [], []
     for train, test in ((first, second), (second, first)):
-        x = fit(train, free)
-        diffs += improvement(test, x)
+        x = fit(train, free, base)
+        diffs += improvement(test, x, base)
         ids += [r.p.g.id for r in test]
     tuning = clustered_mean(diffs, ids)
-    x = fit(first + second, free)
+    x = fit(first + second, free, base)
     confirm = [r for r in rows if r.p.g.season in bt.CONFIRMATION]
-    result = CriterionResult(name, x, tuning, clustered_mean(improvement(confirm, x), [r.p.g.id for r in confirm]))
+    result = CriterionResult(name, x, tuning, clustered_mean(improvement(confirm, x, base), [r.p.g.id for r in confirm]))
     log(f"{name}: pesi {x} | taratura {tuning.mean:+.4f} ± {tuning.std_error:.4f} | conferma {result.confirmation.mean:+.4f} "
         f"± {result.confirmation.std_error:.4f} | {'PASSA' if result.passed else 'non passa'}")  # fmt: skip
     return result
