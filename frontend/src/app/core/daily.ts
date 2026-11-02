@@ -54,4 +54,6 @@ export interface DailyOut {
   today: { legs_won: number; legs_closed: number; legs_total: number };
   stats: DailyKindStats[];
   history: DailySlip[];
+  /** Pronostici dello studio con e senza le quote del mercato: azzeccati, chiusi, attesi */
+  by_source?: { label: string; won: number; closed: number; expected: number }[];
 }

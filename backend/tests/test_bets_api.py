@@ -168,3 +168,15 @@ def test_my_picks_on_matches_show_how_they_are_going(logged_client, db, matches)
     assert mine["state"] == "winning"  # 1-0 al 60': il "1" sta vincendo
     assert now_state("OU2.5", "over", "2H", 1, 0) == "losing"
     assert now_state("COR9.5", "over", "2H", 1, 0) == "unknown"  # gli angoli il punteggio non li dice
+
+
+def test_my_picks_on_one_match_include_closed_ones(logged_client, db, matches):
+    from app.models import Bet
+
+    logged_client.post("/api/bets", json=bet_body(matches["Inter"], pick="1"))
+    bet = db.scalar(__import__("sqlalchemy").select(Bet))
+    bet.status = "won"
+    db.commit()
+    assert logged_client.get("/api/bets/on-matches").json() == []  # senza partita: solo le aperte
+    [mine] = logged_client.get(f"/api/bets/on-matches?match_id={matches['Inter']}").json()
+    assert mine["pick"] == "1"

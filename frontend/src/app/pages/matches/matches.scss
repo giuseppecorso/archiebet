@@ -67,3 +67,16 @@
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--loss); }
 .count { padding: 0 5px; font-size: 10px; color: #fff; background: var(--loss); border-radius: 8px; }
 .count.bets { background: var(--amber); color: #14110c; }
+
+.reset {
+  min-height: 36px;
+  padding: 4px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber);
+  background: transparent;
+  border: 1px solid var(--amber);
+  border-radius: 6px;
+  cursor: pointer;
+}

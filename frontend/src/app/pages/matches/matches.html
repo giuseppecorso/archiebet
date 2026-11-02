@@ -37,6 +37,9 @@
     </select>
   </label>
   <input class="team-search" type="search" placeholder="Cerca una squadra…" [ngModel]="team()" (ngModelChange)="team.set($event)" aria-label="Cerca una squadra" />
+  @if (filtered()) {
+    <button type="button" class="reset" (click)="resetFilters()">Azzera filtri</button>
+  }
 </div>
 
 @if (filter() === 'giocate') {

@@ -1033,3 +1033,10 @@ tr.absent td {
   color: var(--text-2);
   text-align: center;
 }
+
+.mine { margin-bottom: 12px; }
+.mine-list { margin: 8px 0 0; padding: 0; list-style: none; }
+.mine-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 6px 0; border-bottom: 1px solid var(--line-row); }
+.mine-list .st { margin-left: auto; font-size: 13px; }
+.mine-list li[data-state='won'] .st, .mine-list li[data-state='winning'] .st { color: #3ddc84; }
+.mine-list li[data-state='lost'] .st, .mine-list li[data-state='losing'] .st { color: var(--loss); }

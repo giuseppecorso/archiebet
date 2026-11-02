@@ -26,6 +26,7 @@ class DailyLegOut(BaseModel):
     p: float  # probabilità di Archie (per il CLV: quella giusta di Pinnacle)
     price: float  # quota al momento della pubblicazione
     status: str  # open | won | lost | void
+    from_market: bool | None = None  # pronostico costruito con le quote del mercato (None: schedine di prima)
     score: str | None = None  # risultato finale della partita, quando è finita
 
 
@@ -55,6 +56,15 @@ class KindStatsOut(BaseModel):
     profit: float
 
 
+class SourceOut(BaseModel):
+    """Pronostici chiusi dello studio, con e senza le quote del mercato: azzeccati, chiusi, attesi."""
+
+    label: str
+    won: int
+    closed: int
+    expected: float
+
+
 class TodayOut(BaseModel):
     legs_won: int
     legs_closed: int
@@ -66,6 +76,7 @@ class DailyOut(BaseModel):
     today: TodayOut  # pronostici pubblicati oggi: azzeccati, chiusi, totali
     stats: list[KindStatsOut]
     history: list[DailySlipOut]  # le ultime chiuse
+    by_source: list[SourceOut] = []
 
 
 def _out(s: DailySlip, scores: dict[int, str] | None = None) -> DailySlipOut:
@@ -94,5 +105,15 @@ def daily(_: CurrentUser, db: DbSession) -> DailyOut:
         board=[_out(s, scores) for s in board],
         today=TodayOut(legs_won=sum(leg["status"] == WON for leg in legs), legs_closed=sum(leg["status"] in (WON, LOST) for leg in legs), legs_total=len(legs)),
         stats=[KindStatsOut(kind=k, title=KINDS[k].title, **vars(v)) for k, v in per_kind.items()],
+        by_source=_by_source(slips),
         history=[_out(s, scores) for s in slips if s.status != OPEN and s not in board][:HISTORY],
     )
+
+
+def _by_source(slips) -> list[SourceOut]:
+    """Con le quote contro senza quote, sui pronostici dello studio già chiusi (da quando si registra la fonte)."""
+    out = []
+    for label, flag in (("Campionati con le quote", True), ("Campionati senza quote", False)):
+        legs = [leg for s in slips for leg in s.legs if leg.get("from_market") is flag and leg["status"] in (WON, LOST)]
+        out.append(SourceOut(label=label, won=sum(leg["status"] == WON for leg in legs), closed=len(legs), expected=round(sum(leg["p"] for leg in legs), 1)))
+    return out

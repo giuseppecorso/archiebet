@@ -7,7 +7,7 @@ import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/htt
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { KeyValuePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
-import { Market, marketLabel, marketSelections, parseSecondary, parseTeamGoals, pickLabel } from '../../core/bets';
+import { Market, MyPick, marketLabel, marketSelections, parseSecondary, parseTeamGoals, pickLabel } from '../../core/bets';
 import { MatchAnalysis, MatchNumbers, MatchPicks, PlayerShots, TeamLineup, verdictClass, countTip, playerTips } from '../../core/picks';
 import { RouterLink } from '@angular/router';
 import { FanFact, MatchFan, SOURCE_LABELS, factTone } from '../../core/fan';
@@ -155,11 +155,11 @@ export class MatchPage {
 
   /** La pagina è divisa in tre schede: si vede una sola parte alla volta */
   protected readonly tabs = [
-    { key: 'pronostici', label: 'Pronostici' },
     { key: 'numeri', label: 'Numeri' },
+    { key: 'pronostici', label: 'Pronostici' },
     { key: 'squadre', label: 'Squadre' },
   ] as const;
-  protected readonly tab = signal<'pronostici' | 'numeri' | 'squadre'>('pronostici');
+  protected readonly tab = signal<'pronostici' | 'numeri' | 'squadre'>('numeri');
 
   /** Giocate raggruppate per tipo, una tendina sceglie quale gruppo vedere */
   protected readonly playGroups = computed(() => [...new Set((this.ok(this.matchPicks)?.markets ?? []).map((mk) => playGroupOf(mk.market)))]);
@@ -188,6 +188,10 @@ export class MatchPage {
   protected ok<T>(r: { hasValue(): boolean; value(): T }): T | undefined {
     return r.hasValue() ? r.value() : undefined;
   }
+
+  /** Le mie giocate su questa partita, aperte e chiuse */
+  protected readonly myPicks = httpResource<MyPick[]>(() => `/api/bets/on-matches?match_id=${this.id()}`, { defaultValue: [] });
+  protected readonly pickState: Record<string, string> = { waiting: 'da giocare', winning: 'sta vincendo', losing: 'sta perdendo', won: 'vinta', lost: 'persa', void: 'annullata', unknown: 'in corso' };
 
   protected marketName(market: string): string {
     return marketLabel(market, this.detail.value()?.match);

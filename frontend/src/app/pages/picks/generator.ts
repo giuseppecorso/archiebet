@@ -91,7 +91,10 @@ function nextDays(n: number): PickOption[] {
           <ab-multi-pick label="Campionati" [options]="leagueOptions()" allLabel="Tutti" [(selected)]="leagues" />
         </div>
       </div>
-      <button type="button" class="btn-primary generate" (click)="generate()">{{ changed() ? 'Genera la multipla' : 'Genera di nuovo' }}</button>
+      <div class="gen-row">
+        <button type="button" class="btn-primary generate" (click)="generate()">{{ changed() ? 'Genera la multipla' : 'Genera di nuovo' }}</button>
+        <button type="button" class="reset" (click)="resetChoices()">Azzera filtri</button>
+      </div>
       @if (changed()) {
         <p class="hint muted small">Hai cambiato le scelte: premi Genera per vedere la multipla nuova.</p>
       }
@@ -171,7 +174,9 @@ function nextDays(n: number): PickOption[] {
     .range { display: flex; align-items: center; gap: 6px; font-size: 13px; letter-spacing: 0; text-transform: none; }
     .range input { width: 64px; }
     .field ab-multi-pick { letter-spacing: 0; text-transform: none; font-weight: 400; }
-    .generate { display: block; min-height: 38px; margin: 8px auto 0; padding: 6px 26px; font-size: 15px; }
+    .gen-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 8px; }
+    .generate { min-height: 38px; padding: 6px 26px; font-size: 15px; }
+    .reset { min-height: 34px; padding: 4px 12px; font: inherit; font-size: 13px; font-weight: 600; color: var(--amber); background: transparent; border: 1px solid var(--amber); border-radius: 6px; cursor: pointer; }
     .chip.locked-chip { opacity: 0.45; border-style: dashed; }
     label, .field { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
     select, input { min-height: 30px; padding: 2px 8px; font: inherit; font-size: 13px; color: var(--text); background: var(--bg-deep); border: 1px solid var(--line-strong); border-radius: 4px; }
@@ -271,6 +276,20 @@ export class Generator {
     if (this.excluded().length) params.set('exclude', this.excluded().join(','));
     return `/api/study/multiple?${params}`;
   });
+
+  /** Tutte le scelte tornano a quelle iniziali */
+  protected resetChoices(): void {
+    this.level.set('equilibrato');
+    this.legs.set(4);
+    this.auto.set(true);
+    this.target.set(null);
+    this.targetMax.set(null);
+    this.stake.set(5);
+    this.days.set(this.dayOptions.slice(0, 2).map((d) => d.value));
+    this.leagues.set([]);
+    this.theme.set('tutte');
+    this.lockNote.set(null);
+  }
 
   protected generate(): void {
     this.restart();

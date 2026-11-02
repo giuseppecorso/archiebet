@@ -1,3 +1,6 @@
+@if (slip.notice(); as n) {
+  <div class="slip-toast" role="status">✓ {{ n }} <button type="button" (click)="slip.notice.set(null)" aria-label="Chiudi">✕</button></div>
+}
 @if (slip.legs().length || slip.open()) {
   <aside class="slip" [class.open]="slip.open()" aria-label="La tua schedina">
     <div class="slip-top">

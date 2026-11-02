@@ -1,5 +1,7 @@
-import { httpResource } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
+import { HttpClient, httpResource } from '@angular/common/http';
+import { Component, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { Bet } from '../../core/bets';
 import { RouterLink } from '@angular/router';
 import { DailyLeg, DailyOut, DailySlip } from '../../core/daily';
 import { SlipLeg, SlipService } from '../../core/slip';
@@ -25,6 +27,16 @@ import { slipImage } from './slip-image';
         </p>
       }
 
+      @if (playableSlips(d).length) {
+        <div class="panel box play-all">
+          <span>Gioca in un colpo tutte le schedine aperte di oggi</span>
+          <label>€ a schedina <input type="number" inputmode="decimal" min="0.5" step="0.5" [value]="allStake()" (input)="allStake.set(+$any($event.target).value || 0)" /></label>
+          <button type="button" class="btn-primary" (click)="playAll(d)" [disabled]="busy() || allStake() <= 0">Gioca tutte</button>
+          @if (allMsg(); as m) {
+            <p class="small" [class.err]="!m.ok" role="status">{{ m.text }}</p>
+          }
+        </div>
+      }
       <div class="cork">
         @for (s of d.board; track s.id) {
           <article class="note" [class]="'note tilt-' + ($index % 4)" [attr.data-status]="s.status">
@@ -60,7 +72,7 @@ import { slipImage } from './slip-image';
               <button type="button" class="share" (click)="share(s)">Immagine</button>
             </footer>
             @if (s.status !== 'open') {
-              <span class="stamp" [attr.data-status]="s.status">{{ stamp(s.status) }}</span>
+              <span class="stamp" [attr.data-status]="s.status">{{ stampOf(s) }}</span>
             }
           </article>
         } @empty {
@@ -94,6 +106,15 @@ import { slipImage } from './slip-image';
             </tbody>
           </table>
         </div>
+        @if (hasSources(d)) {
+          <ul class="sources">
+            @for (x of d.by_source; track x.label) {
+              @if (x.closed) {
+                <li><strong>{{ x.label }}</strong>: {{ x.won }} azzeccati su {{ x.closed }} <span class="muted small">(attesi {{ x.expected }})</span></li>
+              }
+            }
+          </ul>
+        }
         <p class="muted small">"Attese" = quante dovevano uscire sommando le probabilità di Archie: se le uscite restano vicine alle attese, Archie è onesto con le sue percentuali.</p>
       </section>
 
@@ -101,7 +122,7 @@ import { slipImage } from './slip-image';
         <details class="archive">
           <summary class="title">Archivio delle schedine <span class="muted small">({{ d.history.length }})</span></summary>
           <div class="cork small-cork">
-            @for (s of d.history; track s.id) {
+            @for (s of d.history.slice(0, archiveAll() ? undefined : ARCHIVE_SHOWN); track s.id) {
               <article class="note mini" [attr.data-status]="s.status">
                 <header>
                   <h2>{{ s.title }}</h2>
@@ -116,10 +137,13 @@ import { slipImage } from './slip-image';
                     </li>
                   }
                 </ol>
-                <span class="stamp" [attr.data-status]="s.status">{{ stamp(s.status) }}</span>
+                <span class="stamp" [attr.data-status]="s.status">{{ stampOf(s) }}</span>
               </article>
             }
           </div>
+          @if (d.history.length > ARCHIVE_SHOWN) {
+            <button type="button" class="more" (click)="archiveAll.set(!archiveAll())">{{ archiveAll() ? 'Mostra meno' : 'Mostra le più vecchie (' + (d.history.length - ARCHIVE_SHOWN) + ')' }}</button>
+          }
         </details>
       }
     } @else if (data.isLoading()) {
@@ -130,6 +154,7 @@ import { slipImage } from './slip-image';
 })
 export class Daily {
   private readonly slip = inject(SlipService);
+  private readonly http = inject(HttpClient);
   protected readonly data = httpResource<DailyOut>(() => '/api/daily');
   protected readonly pct = pct;
   protected readonly fmtOdds = odds;
@@ -169,8 +194,72 @@ export class Daily {
     return status === 'won' ? '✓' : status === 'lost' ? '✗' : status === 'void' ? '–' : '';
   }
 
-  protected stamp(status: string): string {
-    return { won: 'Vinta', lost: 'Persa', void: 'Annullata', done: 'Chiusa', open: 'In corso' }[status] ?? status;
+  /** Timbro: per le singole (CLV) quante sono uscite, per le altre vinta o persa */
+  protected stampOf(s: DailySlip): string {
+    if (s.singles && s.status === 'done') {
+      const closed = s.legs.filter((l) => l.status === 'won' || l.status === 'lost');
+      return `${closed.filter((l) => l.status === 'won').length} su ${closed.length}`;
+    }
+    return { won: 'Vinta', lost: 'Persa', void: 'Annullata', done: 'Chiusa', open: 'In corso' }[s.status] ?? s.status;
+  }
+
+  protected readonly ARCHIVE_SHOWN = 6;
+  protected readonly archiveAll = signal(false);
+  protected readonly allStake = signal(5);
+  protected readonly busy = signal(false);
+  protected readonly allMsg = signal<{ ok: boolean; text: string } | null>(null);
+
+  protected hasSources(d: DailyOut): boolean {
+    return (d.by_source ?? []).some((x) => x.closed > 0);
+  }
+
+  protected playableSlips(d: DailyOut): DailySlip[] {
+    return d.board.filter((s) => this.playable(s).length);
+  }
+
+  /** Firma di una giocata: le sue partite ed esiti, in ordine (per riconoscere una schedina già giocata) */
+  private signature(legs: { match_id: number; market: string; pick: string }[]): string {
+    return legs.map((l) => `${l.match_id}:${l.market}:${l.pick}`).sort().join('|');
+  }
+
+  /** Registra tutte le schedine aperte della bacheca; salta quelle già giocate (stesse partite ed esiti) */
+  protected async playAll(d: DailyOut): Promise<void> {
+    this.busy.set(true);
+    this.allMsg.set(null);
+    try {
+      const mine = await firstValueFrom(this.http.get<Bet[]>('/api/bets'));
+      const done = new Set(mine.map((b) => this.signature(b.selections.map((s) => ({ match_id: s.match.id, market: s.market, pick: s.pick })))));
+      let played = 0;
+      let skipped = 0;
+      for (const s of this.playableSlips(d)) {
+        const legs = this.playable(s);
+        const groups = s.singles ? legs.map((l) => [l]) : [legs];
+        for (const g of groups) {
+          const sig = this.signature(g.map((l) => ({ match_id: l.match_id, market: l.market, pick: l.selection })));
+          if (done.has(sig)) {
+            skipped++;
+            continue;
+          }
+          await firstValueFrom(this.http.post('/api/bets', {
+            stake: this.allStake().toFixed(2),
+            note: s.title,
+            selections: g.map((l) => ({ match_id: l.match_id, market: l.market, pick: l.selection, odds: l.price.toFixed(3) })),
+            system: s.system && g.length === s.legs.length ? s.system : null,
+          }));
+          done.add(sig);
+          played++;
+        }
+      }
+      this.allMsg.set(
+        played
+          ? { ok: true, text: `Fatto: ${played} giocate registrate${skipped ? `, ${skipped} saltate perché le avevi già giocate` : ''}. Le trovi in Il mio Archie.` }
+          : { ok: false, text: 'Le avevi già giocate tutte: nessuna giocata nuova.' },
+      );
+    } catch {
+      this.allMsg.set({ ok: false, text: 'Qualcosa non è andato: alcune giocate potrebbero non essere state registrate. Controlla in Il mio Archie.' });
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   protected money(n: number): string {

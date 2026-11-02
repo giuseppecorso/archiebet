@@ -46,7 +46,7 @@ export class Matches {
   protected readonly order = signal<'ora' | 'notizie'>('ora');
   /** Dall'indirizzo: ?stato=live (la vecchia Diretta) */
   readonly stato = input<string | undefined>(undefined);
-  protected readonly filters: [Filter, string][] = [['tutte', 'Tutte'], ['live', 'In diretta'], ['finite', 'Finite'], ['programma', 'Da giocare'], ['giocate', 'Giocate']];
+  protected readonly filters: [Filter, string][] = [['tutte', 'Tutte'], ['live', 'In diretta'], ['finite', 'Finite'], ['giocate', 'Le mie giocate in corso']];
   protected readonly filter = signal<Filter>('tutte');
   /** Sale ogni 30 secondi: oggi ricarica punteggi e cronache aperte */
   protected readonly tick = signal(0);
@@ -71,6 +71,17 @@ export class Matches {
     for (const p of this.myPicks.value()) if (['waiting', 'winning', 'losing', 'unknown'].includes(p.state)) seen.set(p.match_id, p.match);
     return [...seen.values()].sort((a, b) => a.kickoff_at.localeCompare(b.kickoff_at));
   });
+
+  /** Qualche filtro diverso da quello iniziale? Allora si mostra "Azzera filtri" */
+  protected readonly filtered = computed(() => this.filter() !== 'tutte' || this.day() !== isoDay() || !!this.competition() || !!this.team() || this.order() !== 'ora');
+
+  protected resetFilters(): void {
+    this.filter.set('tutte');
+    this.day.set(isoDay());
+    this.competition.set('');
+    this.team.set('');
+    this.order.set('ora');
+  }
 
   protected readonly liveCount = computed(() => (this.data.value() ?? []).reduce((n, g) => n + g.matches.filter((m) => !!m.live).length, 0));
 

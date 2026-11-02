@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { euro, pickLabel } from '../core/bets';
 import { dayLabel, kickoffTime, odds } from '../core/format';
 import { SlipService } from '../core/slip';
@@ -14,7 +14,6 @@ import { SlipService } from '../core/slip';
   styleUrl: './slip-panel.scss',
 })
 export class SlipPanel {
-  private readonly router = inject(Router);
   protected readonly slip = inject(SlipService);
   protected readonly fmt = { euro, odds, pickLabel, dayLabel, kickoffTime };
   protected readonly warnings = signal<string[]>([]);
@@ -50,7 +49,7 @@ export class SlipPanel {
       const created = await this.slip.register();
       this.warnings.set([]);
       this.slip.open.set(false);
-      await this.router.navigate(['/schedine', created.bet.id]);
+      this.slip.notify(`Giocata registrata: ${created.bet.selections.length === 1 ? '1 partita' : created.bet.selections.length + ' partite'} a quota ${odds(+created.bet.total_odds)}. La trovi in Il mio Archie.`);
     } catch (e) {
       const detail = e instanceof HttpErrorResponse ? e.error?.detail : null;
       this.error.set(typeof detail === 'string' ? detail : 'Non sono riuscito a registrare la schedina.');

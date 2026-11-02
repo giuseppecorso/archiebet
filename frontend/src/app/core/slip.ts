@@ -35,6 +35,15 @@ export class SlipService {
   private readonly http = inject(HttpClient);
   readonly legs = signal<SlipLeg[]>(load());
   readonly open = signal(false);
+  /** Messaggio breve dopo una giocata registrata: si resta sulla pagina dove si era (niente salto a Il mio Archie) */
+  readonly notice = signal<string | null>(null);
+  private noticeTimer: ReturnType<typeof setTimeout> | undefined;
+
+  notify(text: string): void {
+    this.notice.set(text);
+    clearTimeout(this.noticeTimer);
+    this.noticeTimer = setTimeout(() => this.notice.set(null), 5000);
+  }
   readonly stake = signal('10');
   readonly kind = signal<BetKind>('simulated');
   /** Sistema "k su n" (D157), per esempio il sistemone della bacheca; null = multipla normale */

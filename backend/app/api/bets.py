@@ -236,19 +236,27 @@ def now_state(market: str, pick: str, status: str, home_goals: int, away_goals: 
 
 
 @router.get("/bets/on-matches")
-def my_picks_on_matches(user: CurrentUser, db: DbSession) -> list[MyPickOut]:
-    """Le giocate aperte dell'utente, partita per partita, con come stanno andando adesso."""
+def my_picks_on_matches(user: CurrentUser, db: DbSession, match_id: int | None = None) -> list[MyPickOut]:
+    """Le giocate aperte dell'utente, partita per partita, con come stanno andando adesso.
+    Con match_id: tutte le giocate su quella partita, anche già chiuse (pagina partita)."""
     from app.forecast.live import leg_probability
     from app.forecast.live_service import selection_states
 
-    bets = list(db.scalars(select(Bet).where(Bet.user_id == user.id, Bet.status == "open")))
-    selections = [s for b in bets for s in b.selections]
+    query = select(Bet).where(Bet.user_id == user.id)
+    if match_id is None:
+        query = query.where(Bet.status == "open")
+    else:
+        query = query.where(Bet.id.in_(select(BetSelection.bet_id).where(BetSelection.match_id == match_id)))
+    bets = list(db.scalars(query))
+    selections = [s for b in bets for s in b.selections if match_id is None or s.match_id == match_id]
     now = datetime.now(UTC)
     states = selection_states(db, selections, now)
     cards = {c.id: c for c in match_cards(db, list({s.match_id: s.match for s in selections}.values()), now)}
     out = []
     for b in bets:
         for sel in b.selections:
+            if match_id is not None and sel.match_id != match_id:
+                continue
             st = states.get(sel.id)
             if sel.status in ("won", "lost", "void"):
                 state = sel.status

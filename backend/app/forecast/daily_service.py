@@ -40,7 +40,8 @@ def study_legs(db: Session, kind: Kind, start: datetime, end: datetime) -> list[
             chosen = ranked[: kind.min_legs]
         chosen = chosen[: kind.max_legs]
     chosen.sort(key=lambda c: matches[c[0]].kickoff_at)
-    return [_leg(matches[mid], p["market"], p["selection"], p["event"], p["p_archie"], leg_price(p)) for mid, p in chosen]
+    return [_leg(matches[mid], p["market"], p["selection"], p["event"], p["p_archie"], leg_price(p)) | {"from_market": bool(p.get("from_market"))}
+            for mid, p in chosen]  # fmt: skip
 
 
 def clv_legs(db: Session, kind: Kind, start: datetime, end: datetime) -> list[dict]:
