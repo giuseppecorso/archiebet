@@ -38,7 +38,7 @@ async def lifespan(_: FastAPI):
         scheduler.shutdown(wait=False)
 
 
-app = FastAPI(title="ArchieBet", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Archie", version="0.1.0", lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(football_router)
 app.include_router(lab_router)

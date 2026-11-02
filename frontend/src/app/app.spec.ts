@@ -5,7 +5,7 @@ import { provideRouter, Router, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from './app.routes';
 
-describe('ArchieBet: navigazione', () => {
+describe('Archie: navigazione', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
@@ -228,9 +228,20 @@ describe('ArchieBet: navigazione', () => {
       agreed: { n: 25, won: 14, expected_wins: 12.1, roi: 0.08, avg_value: 0.04 },
       disagreed: { n: 15, won: 6, expected_wins: 6.7, roi: -0.12, avg_value: -0.07 },
     });
+    // grafici (D170): con un solo giorno il saldo non si disegna e lo dice
+    (await nextRequest((r) => r.url.startsWith('/api/bets/trends'))).flush({
+      days: [{ day: '2026-11-01', bets: 2, won: 1, profit: '3.00', cum_profit: '3.00' }],
+      months: [{ month: '2026-11', won: 1, lost: 1 }],
+      clv_weeks: [],
+      odds_bands: [{ label: '1,50 – 2,00', selections: 2, won: 1, hit_rate: 0.5, expected_rate: 0.55 }],
+    });
     (await nextRequest('/api/rules')).flush({ rules: [], suggestions: [], style: null, style_at: null }); // regolamento (Fase 6)
     await harness.fixture.whenStable();
-    const section = harness.routeNativeElement!.querySelector('[aria-labelledby="versus-title"]')!.textContent!;
+    const page = harness.routeNativeElement!;
+    expect(page.querySelector('[aria-labelledby="balance-title"]')!.textContent).toContain('almeno due giorni');
+    expect(page.querySelector('[aria-labelledby="odds-title"] ab-chart')).not.toBeNull();
+    expect(page.querySelector('[aria-labelledby="clv-title"]')!.textContent).toContain('nessuna selezione con il CLV');
+    const section = page.querySelector('[aria-labelledby="versus-title"]')!.textContent!;
     expect(section).toContain('+3,2');
     expect(section).toContain('dentro il caso'); // 3,2 < 2 × 2,9
     expect(section).toContain("Archie d'accordo");

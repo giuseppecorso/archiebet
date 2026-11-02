@@ -1,4 +1,4 @@
-# ArchieBet
+# Archie
 
 *Give me the odds, I'll move the world.*
 
@@ -16,7 +16,7 @@ quote dei bookmaker e verifica, con prove statistiche pre-registrate, se un mode
 batte davvero un mercato quasi efficiente. L'AI (Claude) legge notizie e scrive analisi, ma **i numeri li calcola
 sempre il codice**.
 
-![ArchieBet in uso](docs/screenshots/archiebet-demo.gif)
+![Archie in uso](docs/screenshots/archiebet-demo.gif)
 
 ---
 
@@ -135,7 +135,7 @@ Su Windows `riavvia-archiebet.bat` applica le migrazioni e avvia (o riavvia) bac
 
 ## Come è stato sviluppato
 
-ArchieBet è un progetto personale (ottobre 2026) realizzato con un **flusso di lavoro AI-assisted** strutturato:
+Archie è un progetto personale (ottobre 2026) realizzato con un **flusso di lavoro AI-assisted** strutturato:
 io nel ruolo di product owner e revisore tecnico, **[Claude Code](https://www.anthropic.com/claude-code)** (Anthropic) nel ruolo di
 sviluppatore che implementa sotto regole precise.
 

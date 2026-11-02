@@ -7,6 +7,9 @@
       <button type="button" role="tab" [attr.aria-selected]="period() === p[0]" (click)="period.set(p[0])">{{ p[1] }}</button>
     }
   </div>
+  @if (filtered()) {
+    <button type="button" class="reset" (click)="resetFilters()">Azzera filtri</button>
+  }
 </div>
 
 @if (summary.value(); as s) {
@@ -60,6 +63,49 @@
   </section>
 }
 
+@if (trends.value(); as t) {
+  <div class="charts">
+    <section class="panel box chart-box" aria-labelledby="balance-title">
+      <h2 id="balance-title" class="title box-title">Il saldo nel tempo</h2>
+      @if (t.days.length > 1) {
+        <ab-chart [option]="balanceChart()" label="Saldo cumulato giorno per giorno" />
+        <p class="note">Quanto sei sopra o sotto dall'inizio del periodo, giorno per giorno. Tocca il grafico per i dettagli.</p>
+      } @else {
+        <p class="muted">Il grafico compare dopo almeno due giorni con schedine chiuse.</p>
+      }
+    </section>
+
+    <section class="panel box chart-box" aria-labelledby="clv-title">
+      <h2 id="clv-title" class="title box-title">Il CLV settimana per settimana</h2>
+      @if (t.clv_weeks.length) {
+        <ab-chart [option]="clvChart()" label="CLV medio per settimana" />
+        <p class="note">Blu sopra lo zero: hai preso quote migliori di quelle di chiusura. Rosso sotto: peggiori. Conta più del saldo.</p>
+      } @else {
+        <p class="muted">Ancora nessuna selezione con il CLV: arriva per le partite con le quote di chiusura.</p>
+      }
+    </section>
+
+    <section class="panel box chart-box" aria-labelledby="odds-title">
+      <h2 id="odds-title" class="title box-title">Azzecchi più di quanto dice la quota?</h2>
+      @if (hasOddsBands()) {
+        <ab-chart [option]="oddsChart()" label="Pronostici azzeccati per fascia di quota, contro quelli promessi dalla quota" />
+        <p class="note">Se la barra blu supera il trattino giallo, in quella fascia azzecchi più di quanto la quota fa pensare: lì giochi bene.</p>
+      } @else {
+        <p class="muted">Ancora nessuna selezione chiusa in questo periodo.</p>
+      }
+    </section>
+
+    <section class="panel box chart-box" aria-labelledby="months-title">
+      <h2 id="months-title" class="title box-title">Vinte e perse, mese per mese</h2>
+      @if (t.months.length) {
+        <ab-chart [option]="monthsChart()" label="Schedine vinte e perse per mese" />
+      } @else {
+        <p class="muted">Ancora nessuna schedina chiusa in questo periodo.</p>
+      }
+    </section>
+  </div>
+}
+
 <section class="panel box block" aria-labelledby="where-title">
   <div class="box-head">
     <h2 id="where-title" class="title box-title">Dove vinci e dove perdi</h2>
@@ -69,6 +115,10 @@
       <button type="button" role="tab" [attr.aria-selected]="dim() === d[0]" (click)="setDim(d[0])">{{ d[1] }}</button>
     }
   </div>
+
+  @if (groupBars().length > 1) {
+    <ab-chart [option]="groupsChart()" label="Rendimento per gruppo" [height]="44 + groupBars().length * 30" />
+  }
 
   @if (betRows(); as rows) {
     @if (rows.length) {

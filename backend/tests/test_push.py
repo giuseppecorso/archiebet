@@ -20,7 +20,7 @@ def keys_in_tmp(tmp_path, monkeypatch):
 
 def test_announcement_texts():
     assert announcement([]) is None
-    assert announcement(["giorno"]) == ("Nuova schedina in bacheca", "La schedina del giorno: guardala su ArchieBet.")
+    assert announcement(["giorno"]) == ("Nuova schedina in bacheca", "La schedina del giorno: guardala su Archie.")
     title, body = announcement(["clv", "giorno", "sistema"])
     assert title == "3 nuove schedine in bacheca" and body.startswith("La schedina del giorno, La schedina del CLV e il sistemone")
 

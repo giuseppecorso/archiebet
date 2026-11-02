@@ -1,4 +1,4 @@
-# ArchieBet
+# Archie
 
 *Give me the odds, I'll move the world.*
 
@@ -16,7 +16,7 @@ it with bookmaker prices and tests, with pre-registered statistical experiments,
 information or a strategy really beats a near-efficient betting market. AI (Claude) reads news and writes analyses,
 but **every number is computed by code**.
 
-![ArchieBet in use](docs/screenshots/archiebet-demo.gif)
+![Archie in use](docs/screenshots/archiebet-demo.gif)
 
 > The user interface and the in-depth documents are in Italian; code, identifiers and commit messages are in English.
 
@@ -104,7 +104,7 @@ Details in the **[technical document](docs/DOCUMENTO-TECNICO.md)** (Italian).
 
 ## How it was built
 
-ArchieBet is a personal project (October 2026) built with a structured **AI-assisted workflow**: I acted as product
+Archie is a personal project (October 2026) built with a structured **AI-assisted workflow**: I acted as product
 owner and technical reviewer, **[Claude Code](https://www.anthropic.com/claude-code)** (Anthropic) as the developer
 implementing under explicit rules.
 

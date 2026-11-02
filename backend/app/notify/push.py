@@ -1,6 +1,6 @@
 """Notifiche Web Push (D158): avvisi sul telefono anche con l'app chiusa (standard del browser, gratis).
 
-Le chiavi VAPID (dicono al servizio push del browser che la notifica arriva davvero da ArchieBet) le genera l'app
+Le chiavi VAPID (dicono al servizio push del browser che la notifica arriva davvero da Archie) le genera l'app
 al primo uso e le salva nella cartella dei dati, che non va su GitHub: niente da mettere a mano nel file .env.
 """
 

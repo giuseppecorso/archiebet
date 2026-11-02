@@ -269,7 +269,7 @@ export class Daily {
   /** Immagine quadrata da condividere (Instagram): sul telefono si apre la condivisione, sul PC si scarica */
   protected async share(s: DailySlip): Promise<void> {
     const blob = await slipImage(s);
-    const file = new File([blob], `archiebet-${s.kind}-${s.period}.png`, { type: 'image/png' });
+    const file = new File([blob], `archie-${s.kind}-${s.period}.png`, { type: 'image/png' });
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: s.title });

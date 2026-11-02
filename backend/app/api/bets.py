@@ -13,6 +13,7 @@ from app.auth.deps import CurrentUser, DbSession
 from app.betting.analysis import Breakdown, breakdown
 from app.betting.calc import LOST, MARKETS, WON, at_least, potential_payout
 from app.betting.service import BetError, BudgetStatus, BetSummary, SelectionInput, budget_status, create_bet, settle_open_bets, summarize
+from app.betting.trends import Trends, trends
 from app.betting.versus import JudgedPick, Versus, archie_probability, versus
 from app.forecast.radar_markets import is_secondary
 from app.models import Bet, BetSelection, BetSnapshot, Match, MatchOdds, Team, UserSettings
@@ -357,6 +358,21 @@ def bets_versus(
             else:
                 judged.append(JudgedPick(p, float(sel.odds), sel.status == WON))
     return versus(judged, without)
+
+
+@router.get("/bets/trends")
+def bets_trends(
+    user: CurrentUser,
+    db: DbSession,
+    period: Literal["week", "30d", "season", "all"] = "all",
+) -> Trends:
+    """Andamenti per i grafici (D170): saldo nel tempo, vinte e perse per mese, CLV per settimana, fasce di quota."""
+    settle_open_bets(db)
+    query = select(Bet).where(Bet.user_id == user.id)
+    since = _period_start(period, datetime.now(UTC))
+    if since:
+        query = query.where(Bet.placed_at >= since)
+    return trends(db.scalars(query).all())
 
 
 @router.get("/bets/{bet_id}")

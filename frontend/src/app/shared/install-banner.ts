@@ -9,17 +9,17 @@ interface InstallPrompt extends Event {
 }
 
 /**
- * "Installa ArchieBet sul telefono": su Android un tasto apre l'installazione del browser; su iPhone (dove i siti non
+ * "Installa Archie sul telefono": su Android un tasto apre l'installazione del browser; su iPhone (dove i siti non
  * possono farlo) spiega i due tocchi. Non compare se l'app è già installata o se l'utente l'ha chiuso.
  */
 @Component({
   selector: 'ab-install-banner',
   template: `
     @if (mode(); as m) {
-      <div class="install" role="region" aria-label="Installa ArchieBet">
+      <div class="install" role="region" aria-label="Installa Archie">
         <img src="icon-192.png" alt="" width="40" height="40" />
         @if (m === 'android') {
-          <span>Metti ArchieBet nella schermata Home: si apre come un'app.</span>
+          <span>Metti Archie nella schermata Home: si apre come un'app.</span>
           <button type="button" class="btn-primary" (click)="install()">Installa</button>
         } @else {
           <span>Per averla come app: tocca <strong>Condividi</strong> <span aria-hidden="true">⎋</span> e poi <strong>"Aggiungi alla schermata Home"</strong>.</span>

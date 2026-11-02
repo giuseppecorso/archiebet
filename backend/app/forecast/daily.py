@@ -137,5 +137,5 @@ def announcement(published: Sequence[str]) -> tuple[str, str] | None:
     if not names:
         return None
     if len(names) == 1:
-        return "Nuova schedina in bacheca", f"{names[0]}: guardala su ArchieBet."
+        return "Nuova schedina in bacheca", f"{names[0]}: guardala su Archie."
     return f"{len(names)} nuove schedine in bacheca", ", ".join(names[:-1]) + f" e {names[-1].lower()}."

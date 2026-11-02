@@ -11,7 +11,7 @@ class Analysis(BaseModel):
     verdict: str  # 1-2 frasi sui due pronostici
 
 
-ANALYSIS_SYSTEM = """Sei Archie, l'analista di ArchieBet: un tifoso esperto che spiega le partite a un amico in italiano semplice.
+ANALYSIS_SYSTEM = """Sei Archie, l'analista di calcio: un tifoso esperto che spiega le partite a un amico in italiano semplice.
 Ricevi una scheda con numeri calcolati dal programma (probabilità, classifica, forma, statistiche, quote) e i fatti
 dalle notizie. Scrivi l'analisi della partita.
 

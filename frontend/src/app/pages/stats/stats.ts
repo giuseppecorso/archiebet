@@ -7,14 +7,16 @@ import { RouterLink } from '@angular/router';
 import { BetGroup, BetSummary, Breakdown, SelectionGroup, SummaryOut, Versus, VersusGroup, euro } from '../../core/bets';
 import { num, pct } from '../../core/format';
 import { ShowMore } from '../../shared/show-more';
+import { Chart } from '../../shared/chart';
+import { GroupBar, Trends, balanceOption, clvOption, groupsOption, monthsOption, oddsOption } from '../../core/charts';
 
 type Period = SummaryOut['period'];
 type Dim = 'by_size' | 'by_market' | 'by_competition' | 'by_bookmaker';
 
-/** Le mie statistiche: riepilogo, dove vinci e dove perdi, abitudini. Reali e simulate sempre separate. */
+/** Le mie statistiche: riepilogo, grafici dell'andamento (D170), dove vinci e dove perdi, tu contro Archie, abitudini. */
 @Component({
   selector: 'ab-stats',
-  imports: [RouterLink, ShowMore, RulesPanel, Subnav],
+  imports: [RouterLink, ShowMore, RulesPanel, Subnav, Chart],
   templateUrl: './stats.html',
   styleUrl: './stats.scss',
 })
@@ -53,7 +55,28 @@ export class Stats {
     return bd && (d === 'by_market' || d === 'by_competition') ? bd[d] : null;
   });
 
+  /** Grafici (D170): le opzioni si ricalcolano quando cambiano periodo o raggruppamento */
+  protected readonly trends = httpResource<Trends>(() => `/api/bets/trends?period=${this.period()}`);
+  protected readonly balanceChart = computed(() => balanceOption(this.trends.value()?.days ?? []));
+  protected readonly monthsChart = computed(() => monthsOption(this.trends.value()?.months ?? []));
+  protected readonly clvChart = computed(() => clvOption(this.trends.value()?.clv_weeks ?? []));
+  protected readonly oddsChart = computed(() => oddsOption(this.trends.value()?.odds_bands ?? []));
+  protected readonly hasOddsBands = computed(() => (this.trends.value()?.odds_bands ?? []).some((b) => b.selections > 0));
+  /** I primi 8 gruppi (i più giocati) per rendimento: schedine intere o selezioni come singole */
+  protected readonly groupBars = computed<GroupBar[]>(() => {
+    const bets = this.betRows()?.map((g) => ({ label: g.label, value: g.roi ?? 0, n: g.bets }));
+    const sels = this.selectionRows()?.map((g) => ({ label: g.label, value: g.flat_roi ?? 0, n: g.selections }));
+    return (bets ?? sels ?? []).slice(0, 8).sort((a, b) => b.value - a.value);
+  });
+  protected readonly groupsChart = computed(() => groupsOption(this.groupBars()));
+  protected readonly filtered = computed(() => this.period() !== 'all' || this.dim() !== 'by_size');
+
   protected readonly fmt = { euro, pct, num };
+
+  protected resetFilters(): void {
+    this.period.set('all');
+    this.setDim('by_size');
+  }
 
   protected setDim(d: Dim): void {
     this.dim.set(d);

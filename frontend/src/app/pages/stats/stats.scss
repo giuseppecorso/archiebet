@@ -204,3 +204,27 @@
   font-size: 13px;
   color: var(--loss);
 }
+
+/* Grafici (D170): due per riga sul computer, uno sotto l'altro sul telefono */
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.chart-box {
+  min-width: 0;
+  margin: 0;
+}
+.reset {
+  min-height: 36px;
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  cursor: pointer;
+}

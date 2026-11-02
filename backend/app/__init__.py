@@ -1,1 +1,1 @@
-"""ArchieBet backend."""
+"""Archie backend."""

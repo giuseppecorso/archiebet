@@ -31,7 +31,7 @@ function keyBytes(base64url: string): Uint8Array<ArrayBuffer> {
           <p class="muted">Le notifiche sono bloccate per questo sito: riattivale dalle impostazioni del browser (lucchetto accanto all'indirizzo → Notifiche).</p>
         }
         @case ('ios-install') {
-          <p class="muted">Su iPhone gli avvisi arrivano solo con ArchieBet installata: tocca Condividi → "Aggiungi alla schermata Home", poi aprila da lì e torna qui.</p>
+          <p class="muted">Su iPhone gli avvisi arrivano solo con Archie installata: tocca Condividi → "Aggiungi alla schermata Home", poi aprila da lì e torna qui.</p>
         }
         @case ('unsupported') {
           <p class="muted">Questo browser non supporta le notifiche (servono Chrome, Edge, Firefox o Safari aggiornati, e l'indirizzo https).</p>
