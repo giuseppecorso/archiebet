@@ -30,9 +30,20 @@ def _leg(m: Match, market: str, selection: str, event: str, p: float, price: flo
     }  # fmt: skip
 
 
-def choose_study_legs(kind: Kind, studies: Sequence[tuple[int, list[dict]]], min_price: float = MIN_PRICE) -> list[tuple[int, dict]]:
+MAX_REAL_PRICE = 2.20  # D179: da qui in su il bookmaker trattiene di più (11 stagioni, 1X2 e Under/Over 2.5)
+CAPPED_KINDS = ("giorno", "weekend", "settimana")  # le schedine per divertirsi restano libere
+
+
+def _too_long(kind: Kind, pick: dict, max_real_price: float | None) -> bool:
+    """D179: una quota vera del bookmaker da 2,20 in su non entra nelle schedine giorno, weekend e settimana."""
+    return max_real_price is not None and kind.key in CAPPED_KINDS and max(pick["prices"].values(), default=0.0) >= max_real_price
+
+
+def choose_study_legs(
+    kind: Kind, studies: Sequence[tuple[int, list[dict]]], min_price: float = MIN_PRICE, max_real_price: float | None = MAX_REAL_PRICE
+) -> list[tuple[int, dict]]:
     """Quali pronostici entrano nella schedina: la regola è una sola, per la bacheca vera e per la simulazione (D171)."""
-    kept = [(mid, above) for mid, picks in studies if (above := [p for p in picks if playable_price(p) >= min_price])]
+    kept = [(mid, ok) for mid, picks in studies if (ok := [p for p in picks if playable_price(p) >= min_price and not _too_long(kind, p, max_real_price)])]
     ranked = choose_varied(kept, kind.level, MAX_RANKED)  # niente tre volte lo stesso pronostico
     if kind.target:
         return up_to_target(ranked, kind.target)

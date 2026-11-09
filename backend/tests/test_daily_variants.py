@@ -4,7 +4,7 @@ import pytest
 
 from app.forecast.daily import KINDS
 from app.forecast.daily_service import best_value, choose_study_legs
-from app.forecast.daily_variants import before_d172
+from app.forecast.daily_variants import before_d172, before_d179
 from app.forecast.study import playable_price
 
 
@@ -28,6 +28,22 @@ def test_picks_below_the_minimum_never_reach_the_slip():
 
 def test_a_real_price_above_the_minimum_keeps_the_pick():
     assert [mid for mid, _ in choose_study_legs(KINDS["giorno"], [(1, [pick(0.71, price=1.45)])])] == [1]
+
+
+def test_a_real_price_from_2_20_stays_out_of_the_main_slips():
+    """D179: tetto sulla quota vera del bookmaker, non sulla stima."""
+    studies = [(1, [pick(0.45, price=2.30)]), (2, [pick(0.45, price=2.20)]), (3, [pick(0.47, price=2.19)])]
+    for key in ("giorno", "weekend", "settimana"):
+        assert [mid for mid, _ in choose_study_legs(KINDS[key], studies)] == [3]
+
+
+def test_an_estimated_price_is_not_capped():
+    assert [mid for mid, _ in choose_study_legs(KINDS["giorno"], [(1, [pick(0.40)])])] == [1]  # stima 2,35, nessuna quota vera
+
+
+def test_fun_slips_and_the_old_variant_keep_long_prices():
+    assert [mid for mid, _ in choose_study_legs(KINDS["colpo"], [(1, [pick(0.45, level="rischioso", price=2.30)])])] == [1]
+    assert [mid for mid, _ in before_d179(KINDS["giorno"], [(1, [pick(0.45, price=2.30)])])] == [1]
 
 
 def test_the_week_slip_now_draws_from_the_balanced_level():

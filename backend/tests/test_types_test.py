@@ -72,3 +72,32 @@ def test_is_wrong_needs_both_seasons_and_both_thresholds():
     assert not tt.is_wrong(cell(-2.5, -0.03), cell(-3.0, -0.01))  # scarto troppo piccolo per contare
     assert not tt.is_wrong(cell(2.5, 0.03), cell(2.5, 0.03))  # troppo prudente non è "sbagliata"
     assert not tt.is_wrong(cell(-2.5, -0.03), None)
+
+
+def bet(match_id: int, price: float, won: bool) -> dict:
+    return {"match_id": match_id, "market": "1X2", "price": price, "won": won}
+
+
+def test_band_gap_returns_and_difference():
+    # fascia bassa: 2,00 vinta e 2,00 persa → 0%; fascia alta: 2,50 vinta e due perse → (1,5 − 2) / 3 = −16,7%
+    opened = [bet(1, 2.0, True), bet(2, 2.0, False), bet(1, 2.5, False), bet(2, 2.5, True), bet(3, 2.5, False), bet(3, 5.0, True)]
+    g = tt.band_gap(opened)
+    assert (g.low_n, g.high_n) == (2, 3)
+    assert g.low_roi == pytest.approx(0.0)
+    assert g.high_roi == pytest.approx(-1 / 6)
+    assert g.diff == pytest.approx(1 / 6)
+    # per partita: 1/2 + 1/3, −1/2 − 1,5/3, 0 + 1/3 → 5/6, −1, 1/3; media 1/18
+    per_match = [5 / 6, -1.0, 1 / 3]
+    assert g.se == pytest.approx(tt._cluster_se(per_match))
+
+
+def test_band_gap_needs_both_bands():
+    assert tt.band_gap([bet(1, 2.0, True)]) is None
+
+
+def test_cap_passes_needs_size_and_seasons():
+    strong, weak, against = tt.Gap(1, 0, 1, 0, 0.04, 0.01), tt.Gap(1, 0, 1, 0, 0.04, 0.03), tt.Gap(1, 0, 1, 0, -0.01, 0.01)
+    assert tt.cap_passes(strong, [strong] * 8 + [against] * 3)
+    assert not tt.cap_passes(strong, [strong] * 7 + [against] * 4)  # troppe stagioni al contrario
+    assert not tt.cap_passes(weak, [strong] * 11)  # sotto i 2 errori standard
+    assert not tt.cap_passes(None, [])

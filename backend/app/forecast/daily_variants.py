@@ -19,16 +19,22 @@ def _long_legs(kind: Kind) -> Kind:
 def before_d172(kind: Kind, studies: Sequence[tuple[int, list[dict]]]) -> list[tuple[int, dict]]:
     """La bacheca prima di D172: nessuna quota minima e la settimana dal livello cauto."""
     kind = _long_legs(kind)
-    return choose_study_legs(replace(kind, level="cauto") if kind.key == "settimana" else kind, studies, min_price=0.0)
+    return choose_study_legs(replace(kind, level="cauto") if kind.key == "settimana" else kind, studies, min_price=0.0, max_real_price=None)
 
 
 def before_d174(kind: Kind, studies: Sequence[tuple[int, list[dict]]]) -> list[tuple[int, dict]]:
     """La bacheca di D172: quota minima 1,40, multiple ancora lunghe."""
-    return choose_study_legs(_long_legs(kind), studies)
+    return choose_study_legs(_long_legs(kind), studies, max_real_price=None)
+
+
+def before_d179(kind: Kind, studies: Sequence[tuple[int, list[dict]]]) -> list[tuple[int, dict]]:
+    """La bacheca di D174: multiple corte, nessun tetto alla quota vera."""
+    return choose_study_legs(kind, studies, max_real_price=None)
 
 
 VARIANTS: dict[str, Chooser] = {
     "prima": before_d172,
     "d172": before_d174,
-    "d174": choose_study_legs,  # la bacheca di oggi
+    "d174": before_d179,
+    "d179": choose_study_legs,  # la bacheca di oggi
 }

@@ -172,6 +172,27 @@ def _types_test() -> int:
     return 0
 
 
+def _cap_test() -> int:
+    """D179: sui candidati sigillati dell'archivio lungo, la fascia 1,80-2,20 rende più della 2,20-3,00?"""
+    import json as _json
+    from datetime import UTC as _UTC
+    from datetime import datetime as _dt
+
+    from app.forecast import types_test as tt
+    from app.forecast import voices_test as vt
+
+    folder = get_settings().data_cache_dir / "replay"
+    opened = {}
+    with SessionLocal() as db:
+        for season in vt.ARCHIVE_SEASONS:
+            sealed = _json.loads((folder / f"voices_{season}.json").read_text(encoding="utf-8"))
+            opened[season] = vt.open_candidates(sealed["candidates"], sealed["seal"], vt.archive_games(db, [season]), {})
+            with (folder / "ledger.jsonl").open("a", encoding="utf-8") as ledger:
+                ledger.write(_json.dumps({"at": _dt.now(_UTC).isoformat(), "season": season, "variant": "cap", "seal": sealed["seal"]}) + "\n")
+    tt.cap_report(opened)
+    return 0
+
+
 def _voices_test(step: str, seasons: list[int], verification: bool) -> int:
     """D174: `seal` scrive i candidati senza guardare i risultati; `open` verifica il sigillo e confronta le regole."""
     import json as _json
@@ -1549,6 +1570,7 @@ def main() -> int:
     voices.add_argument("--verification", action="store_true", help="necessario per aprire la 2025/26: l'apertura finisce nel registro")
     commands.add_parser("multiplier-test", help="D176: moltiplicatore da 6 a 10, quale composizione costa meno")
     commands.add_parser("types-test", help="D178: quali tipi di giocata sbagliano, per tipo e fascia di quota")
+    commands.add_parser("cap-test", help="D179: il tetto a quota 2,20 sull'archivio 2012/13-2022/23")
     commands.add_parser("criteria-test", help="prova D156: peso dei giocatori, motivazione e meteo stimati sul passato")
     commands.add_parser("bookmaker-test", help="prova D144: dove sbaglia il bookmaker (studio contro quota media prima della partita)")
     commands.add_parser("cup-test", help="prova D146: coppe europee con un modello che collega i campionati")
@@ -1685,6 +1707,8 @@ def main() -> int:
         return _multiplier_test()
     if args.command == "types-test":
         return _types_test()
+    if args.command == "cap-test":
+        return _cap_test()
 
     if args.command == "voices-test":
         return _voices_test(args.step, args.seasons, args.verification)

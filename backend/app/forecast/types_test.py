@@ -140,3 +140,72 @@ def report(by_season: Mapping[int, Sequence[dict]], log: Callable[[str], None] =
                 wrong.append(label)
     log("\nCaselle sbagliate secondo D178: " + (", ".join(wrong) if wrong else "nessuna"))
     return wrong
+
+
+# --- D179: il tetto a quota 2,20 -------------------------------------------------------------------------------------
+
+LOW_BAND, HIGH_BAND = "1.80-2.20", "2.20-3.00"
+MIN_SEASONS_SAME_SIGN = 8
+
+
+def wide_band(price: float) -> str:
+    return band_label(price) or ("sotto 1.40" if price < BANDS[0][0] else "da 3.00")
+
+
+@dataclass(frozen=True)
+class Gap:
+    low_n: int
+    low_roi: float
+    high_n: int
+    high_roi: float
+    diff: float  # rendimento della fascia bassa meno quello della fascia alta
+    se: float
+
+    @property
+    def z(self) -> float:
+        return self.diff / self.se if self.se else 0.0
+
+
+def band_gap(opened: Sequence[dict]) -> Gap | None:
+    """Quanto rende di più la fascia 1,80-2,20 rispetto alla 2,20-3,00, giocando ogni esito a 1 €. Errore standard per partita."""
+    profit: dict[str, dict[int, float]] = {LOW_BAND: defaultdict(float), HIGH_BAND: defaultdict(float)}
+    count = {LOW_BAND: 0, HIGH_BAND: 0}
+    for r in opened:
+        band = band_label(r["price"])
+        if band in profit:
+            profit[band][r["match_id"]] += r["price"] - 1 if r["won"] else -1.0
+            count[band] += 1
+    if not count[LOW_BAND] or not count[HIGH_BAND]:
+        return None
+    matches = set(profit[LOW_BAND]) | set(profit[HIGH_BAND])
+    per_match = [profit[LOW_BAND].get(m, 0.0) / count[LOW_BAND] - profit[HIGH_BAND].get(m, 0.0) / count[HIGH_BAND] for m in matches]
+    low, high = sum(profit[LOW_BAND].values()) / count[LOW_BAND], sum(profit[HIGH_BAND].values()) / count[HIGH_BAND]
+    return Gap(count[LOW_BAND], low, count[HIGH_BAND], high, low - high, _cluster_se(per_match))
+
+
+def cap_passes(total: Gap | None, by_season: Sequence[Gap | None]) -> bool:
+    """Il criterio di D179: differenza oltre 2 errori standard e stesso segno in almeno 8 stagioni."""
+    return total is not None and total.z > Z_LIMIT and sum(1 for g in by_season if g is not None and g.diff > 0) >= MIN_SEASONS_SAME_SIGN
+
+
+def cap_report(by_season: Mapping[int, Sequence[dict]], log: Callable[[str], None] = print) -> bool:
+    everything = [r for found in by_season.values() for r in found]
+    log(f"{'stagione':<10}{'n bassa':>9}{'rend.':>9}{'n alta':>9}{'rend.':>9}{'differenza':>20}")
+    gaps = []
+    for season in sorted(by_season):
+        g = band_gap(by_season[season])
+        gaps.append(g)
+        if g is not None:
+            log(f"{season:<10}{g.low_n:>9}{g.low_roi:>+9.1%}{g.high_n:>9}{g.high_roi:>+9.1%}{f'{g.diff:+.1%} ±{g.se:.1%}':>20}")
+    total = band_gap(everything)
+    if total is not None:
+        log(f"{'TUTTE':<10}{total.low_n:>9}{total.low_roi:>+9.1%}{total.high_n:>9}{total.high_roi:>+9.1%}{f'{total.diff:+.1%} ±{total.se:.1%}':>20}   z {total.z:.1f}")
+    log("\nDescrittivo: tutte le fasce e i due mercati")
+    for title, key in (("fascia", lambda r: wide_band(r["price"])), ("mercato e fascia", lambda r: f"{r['market']} · {wide_band(r['price'])}")):
+        log(f"{title:<24}{'n':>8}{'rendimento':>18}")
+        data = [{"match_id": r["match_id"], "p": 0.0, "won": r["won"], "real_price": r["price"], "k": key(r)} for r in everything]
+        for label, c in sorted(cells(data, lambda r: r["k"]).items()):
+            log(f"{label:<24}{c.n:>8}{f'{c.real_roi:+.1%} ±{c.real_se:.1%}':>18}")
+    passed = cap_passes(total, gaps)
+    log(f"\nVerdetto D179: {'PASSA' if passed else 'non passa'} ({sum(1 for g in gaps if g is not None and g.diff > 0)} stagioni su {len(gaps)} con la fascia bassa migliore)")
+    return passed
