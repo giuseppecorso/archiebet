@@ -1,0 +1,356 @@
+/* Bozza del nuovo aspetto: scuro, digitale, verde al neon con bagliore. I colori valgono solo in questa pagina. */
+:host {
+  --neon: #00ff88;
+  --neon-soft: rgba(0, 255, 136, 0.55);
+  --neon-faint: rgba(0, 255, 136, 0.14);
+  --ink: #020705;
+  --glass: rgba(3, 18, 12, 0.72);
+  --mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace;
+  display: block;
+}
+
+.deck {
+  position: relative;
+  overflow: hidden;
+  padding: 20px 16px 28px;
+  border: 1px solid var(--neon-faint);
+  border-radius: 20px;
+  color: #e9fff4;
+  font-family: var(--font-text);
+  background:
+    radial-gradient(60% 34% at 50% 30%, rgba(0, 255, 136, 0.2), transparent 70%),
+    linear-gradient(var(--neon-faint) 1px, transparent 1px) 0 0 / 100% 34px,
+    linear-gradient(90deg, var(--neon-faint) 1px, transparent 1px) 0 0 / 34px 100%,
+    var(--ink);
+}
+
+.top {
+  text-align: center;
+}
+
+.kicker,
+.hint {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--neon-soft);
+}
+
+h1 {
+  margin: 4px 0 2px;
+  font: 200 44px/1 var(--font-text);
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow:
+    0 0 10px var(--neon),
+    0 0 34px var(--neon-soft);
+}
+
+.stage {
+  position: relative;
+  width: min(100%, 54vh, 460px);
+  aspect-ratio: 1;
+  margin: 6px auto 10px;
+  touch-action: none; /* il dito gira il pallone, non la pagina */
+  cursor: grab;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 26px rgba(0, 255, 136, 0.45));
+  }
+}
+
+.label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  pointer-events: none; /* il tocco lo legge il pallone; da tastiera resta un pulsante */
+  visibility: hidden;
+  white-space: nowrap;
+  font: 600 clamp(10px, 2.9vw, 13px) / 1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--neon);
+  text-shadow: 0 0 8px var(--neon);
+  will-change: transform, opacity;
+
+  &:focus-visible {
+    outline: 2px solid var(--neon);
+    outline-offset: 3px;
+  }
+}
+
+.plain {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+
+  button {
+    padding: 12px;
+    border: 1px solid var(--neon-soft);
+    border-radius: 10px;
+    background: var(--glass);
+    color: var(--neon);
+    font: 600 13px var(--mono);
+    text-transform: uppercase;
+  }
+}
+
+.fest,
+.strip {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.fest {
+  padding: 14px;
+  border: 1px solid var(--neon-soft);
+  border-radius: 16px;
+  background: var(--glass);
+  box-shadow:
+    0 0 22px rgba(0, 255, 136, 0.18),
+    inset 0 0 26px rgba(0, 255, 136, 0.06);
+  backdrop-filter: blur(6px);
+}
+
+.fest-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+h2 {
+  margin: 0;
+  font: 600 12px var(--mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--neon-soft);
+}
+
+.score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 auto 0 0;
+
+  b {
+    font: 600 30px/1 var(--mono);
+    color: var(--neon);
+    text-shadow: 0 0 12px var(--neon);
+  }
+
+  span {
+    font-size: 12px;
+    color: #9cc9b3;
+  }
+}
+
+.switch,
+.demo {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--neon-faint);
+  border-radius: 999px;
+  background: transparent;
+  color: #9cc9b3;
+  font: 600 11px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  &.on {
+    border-color: var(--neon);
+    color: var(--ink);
+    background: var(--neon);
+    box-shadow: 0 0 16px var(--neon-soft);
+  }
+}
+
+.demo {
+  display: block;
+  margin: 12px auto 0;
+}
+
+.num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--neon);
+  text-shadow: 0 0 8px var(--neon-soft);
+}
+
+.goal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  color: var(--ink);
+  background: var(--neon);
+  box-shadow: 0 0 34px var(--neon);
+  animation: pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1);
+
+  .goal-word {
+    font: 700 20px var(--mono);
+    text-transform: uppercase;
+  }
+
+  .goal-text {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .num {
+    color: var(--ink);
+    text-shadow: none;
+    font-weight: 700;
+  }
+}
+
+.rows {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-top: 1px solid var(--neon-faint);
+  }
+
+  .tick {
+    color: var(--neon);
+    text-shadow: 0 0 8px var(--neon);
+  }
+
+  .what {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+
+    small {
+      display: block;
+      color: #9cc9b3;
+    }
+  }
+}
+
+.empty {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: #9cc9b3;
+}
+
+.strip {
+  margin-top: 18px;
+
+  ul {
+    display: flex;
+    gap: 10px;
+    margin: 8px 0 0;
+    padding: 0 0 6px;
+    overflow-x: auto;
+    list-style: none;
+    scroll-snap-type: x proximity;
+  }
+
+  li {
+    flex: 0 0 168px;
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+    border: 1px solid var(--neon-faint);
+    border-radius: 12px;
+    background: var(--glass);
+    scroll-snap-align: start;
+    font-size: 13px;
+
+    small {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #9cc9b3;
+    }
+
+    b {
+      font-size: 20px;
+    }
+  }
+}
+
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  i {
+    --a: calc(var(--n) * 12.86deg);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 7px;
+    height: 12px;
+    border-radius: 2px;
+    background: var(--neon);
+    box-shadow: 0 0 8px var(--neon);
+    animation: burst 1.5s ease-out both;
+    animation-delay: calc(var(--n) * 14ms);
+
+    &:nth-child(3n) {
+      background: #fff;
+    }
+
+    &:nth-child(4n) {
+      background: #5cf2ff;
+      box-shadow: 0 0 8px #5cf2ff;
+    }
+  }
+}
+
+@keyframes burst {
+  from {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(-10px) scale(0.4);
+  }
+
+  to {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(calc(-150px - var(--n) * 4px)) rotate(200deg) scale(1);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
+
+  .goal {
+    animation: none;
+  }
+}

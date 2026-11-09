@@ -40,6 +40,7 @@ export const routes: Routes = [
       { path: 'diretta', redirectTo: () => inject(Router).parseUrl('/partite?stato=live') }, // Diretta e Partite sono una sezione sola
       { path: 'live', redirectTo: () => inject(Router).parseUrl('/partite?stato=live') },
       { path: 'chiedi', redirectTo: 'partite' }, // le domande si fanno nella pagina della partita
+      { path: 'lab', loadComponent: () => import('./pages/ball-home/ball-home').then((m) => m.BallHome), title: 'Bozza nuova home · Archie' }, // pagina di prova
       { path: 'laboratorio', pathMatch: 'full', redirectTo: 'laboratorio/campionati' },
       { path: 'laboratorio/campionati', loadComponent: () => import('./pages/lab/lab-leagues').then((m) => m.LabLeagues), title: 'Laboratorio · Campionati · Archie' },
       { path: 'laboratorio/impara', loadComponent: () => import('./pages/lab/lab-learning').then((m) => m.LabLearning), title: 'Laboratorio · Cosa impara Archie · Archie' },
