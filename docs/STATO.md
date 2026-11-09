@@ -1,6 +1,12 @@
 # ArchieBet — Stato del progetto
 
-Ultimo aggiornamento: 2026-10-29
+Ultimo aggiornamento: 2026-11-09
+
+## Archie sul server e prova per tipo di giocata (2026-11-09)
+
+- [x] **Archie è online su un server proprio**: OVH VPS-2 in Germania, `https://archie.giuseppecorso.it` (Caddy con HTTPS, Docker Compose in `deploy/`, aggiornamento automatico dopo i test di GitHub). Tailscale tolto. Il PC non serve più acceso: le icone "Avvia ArchieBet" non si usano (due copie accese scriverebbero due database diversi).
+- [x] **D178: nessun tipo di giocata sbaglia** (`types-test`, 127.000 pronostici a stagione alla cieca): le probabilità sono giuste per tutti i tipi e tutte le fasce di quota. Si perde il margine del bookmaker (circa 5% a pronostico, moltiplicato nelle multiple), non per colpa di combo o quote basse. Niente cambia nei pronostici.
+- [ ] Da fare: backup notturni del database fuori dal server (S3); rinnovo API-Football entro il 2026-11-20; sito vetrina e progetti del CV sul server; idea "tetto 2,20" da provare sull'archivio lungo (IDEE).
 
 ## Più precisione e un'app da usare con gli amici (2026-10-28/29)
 

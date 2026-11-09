@@ -143,6 +143,35 @@ def _multiplier_test() -> int:
     return 0
 
 
+def _types_test() -> int:
+    """D178: presi contro attesi per tipo di giocata e fascia di quota, sugli studi sigillati di D171."""
+    import json as _json
+    from datetime import UTC as _UTC
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
+
+    from app.forecast import study_backtest as bt
+    from app.forecast import types_test as tt
+
+    folder = get_settings().data_cache_dir / "replay"
+    with SessionLocal() as db:
+        adapter = api_football_adapter(db, get_settings())
+        games, _ = bt.load(adapter.cache, lambda league, s: adapter.fixtures(league, s, _td(days=36500)))
+    all_picks, board = {}, {}
+    for season in (tt.EXPLORE, tt.CONFIRM):
+        targets = [g for g in games if g.season == season]
+        all_picks[season] = tt.rows(_json.loads((folder / f"studies_{season}.json").read_text(encoding="utf-8")), targets)
+        sealed = _json.loads((folder / f"board_d174_{season}.json").read_text(encoding="utf-8"))
+        board[season] = tt.board_rows(sealed["slips"], targets)
+        with (folder / "ledger.jsonl").open("a", encoding="utf-8") as ledger:
+            ledger.write(_json.dumps({"at": _dt.now(_UTC).isoformat(), "season": season, "variant": "types", "seal": sealed["seal"]}) + "\n")
+    print("=== Tutti i pronostici degli studi (decide)")
+    tt.report(all_picks)
+    print("\n=== Solo i pronostici scelti dalla bacheca (descrittivo)")
+    tt.report(board, log=lambda line: None if "Caselle sbagliate" in line else print(line))
+    return 0
+
+
 def _voices_test(step: str, seasons: list[int], verification: bool) -> int:
     """D174: `seal` scrive i candidati senza guardare i risultati; `open` verifica il sigillo e confronta le regole."""
     import json as _json
@@ -1519,6 +1548,7 @@ def main() -> int:
     voices.add_argument("--seasons", type=int, nargs="+", choices=(*range(2012, 2023), 2023, 2024, 2025), required=True)
     voices.add_argument("--verification", action="store_true", help="necessario per aprire la 2025/26: l'apertura finisce nel registro")
     commands.add_parser("multiplier-test", help="D176: moltiplicatore da 6 a 10, quale composizione costa meno")
+    commands.add_parser("types-test", help="D178: quali tipi di giocata sbagliano, per tipo e fascia di quota")
     commands.add_parser("criteria-test", help="prova D156: peso dei giocatori, motivazione e meteo stimati sul passato")
     commands.add_parser("bookmaker-test", help="prova D144: dove sbaglia il bookmaker (studio contro quota media prima della partita)")
     commands.add_parser("cup-test", help="prova D146: coppe europee con un modello che collega i campionati")
@@ -1653,6 +1683,8 @@ def main() -> int:
         return 0
     if args.command == "multiplier-test":
         return _multiplier_test()
+    if args.command == "types-test":
+        return _types_test()
 
     if args.command == "voices-test":
         return _voices_test(args.step, args.seasons, args.verification)
