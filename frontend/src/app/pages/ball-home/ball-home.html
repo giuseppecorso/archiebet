@@ -6,6 +6,9 @@
 
   <div class="stage" #stage>
     <canvas #canvas aria-hidden="true"></canvas>
+    @if (!failed()) {
+      <div class="fly" aria-hidden="true"><div class="fx"><div class="fy"><ab-archie-toon pose="fly" /></div></div></div>
+    }
     @for (entry of menu; track entry.label; let i = $index) {
       <button type="button" class="label" #label (click)="pick(i)">{{ entry.label }}</button>
     }

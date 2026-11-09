@@ -7,6 +7,7 @@ import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
 import { SlipService } from '../../core/slip';
 import { StudyLeg, StudyMultiple } from '../../core/study';
 import { ArchieStudy, studyTime } from '../../shared/archie-study';
+import { ArchieToon } from '../../shared/archie-toon';
 import { Crest } from '../../shared/crest';
 import { MultiPick, PickOption } from '../../shared/multi-pick';
 import { WhyPopup } from '../../shared/why-popup';
@@ -44,7 +45,7 @@ function nextDays(n: number): PickOption[] {
 /** "Archie, fammi una multipla": i pronostici studiati da Archie (D137), ognuno con il suo perché. */
 @Component({
   selector: 'ab-generator',
-  imports: [ArchieStudy, Crest, KeyValuePipe, MultiPick, RouterLink, WhyPopup],
+  imports: [ArchieStudy, ArchieToon, Crest, KeyValuePipe, MultiPick, RouterLink, WhyPopup],
   template: `
     <section class="panel box form" aria-labelledby="gen-title">
       <h2 id="gen-title" class="title">Archie, fammi una multipla</h2>
@@ -112,7 +113,7 @@ function nextDays(n: number): PickOption[] {
         <ab-archie-study />
       } @else if (result.value(); as r) {
         @if (r.legs.length) {
-          <p class="board-head"><img src="archie.svg" width="28" height="28" alt="" /> La lavagna di Archie</p>
+          <p class="board-head"><ab-archie-toon class="mini" /> La lavagna di Archie</p>
           <ol class="legs written">
             @for (l of r.legs; track l.match.id; let i = $index) {
               <li [style.--i]="i">
@@ -194,7 +195,7 @@ function nextDays(n: number): PickOption[] {
     input { width: 70px; }
     .result { background-image: linear-gradient(var(--neon-faint) 1px, transparent 1px), linear-gradient(90deg, var(--neon-faint) 1px, transparent 1px); background-size: 100% 28px, 28px 100%; }
     .board-head { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font: 600 12px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
-    .board-head img { border-radius: 7px; }
+    .board-head .mini { width: 30px; height: 30px; }
     .written > li, .totals.written { animation: write 0.55s ease-out both; animation-delay: calc(var(--i) * 0.4s); }
     @keyframes write { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
     @media (prefers-reduced-motion: reduce) { .written > li, .totals.written { animation: none; } }

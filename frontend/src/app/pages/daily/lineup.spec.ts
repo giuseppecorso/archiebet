@@ -5,8 +5,12 @@ describe('formazione della bacheca', () => {
     expect(lineup(0)).toEqual([]);
   });
 
-  it('una giocata sola è il portiere', () => {
-    expect(lineup(1)).toEqual([{ x: 50, y: 88 }]);
+  it('una giocata sola sta a centrocampo', () => {
+    expect(lineup(1)).toEqual([{ x: 50, y: 50 }]);
+  });
+
+  it('il portiere resta abbastanza su da leggere il nome', () => {
+    expect(lineup(5)[0]).toEqual({ x: 50, y: 82 });
   });
 
   it('undici giocate: portiere e linee 4-3-3', () => {

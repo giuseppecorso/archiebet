@@ -3,6 +3,7 @@ import { Component, DestroyRef, ElementRef, afterNextRender, computed, effect, i
 import { Router } from '@angular/router';
 import { DailyLeg, DailyOut } from '../../core/daily';
 import { odds } from '../../core/format';
+import { ArchieToon } from '../../shared/archie-toon';
 import { Home } from '../home/home';
 import { BALL_MENU, freshWins, legKey, uniqueLegs } from './ball';
 import type { BallScene, LabelPlace } from './ball-scene';
@@ -14,7 +15,7 @@ const PARTY_MS = 6_000;
 /** La home (D181): il pallone è il menù, la festa suona quando Archie prende un pronostico; sotto, i riquadri di oggi. */
 @Component({
   selector: 'ab-ball-home',
-  imports: [Home],
+  imports: [ArchieToon, Home],
   templateUrl: './ball-home.html',
   styleUrl: './ball-home.scss',
 })

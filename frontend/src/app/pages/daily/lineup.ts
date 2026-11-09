@@ -5,7 +5,7 @@ export interface Spot {
 }
 
 const ROW_MAX = 4;
-const KEEPER_Y = 88;
+const KEEPER_Y = 82;
 const BACK_Y = 68;
 const FRONT_Y = 14;
 
@@ -22,6 +22,7 @@ export function rowSizes(players: number): number[] {
 /** La formazione per n giocate: la prima è il portiere, le altre si dispongono a linee fino all'attacco. */
 export function lineup(players: number): Spot[] {
   if (players <= 0) return [];
+  if (players === 1) return [{ x: 50, y: 50 }];
   const spots: Spot[] = [{ x: 50, y: KEEPER_Y }];
   const sizes = rowSizes(players);
   sizes.forEach((size, r) => {

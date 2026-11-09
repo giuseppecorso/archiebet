@@ -11,6 +11,7 @@ Ultimo aggiornamento: 2026-11-09
 - [x] **D181: il pallone è la home, tutto il sito in stile digitale al neon** (toppe che si sollevano, luce dalle cuciture; colori e caratteri centrali cambiati in `styles.scss`). Da controllare a occhio le altre pagine sul telefono.
 - [x] **D182: Archie gufo al neon, lavagna della multipla, bacheca come campo di calcio**. Da controllare a occhio sul telefono: campo con molte giocate, animazione dello studio.
 - [x] **D183: stile digitale calmo** (meno verde, niente bagliori, secondo colore viola-azzurro). Da confermare con Giuse: tonalità e pallone della home.
+- [x] **D184: Archie a cartone arancio** (logo, volo attorno al pallone, scena della lavagna da 5 s). Il pallone ha ancora la luce verde nelle cuciture: chiedere a Giuse se attenuarla.
 - [ ] Prossimi (chiesti da Giuse): Archie futuristico, animazione della multipla con lavagna digitale, bacheca come campo di calcio (IDEE); poi la prova sui movimenti delle quote.
 - [ ] Da fare: backup notturni del database fuori dal server (S3); rinnovo API-Football entro il 2026-11-20; sito vetrina e progetti del CV sul server; idea "tetto 2,20" da provare sull'archivio lungo (IDEE).
 
