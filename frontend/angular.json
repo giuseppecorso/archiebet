@@ -71,8 +71,7 @@
           "options": {
             "proxyConfig": "proxy.conf.json",
             "port": 4280,
-            "host": "127.0.0.1",
-            "allowedHosts": [".ts.net"]
+            "host": "127.0.0.1"
           }
         },
         "test": {

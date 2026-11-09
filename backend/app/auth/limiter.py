@@ -1,4 +1,4 @@
-"""Freno ai tentativi di login (l'app è raggiungibile da internet con Tailscale Funnel, D150).
+"""Freno ai tentativi di login (l'app è raggiungibile da internet).
 
 Dopo MAX_FAILURES password sbagliate per lo stesso nome utente, quel nome resta bloccato per LOCK.
 In memoria: basta un solo processo, e un riavvio azzera i contatori (non è un problema per 6 utenti).

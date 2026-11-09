@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     session_days: int = 30
     session_cookie_name: str = "archiebet_session"
     cookie_secure: bool = False
-    # App compilata servita dal backend su una sola porta (per Tailscale Funnel, D150); vuoto = non servirla
+    # App compilata servita dal backend su una sola porta (D150); vuoto = non servirla
     frontend_dist: str = "../frontend/dist/archiebet/browser"
 
     data_cache_dir: Path = Path("data/cache")

@@ -8,7 +8,7 @@ from app.models import User, UserSession
 from app.models.base import utcnow
 
 
-MAX_USERS = 6  # l'amministratore e al massimo 5 amici (anche il limite gratuito di Tailscale)
+MAX_USERS = 6  # l'amministratore e al massimo 5 amici
 
 
 def create_user(db: Session, username: str, password: str, is_admin: bool = False) -> User:
