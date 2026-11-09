@@ -9,6 +9,7 @@ import { SlipLeg, SlipService } from '../../core/slip';
 import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
 import { Chart } from '../../shared/chart';
 import { PushToggle } from '../../shared/push-toggle';
+import { lineup, rowSizes } from './lineup';
 import { slipImage } from './slip-image';
 
 /** Bacheca Daily (D153): le schedine pubblicate da Archie, appese come foglietti, con le statistiche per tutti. */
@@ -39,10 +40,25 @@ import { slipImage } from './slip-image';
           }
         </div>
       }
-      <div class="cork">
-        @for (s of d.board; track s.id) {
-          <article class="note" [class]="'note tilt-' + ($index % 4)" [attr.data-status]="s.status">
-            <span class="pin" aria-hidden="true"></span>
+      @if (d.board.length) {
+        <div class="pitch" [style.--rows]="rows(d.board.length)" role="group" aria-label="Le giocate di Archie in campo">
+          <span class="line half" aria-hidden="true"></span>
+          <span class="line circle" aria-hidden="true"></span>
+          <span class="line area top" aria-hidden="true"></span>
+          <span class="line area bottom" aria-hidden="true"></span>
+          @for (s of d.board; track s.id; let i = $index) {
+            <button type="button" class="player" [attr.data-status]="s.status" [class.on]="current(d)?.id === s.id" [attr.aria-pressed]="current(d)?.id === s.id"
+                    [style.left.%]="spots(d.board.length)[i].x" [style.top.%]="spots(d.board.length)[i].y" (click)="selected.set(s.id)">
+              <span class="shirt">{{ s.legs.length }}</span>
+              <span class="name">{{ s.title }}</span>
+            </button>
+          }
+        </div>
+        <p class="pitch-hint muted small">Ogni giocatore è una giocata di Archie: il numero sulla maglia dice quante partite ha dentro. Toccalo per leggerla.</p>
+      }
+      <div class="sheet">
+        @if (current(d); as s) {
+          <article class="note" [attr.data-status]="s.status">
             <header>
               <h2>{{ s.title }}</h2>
               <span class="when">{{ dayLabel(s.period + 'T12:00:00') }} · pubblicata alle {{ time(s.published_at) }}</span>
@@ -77,8 +93,8 @@ import { slipImage } from './slip-image';
               <span class="stamp" [attr.data-status]="s.status">{{ stampOf(s) }}</span>
             }
           </article>
-        } @empty {
-          <p class="empty">La bacheca è vuota: le prime schedine arrivano alle 10 del mattino.</p>
+        } @else {
+          <p class="empty">Il campo è vuoto: le prime giocate entrano alle 10 del mattino.</p>
         }
       </div>
 
@@ -197,6 +213,15 @@ export class Daily {
   private readonly slip = inject(SlipService);
   private readonly http = inject(HttpClient);
   protected readonly data = httpResource<DailyOut>(() => '/api/daily');
+  /** La giocata aperta sotto il campo (null = la prima) */
+  protected readonly selected = signal<number | null>(null);
+  protected current(d: DailyOut): DailySlip | undefined {
+    return d.board.find((s) => s.id === this.selected()) ?? d.board[0];
+  }
+  protected readonly spots = lineup;
+  protected rows(players: number): number {
+    return rowSizes(players).length + 1;
+  }
   protected readonly pct = pct;
   protected readonly fmtOdds = odds;
   protected readonly dayLabel = dayLabel;

@@ -2,79 +2,116 @@
 .today { margin: 0 0 12px; }
 .today .led { font-size: 20px; color: var(--amber); }
 
-/* Bacheca di sughero con i foglietti appesi */
-.cork {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 26px 20px;
-  padding: 28px 20px 30px;
-  margin-bottom: 16px;
-  border-radius: 8px;
-  border: 10px solid #4a2f1a;
-  background-color: #b5834f;
-  background-image:
-    radial-gradient(rgb(80 50 20 / 0.35) 1px, transparent 1.5px),
-    radial-gradient(rgb(255 230 190 / 0.25) 1px, transparent 1.5px);
-  background-size: 9px 9px, 13px 13px;
-  background-position: 0 0, 4px 6px;
-  box-shadow: inset 0 0 30px rgb(0 0 0 / 0.35);
+/* Il campo: ogni giocatore è una giocata (D182) */
+.pitch {
+  --rows: 3;
+  position: relative;
+  max-width: 720px;
+  min-height: calc(150px + var(--rows) * 112px);
+  margin: 0 auto 8px;
+  overflow: hidden;
+  border: 2px solid var(--neon-soft);
+  border-radius: 14px;
+  background:
+    repeating-linear-gradient(0deg, rgb(0 255 136 / 0.07) 0 52px, transparent 52px 104px),
+    radial-gradient(70% 50% at 50% 50%, rgb(0 255 136 / 0.12), transparent 75%),
+    var(--ink);
+  box-shadow: 0 0 26px rgb(0 255 136 / 0.18), inset 0 0 40px rgb(0 255 136 / 0.08);
 }
+.line { position: absolute; border: 2px solid var(--neon-soft); pointer-events: none; }
+.line.half { top: 50%; left: 0; right: 0; border-width: 2px 0 0; }
+.line.circle { top: 50%; left: 50%; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; }
+.line.area { left: 50%; width: 46%; height: 13%; margin-left: -23%; }
+.line.area.top { top: -2px; border-radius: 0 0 6px 6px; }
+.line.area.bottom { bottom: -2px; border-radius: 6px 6px 0 0; }
+.player {
+  position: absolute;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  width: 86px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--neon);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.18s ease;
+}
+.player:hover, .player.on { transform: translate(-50%, -56%) scale(1.08); }
+.shirt {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid currentColor;
+  border-radius: 50% 50% 46% 46%;
+  background: var(--ink);
+  font: 600 18px/1 var(--mono);
+  box-shadow: 0 0 12px currentColor, inset 0 0 10px rgb(0 255 136 / 0.18);
+}
+.player.on .shirt { box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px currentColor, 0 0 22px currentColor; }
+.name {
+  max-width: 100%;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgb(2 7 5 / 0.8);
+  font: 600 10px/1.2 var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  color: #e9fff4;
+}
+.player[data-status='won'] .shirt { color: var(--ink); background: var(--neon); border-color: var(--neon); }
+.player[data-status='lost'] { color: var(--loss); }
+.player[data-status='void'], .player[data-status='done'] { color: var(--muted); }
+.player:focus-visible { outline: 2px solid var(--neon); outline-offset: 4px; border-radius: 8px; }
+.pitch-hint { max-width: 720px; margin: 0 auto 12px; text-align: center; }
+@media (prefers-reduced-motion: reduce) { .player { transition: none; } }
+
+/* La giocata scelta e l'archivio: schede digitali */
+.sheet { max-width: 720px; margin: 0 auto 16px; }
+.cork { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 16px; }
 .note {
   position: relative;
-  padding: 22px 16px 14px;
-  color: #23201a;
-  background: #fbf6e8;
-  border-radius: 2px;
-  box-shadow: 0 10px 18px rgb(0 0 0 / 0.35), 0 2px 3px rgb(0 0 0 / 0.25);
+  padding: 16px 16px 14px;
+  color: var(--text);
+  background: var(--glass);
+  border: 1px solid var(--neon-soft);
+  border-radius: 12px;
+  box-shadow: 0 0 18px rgb(0 255 136 / 0.12);
   font-size: 13px;
 }
-.tilt-0 { transform: rotate(-1.4deg); }
-.tilt-1 { transform: rotate(1deg); }
-.tilt-2 { transform: rotate(-0.6deg); }
-.tilt-3 { transform: rotate(1.6deg); }
-.pin {
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  width: 18px;
-  height: 18px;
-  margin-left: -9px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #ff8a80, #c62828 60%, #7f1515);
-  box-shadow: 0 3px 4px rgb(0 0 0 / 0.45);
-}
-.note header h2 { margin: 0; font-family: var(--font-title); font-weight: 700; text-transform: uppercase; font-size: 24px; letter-spacing: 1px; color: #14110c; }
-.note .when { font-size: 11px; color: #7a6f5c; }
+.note header h2 { margin: 0; padding-right: 90px; font-family: var(--font-title); font-weight: 700; text-transform: uppercase; font-size: 24px; letter-spacing: 1px; color: var(--neon); }
+.note .when { font-size: 11px; color: var(--muted); }
 .note ol { margin: 10px 0 8px; padding: 0; list-style: none; }
-.note li { position: relative; display: flex; flex-direction: column; padding: 6px 22px 6px 0; border-top: 1px dashed #d8ccb0; }
-.note .m { font-size: 12px; color: #6b5f4b; text-decoration: none; }
-.note .e { font-weight: 700; color: #14110c; }
-.note .meta { font-size: 11px; color: #7a6f5c; }
+.note li { position: relative; display: flex; flex-direction: column; padding: 6px 22px 6px 0; border-top: 1px dashed var(--neon-faint); }
+.note .m { font-size: 12px; color: var(--text-2); text-decoration: none; }
+.note .e { font-weight: 700; color: var(--text); }
+.note .meta { font-size: 11px; color: var(--muted); }
 .note .mark { position: absolute; right: 0; top: 8px; font-weight: 800; font-size: 16px; }
-.note li[data-status='won'] .mark { color: #1e8a4c; }
-.note li[data-status='lost'] .mark { color: #c62828; }
-.note li[data-status='lost'] .e { text-decoration: line-through; text-decoration-color: #c62828; }
-.note footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 8px; border-top: 2px solid #14110c; }
-.share { min-height: 30px; padding: 0 10px; font: inherit; font-size: 12px; font-weight: 700; color: #020705; background: #00ff88; border: 0; border-radius: 3px; cursor: pointer; }
+.note li[data-status='won'] .mark { color: var(--win); }
+.note li[data-status='lost'] .mark { color: var(--loss); }
+.note li[data-status='lost'] .e { text-decoration: line-through; text-decoration-color: var(--loss); }
+.note footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid var(--neon-soft); }
+.share { min-height: 30px; padding: 0 10px; font: inherit; font-size: 12px; font-weight: 700; color: var(--neon); background: transparent; border: 1px solid var(--neon-soft); border-radius: 6px; cursor: pointer; }
 .stamp {
   position: absolute;
-  top: 36%;
+  top: 14px;
   right: 12px;
-  padding: 2px 10px;
-  font-family: var(--font-title); font-weight: 700; text-transform: uppercase;
-  font-size: 30px;
-  letter-spacing: 2px;
-  border: 3px solid currentColor;
-  border-radius: 4px;
-  transform: rotate(-14deg);
-  opacity: 0.8;
+  padding: 1px 8px;
+  font: 600 12px var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  border-radius: 999px;
   pointer-events: none;
 }
-.stamp[data-status='won'] { color: #1e8a4c; }
-.stamp[data-status='lost'] { color: #c62828; }
+.stamp[data-status='won'] { color: var(--win); }
+.stamp[data-status='lost'] { color: var(--loss); }
 .stamp[data-status='void'],
-.stamp[data-status='done'] { color: #5b5b5b; }
-.empty { grid-column: 1 / -1; margin: 0; padding: 14px; color: #2b241a; background: #fbf6e8; border-radius: 2px; }
+.stamp[data-status='done'] { color: var(--muted); }
+.empty { margin: 0; padding: 14px; color: var(--text-2); border: 1px dashed var(--neon-soft); border-radius: 12px; }
 
 .stats { margin-bottom: 12px; }
 .table-wrap { overflow-x: auto; }
@@ -91,14 +128,11 @@ thead th { font-size: 11px; color: var(--muted); border-top: 0; }
 li[data-status='won'] strong { color: var(--win); }
 li[data-status='lost'] strong { color: var(--loss); }
 @media (max-width: 600px) {
-  .cork { padding: 22px 12px 24px; border-width: 6px; }
+  .player { width: 74px; }
+  .shirt { width: 38px; height: 38px; font-size: 16px; }
 }
 
-.share.play {
-  /* il foglietto è chiaro: tasto pieno verde scuro con testo bianco, ben distinto da "Immagine" */
-  color: #fff;
-  background: #1f7a4a;
-}
+.share.play { color: var(--ink); background: var(--neon); border-color: var(--neon); }
 
 .notify {
   margin: 0 0 12px;
@@ -121,9 +155,8 @@ li[data-status='lost'] strong { color: var(--loss); }
 .archive { margin-top: 16px; }
 .archive > summary { padding: 12px 4px; font-size: 18px; color: var(--amber); cursor: pointer; }
 .small-cork { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-.note.mini { padding: 14px 16px 18px; font-size: 13px; transform: none; }
+.note.mini { padding: 14px 16px 18px; font-size: 13px; }
 .note.mini h2 { font-size: 18px; }
-.note.mini .stamp { top: 40%; font-size: 22px; }
 .note.mini .score { margin-left: 4px; }
 
 .play-all {

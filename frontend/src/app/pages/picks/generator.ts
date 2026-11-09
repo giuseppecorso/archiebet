@@ -6,6 +6,7 @@ import { Competition } from '../../core/football';
 import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
 import { SlipService } from '../../core/slip';
 import { StudyLeg, StudyMultiple } from '../../core/study';
+import { ArchieStudy, studyTime } from '../../shared/archie-study';
 import { Crest } from '../../shared/crest';
 import { MultiPick, PickOption } from '../../shared/multi-pick';
 import { WhyPopup } from '../../shared/why-popup';
@@ -43,7 +44,7 @@ function nextDays(n: number): PickOption[] {
 /** "Archie, fammi una multipla": i pronostici studiati da Archie (D137), ognuno con il suo perché. */
 @Component({
   selector: 'ab-generator',
-  imports: [Crest, KeyValuePipe, MultiPick, RouterLink, WhyPopup],
+  imports: [ArchieStudy, Crest, KeyValuePipe, MultiPick, RouterLink, WhyPopup],
   template: `
     <section class="panel box form" aria-labelledby="gen-title">
       <h2 id="gen-title" class="title">Archie, fammi una multipla</h2>
@@ -107,11 +108,14 @@ function nextDays(n: number): PickOption[] {
     </section>
 
     <section class="panel box result" aria-live="polite" aria-label="Multipla studiata">
-      @if (result.value(); as r) {
+      @if (thinking()) {
+        <ab-archie-study />
+      } @else if (result.value(); as r) {
         @if (r.legs.length) {
-          <ol class="legs">
-            @for (l of r.legs; track l.match.id) {
-              <li>
+          <p class="board-head"><img src="archie.svg" width="28" height="28" alt="" /> La lavagna di Archie</p>
+          <ol class="legs written">
+            @for (l of r.legs; track l.match.id; let i = $index) {
+              <li [style.--i]="i">
                 <span class="when muted small">{{ day(l.match.kickoff_at) }} {{ time(l.match.kickoff_at) }} · {{ l.match.competition.name }}</span>
                 <a class="match" [routerLink]="['/partite', l.match.id]"><ab-crest [team]="l.match.home" [size]="16" /> {{ l.match.home.name }} – {{ l.match.away.name }} <ab-crest [team]="l.match.away" [size]="16" /></a>
                 <div class="pick-line">
@@ -125,7 +129,7 @@ function nextDays(n: number): PickOption[] {
               </li>
             }
           </ol>
-          <div class="totals">
+          <div class="totals written" [style.--i]="r.legs.length">
             <span>Esce tutta: <strong>{{ pct(r.win_probability) }}</strong> <span class="muted small">· circa 1 volta su {{ oneIn(r.win_probability) }}</span></span>
             @for (t of totalsList(r); track t[0]) {
               <span>Quota totale {{ t[0] }}: <strong class="led">{{ fmtOdds(t[1]) }}</strong> <span class="muted small">· con {{ stake() }} € vinci <strong>{{ money(stake() * t[1]) }}</strong></span></span>
@@ -151,7 +155,7 @@ function nextDays(n: number): PickOption[] {
           }
         }
       } @else if (result.isLoading()) {
-        <p class="muted small">Archie sta studiando le partite…</p>
+        <ab-archie-study />
       } @else if (result.error()) {
         <p class="warn">Il generatore non risponde: controlla che il backend sia acceso.</p>
       }
@@ -188,6 +192,12 @@ function nextDays(n: number): PickOption[] {
     label, .field { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
     select, input { min-height: 30px; padding: 2px 8px; font: inherit; font-size: 13px; color: var(--text); background: var(--bg-deep); border: 1px solid var(--line-strong); border-radius: 4px; }
     input { width: 70px; }
+    .result { background-image: linear-gradient(var(--neon-faint) 1px, transparent 1px), linear-gradient(90deg, var(--neon-faint) 1px, transparent 1px); background-size: 100% 28px, 28px 100%; }
+    .board-head { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font: 600 12px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--neon-soft); }
+    .board-head img { border-radius: 7px; }
+    .written > li, .totals.written { animation: write 0.55s ease-out both; animation-delay: calc(var(--i) * 0.4s); }
+    @keyframes write { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+    @media (prefers-reduced-motion: reduce) { .written > li, .totals.written { animation: none; } }
     .legs { margin: 0; padding: 0; list-style: none; }
     .legs li { padding: 8px 0; border-bottom: 1px solid var(--line-row); }
     .when { display: block; }
@@ -313,7 +323,17 @@ export class Generator {
     this.lockNote.set(null);
   }
 
+  /** Archie studia a schermo per un attimo, poi scrive la multipla sulla lavagna */
+  protected readonly thinking = signal(false);
+  private study(): void {
+    const ms = studyTime();
+    if (!ms) return;
+    this.thinking.set(true);
+    setTimeout(() => this.thinking.set(false), ms);
+  }
+
   protected generate(): void {
+    this.study();
     this.restart();
     this.applied.set(this.choices());
     this.result.reload();
@@ -350,6 +370,7 @@ export class Generator {
   }
 
   protected another(r: StudyMultiple): void {
+    this.study();
     this.excluded.update((ids) => [...ids, ...r.legs.map((l) => l.match.id)]);
   }
 
