@@ -32,19 +32,22 @@ const FRAGMENT = /* glsl */ `
       else if (s > second) { second = s; }
     }
     float gap = best - second;
-    float seam = 1.0 - smoothstep(0.004, 0.016, gap);
-    float halo = 1.0 - smoothstep(0.0, 0.09, gap);
+    // la luce esce dalle cuciture: un filo quasi bianco al centro e un alone verde che si spegne allontanandosi
+    float core = 1.0 - smoothstep(0.002, 0.011, gap);
+    float pulse = 0.85 + 0.15 * sin(uTime * 2.2) + uParty;
+    float glow = exp(-gap * 26.0) * pulse;
     vec3 neon = vec3(0.0, 1.0, 0.53);
     vec3 n = normalize(vNormal);
-    float light = 0.32 + 0.68 * max(dot(n, normalize(vec3(-0.45, 0.6, 0.66))), 0.0);
+    float light = 0.3 + 0.7 * max(dot(n, normalize(vec3(-0.45, 0.6, 0.66))), 0.0);
     vec3 color;
     if (face < 12) {
-      color = vec3(0.012, 0.035, 0.028) + neon * halo * 0.22;
+      color = vec3(0.012, 0.035, 0.028) + neon * glow * 0.6;
       if (face == uActive) color += vec3(0.0, 0.75, 0.4) * (0.55 + 0.45 * sin(uTime * 7.0));
     } else {
-      color = vec3(0.86, 0.93, 0.9) * light;
+      color = vec3(0.7, 0.76, 0.74) * light;
+      color = mix(color, neon, min(glow * 0.8, 1.0)); // sul bianco l'alone colora, non schiarisce
     }
-    color = mix(color, neon * (0.75 + 0.25 * uParty), seam);
+    color = mix(color, vec3(0.78, 1.0, 0.9), core);
     float rim = pow(1.0 - max(n.z, 0.0), 2.6);
     color += neon * rim * (0.55 + uParty);
     gl_FragColor = vec4(color, 1.0);
