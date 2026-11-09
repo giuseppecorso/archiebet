@@ -236,3 +236,13 @@ App con login e menu delle sezioni; repository GitHub privato `giuseppecorso/arc
 ## Da decidere più avanti
 
 Niente in sospeso (riferimento di mercato deciso: D48).
+
+## 2026-11-09 — Macchina del tempo (D171-D172)
+
+`python -m app.cli daily-replay --step seal|open --season 2023|2024|2025 --variant d172`: bacheca rigiocata alla cieca (`forecast/daily_replay.py`, sigilli e registro in `data/cache/replay/`). Sviluppo 2023/24-2024/25, verifica 2025/26 (aperta una volta per `d172`), 2026/27 sigillata. Bacheca con quota minima 1,40, settimana dal livello equilibrato, nuova schedina "Da 2 in su" in prova (non ha passato la verifica). Probabilità invariate.
+
+Multiple da massimo 3 partite (D174). `python -m app.cli voices-test --step seal|open --seasons ...`: prova delle due voci, passata su 2012/13-2022/23 (D175), applicata a "Da 2 in su", che però scatta di rado sui bookmaker italiani. 2025/26 non aperta per le voci, 2026/27 sigillata.
+
+"Da 2 in su" tolta dalla bacheca (D176). `python -m app.cli multiplier-test`: composizioni del moltiplicatore 6-10; nessuna passa la conferma.
+
+Bacheca con "La schedina 6–10" e Fammi una multipla con "Da 6 a 10" e "Scegli per prezzo" (D177, `forecast/multiplier.py`).

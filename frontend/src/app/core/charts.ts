@@ -26,8 +26,8 @@ export interface DayPoint {
   day: string;
   bets: number;
   won: number;
-  profit: string;
-  cum_profit: string;
+  profit: string | number;
+  cum_profit: string | number;
 }
 export interface MonthPoint {
   month: string;
@@ -178,31 +178,33 @@ export function clvOption(weeks: WeekClv[]): EChartsCoreOption {
   };
 }
 
-/** Per fascia di quota: quanto azzecchi (barre) contro quanto promette la quota (trattino ambra) */
-export function oddsOption(bands: OddsBand[]): EChartsCoreOption {
+/** Barre con un trattino di riferimento: per fascia di quota, quanto azzecchi contro quanto promette la quota */
+export function oddsOption(bands: OddsBand[], view: { expected?: string; prefix?: string; rotate?: number; marker?: number } = {}): EChartsCoreOption {
   const shown = bands.filter((b) => b.selections > 0);
+  const expected = view.expected ?? 'Promesse dalla quota';
+  const prefix = view.prefix ?? 'Quote ';
   return {
     ...base(),
-    legend: legend(['Azzeccate', 'Promesse dalla quota']),
+    legend: legend(['Azzeccate', expected]),
     tooltip: {
       ...(base()['tooltip'] as object),
       trigger: 'axis',
       axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(255,255,255,0.04)' } },
       formatter: (items: { dataIndex: number }[]) => {
         const b = shown[items[0].dataIndex];
-        return `<b>Quote ${b.label}</b><br>Azzeccate: <b>${pct(b.hit_rate)}</b> (${b.won} su ${b.selections})<br>Promesse dalla quota: ${pct(b.expected_rate)}`;
+        return `<b>${prefix}${b.label}</b><br>Azzeccate: <b>${pct(b.hit_rate)}</b> (${b.won} su ${b.selections})<br>${expected}: ${pct(b.expected_rate)}`;
       },
     },
-    xAxis: { type: 'category', data: shown.map((b) => b.label), axisLabel: { ...axisLabel, interval: 0, hideOverlap: true }, axisLine, axisTick: { show: false } },
+    xAxis: { type: 'category', data: shown.map((b) => b.label), axisLabel: { ...axisLabel, interval: 0, hideOverlap: true, rotate: view.rotate ?? 0 }, axisLine, axisTick: { show: false } },
     yAxis: { ...percentAxis(), max: 1 },
     series: [
       { type: 'bar', name: 'Azzeccate', data: shown.map((b) => b.hit_rate), barMaxWidth: 36, itemStyle: { color: CHART.good, borderRadius: [4, 4, 0, 0] } },
       {
         type: 'scatter',
-        name: 'Promesse dalla quota',
+        name: expected,
         data: shown.map((b) => b.expected_rate),
         symbol: 'rect',
-        symbolSize: [46, 3],
+        symbolSize: [view.marker ?? 46, 3],
         itemStyle: { color: CHART.quote },
         z: 3,
       },

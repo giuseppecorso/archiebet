@@ -113,6 +113,127 @@ def _print_scores(label: str, s: Scores) -> None:
     print(f"{label:<22} {s.n:>6}  log loss {s.log_loss:.4f}  Brier {s.brier:.4f}  RPS {s.rps:.4f}  calibr. {s.ece:.3f}{market}")
 
 
+def _multiplier_test() -> int:
+    """D176: le schedine si scelgono sui candidati sigillati, che non hanno risultati; poi si aprono."""
+    import json as _json
+    from datetime import UTC as _UTC
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
+
+    from app.forecast import daily_replay as dr
+    from app.forecast import multiplier_test as mt
+    from app.forecast import study_backtest as bt
+    from app.forecast import voices_test as vt
+    from app.forecast.radar_service import load_book_odds
+
+    folder = get_settings().data_cache_dir / "replay"
+    candidates, results = {}, {}
+    with SessionLocal() as db:
+        adapter = api_football_adapter(db, get_settings())
+        recent, _ = bt.load(adapter.cache, lambda league, s: adapter.fixtures(league, s, _td(days=36500)))
+        for season in (*mt.TUNING, *mt.CONFIRMATION):
+            sealed = _json.loads((folder / f"voices_{season}.json").read_text(encoding="utf-8"))
+            candidates[season] = sealed["candidates"]
+            games = vt.archive_games(db, [season]) if season in vt.ARCHIVE_SEASONS else [g for g in recent if g.season == season]
+            for row in vt.open_candidates(sealed["candidates"], sealed["seal"], games, {}):
+                results[(row["match_id"], row["market"], row["selection"])] = row["won"]
+            with (folder / "ledger.jsonl").open("a", encoding="utf-8") as ledger:
+                ledger.write(_json.dumps({"at": _dt.now(_UTC).isoformat(), "season": season, "variant": "multiplier", "seal": sealed["seal"]}) + "\n")
+    mt.report(candidates, results)
+    return 0
+
+
+def _voices_test(step: str, seasons: list[int], verification: bool) -> int:
+    """D174: `seal` scrive i candidati senza guardare i risultati; `open` verifica il sigillo e confronta le regole."""
+    import json as _json
+    from datetime import UTC as _UTC
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
+
+    from app.forecast import daily_replay as dr
+    from app.forecast import study_backtest as bt
+    from app.forecast import voices_test as vt
+    from app.forecast.radar_service import load_book_odds
+
+    if step == "open" and set(seasons) & set(dr.VERIFICATION) and not verification:
+        print("La 2025/26 è la stagione di verifica: serve --verification, e l'apertura resta nel registro.")
+        return 1
+    folder = get_settings().data_cache_dir / "replay"
+    with SessionLocal() as db:
+        adapter = api_football_adapter(db, get_settings())
+        archive = set(seasons) <= set(vt.ARCHIVE_SEASONS)
+        games = [] if archive else bt.load(adapter.cache, lambda league, s: adapter.fixtures(league, s, _td(days=36500)))[0]
+        rows = []
+        for season in seasons:
+            if archive:  # D175: id del database, tre stagioni di storia per i modelli
+                games = vt.archive_games(db, range(season - 4, season + 1))
+            targets = [g for g in games if g.season == season]
+            sealed_file = folder / f"voices_{season}.json"
+            load = (lambda closing: load_book_odds(db, [g.id for g in targets], closing=closing)) if archive else (lambda closing: dr.load_books(db, targets, closing=closing))
+            if step == "seal":
+                studies = vt.archive_studies(games, season) if archive else _json.loads((folder / f"studies_{season}.json").read_text(encoding="utf-8"))
+                found = vt.candidates(studies, load(False))
+                fingerprint = dr.seal(found)
+                sealed_file.write_text(_json.dumps({"seal": fingerprint, "candidates": found}), encoding="utf-8")
+                print(f"{season}: {len(found)} candidati sigillati. Sigillo {fingerprint}")
+                continue
+            sealed = _json.loads(sealed_file.read_text(encoding="utf-8"))
+            rows += vt.open_candidates(sealed["candidates"], sealed["seal"], targets, load(True))
+            with (folder / "ledger.jsonl").open("a", encoding="utf-8") as ledger:
+                ledger.write(_json.dumps({"at": _dt.now(_UTC).isoformat(), "season": season, "variant": "voices", "seal": sealed["seal"]}) + "\n")
+    if step == "open":
+        vt.report(rows)
+        if set(seasons) <= set(vt.ARCHIVE_SEASONS):
+            for rule in ("due_voci", "studio_si"):
+                print(vt.verdict(rows, rule))
+    return 0
+
+
+def _daily_replay(step: str, season: int, variant: str, verification: bool) -> int:
+    """D171: `seal` scrive studi e schedine senza guardare i risultati; `open` verifica il sigillo e confronta."""
+    import json as _json
+    from datetime import UTC as _UTC
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
+
+    from app.forecast import daily_replay as dr
+    from app.forecast import study_backtest as bt
+    from app.forecast.daily_variants import VARIANTS
+
+    if step == "open" and season in dr.VERIFICATION and not verification:
+        print("La 2025/26 è la stagione di verifica: serve --verification, e l'apertura resta nel registro.")
+        return 1
+    folder = get_settings().data_cache_dir / "replay"
+    folder.mkdir(parents=True, exist_ok=True)
+    board_file = folder / f"board_{variant}_{season}.json"
+    studies_file = folder / f"studies_{season}.json"
+    with SessionLocal() as db:
+        adapter = api_football_adapter(db, get_settings())
+        games, _ = bt.load(adapter.cache, lambda league, s: adapter.fixtures(league, s, _td(days=36500)))
+        targets = [g for g in games if g.season == season]
+        if step == "seal":
+            books = dr.load_books(db, targets, closing=False)
+            if studies_file.exists():
+                studies = _json.loads(studies_file.read_text(encoding="utf-8"))
+            else:
+                studies = dr.replay_studies(dr.Vault(games), [dr.fixture_of(g) for g in targets], books)
+                studies_file.write_text(_json.dumps(studies), encoding="utf-8")
+            days = sorted(_dt.fromisoformat(s["when"]).astimezone(dr.ROME).date() for s in studies)
+            slips = dr.replay_board(studies, books, days[0], days[-1], VARIANTS[variant])
+            fingerprint = dr.seal(slips)
+            board_file.write_text(_json.dumps({"seal": fingerprint, "slips": slips}), encoding="utf-8")
+            print(f"{season}: {len(studies)} studi, {len(slips)} schedine sigillate ({variant}). Sigillo {fingerprint}")
+            return 0
+        sealed = _json.loads(board_file.read_text(encoding="utf-8"))
+        settled = dr.open_seal(sealed["slips"], sealed["seal"], targets)
+        closing = dr.load_books(db, targets, closing=True)
+    with (folder / "ledger.jsonl").open("a", encoding="utf-8") as ledger:
+        ledger.write(_json.dumps({"at": _dt.now(_UTC).isoformat(), "season": season, "variant": variant, "seal": sealed["seal"]}) + "\n")
+    print(f"=== {season}/{(season + 1) % 100:02d} · variante {variant} · sigillo {sealed['seal'][:12]}…")
+    dr.write_report(settled, closing)
+    return 0
+
+
 def _backtest(first: str, last: str, config: ModelConfig) -> int:
     with SessionLocal() as db:
         games = load_games(db)
@@ -1388,6 +1509,16 @@ def main() -> int:
     commands.add_parser("study-refresh", help="Archie studia le partite dei prossimi giorni (D137)")
     commands.add_parser("study-backtest", help="prova D140: lo studio e le sue varianti sul passato (walk-forward)")
     commands.add_parser("boost-test", help="prova D164: pi-rating e gradient boosting come terza previsione")
+    replay = commands.add_parser("daily-replay", help="D171: rigioca la bacheca sul passato alla cieca: --step seal, poi --step open")
+    replay.add_argument("--step", choices=("seal", "open"), required=True)
+    replay.add_argument("--season", type=int, choices=(2023, 2024, 2025), required=True)
+    replay.add_argument("--variant", default="d174")
+    replay.add_argument("--verification", action="store_true", help="necessario per aprire la 2025/26: ogni apertura finisce nel registro")
+    voices = commands.add_parser("voices-test", help="D174: tre voci sul prezzo giusto e doppie: --step seal, poi --step open")
+    voices.add_argument("--step", choices=("seal", "open"), required=True)
+    voices.add_argument("--seasons", type=int, nargs="+", choices=(*range(2012, 2023), 2023, 2024, 2025), required=True)
+    voices.add_argument("--verification", action="store_true", help="necessario per aprire la 2025/26: l'apertura finisce nel registro")
+    commands.add_parser("multiplier-test", help="D176: moltiplicatore da 6 a 10, quale composizione costa meno")
     commands.add_parser("criteria-test", help="prova D156: peso dei giocatori, motivazione e meteo stimati sul passato")
     commands.add_parser("bookmaker-test", help="prova D144: dove sbaglia il bookmaker (studio contro quota media prima della partita)")
     commands.add_parser("cup-test", help="prova D146: coppe europee con un modello che collega i campionati")
@@ -1520,6 +1651,15 @@ def main() -> int:
         ct.log_bands("Fasce di quota, studio di oggi (conferma):", ct.bands(confirm, today))
         ct.log_bands("Fasce di quota, con la terza previsione (conferma):", ct.bands(confirm, result.weights))
         return 0
+    if args.command == "multiplier-test":
+        return _multiplier_test()
+
+    if args.command == "voices-test":
+        return _voices_test(args.step, args.seasons, args.verification)
+
+    if args.command == "daily-replay":
+        return _daily_replay(args.step, args.season, args.variant, args.verification)
+
     if args.command == "criteria-test":
         import json as _json
         from datetime import timedelta as _td

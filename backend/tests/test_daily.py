@@ -1,7 +1,7 @@
 """Bacheca Daily (D153): quando escono le schedine, come si chiudono, statistiche, pubblicazione."""
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -15,7 +15,7 @@ MONDAY_11 = datetime(2026, 11, 2, 10, 0, tzinfo=UTC)
 def test_publication_calendar():
     assert due(FRIDAY_9) == []  # prima delle 10 niente
     friday = {k.key: (period, end) for k, period, _, end in due(FRIDAY_11)}
-    assert set(friday) == {"giorno", "weekend", "colpo", "clv", "sistema"}  # il venerdì escono anche weekend e sistemone
+    assert set(friday) == {"giorno", "weekend", "colpo", "clv", "sei_dieci", "sistema"}  # il venerdì escono anche weekend e sistemone
     assert friday["weekend"][1].date().isoformat() == "2026-11-01"  # fino a domenica
     assert friday["giorno"][0] == "2026-10-30"
     monday = {k.key: end for k, _, _, end in due(MONDAY_11)}
@@ -107,15 +107,22 @@ def test_daily_api_board_and_stats(logged_client, db):
 
     leg = {"match_id": 1, "kickoff_at": "2026-10-30T18:00:00+00:00", "competition": "Serie A", "home": "Inter", "away": "Milan",
            "market": "GG", "selection": "yes", "event": "segnano entrambe", "p": 0.66, "price": 1.7, "status": "won"}  # fmt: skip
-    db.add(DailySlip(kind="giorno", period="2026-10-29", published_at=FRIDAY_9, legs=[leg], total_odds=1.7, win_probability=0.66, status="won"))
-    db.add(DailySlip(kind="giorno", period="2026-10-30", published_at=FRIDAY_11, legs=[{**leg, "status": "open"}], total_odds=1.7, win_probability=0.66, status="open"))
+
+    from app.forecast.daily import ROME
+
+    day = datetime.now(UTC).astimezone(ROME).date()
+    recent, old = (day - timedelta(days=2)).isoformat(), (day - timedelta(days=8)).isoformat()
+    db.add(DailySlip(kind="giorno", period=old, published_at=FRIDAY_9 - timedelta(days=1), legs=[leg], total_odds=1.7, win_probability=0.66, status="won"))
+    db.add(DailySlip(kind="giorno", period=recent, published_at=FRIDAY_9, legs=[leg], total_odds=1.7, win_probability=0.66, status="won"))
+    db.add(DailySlip(kind="giorno", period=day.isoformat(), published_at=FRIDAY_11, legs=[{**leg, "status": "open"}], total_odds=1.7, win_probability=0.66, status="open"))
     db.commit()
     body = logged_client.get("/api/daily").json()
     [board] = body["board"]
-    assert board["period"] == "2026-10-30" and board["title"] == "La schedina del giorno"  # sulla bacheca l'ultima
+    assert board["period"] == day.isoformat() and board["title"] == "La schedina del giorno"  # sulla bacheca l'ultima
     giorno = next(s for s in body["stats"] if s["kind"] == "giorno")
-    assert (giorno["published"], giorno["won"], giorno["profit"]) == (2, 1, pytest.approx(0.7))
-    assert [h["period"] for h in body["history"]] == ["2026-10-29"]
+    assert (giorno["published"], giorno["won"], giorno["profit"]) == (3, 2, pytest.approx(1.4))
+    assert [h["period"] for h in body["history"]] == [recent]  # D173: in archivio solo l'ultima settimana...
+    assert [d["day"] for d in body["charts"]["days"]] == [old, recent]  # ...ma nelle statistiche resta tutto
 
 
 def test_system_slip_status_and_profit():

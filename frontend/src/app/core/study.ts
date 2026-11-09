@@ -31,4 +31,6 @@ export interface StudyMultiple {
   total_odds: number;
   /** Con la quota obiettivo: Archie ci è arrivato? */
   target_reached: boolean;
+  /** Costruita scegliendo le quote più convenienti (D177) */
+  by_price?: boolean;
 }

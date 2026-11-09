@@ -74,6 +74,12 @@ function nextDays(n: number): PickOption[] {
           <input type="number" inputmode="decimal" min="0.5" step="0.5" [value]="stake()" (input)="stake.set(+$any($event.target).value || 0)" />
         </label>
       </div>
+      <div class="chips presets" role="group" aria-label="Moltiplicatore pronto">
+        <button type="button" class="chip" [class.on]="is610()" [attr.aria-pressed]="is610()" (click)="preset610()">Da 6 a 10</button>
+        @if (target()) {
+          <button type="button" class="chip" [class.on]="byPrice()" [attr.aria-pressed]="byPrice()" (click)="byPrice.set(!byPrice())" title="Prende le quote più convenienti rispetto al prezzo giusto, invece dei pronostici più probabili">Scegli per prezzo</button>
+        }
+      </div>
       <p class="hint muted small">Moltiplicatore: quante volte vuoi moltiplicare la puntata, da… a… (da 8 a 12 = 5 € diventano 40-60 €; il secondo si può lasciare vuoto). Con «Decide Archie» sceglie lui quante partite; spento, usa esattamente il numero che scrivi.</p>
       @if ((lockedLegs() || target()) && lockNote(); as note) {
         <p class="lock-note" role="status">{{ note }}</p>
@@ -137,7 +143,7 @@ function nextDays(n: number): PickOption[] {
           @if (!target() && !auto() && r.legs.length < legs()) {
             <p class="muted small">Archie ha trovato solo {{ r.legs.length }} partite da proporre a questo livello: le altre non hanno un pronostico su cui modello e campo sono d'accordo.</p>
           }
-          <p class="muted small note">La percentuale è quella dello studio di Archie (modello dei gol e fatti del campo), non quella delle quote.</p>
+          <p class="muted small note">{{ r.by_price ? 'Partite scelte per il prezzo: la percentuale viene dalle quote del mercato, senza il margine del bookmaker. Conviene più di altre, ma non è una vincita garantita.' : "La percentuale è quella dello studio di Archie (modello dei gol e fatti del campo), non quella delle quote." }}</p>
         } @else {
           <p class="muted">Nessuna partita da proporre con queste scelte: prova più giorni, un altro livello o tutti i campionati.</p>
           @if (excluded().length) {
@@ -174,6 +180,7 @@ function nextDays(n: number): PickOption[] {
     .range { display: flex; align-items: center; gap: 6px; font-size: 13px; letter-spacing: 0; text-transform: none; }
     .range input { width: 64px; }
     .field ab-multi-pick { letter-spacing: 0; text-transform: none; font-weight: 400; }
+    .presets { margin-top: 6px; }
     .gen-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 8px; }
     .generate { min-height: 38px; padding: 6px 26px; font-size: 15px; }
     .reset { min-height: 34px; padding: 4px 12px; font: inherit; font-size: 13px; font-weight: 600; color: var(--amber); background: transparent; border: 1px solid var(--amber); border-radius: 6px; cursor: pointer; }
@@ -219,6 +226,18 @@ export class Generator {
   /** Moltiplicatore massimo ("da 8 a 12"); vuoto = nessun limite */
   protected readonly targetMax = signal<number | null>(null);
   protected readonly stake = signal(5);
+  /** Con il moltiplicatore: quote più convenienti invece dei pronostici più probabili (D177) */
+  protected readonly byPrice = signal(true);
+  protected readonly is610 = computed(() => this.target() === 6 && this.targetMax() === 10);
+
+  protected preset610(): void {
+    this.target.set(6);
+    this.targetMax.set(10);
+    this.auto.set(true);
+    this.byPrice.set(true);
+    this.lockNote.set(null);
+  }
+
   /** Consigliato: Archie decide quante partite (probabilità che esca almeno 40%, 20% o 8% secondo il livello) */
   protected readonly auto = signal(true);
   /** Partite già proposte: "genera un'altra multipla" le salta */
@@ -239,6 +258,7 @@ export class Generator {
     if (this.theme() !== 'tutte') params.set('theme', this.theme());
     if (this.target()) params.set('target', String(this.target()));
     if (this.target() && this.targetMax()) params.set('target_max', String(this.targetMax()));
+    if (this.target() && this.byPrice()) params.set('by_price', 'true');
     if (this.auto()) params.set('auto', 'true'); // con il moltiplicatore: Archie decide quante partite; spento = esattamente quelle scelte
     return params.toString();
   });
@@ -259,6 +279,7 @@ export class Generator {
   protected readonly levelNote = computed(() => {
     const t = this.target();
     if (!t) return '';
+    if (this.byPrice()) return 'Per questo moltiplicatore Archie prende le quote più convenienti di 1X2 e Under/Over 2.5, con poche partite.';
     const lv = levelFor(t, this.auto() ? null : this.legs());
     return this.auto()
       ? `Con il moltiplicatore il livello lo sceglie Archie: per ${t} usa pronostici ${lv}.`
@@ -284,6 +305,7 @@ export class Generator {
     this.auto.set(true);
     this.target.set(null);
     this.targetMax.set(null);
+    this.byPrice.set(true);
     this.stake.set(5);
     this.days.set(this.dayOptions.slice(0, 2).map((d) => d.value));
     this.leagues.set([]);

@@ -1,17 +1,18 @@
 """Bacheca Daily (D153): le schedine pubblicate da Archie, con le statistiche visibili a tutti."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy import select
 
 from app.auth.deps import CurrentUser, DbSession
-from app.forecast.daily import KINDS, LOST, OPEN, ROME, WON, stats
+from app.forecast.daily import KINDS, LOST, OPEN, ROME, WON, BoardCharts, board_charts, stats
+from app.forecast.study import ASSUMED_MARGIN
 from app.models import DailySlip, Match, MatchStatus
 
 router = APIRouter(prefix="/api/daily", tags=["daily"])
-HISTORY = 30
+ARCHIVE_DAYS = 7  # D173: in archivio solo l'ultima settimana, il resto vive nelle statistiche
 
 
 class DailyLegOut(BaseModel):
@@ -75,7 +76,8 @@ class DailyOut(BaseModel):
     board: list[DailySlipOut]  # l'ultima di ogni tipo
     today: TodayOut  # pronostici pubblicati oggi: azzeccati, chiusi, totali
     stats: list[KindStatsOut]
-    history: list[DailySlipOut]  # le ultime chiuse
+    history: list[DailySlipOut]  # le chiuse dell'ultima settimana
+    charts: BoardCharts  # su tutte le schedine, anche quelle uscite dall'archivio
     by_source: list[SourceOut] = []
 
 
@@ -89,7 +91,9 @@ def _out(s: DailySlip, scores: dict[int, str] | None = None) -> DailySlipOut:
 @router.get("")
 def daily(_: CurrentUser, db: DbSession) -> DailyOut:
     slips = list(db.scalars(select(DailySlip).order_by(DailySlip.published_at.desc(), DailySlip.id.desc())))
-    today = datetime.now(UTC).astimezone(ROME).date().isoformat()
+    local_today = datetime.now(UTC).astimezone(ROME).date()
+    today = local_today.isoformat()
+    archive_from = (local_today - timedelta(days=ARCHIVE_DAYS)).isoformat()
     board, seen = [], set()
     for s in slips:  # in bacheca l'ultima di ogni tipo, se è di oggi o ancora in corso; le altre vanno nell'archivio
         if s.kind not in seen:
@@ -100,13 +104,14 @@ def daily(_: CurrentUser, db: DbSession) -> DailyOut:
     ids = {leg["match_id"] for s in slips for leg in s.legs}
     scores = {m.id: f"{m.home_goals}-{m.away_goals}" for m in db.scalars(select(Match).where(Match.id.in_(ids))) if m.home_goals is not None and m.status == MatchStatus.FINISHED}
     legs = [leg for s in slips if s.period == today for leg in s.legs]
-    per_kind = stats(slips)
+    per_kind = stats(slips, ASSUMED_MARGIN)
     return DailyOut(
         board=[_out(s, scores) for s in board],
         today=TodayOut(legs_won=sum(leg["status"] == WON for leg in legs), legs_closed=sum(leg["status"] in (WON, LOST) for leg in legs), legs_total=len(legs)),
         stats=[KindStatsOut(kind=k, title=KINDS[k].title, **vars(v)) for k, v in per_kind.items()],
         by_source=_by_source(slips),
-        history=[_out(s, scores) for s in slips if s.status != OPEN and s not in board][:HISTORY],
+        history=[_out(s, scores) for s in slips if s.status != OPEN and s not in board and s.period >= archive_from],
+        charts=board_charts(slips, ASSUMED_MARGIN),
     )
 
 

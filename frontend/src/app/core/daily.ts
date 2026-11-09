@@ -1,4 +1,5 @@
 /** Bacheca Daily (D153): vedi backend/app/api/daily.py */
+import { DayPoint, MonthPoint, OddsBand } from './charts';
 
 export interface DailyLeg {
   match_id: number;
@@ -56,4 +57,6 @@ export interface DailyOut {
   history: DailySlip[];
   /** Pronostici dello studio con e senza le quote del mercato: azzeccati, chiusi, attesi */
   by_source?: { label: string; won: number; closed: number; expected: number }[];
+  /** Grafici (D173): su tutte le schedine, anche quelle uscite dall'archivio */
+  charts?: { days: DayPoint[]; months: MonthPoint[]; by_kind: OddsBand[]; by_odds: OddsBand[] };
 }

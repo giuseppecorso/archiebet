@@ -173,9 +173,17 @@ describe('Archie: navigazione', () => {
       board: [slip], today: { legs_won: 1, legs_closed: 1, legs_total: 1 },
       stats: [{ kind: 'giorno', title: 'La schedina del giorno', published: 1, closed: 1, won: 1, expected: 0.66, legs_won: 1, legs_closed: 1, profit: 0.7 }],
       history: [slip],
+      charts: {
+        days: [{ day: '2026-10-29', bets: 1, won: 1, profit: 0.7, cum_profit: 0.7 }, { day: '2026-10-30', bets: 1, won: 1, profit: 0.7, cum_profit: 1.4 }],
+        months: [{ month: '2026-10', won: 2, lost: 0 }],
+        by_kind: [{ label: 'Giorno', selections: 2, won: 2, hit_rate: 1, expected_rate: 0.66 }],
+        by_odds: [],
+      },
     });
     await harness.fixture.whenStable();
     const page = harness.routeNativeElement!;
+    expect(page.querySelectorAll('.stats ab-chart').length).toBe(3); // niente grafico per fascia di quota senza pronostici chiusi
+    expect(page.querySelector('.archive summary')?.textContent).toContain("ultima settimana");
     expect(page.querySelector('.note h2')?.textContent).toContain('La schedina del giorno');
     expect(page.querySelector('.note .e')?.textContent).toContain('Segnano entrambe');
     expect(page.querySelector('.stamp')?.textContent).toContain('Vinta');

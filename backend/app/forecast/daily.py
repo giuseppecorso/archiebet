@@ -4,6 +4,7 @@ Funzioni pure: quando esce ogni schedina, su quali partite, come si chiude e com
 Una schedina pubblicata non cambia più: si aggiorna solo l'esito di ogni pronostico.
 """
 
+from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
@@ -29,14 +30,17 @@ class Kind:
     target: float | None = None  # quota obiettivo
     singles: bool = False  # pronostici da giocare uno per uno (occasioni)
     system: int | None = None  # sistema "k su n" (D157): multiple da k partite
+    multiplier_legs: int | None = None  # D177: multipla da 6 a 10 con questo numero di partite, scelte per prezzo
 
 
 KINDS = {
-    "giorno": Kind("giorno", "La schedina del giorno", None, 1, "equilibrato"),
-    "weekend": Kind("weekend", "La schedina del weekend", 4, 3, "equilibrato", min_legs=4, max_legs=6),
-    "settimana": Kind("settimana", "La schedina della settimana", 0, 7, "cauto"),
+    # D174: al massimo 3 partite, ogni partita in più paga di nuovo il margine del bookmaker
+    "giorno": Kind("giorno", "La schedina del giorno", None, 1, "equilibrato", max_legs=3),
+    "weekend": Kind("weekend", "La schedina del weekend", 4, 3, "equilibrato", min_legs=2, max_legs=3),
+    "settimana": Kind("settimana", "La schedina della settimana", 0, 7, "equilibrato", max_legs=3),  # D172: dal livello cauto restavano solo quote sotto 1,40
     "colpo": Kind("colpo", "Il colpo", None, 3, "rischioso", target=20.0),
     "clv": Kind("clv", "La schedina del CLV", None, 1, None, max_legs=3, singles=True),
+    "sei_dieci": Kind("sei_dieci", "La schedina 6–10", None, 1, None, multiplier_legs=2),  # D177
     # D157: per divertirsi, con la probabilità vera in vista
     "pazza": Kind("pazza", "La pazza della settimana", 0, 7, "rischioso", min_legs=4, target=400.0),
     "sistema": Kind("sistema", "Il sistemone del weekend", 4, 3, "rischioso", min_legs=6, max_legs=6, system=4),  # quote basse: con 4 giuste non tornerebbe la puntata
@@ -109,7 +113,17 @@ class KindStats:
     profit: float = 0.0  # con 1 € a schedina
 
 
-def stats(slips: Iterable) -> dict[str, KindStats]:
+FAIR_TOLERANCE = 0.011  # la quota scritta coincide con 1/probabilità: è la quota giusta, non quella di un bookmaker
+
+
+def net_prices(legs: Sequence[dict], margin: float) -> Sequence[dict]:
+    """Dove manca una quota vera, la quota giusta meno il margine che il bookmaker applicherebbe (D173)."""
+    if not margin:
+        return legs
+    return [{**leg, "price": max(1.0, leg["price"] * (1 - margin))} if leg["p"] and abs(leg["price"] - 1 / leg["p"]) < FAIR_TOLERANCE else leg for leg in legs]
+
+
+def stats(slips: Iterable, margin: float = 0.0) -> dict[str, KindStats]:
     """Statistiche per tipo; `slips` ha gli attributi kind, legs, status, total_odds, win_probability."""
     out = {key: KindStats() for key in KINDS}
     for s in slips:
@@ -121,7 +135,7 @@ def stats(slips: Iterable) -> dict[str, KindStats]:
         if s.status == OPEN:
             continue
         st.closed += 1
-        st.profit += profit(s.legs, s.status, s.total_odds, k.singles, k.system)
+        st.profit += profit(net_prices(s.legs, margin), s.status, s.total_odds, k.singles, k.system)
         if k.singles:
             st.won += sum(1 for leg in settled if leg["status"] == WON)
             st.expected += sum(leg["p"] for leg in settled)
@@ -129,6 +143,72 @@ def stats(slips: Iterable) -> dict[str, KindStats]:
             st.won += s.status == WON
             st.expected += s.win_probability
     return out
+
+
+SHORT_NAMES = {"giorno": "Giorno", "weekend": "Weekend", "settimana": "Settimana", "colpo": "Colpo", "clv": "CLV", "sei_dieci": "6–10", "pazza": "Pazza", "sistema": "Sistema"}
+ODDS_BANDS = (("fino a 1,40", 1.0, 1.4), ("1,40 – 2,00", 1.4, 2.0), ("2,00 – 3,00", 2.0, 3.0), ("3,00 – 5,00", 3.0, 5.0), ("oltre 5,00", 5.0, float("inf")))
+
+
+@dataclass(frozen=True)
+class DayProfit:
+    day: str  # giorno di pubblicazione
+    bets: int  # schedine chiuse (le singole del CLV contano solo nell'utile)
+    won: int
+    profit: float
+    cum_profit: float
+
+
+@dataclass(frozen=True)
+class MonthResults:
+    month: str  # "2026-11"
+    won: int
+    lost: int
+
+
+@dataclass(frozen=True)
+class LegBand:
+    label: str
+    selections: int
+    won: int
+    hit_rate: float | None
+    expected_rate: float | None  # media delle probabilità di Archie
+
+
+@dataclass(frozen=True)
+class BoardCharts:
+    days: list[DayProfit]
+    months: list[MonthResults]
+    by_kind: list[LegBand]
+    by_odds: list[LegBand]
+
+
+def _band(label: str, legs: Sequence[dict]) -> LegBand:
+    n, won = len(legs), sum(leg["status"] == WON for leg in legs)
+    return LegBand(label, n, won, round(won / n, 4) if n else None, round(sum(leg["p"] for leg in legs) / n, 4) if n else None)
+
+
+def board_charts(slips: Iterable, margin: float = 0.0) -> BoardCharts:
+    """I numeri dei grafici della bacheca (D173), su tutte le schedine chiuse: l'archivio ne mostra solo una settimana."""
+    closed = [s for s in slips if s.status != OPEN]
+    per_day: dict[str, list] = defaultdict(list)
+    results: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    for s in closed:
+        per_day[s.period].append(s)
+        if s.status in (WON, LOST):
+            results[s.period[:7]][s.status == LOST] += 1
+    days, running = [], 0.0
+    for day in sorted(per_day):
+        items = per_day[day]
+        gained = sum(profit(net_prices(s.legs, margin), s.status, s.total_odds, KINDS[s.kind].singles, KINDS[s.kind].system) for s in items)
+        running += gained
+        days.append(DayProfit(day, sum(s.status in (WON, LOST) for s in items), sum(s.status == WON for s in items), round(gained, 2), round(running, 2)))
+    legs = [(s.kind, leg) for s in slips for leg in s.legs if leg["status"] in (WON, LOST)]
+    return BoardCharts(
+        days,
+        [MonthResults(m, won, lost) for m, (won, lost) in sorted(results.items())],
+        [_band(SHORT_NAMES.get(key, key), [leg for k, leg in legs if k == key]) for key in KINDS],
+        [_band(label, [leg for _, leg in legs if low <= leg["price"] < high]) for label, low, high in ODDS_BANDS],
+    )
 
 
 def announcement(published: Sequence[str]) -> tuple[str, str] | None:

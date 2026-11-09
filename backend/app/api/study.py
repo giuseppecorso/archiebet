@@ -1,5 +1,6 @@
 """Fammi una multipla (D137): pronostici studiati da Archie, per livello, con la spiegazione."""
 
+import math
 from datetime import UTC, date, datetime
 from typing import Literal
 
@@ -10,7 +11,10 @@ from app.api.football import BOOKMAKER_LABELS, MatchCard, _news_counts, match_ca
 from app.api.picks import ROME, Horizon, horizon_window
 from app.auth.deps import CurrentUser, DbSession, PremiumUser
 from app.betting.calc import market_name
-from app.forecast.study import LEVELS, THEMES, auto_legs, choose_multiple, closest_per_match, leg_price, legs_in_range, theme_market, theme_match, up_to_target, within_range
+from app.config import get_settings
+from app.forecast.multiplier import best_slip, legs_for, price_rows
+from app.forecast.radar_service import load_book_odds
+from app.forecast.study import LEVELS, THEMES, auto_legs, choose_multiple, closest_per_match, event_text, leg_price, legs_in_range, theme_market, theme_match, up_to_target, within_range
 from app.forecast.study_service import _aware, load_studies
 from app.ingest.teams import CUP_COUNTRY
 from app.models import Match, MatchStudy
@@ -46,6 +50,7 @@ class StudyMultipleOut(BaseModel):
     more: bool  # ci sono altre partite per "genera un'altra multipla"
     total_odds: float  # quota totale: migliore quota di ogni gamba, o quella giusta dello studio dove manca
     target_reached: bool = True  # con la quota obiettivo: ci è arrivata?
+    by_price: bool = False  # costruita scegliendo le quote più convenienti (D177)
 
 
 def _labelled(prices: dict[str, float]) -> dict[str, float]:
@@ -66,6 +71,41 @@ def _leg(card: MatchCard, pick: dict) -> StudyLegOut:
     )  # fmt: skip
 
 
+def _price_pick(row: dict, m: Match, picks: list[dict], book: dict, playable: list[str]) -> dict:
+    """Un pronostico scelto per il prezzo: la probabilità è quella delle quote senza margine; il perché dice quanto è conveniente."""
+    found = next((p for p in picks if p["market"] == row["market"] and p["selection"] == row["selection"]), None)
+    base = found or {"market": row["market"], "selection": row["selection"], "event": event_text(row["market"], row["selection"], m.home_team.name, m.away_team.name),
+                     "p_model": row["sharp"], "evidence": [0, 0, 0, 0], "reasons": []}  # fmt: skip
+    prices = {bm: book[bm][row["market"]][row["selection"]] for bm in playable if book.get(bm, {}).get(row["market"], {}).get(row["selection"], 0) > 1}
+    reason = f"È tra le quote più convenienti di queste partite: si paga {row['price']:.2f}, il prezzo giusto sarebbe {1 / row['sharp']:.2f}."
+    return {**base, "level": "prezzo", "p_archie": row["sharp"], "prices": prices, "reasons": [reason, *base["reasons"]]}
+
+
+def _by_price(db, studies: list, allowed: set[int], theme: str, target: float, target_max: float | None, legs: int, auto: bool, skip: set[int], level: str, now: datetime) -> StudyMultipleOut | None:
+    """Il moltiplicatore con le quote più convenienti, poche partite (D177). None se nessuna combinazione ci sta."""
+    playable = get_settings().radar_bookmaker_list
+    high = target_max if target_max and target_max >= target else target * 1.5
+    center = math.sqrt(target * high)
+    count = legs_for(center) if auto else legs
+    found = {m.id: (m, d) for m, d in studies if m.id in allowed}
+    books = load_book_odds(db, list(found), closing=False)
+    rows = [r for mid, (m, _) in found.items() for r in price_rows(mid, m.kickoff_at.isoformat(), books.get(mid, {}), playable) if theme_market(theme, r["market"]) and mid not in skip]
+    slip = best_slip(rows, count, "valore", target, high, center)
+    if slip is None:
+        return None
+    used = {r["match_id"] for r in slip}
+    slip.sort(key=lambda r: r["when"])
+    cards = {c.id: c for c in match_cards(db, [found[mid][0] for mid in used], now)}
+    out = [_leg(cards[r["match_id"]], _price_pick(r, found[r["match_id"]][0], found[r["match_id"]][1].get("picks", []), books.get(r["match_id"], {}), playable)) for r in slip]
+    total = math.prod(r["price"] for r in slip)
+    totals = {}
+    for label in dict.fromkeys(BOOKMAKER_LABELS[bm] for bm in ("sisal", "eurobet")):
+        if all(label in leg.prices for leg in out):
+            totals[label] = round(math.prod(leg.prices[label] for leg in out), 2)
+    more = best_slip([r for r in rows if r["match_id"] not in used], count, "valore", target, high, center) is not None
+    return StudyMultipleOut(level=level, legs=out, win_probability=round(math.prod(r["sharp"] for r in slip), 4), totals=totals, more=more, total_odds=round(total, 2), target_reached=True, by_price=True)
+
+
 @router.get("/multiple")
 def study_multiple(
     _: PremiumUser,  # Premium (D159)
@@ -82,6 +122,7 @@ def study_multiple(
     target: float | None = Query(None, gt=1, le=100000, description="quota totale obiettivo: Archie aggiunge gambe finché ci arriva"),
     target_max: float | None = Query(None, gt=1, le=100000, description="con target: quota totale massima (moltiplicatore da target a target_max)"),
     auto: bool = Query(False, description="Archie decide quante partite: finché la multipla esce abbastanza spesso per il livello"),
+    by_price: bool = Query(False, description="con target: le quote più convenienti rispetto al prezzo giusto, solo 1X2 e Under/Over 2.5 (D177)"),
 ) -> StudyMultipleOut:
     now = datetime.now(UTC)
     chosen_days: set[date] = set()
@@ -100,6 +141,10 @@ def study_multiple(
     news = _news_counts(db, [m for m, _ in studies], now) if theme == "notizie" else {}
     pool = [(m.id, [p for p in d["picks"] if theme_market(theme, p["market"])]) for m, d in studies
             if theme_match(theme, m.competition.tier, m.competition.country == CUP_COUNTRY, news.get(m.id, 0))]  # fmt: skip
+    if by_price and target:
+        priced = _by_price(db, studies, {mid for mid, _ in pool}, theme, target, target_max, legs, auto, skip, level, now)
+        if priced is not None:
+            return priced
     if auto and not target:
         chosen = auto_legs(choose_multiple(pool, level, MAX_LEGS, skip), level)
     elif target and not auto:  # numero di partite e moltiplicatore insieme: la combinazione più probabile dentro l'intervallo

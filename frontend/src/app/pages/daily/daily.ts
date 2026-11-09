@@ -1,18 +1,20 @@
 import { HttpClient, httpResource } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Bet } from '../../core/bets';
 import { RouterLink } from '@angular/router';
+import { balanceOption, monthsOption, oddsOption } from '../../core/charts';
 import { DailyLeg, DailyOut, DailySlip } from '../../core/daily';
 import { SlipLeg, SlipService } from '../../core/slip';
 import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
+import { Chart } from '../../shared/chart';
 import { PushToggle } from '../../shared/push-toggle';
 import { slipImage } from './slip-image';
 
 /** Bacheca Daily (D153): le schedine pubblicate da Archie, appese come foglietti, con le statistiche per tutti. */
 @Component({
   selector: 'ab-daily',
-  imports: [PushToggle, RouterLink],
+  imports: [Chart, PushToggle, RouterLink],
   template: `
     @if (data.value(); as d) {
       <p class="intro">
@@ -81,12 +83,51 @@ import { slipImage } from './slip-image';
       </div>
 
       <p class="next muted small">
-        <strong>Quando escono:</strong> ogni giorno alle 10 la schedina del giorno, il colpo e la schedina del CLV ·
+        <strong>Quando escono:</strong> ogni giorno alle 10 la schedina del giorno, il colpo, la schedina 6–10 e la schedina del CLV ·
         il venerdì il weekend e il sistemone · il lunedì la settimana e la pazza della settimana.
       </p>
 
       <section class="panel box stats" aria-labelledby="st-title">
         <h2 id="st-title" class="title box-title">Statistiche della bacheca</h2>
+        <div class="kpis">
+          <div class="kpi"><span class="label">Schedine pubblicate</span><span class="led">{{ totals(d).published }}</span></div>
+          <div class="kpi"><span class="label">Pronostici giusti</span><span class="led">{{ totals(d).won }}<span class="small muted">/{{ totals(d).closed }}</span></span><span class="muted small">{{ pct(totals(d).closed ? totals(d).won / totals(d).closed : null) }}</span></div>
+          <div class="kpi"><span class="label">Con 1 € a schedina</span><span [class]="'led ' + (totals(d).profit > 0 ? 'pos' : totals(d).profit < 0 ? 'neg' : '')">{{ money(totals(d).profit) }}</span></div>
+        </div>
+        <div class="charts">
+          <div class="chart-card">
+            <h3 class="title chart-title">Se avessi giocato 1 € su ogni schedina</h3>
+            @if ((d.charts?.days?.length ?? 0) > 1) {
+              <ab-chart [option]="balanceChart()" label="Utile cumulato giocando 1 euro su ogni schedina" />
+            } @else {
+              <p class="muted small">Il grafico compare dopo almeno due giorni di schedine chiuse.</p>
+            }
+          </div>
+          <div class="chart-card">
+            <h3 class="title chart-title">Schedine vinte e perse, mese per mese</h3>
+            @if (d.charts?.months?.length) {
+              <ab-chart [option]="monthsChart()" label="Schedine vinte e perse per mese" />
+            } @else {
+              <p class="muted small">Ancora nessuna schedina chiusa.</p>
+            }
+          </div>
+          <div class="chart-card">
+            <h3 class="title chart-title">Pronostici giusti per schedina</h3>
+            @if (hasBars(d.charts?.by_kind)) {
+              <ab-chart [option]="kindChart()" label="Pronostici azzeccati per tipo di schedina, contro quelli attesi" />
+            } @else {
+              <p class="muted small">Ancora nessun pronostico chiuso.</p>
+            }
+          </div>
+          <div class="chart-card">
+            <h3 class="title chart-title">Pronostici giusti per fascia di quota</h3>
+            @if (hasBars(d.charts?.by_odds)) {
+              <ab-chart [option]="oddsChart()" label="Pronostici azzeccati per fascia di quota, contro quelli attesi" />
+            } @else {
+              <p class="muted small">Ancora nessun pronostico chiuso.</p>
+            }
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -115,12 +156,12 @@ import { slipImage } from './slip-image';
             }
           </ul>
         }
-        <p class="muted small">"Attese" = quante dovevano uscire sommando le probabilità di Archie: se le uscite restano vicine alle attese, Archie è onesto con le sue percentuali.</p>
+        <p class="muted small">"Attese" = quante dovevano uscire sommando le probabilità di Archie: se le uscite restano vicine alle attese, Archie è onesto con le sue percentuali. "Con 1 €": dove manca la quota di un bookmaker si usa quella giusta meno il 6% di margine.</p>
       </section>
 
       @if (d.history.length) {
         <details class="archive">
-          <summary class="title">Archivio delle schedine <span class="muted small">({{ d.history.length }})</span></summary>
+          <summary class="title">Archivio dell'ultima settimana <span class="muted small">({{ d.history.length }})</span></summary>
           <div class="cork small-cork">
             @for (s of d.history.slice(0, archiveAll() ? undefined : ARCHIVE_SHOWN); track s.id) {
               <article class="note mini" [attr.data-status]="s.status">
@@ -160,6 +201,21 @@ export class Daily {
   protected readonly fmtOdds = odds;
   protected readonly dayLabel = dayLabel;
   protected readonly time = (iso: string) => kickoffTime(iso);
+
+  /** Grafici (D173): tutte le schedine chiuse, anche quelle uscite dall'archivio */
+  private readonly charts = computed(() => (this.data.hasValue() ? this.data.value().charts : undefined));
+  protected readonly balanceChart = computed(() => balanceOption(this.charts()?.days ?? []));
+  protected readonly monthsChart = computed(() => monthsOption(this.charts()?.months ?? []));
+  protected readonly kindChart = computed(() => oddsOption(this.charts()?.by_kind ?? [], { expected: 'Attesi da Archie', prefix: '', rotate: 35, marker: 26 }));
+  protected readonly oddsChart = computed(() => oddsOption(this.charts()?.by_odds ?? [], { expected: 'Attesi da Archie' }));
+
+  protected hasBars(bands: { selections: number }[] | undefined): boolean {
+    return (bands ?? []).some((b) => b.selections > 0);
+  }
+
+  protected totals(d: DailyOut): { published: number; won: number; closed: number; profit: number } {
+    return d.stats.reduce((t, k) => ({ published: t.published + k.published, won: t.won + k.legs_won, closed: t.closed + k.legs_closed, profit: t.profit + k.profit }), { published: 0, won: 0, closed: 0, profit: 0 });
+  }
 
   /** Pronostici ancora da giocare (partita non iniziata) */
   protected playable(s: DailySlip): DailyLeg[] {

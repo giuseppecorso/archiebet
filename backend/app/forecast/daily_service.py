@@ -1,5 +1,6 @@
 """Bacheca Daily (D153): pubblica le schedine del giorno dallo studio e dalle occasioni, poi le chiude con i risultati."""
 
+from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -9,14 +10,16 @@ from sqlalchemy.orm import Session
 from app.betting.calc import at_least, selection_outcome, system_range
 from app.config import get_settings
 from app.forecast.daily import KINDS, OPEN, Kind, due, leg_status, slip_status
-from app.forecast.radar import qualifies, scan
+from app.forecast.multiplier import best_slip, price_rows
+from app.forecast.radar import BookOdds, RadarSignal, qualifies, scan
 from app.forecast.radar_markets import is_secondary
 from app.forecast.radar_service import load_book_odds
-from app.forecast.study import auto_legs, choose_varied, event_text, leg_price, up_to_target
+from app.forecast.study import auto_legs, choose_varied, event_text, leg_price, playable_price, up_to_target
 from app.forecast.study_service import load_studies
 from app.models import DailySlip, Match, MatchStatus
 
 MAX_RANKED = 30
+MIN_PRICE = 1.40  # D172: nelle schedine dello studio niente quote più basse
 
 
 def _leg(m: Match, market: str, selection: str, event: str, p: float, price: float) -> dict:
@@ -27,38 +30,74 @@ def _leg(m: Match, market: str, selection: str, event: str, p: float, price: flo
     }  # fmt: skip
 
 
+def choose_study_legs(kind: Kind, studies: Sequence[tuple[int, list[dict]]], min_price: float = MIN_PRICE) -> list[tuple[int, dict]]:
+    """Quali pronostici entrano nella schedina: la regola è una sola, per la bacheca vera e per la simulazione (D171)."""
+    kept = [(mid, above) for mid, picks in studies if (above := [p for p in picks if playable_price(p) >= min_price])]
+    ranked = choose_varied(kept, kind.level, MAX_RANKED)  # niente tre volte lo stesso pronostico
+    if kind.target:
+        return up_to_target(ranked, kind.target)
+    chosen = auto_legs(ranked, kind.level)
+    if len(chosen) < kind.min_legs:
+        chosen = ranked[: kind.min_legs]
+    return chosen[: kind.max_legs]
+
+
 def study_legs(db: Session, kind: Kind, start: datetime, end: datetime) -> list[dict]:
     """Dallo studio di Archie: i pronostici più solidi del livello, quante partite secondo il tipo di schedina."""
     studies = load_studies(db, start, end)
     matches = {m.id: m for m, _ in studies}
-    ranked = choose_varied([(m.id, d["picks"]) for m, d in studies], kind.level, MAX_RANKED)  # niente tre volte lo stesso pronostico
-    if kind.target:
-        chosen = up_to_target(ranked, kind.target)
-    else:
-        chosen = auto_legs(ranked, kind.level)
-        if len(chosen) < kind.min_legs:
-            chosen = ranked[: kind.min_legs]
-        chosen = chosen[: kind.max_legs]
+    chosen = choose_study_legs(kind, [(m.id, d["picks"]) for m, d in studies])
     chosen.sort(key=lambda c: matches[c[0]].kickoff_at)
     return [_leg(matches[mid], p["market"], p["selection"], p["event"], p["p_archie"], leg_price(p)) | {"from_market": bool(p.get("from_market"))}
             for mid, p in chosen]  # fmt: skip
 
 
-def clv_legs(db: Session, kind: Kind, start: datetime, end: datetime) -> list[dict]:
-    """Le occasioni migliori di oggi (una per partita, mercati principali, niente quote sospette), da giocare singole."""
-    matches = list(db.scalars(select(Match).where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > start, Match.kickoff_at <= end)))
-    books = load_book_odds(db, [m.id for m in matches], closing=False)
+def best_value[T](kind: Kind, books: Iterable[tuple[T, BookOdds]], playable: Sequence[str]) -> list[tuple[T, RadarSignal]]:
+    """I pronostici più convenienti (uno per partita, mercati principali, niente quote sospette): stessa regola dal vivo e in simulazione."""
     best = []
-    for m in matches:
-        found = [c for c in scan(books.get(m.id, {}), playable=get_settings().radar_bookmaker_list)
-                 if qualifies(c.price, c.value) and not c.suspicious and not is_secondary(c.market)]  # fmt: skip
+    for item, book in books:
+        found = [c for c in scan(book, playable=playable) if qualifies(c.price, c.value) and not c.suspicious and not is_secondary(c.market)]
         if found:
             c = max(found, key=lambda c: c.value)
-            best.append((c.value, m, c))
+            best.append((c.value, item, c))
     best.sort(key=lambda x: x[0], reverse=True)
-    chosen = sorted(best[: kind.max_legs], key=lambda x: x[1].kickoff_at)
+    return [(item, c) for _, item, c in best[: kind.max_legs]]
+
+
+def clv_legs(db: Session, kind: Kind, start: datetime, end: datetime) -> list[dict]:
+    """Le occasioni migliori di oggi, da giocare singole."""
+    matches = list(db.scalars(select(Match).where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > start, Match.kickoff_at <= end)))
+    books = load_book_odds(db, [m.id for m in matches], closing=False)
+    chosen = sorted(best_value(kind, [(m, books.get(m.id, {})) for m in matches], get_settings().radar_bookmaker_list), key=lambda x: x[0].kickoff_at)
     return [_leg(m, c.market, c.selection, event_text(c.market, c.selection, m.home_team.name, m.away_team.name), c.fair_probability, c.price)
-            for _, m, c in chosen]  # fmt: skip
+            for m, c in chosen]  # fmt: skip
+
+
+def multiplier_legs(db: Session, kind: Kind, start: datetime, end: datetime) -> list[dict]:
+    """La schedina 6-10 (D177): le partite di oggi con la quota più conveniente rispetto al prezzo giusto."""
+    matches = {m.id: m for m in db.scalars(select(Match).where(Match.status == MatchStatus.SCHEDULED, Match.kickoff_at > start, Match.kickoff_at <= end))}
+    books = load_book_odds(db, list(matches), closing=False)
+    rows = [r for m in matches.values() for r in price_rows(m.id, m.kickoff_at.isoformat(), books.get(m.id, {}), get_settings().radar_bookmaker_list)]
+    slip = best_slip(rows, kind.multiplier_legs, "valore") if kind.multiplier_legs else None
+    return [_leg(matches[r["match_id"]], r["market"], r["selection"], event_text(r["market"], r["selection"], matches[r["match_id"]].home_team.name, matches[r["match_id"]].away_team.name), r["sharp"], r["price"])
+            for r in sorted(slip or [], key=lambda r: r["when"])]  # fmt: skip
+
+
+def slip_totals(kind: Kind, legs: Sequence[dict]) -> tuple[float, float] | None:
+    """Quota totale e probabilità di una schedina (None se le partite non bastano per il sistema)."""
+    total, p = 1.0, 1.0
+    for leg in legs:
+        total *= leg["price"]
+        p *= leg["p"]
+    if kind.singles:
+        return 1.0, sum(leg["p"] for leg in legs) / len(legs)  # singole: niente quota totale, probabilità media
+    if kind.system:
+        if len(legs) <= kind.system:
+            return None
+        # quota = quanto torna 1 € con tutto indovinato; probabilità = indovinarne almeno k
+        total = float(system_range(Decimal(100), [Decimal(str(leg["price"])) for leg in legs], kind.system)[1]) / 100
+        p = at_least([leg["p"] for leg in legs], kind.system)
+    return total, p
 
 
 def publish_due(db: Session, now: datetime | None = None) -> list[str]:
@@ -68,21 +107,13 @@ def publish_due(db: Session, now: datetime | None = None) -> list[str]:
     for kind, period, start, end in due(now):
         if db.scalar(select(DailySlip.id).where(DailySlip.kind == kind.key, DailySlip.period == period)):
             continue
-        legs = study_legs(db, kind, start, end) if kind.level else clv_legs(db, kind, start, end)
+        legs = study_legs(db, kind, start, end) if kind.level else multiplier_legs(db, kind, start, end) if kind.multiplier_legs else clv_legs(db, kind, start, end)
         if not legs:
             continue  # niente da proporre adesso: si riprova al prossimo giro dello stesso giorno
-        total, p = 1.0, 1.0
-        for leg in legs:
-            total *= leg["price"]
-            p *= leg["p"]
-        if kind.singles:
-            total, p = 1.0, sum(leg["p"] for leg in legs) / len(legs)  # singole: niente quota totale, probabilità media
-        if kind.system:
-            if len(legs) <= kind.system:
-                continue  # troppe poche partite per il sistema: si riprova al prossimo giro
-            # quota = quanto torna 1 € con tutto indovinato; probabilità = indovinarne almeno k
-            total = float(system_range(Decimal(100), [Decimal(str(leg["price"])) for leg in legs], kind.system)[1]) / 100
-            p = at_least([leg["p"] for leg in legs], kind.system)
+        totals = slip_totals(kind, legs)
+        if totals is None:
+            continue  # troppe poche partite per il sistema: si riprova al prossimo giro
+        total, p = totals
         db.add(DailySlip(kind=kind.key, period=period, published_at=now, legs=legs, total_odds=round(total, 2), win_probability=round(p, 4), status=OPEN))
         published.append(kind.key)
     db.commit()

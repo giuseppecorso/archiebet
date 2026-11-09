@@ -154,3 +154,14 @@ li[data-status='lost'] strong { color: var(--loss); }
 
 .sources { margin: 10px 0; padding: 0; list-style: none; font-size: 14px; }
 .sources li { padding: 3px 0; }
+
+/* Statistiche con i grafici (D173): due per riga sul computer, uno sotto l'altro sul telefono */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.kpi { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.kpi .label { font-size: 13px; color: var(--muted); }
+.kpi .led { font-size: 22px; }
+.kpi .pos { color: var(--value); }
+.kpi .neg { color: var(--loss); }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 12px; margin-bottom: 14px; }
+.chart-card { min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.chart-title { margin: 0 0 6px; font-size: 16px; color: var(--text); }

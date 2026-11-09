@@ -463,6 +463,14 @@ def leg_price(pick: dict) -> float:
     return max(pick["prices"].values(), default=0.0) or 1 / pick["p_archie"]
 
 
+ASSUMED_MARGIN = 0.06  # margine del bookmaker ipotizzato dove manca una quota vera (D171-D172)
+
+
+def playable_price(pick: dict) -> float:
+    """La quota che si troverebbe davvero: quella del bookmaker, altrimenti la quota giusta meno il margine ipotizzato."""
+    return max(pick["prices"].values(), default=0.0) or (1 - ASSUMED_MARGIN) / pick["p_archie"]
+
+
 def within_range(ranked: Sequence[tuple[int, dict]], low: float, high: float) -> list[tuple[int, dict]]:
     """Moltiplicatore "da… a…": dai pronostici più solidi in giù, salta quelli che porterebbero la quota oltre `high`
     e si ferma appena arriva almeno a `low` (se non ci arriva, restituisce quelli trovati)."""
