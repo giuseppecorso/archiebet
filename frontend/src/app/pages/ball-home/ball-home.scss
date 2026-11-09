@@ -1,11 +1,5 @@
-/* Bozza del nuovo aspetto: scuro, digitale, verde al neon con bagliore. I colori valgono solo in questa pagina. */
+/* La home: il pallone al centro. I colori vengono da styles.scss. */
 :host {
-  --neon: #00ff88;
-  --neon-soft: rgba(0, 255, 136, 0.55);
-  --neon-faint: rgba(0, 255, 136, 0.14);
-  --ink: #020705;
-  --glass: rgba(3, 18, 12, 0.72);
-  --mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace;
   display: block;
 }
 
@@ -28,7 +22,6 @@
   text-align: center;
 }
 
-.kicker,
 .hint {
   margin: 0;
   font-family: var(--mono);

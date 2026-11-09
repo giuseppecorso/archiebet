@@ -1,5 +1,5 @@
 import { DailyLeg, DailySlip } from '../../core/daily';
-import { BALL_MENU, FACES, HEXAGONS, PENTAGONS, Vec3, dot, faceAt, freshWins, legKey, patchAt, uniqueLegs } from './ball';
+import { BALL_MENU, FACES, HEXAGONS, PENTAGONS, Vec3, dot, faceAt, freshWins, legKey, patchAt, pentagonCorners, uniqueLegs } from './ball';
 
 const leg = (match_id: number, status: DailyLeg['status'], selection = 'over'): DailyLeg => ({
   match_id, kickoff_at: '2026-11-09T20:45:00Z', competition: 'Serie A', home: 'Como', away: 'Cagliari',
@@ -36,6 +36,20 @@ describe('pallone classico', () => {
     expect(patchAt(between(a, b, 0.3))).toBe(0);
     expect(patchAt(between(a, b, 0.37))).toBe(-1);
     expect(patchAt(between(a, b, 0.5))).toBe(-1); // a metà strada c'è la cucitura fra due bianche
+  });
+
+  it('ogni toppa nera ha cinque angoli uguali, in fila a 72 gradi', () => {
+    for (let i = 0; i < 12; i++) {
+      const corners = pentagonCorners(i);
+      expect(corners.length).toBe(5);
+      corners.forEach((c, k) => {
+        expect(dot(c, PENTAGONS[i])).toBeCloseTo(dot(corners[0], PENTAGONS[i]), 9);
+        expect(dot(c, corners[(k + 1) % 5])).toBeCloseTo(dot(corners[0], corners[1]), 9); // lati tutti uguali
+      });
+      // appena dentro l'angolo è ancora la toppa nera, appena fuori no
+      expect(patchAt(between(PENTAGONS[i], corners[0], 0.97))).toBe(i);
+      expect(patchAt(between(PENTAGONS[i], corners[0], 1.06))).toBe(-1);
+    }
   });
 
   it('le toppe nere coprono poco più di un quarto del pallone', () => {

@@ -3,38 +3,46 @@
    ambra = live, in corso, quote e orari. Il colore non è mai l'unico segnale. */
 
 :root {
-  /* "Stadio di sera" (D127): verde prato profondo, giallo LED acceso, verde e rosso vivi */
-  --bg: #06120c;
-  --bg-deep: #030a06;
-  --bg-header: rgba(4, 13, 8, 0.86);
-  --bg-ticker: #050e09;
-  --panel: rgba(13, 30, 21, 0.92);
-  --panel-head: #0b1a12;
-  --chip: #16301f;
+  /* "Digitale al neon" (D181): fondo quasi nero, verde acceso con bagliore */
+  --bg: #020705;
+  --bg-deep: #010403;
+  --bg-header: rgba(2, 7, 5, 0.86);
+  --bg-ticker: #020a06;
+  --panel: rgba(3, 18, 12, 0.82);
+  --panel-head: #04140d;
+  --chip: #082518;
 
-  --line: #1f3a29;
-  --line-strong: #2b5039;
-  --line-row: #19301f;
-  --line-muted: #3c5c47;
+  --line: #0d3323;
+  --line-strong: #14553a;
+  --line-row: #0a2a1c;
+  --line-muted: #2a5a45;
 
-  --text: #f2f5f1;
-  --text-2: #cfdcd2;
-  --muted: #93a99a;
-  --dim: #5f7767;
+  --text: #eafff5;
+  --text-2: #c2e3d3;
+  --muted: #8db3a1;
+  --dim: #56796a;
 
-  --amber: #ffc61a;
-  --amber-hover: #ffd85c;
+  /* Il colore principale ora è il verde neon: il nome "amber" resta per non toccare cento file */
+  --amber: #00ff88;
+  --amber-hover: #7dffc0;
+  --neon: #00ff88;
+  --neon-soft: rgba(0, 255, 136, 0.55);
+  --neon-faint: rgba(0, 255, 136, 0.14);
+  --ink: #020705;
+  --glass: rgba(3, 18, 12, 0.72);
+  --live: #ffc61a; /* in corso: resta ambra, per non confondersi con il verde */
   --value: #39ff74;
-  --loss: #ff5d52;
+  --loss: #ff4d6a;
   --pitch: #23c55e;
   --sky: #4cc3ff;
 
-  --font-led: 'Doto', ui-monospace, monospace;
-  --font-title: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  --mono: 'Share Tech Mono', ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+  --font-led: var(--mono);
+  --font-title: 'Rajdhani', 'Arial Narrow', sans-serif;
   --font-text: 'Barlow', system-ui, sans-serif;
 
-  --led-glow: 0 0 8px currentColor;
-  --led-glow-small: 0 0 4px currentColor;
+  --led-glow: 0 0 10px currentColor;
+  --led-glow-small: 0 0 5px currentColor;
 
   color-scheme: dark;
 }
@@ -61,11 +69,10 @@ body {
   min-height: 100%;
   background: var(--bg);
   background-image:
-    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(76, 195, 255, 0.10), transparent 70%),
-    linear-gradient(180deg, rgba(6, 18, 12, 0.94) 0%, rgba(6, 18, 12, 0.97) 55%, rgba(6, 18, 12, 0.88) 100%),
-    url('/img/prato.webp');
-  background-size: auto, auto, cover;
-  background-position: center top, center, center bottom;
+    radial-gradient(ellipse 70% 38% at 50% -6%, rgba(0, 255, 136, 0.16), transparent 70%),
+    linear-gradient(rgba(0, 255, 136, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 136, 0.05) 1px, transparent 1px);
+  background-size: auto, 100% 38px, 38px 100%;
   background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-text);
@@ -93,21 +100,25 @@ input {
 /* Cifre e scritte a punti luminosi: solo per numeri e logo */
 .led {
   font-family: var(--font-led);
-  font-weight: 900;
+  font-weight: 400;
   color: var(--amber);
   text-shadow: var(--led-glow);
 }
 
 .title {
   font-family: var(--font-title);
-  font-weight: 400;
+  font-weight: 700;
+  text-transform: uppercase;
   letter-spacing: 1.5px;
 }
 
 .panel {
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 6px;
+  border: 1px solid var(--neon-faint);
+  border-radius: 12px;
+  box-shadow:
+    0 0 18px rgba(0, 255, 136, 0.07),
+    inset 0 0 22px rgba(0, 255, 136, 0.03);
 }
 
 .label {
@@ -136,9 +147,12 @@ input {
   font-size: 19px;
   letter-spacing: 2px;
   color: var(--bg);
+  font-weight: 700;
+  text-transform: uppercase;
   background: var(--amber);
   border: 0;
-  border-radius: 4px;
+  border-radius: 10px;
+  box-shadow: 0 0 18px var(--neon-soft);
   cursor: pointer;
 }
 .btn-primary:hover {
@@ -205,12 +219,13 @@ abbr {
   }
 }
 
-/* Atmosfera da stadio di sera: due fari (ambra e verde prato) e le strisce del campo appena accennate */
+/* Fondo digitale (D181): griglia sottile e un bagliore verde in alto */
 body {
   background-image:
-    radial-gradient(ellipse 60% 40% at 8% -5%, rgb(255 176 0 / 0.1), transparent 70%),
-    radial-gradient(ellipse 50% 45% at 100% 105%, rgb(61 255 110 / 0.07), transparent 70%),
-    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.012) 0 120px, transparent 120px 240px);
+    radial-gradient(ellipse 70% 38% at 50% -6%, rgba(0, 255, 136, 0.16), transparent 70%),
+    linear-gradient(rgba(0, 255, 136, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 136, 0.05) 1px, transparent 1px);
+  background-size: auto, 100% 38px, 38px 100%;
   background-attachment: fixed;
 }
 
@@ -307,8 +322,8 @@ body {
   bottom: 0;
   width: 160px;
   height: 14px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='14' viewBox='0 0 160 14'%3E%3Cpath d='M0 7h66M94 7h66' stroke='%23ffb000' stroke-width='2' stroke-linecap='round' opacity='.7'/%3E%3Ccircle cx='80' cy='7' r='6' fill='none' stroke='%23ffb000' stroke-width='2' opacity='.7'/%3E%3Ccircle cx='80' cy='7' r='1.6' fill='%23ffb000'/%3E%3C/svg%3E") no-repeat;
-  filter: drop-shadow(0 0 4px rgb(255 176 0 / 0.5));
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='14' viewBox='0 0 160 14'%3E%3Cpath d='M0 7h66M94 7h66' stroke='%2300ff88' stroke-width='2' stroke-linecap='round' opacity='.7'/%3E%3Ccircle cx='80' cy='7' r='6' fill='none' stroke='%2300ff88' stroke-width='2' opacity='.7'/%3E%3Ccircle cx='80' cy='7' r='1.6' fill='%2300ff88'/%3E%3C/svg%3E") no-repeat;
+  filter: drop-shadow(0 0 4px rgb(0 255 136 / 0.5));
 }
 
 /* Etichette delle quote e "in prova": usate in più pagine (D107) */
@@ -349,20 +364,25 @@ body {
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background:
-    linear-gradient(90deg, rgba(3, 10, 6, 0.88) 0%, rgba(3, 10, 6, 0.45) 50%, rgba(3, 10, 6, 0.05) 100%),
-    url('/img/stadio-sera.webp') center 62% / cover;
-  border-color: rgba(255, 198, 26, 0.35);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    radial-gradient(ellipse 60% 120% at 100% 0%, rgba(0, 255, 136, 0.22), transparent 70%),
+    linear-gradient(rgba(0, 255, 136, 0.07) 1px, transparent 1px) 0 0 / 100% 19px,
+    linear-gradient(90deg, rgba(0, 255, 136, 0.07) 1px, transparent 1px) 0 0 / 19px 100%,
+    var(--bg-deep);
+  border-color: rgba(0, 255, 136, 0.35);
+  box-shadow: 0 0 24px rgba(0, 255, 136, 0.12);
 }
 .hero h1 {
   margin: 0;
   font-family: var(--font-title);
   font-size: 30px;
-  font-weight: 400;
-  letter-spacing: 2px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
   line-height: 1;
   color: #fff;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+  text-shadow:
+    0 0 10px var(--neon),
+    0 0 28px var(--neon-soft);
 }
 .hero p {
   margin: 0;

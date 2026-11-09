@@ -234,7 +234,7 @@
   }
 }
 .picker-value {
-  font-family: var(--font-title);
+  font-family: var(--font-title); font-weight: 700; text-transform: uppercase;
   font-size: 16px;
   letter-spacing: 1.5px;
 }

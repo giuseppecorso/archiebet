@@ -8,6 +8,8 @@ Ultimo aggiornamento: 2026-11-09
 - [x] **D178: nessun tipo di giocata sbaglia** (`types-test`, 127.000 pronostici a stagione alla cieca): le probabilità sono giuste per tutti i tipi e tutte le fasce di quota. Si perde il margine del bookmaker (circa 5% a pronostico, moltiplicato nelle multiple), non per colpa di combo o quote basse. Niente cambia nei pronostici.
 - [x] **D179: tetto a quota 2,20** (`cap-test`, 11 stagioni): sopra 2,20 il bookmaker trattiene circa 2 punti in più; passa di misura. Giorno, weekend e settimana non prendono più quote vere da 2,20 in su.
 - [x] **D180: bozza della nuova home su `/lab`**: pallone 3D come menù (three.js), festa con trombe quando Archie prende un pronostico, aspetto digitale verde neon. In attesa del giudizio di Giuse; se piace si porta l'aspetto su tutta l'app.
+- [x] **D181: il pallone è la home, tutto il sito in stile digitale al neon** (toppe che si sollevano, luce dalle cuciture; colori e caratteri centrali cambiati in `styles.scss`). Da controllare a occhio le altre pagine sul telefono.
+- [ ] Prossimi (chiesti da Giuse): Archie futuristico, animazione della multipla con lavagna digitale, bacheca come campo di calcio (IDEE); poi la prova sui movimenti delle quote.
 - [ ] Da fare: backup notturni del database fuori dal server (S3); rinnovo API-Football entro il 2026-11-20; sito vetrina e progetti del CV sul server; idea "tetto 2,20" da provare sull'archivio lungo (IDEE).
 
 ## Più precisione e un'app da usare con gli amici (2026-10-28/29)

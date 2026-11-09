@@ -29,7 +29,7 @@ export const routes: Routes = [
     component: Shell,
     canActivate: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', loadComponent: () => import('./pages/home/home').then((m) => m.Home), title: 'Oggi · Archie' },
+      { path: '', pathMatch: 'full', loadComponent: () => import('./pages/ball-home/ball-home').then((m) => m.BallHome), title: 'Archie' },
       { path: 'partite', component: Matches, title: 'Partite · Archie', data: { section: SECTIONS[0] } },
       { path: 'partite/:id', loadComponent: () => import('./pages/match/match').then((m) => m.MatchPage), title: 'Partita · Archie' },
       { path: 'profilo', loadComponent: () => import('./pages/profile/profile').then((m) => m.ProfilePage), title: 'Il mio profilo · Archie' },
@@ -40,7 +40,7 @@ export const routes: Routes = [
       { path: 'diretta', redirectTo: () => inject(Router).parseUrl('/partite?stato=live') }, // Diretta e Partite sono una sezione sola
       { path: 'live', redirectTo: () => inject(Router).parseUrl('/partite?stato=live') },
       { path: 'chiedi', redirectTo: 'partite' }, // le domande si fanno nella pagina della partita
-      { path: 'lab', loadComponent: () => import('./pages/ball-home/ball-home').then((m) => m.BallHome), title: 'Bozza nuova home · Archie' }, // pagina di prova
+      { path: 'lab', redirectTo: '' }, // la bozza è diventata la home (D181)
       { path: 'laboratorio', pathMatch: 'full', redirectTo: 'laboratorio/campionati' },
       { path: 'laboratorio/campionati', loadComponent: () => import('./pages/lab/lab-leagues').then((m) => m.LabLeagues), title: 'Laboratorio · Campionati · Archie' },
       { path: 'laboratorio/impara', loadComponent: () => import('./pages/lab/lab-learning').then((m) => m.LabLearning), title: 'Laboratorio · Cosa impara Archie · Archie' },

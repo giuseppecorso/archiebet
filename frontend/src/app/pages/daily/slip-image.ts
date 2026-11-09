@@ -2,7 +2,7 @@ import { DailySlip } from '../../core/daily';
 
 const W = 1080;
 const H = 1350; // 4:5, il formato verticale di Instagram
-const AMBER = '#ffc61a';
+const AMBER = '#00ff88';
 const TEXT = '#e9f2ec';
 const MUTED = '#8fa89a';
 
@@ -75,7 +75,7 @@ export async function slipImage(s: DailySlip): Promise<Blob> {
     ctx.fillText(`+ altri ${s.legs.length - legs.length} pronostici nell'app`, 80, y);
   }
 
-  ctx.fillStyle = 'rgba(255, 198, 26, 0.12)';
+  ctx.fillStyle = 'rgba(0, 255, 136, 0.12)';
   ctx.fillRect(0, H - 230, W, 230);
   ctx.fillStyle = TEXT;
   ctx.font = "44px 'Bebas Neue', sans-serif";

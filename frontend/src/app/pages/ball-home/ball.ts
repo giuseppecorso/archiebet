@@ -52,6 +52,23 @@ export const HEXAGONS: readonly Vec3[] = hexagonCenters([...PENTAGONS]);
 /** Tutte le 32 toppe: prima le nere. */
 export const FACES: readonly Vec3[] = [...PENTAGONS, ...HEXAGONS];
 
+const cross = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+
+/**
+ * I cinque angoli di una toppa nera, sulla sfera di raggio 1, in ordine antiorario per chi guarda da fuori.
+ * Ogni angolo sta a un terzo della strada verso una delle cinque toppe nere vicine.
+ */
+export function pentagonCorners(patch: number): Vec3[] {
+  const v = PENTAGONS[patch];
+  const near = PENTAGONS.filter((p) => p !== v && dot(p, v) > 0.4);
+  const corners = near.map((n) => unit([v[0] + (n[0] - v[0]) / 3, v[1] + (n[1] - v[1]) / 3, v[2] + (n[2] - v[2]) / 3]));
+  // due direzioni sul piano della toppa, per mettere gli angoli in fila
+  const k = dot(corners[0], v);
+  const u = unit([corners[0][0] - v[0] * k, corners[0][1] - v[1] * k, corners[0][2] - v[2] * k]);
+  const w = cross(v, u);
+  return corners.sort((a, b) => Math.atan2(dot(a, w), dot(a, u)) - Math.atan2(dot(b, w), dot(b, u)));
+}
+
 /**
  * Su quale toppa cade un punto del pallone. Le toppe sono facce piane: vince quella che il raggio dal centro incontra per prima.
  * Da 0 a 11 è una toppa nera (una voce del menù), da 12 a 31 una bianca.

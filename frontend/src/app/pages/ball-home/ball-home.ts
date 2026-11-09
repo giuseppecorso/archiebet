@@ -3,6 +3,7 @@ import { Component, DestroyRef, ElementRef, afterNextRender, computed, effect, i
 import { Router } from '@angular/router';
 import { DailyLeg, DailyOut } from '../../core/daily';
 import { odds } from '../../core/format';
+import { Home } from '../home/home';
 import { BALL_MENU, freshWins, legKey, uniqueLegs } from './ball';
 import type { BallScene, LabelPlace } from './ball-scene';
 import { playHorns } from './horn';
@@ -10,9 +11,10 @@ import { playHorns } from './horn';
 const REFRESH_MS = 60_000;
 const PARTY_MS = 6_000;
 
-/** Bozza della nuova home (pagina di prova /lab): il pallone è il menù, la festa suona quando Archie prende un pronostico. */
+/** La home (D181): il pallone è il menù, la festa suona quando Archie prende un pronostico; sotto, i riquadri di oggi. */
 @Component({
   selector: 'ab-ball-home',
+  imports: [Home],
   templateUrl: './ball-home.html',
   styleUrl: './ball-home.scss',
 })
@@ -92,7 +94,7 @@ export class BallHome {
     }
   }
 
-  /** Solo nella bozza: fa vedere la festa senza aspettare una partita. */
+  /** Fa vedere la festa senza aspettare una partita. */
   protected demo(): void {
     this.celebrate({
       match_id: 0, kickoff_at: '', competition: 'Prova', home: 'Como', away: 'Cagliari',

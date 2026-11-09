@@ -107,6 +107,10 @@ describe('Archie: navigazione', () => {
   it('la home mostra le partite di oggi, le occasioni e ArchieTV', async () => {
     const harness = await navigateAs('/', true);
     expect(TestBed.inject(Router).url).toBe('/');
+    const won = { match_id: 1, kickoff_at: '2026-11-09T18:00:00Z', competition: 'Serie A', home: 'Como', away: 'Cagliari', market: 'OU2.5', selection: 'over', event: 'Più di 2,5 gol', p: 0.55, price: 1.85, status: 'won', score: '2-1' };
+    const slip = { id: 1, kind: 'giorno', title: 'Del giorno', period: '2026-11-09', published_at: '', singles: false, total_odds: 3.4, win_probability: 0.3, status: 'open' };
+    // lo stesso pronostico in due schedine conta una volta sola
+    (await nextRequest('/api/daily')).flush({ board: [{ ...slip, legs: [won, { ...won, match_id: 2, status: 'open' }] }, { ...slip, id: 2, legs: [won] }], today: { legs_won: 1, legs_closed: 1, legs_total: 2 }, stats: [], history: [] });
     (await nextRequest((r) => r.url.startsWith('/api/matches?view=upcoming'))).flush([]);
     (await nextRequest('/api/study/headlines?horizon=today')).flush({});
     (await nextRequest('/api/radar')).flush({ threshold: 0.02, max_price: 4, playable: [], simulation_bookmakers: [], upcoming: [], recent: [], live: null, live_secondary: null });
@@ -117,6 +121,11 @@ describe('Archie: navigazione', () => {
     await harness.fixture.whenStable();
     const page = harness.routeNativeElement!;
     expect(page.querySelector('.hero h1')?.textContent).toContain('Oggi');
+    // il pallone è il menù (D181): una voce per toppa nera, e il riquadro dei pronostici presi
+    expect([...page.querySelectorAll('.stage .label')].map((b) => b.textContent?.trim())).toContain('Multipla');
+    expect(page.querySelectorAll('.stage .label').length).toBe(12);
+    expect(page.querySelector('.fest .score')?.textContent).toContain('1su 1 chiusi');
+    expect(page.querySelectorAll('.strip li').length).toBe(1);
     expect(page.querySelector('ab-archie-tv')?.textContent).toContain('Highlights Inter-Milan');
     expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Home');
   });
