@@ -13,10 +13,8 @@
   border: 2px solid var(--neon-soft);
   border-radius: 14px;
   background:
-    repeating-linear-gradient(0deg, rgb(0 255 136 / 0.07) 0 52px, transparent 52px 104px),
-    radial-gradient(70% 50% at 50% 50%, rgb(0 255 136 / 0.12), transparent 75%),
-    var(--ink);
-  box-shadow: 0 0 26px rgb(0 255 136 / 0.18), inset 0 0 40px rgb(0 255 136 / 0.08);
+    repeating-linear-gradient(0deg, rgb(47 217 138 / 0.05) 0 52px, transparent 52px 104px),
+        var(--ink);
 }
 .line { position: absolute; border: 2px solid var(--neon-soft); pointer-events: none; }
 .line.half { top: 50%; left: 0; right: 0; border-width: 2px 0 0; }
@@ -48,9 +46,8 @@
   border-radius: 50% 50% 46% 46%;
   background: var(--ink);
   font: 600 18px/1 var(--mono);
-  box-shadow: 0 0 12px currentColor, inset 0 0 10px rgb(0 255 136 / 0.18);
 }
-.player.on .shirt { box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px currentColor, 0 0 22px currentColor; }
+.player.on .shirt { box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px currentColor; }
 .name {
   max-width: 100%;
   padding: 1px 5px;
@@ -60,7 +57,7 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-align: center;
-  color: #e9fff4;
+  color: #eef1f6;
 }
 .player[data-status='won'] .shirt { color: var(--ink); background: var(--neon); border-color: var(--neon); }
 .player[data-status='lost'] { color: var(--loss); }
@@ -79,10 +76,9 @@
   background: var(--glass);
   border: 1px solid var(--neon-soft);
   border-radius: 12px;
-  box-shadow: 0 0 18px rgb(0 255 136 / 0.12);
   font-size: 13px;
 }
-.note header h2 { margin: 0; padding-right: 90px; font-family: var(--font-title); font-weight: 700; text-transform: uppercase; font-size: 24px; letter-spacing: 1px; color: var(--neon); }
+.note header h2 { margin: 0; padding-right: 90px; font-family: var(--font-title); font-weight: 700; text-transform: uppercase; font-size: 24px; letter-spacing: 1px; color: var(--accent); }
 .note .when { font-size: 11px; color: var(--muted); }
 .note ol { margin: 10px 0 8px; padding: 0; list-style: none; }
 .note li { position: relative; display: flex; flex-direction: column; padding: 6px 22px 6px 0; border-top: 1px dashed var(--neon-faint); }

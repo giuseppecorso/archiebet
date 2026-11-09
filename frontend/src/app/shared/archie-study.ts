@@ -26,18 +26,18 @@ export function studyTime(): number {
   styles: `
     .study { display: grid; justify-items: center; gap: 10px; padding: 18px 0 8px; overflow: hidden; }
     .head { position: relative; display: grid; place-items: end center; width: 100%; height: 230px; }
-    img { position: relative; z-index: 1; border-radius: 24px; animation: nod 1.3s ease-in-out infinite; filter: drop-shadow(0 0 18px var(--neon-soft)); }
+    img { position: relative; z-index: 1; border-radius: 24px; animation: nod 1.3s ease-in-out infinite;  }
     .idea {
       --dx: calc((var(--i) - 5.5) * 24px);
       position: absolute; bottom: 96px; left: 50%;
       padding: 3px 9px; border: 1px solid var(--neon-soft); border-radius: 999px;
       font: 600 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
-      color: var(--neon); background: var(--glass); text-shadow: 0 0 8px var(--neon);
+      color: var(--neon); background: var(--glass);
       opacity: 0; animation: idea 2.4s ease-out infinite; animation-delay: calc(var(--i) * 0.2s);
     }
     .idea:nth-child(odd) { --lift: -118px; }
     .idea:nth-child(even) { --lift: -84px; }
-    p { margin: 0; font: 600 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--neon-soft); }
+    p { margin: 0; font: 600 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
     @keyframes idea {
       0% { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
       25% { opacity: 1; }

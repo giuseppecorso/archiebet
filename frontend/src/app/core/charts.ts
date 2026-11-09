@@ -13,12 +13,12 @@ import { pct, signedPct } from './format';
 export const CHART = {
   good: '#2f9fd9',
   bad: '#e5534b',
-  quote: '#00c26a',
-  surface: '#04140d',
-  text: '#eafff5',
-  muted: '#8db3a1',
-  grid: '#0a2a1c',
-  axis: '#14553a',
+  quote: '#2fd98a',
+  surface: '#161b26',
+  text: '#eef1f6',
+  muted: '#8f9ab0',
+  grid: '#222a3a',
+  axis: '#33405a',
   font: "'Barlow', system-ui, sans-serif",
 };
 

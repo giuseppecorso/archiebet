@@ -9,10 +9,10 @@
   padding: 20px 16px 28px;
   border: 1px solid var(--neon-faint);
   border-radius: 20px;
-  color: #e9fff4;
+  color: #eef1f6;
   font-family: var(--font-text);
   background:
-    radial-gradient(60% 34% at 50% 30%, rgba(0, 255, 136, 0.2), transparent 70%),
+    radial-gradient(60% 34% at 50% 30%, rgba(124, 140, 255, 0.14), transparent 70%),
     linear-gradient(var(--neon-faint) 1px, transparent 1px) 0 0 / 100% 34px,
     linear-gradient(90deg, var(--neon-faint) 1px, transparent 1px) 0 0 / 34px 100%,
     var(--ink);
@@ -28,7 +28,7 @@
   font-size: 11px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--neon-soft);
+  color: var(--accent);
 }
 
 h1 {
@@ -37,10 +37,7 @@ h1 {
   letter-spacing: 0.32em;
   text-indent: 0.32em;
   text-transform: uppercase;
-  color: #fff;
-  text-shadow:
-    0 0 10px var(--neon),
-    0 0 34px var(--neon-soft);
+  color: var(--accent);
 }
 
 .stage {
@@ -61,7 +58,7 @@ h1 {
     display: block;
     width: 100%;
     height: 100%;
-    filter: drop-shadow(0 0 26px rgba(0, 255, 136, 0.45));
+    filter: drop-shadow(0 0 14px rgba(47, 217, 138, 0.25));
   }
 }
 
@@ -79,7 +76,6 @@ h1 {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--neon);
-  text-shadow: 0 0 8px var(--neon);
   will-change: transform, opacity;
 
   &:focus-visible {
@@ -116,9 +112,6 @@ h1 {
   border: 1px solid var(--neon-soft);
   border-radius: 16px;
   background: var(--glass);
-  box-shadow:
-    0 0 22px rgba(0, 255, 136, 0.18),
-    inset 0 0 26px rgba(0, 255, 136, 0.06);
   backdrop-filter: blur(6px);
 }
 
@@ -133,7 +126,7 @@ h2 {
   font: 600 12px var(--mono);
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--neon-soft);
+  color: var(--accent);
 }
 
 .score {
@@ -145,12 +138,11 @@ h2 {
   b {
     font: 600 30px/1 var(--mono);
     color: var(--neon);
-    text-shadow: 0 0 12px var(--neon);
   }
 
   span {
     font-size: 12px;
-    color: #9cc9b3;
+    color: #8f9ab0;
   }
 }
 
@@ -161,7 +153,7 @@ h2 {
   border: 1px solid var(--neon-faint);
   border-radius: 999px;
   background: transparent;
-  color: #9cc9b3;
+  color: #8f9ab0;
   font: 600 11px var(--mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -171,7 +163,6 @@ h2 {
     border-color: var(--neon);
     color: var(--ink);
     background: var(--neon);
-    box-shadow: 0 0 16px var(--neon-soft);
   }
 }
 
@@ -184,7 +175,6 @@ h2 {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   color: var(--neon);
-  text-shadow: 0 0 8px var(--neon-soft);
 }
 
 .goal {
@@ -196,7 +186,6 @@ h2 {
   border-radius: 12px;
   color: var(--ink);
   background: var(--neon);
-  box-shadow: 0 0 34px var(--neon);
   animation: pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1);
 
   .goal-word {
@@ -232,7 +221,6 @@ h2 {
 
   .tick {
     color: var(--neon);
-    text-shadow: 0 0 8px var(--neon);
   }
 
   .what {
@@ -242,7 +230,7 @@ h2 {
 
     small {
       display: block;
-      color: #9cc9b3;
+      color: #8f9ab0;
     }
   }
 }
@@ -250,7 +238,7 @@ h2 {
 .empty {
   margin: 12px 0 0;
   font-size: 13px;
-  color: #9cc9b3;
+  color: #8f9ab0;
 }
 
 .strip {
@@ -281,7 +269,7 @@ h2 {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      color: #9cc9b3;
+      color: #8f9ab0;
     }
 
     b {
@@ -304,7 +292,6 @@ h2 {
     height: 12px;
     border-radius: 2px;
     background: var(--neon);
-    box-shadow: 0 0 8px var(--neon);
     animation: burst 1.5s ease-out both;
     animation-delay: calc(var(--n) * 14ms);
 
@@ -314,7 +301,6 @@ h2 {
 
     &:nth-child(4n) {
       background: #5cf2ff;
-      box-shadow: 0 0 8px #5cf2ff;
     }
   }
 }

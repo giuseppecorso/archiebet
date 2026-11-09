@@ -3,37 +3,39 @@
    ambra = live, in corso, quote e orari. Il colore non è mai l'unico segnale. */
 
 :root {
-  /* "Digitale al neon" (D181): fondo quasi nero, verde acceso con bagliore */
-  --bg: #020705;
-  --bg-deep: #010403;
-  --bg-header: rgba(2, 7, 5, 0.86);
-  --bg-ticker: #020a06;
-  --panel: rgba(3, 18, 12, 0.82);
-  --panel-head: #04140d;
-  --chip: #082518;
+  /* "Digitale calmo" (D183): fondo grigio-blu neutro, verde solo per numeri e azioni,
+     viola-azzurro (--accent) per titoli e cornici. Pochi bagliori: gli occhi ringraziano. */
+  --bg: #0b0e14;
+  --bg-deep: #080a0f;
+  --bg-header: rgba(11, 14, 20, 0.92);
+  --bg-ticker: #0d1118;
+  --panel: rgba(20, 24, 34, 0.92);
+  --panel-head: #161b26;
+  --chip: #1b2230;
 
-  --line: #0d3323;
-  --line-strong: #14553a;
-  --line-row: #0a2a1c;
-  --line-muted: #2a5a45;
+  --line: #222a3a;
+  --line-strong: #33405a;
+  --line-row: #1c2331;
+  --line-muted: #46536e;
 
-  --text: #eafff5;
-  --text-2: #c2e3d3;
-  --muted: #8db3a1;
-  --dim: #56796a;
+  --text: #eef1f6;
+  --text-2: #c3cad8;
+  --muted: #8f9ab0;
+  --dim: #5f6a80;
 
-  /* Il colore principale ora è il verde neon: il nome "amber" resta per non toccare cento file */
-  --amber: #00ff88;
-  --amber-hover: #7dffc0;
-  --neon: #00ff88;
-  --neon-soft: rgba(0, 255, 136, 0.55);
-  --neon-faint: rgba(0, 255, 136, 0.14);
-  --ink: #020705;
-  --glass: rgba(3, 18, 12, 0.72);
-  --live: #ffc61a; /* in corso: resta ambra, per non confondersi con il verde */
-  --value: #39ff74;
-  --loss: #ff4d6a;
-  --win: #39ff74;
+  /* Il colore delle azioni e dei numeri: verde, ma morbido. Il nome "amber" resta per non toccare cento file */
+  --amber: #2fd98a;
+  --amber-hover: #6fe8b0;
+  --neon: #2fd98a;
+  --neon-soft: rgba(124, 140, 255, 0.4);
+  --neon-faint: rgba(124, 140, 255, 0.16);
+  --accent: #8c9bff; /* secondo colore: titoli, cornici, informazioni */
+  --ink: #0b0e14;
+  --glass: rgba(20, 24, 34, 0.82);
+  --live: #ffc61a; /* in corso: ambra */
+  --value: #3ddc84;
+  --loss: #ff5d73;
+  --win: #3ddc84;
   --pitch: #23c55e;
   --sky: #4cc3ff;
 
@@ -42,8 +44,8 @@
   --font-title: 'Rajdhani', 'Arial Narrow', sans-serif;
   --font-text: 'Barlow', system-ui, sans-serif;
 
-  --led-glow: 0 0 10px currentColor;
-  --led-glow-small: 0 0 5px currentColor;
+  --led-glow: none;
+  --led-glow-small: none;
 
   color-scheme: dark;
 }
@@ -69,11 +71,7 @@ body {
   margin: 0;
   min-height: 100%;
   background: var(--bg);
-  background-image:
-    radial-gradient(ellipse 70% 38% at 50% -6%, rgba(0, 255, 136, 0.16), transparent 70%),
-    linear-gradient(rgba(0, 255, 136, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 136, 0.05) 1px, transparent 1px);
-  background-size: auto, 100% 38px, 38px 100%;
+  background-image: radial-gradient(ellipse 70% 38% at 50% -6%, rgba(124, 140, 255, 0.12), transparent 70%);
   background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-text);
@@ -111,15 +109,13 @@ input {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.5px;
+  color: var(--accent);
 }
 
 .panel {
   background: var(--panel);
   border: 1px solid var(--neon-faint);
   border-radius: 12px;
-  box-shadow:
-    0 0 18px rgba(0, 255, 136, 0.07),
-    inset 0 0 22px rgba(0, 255, 136, 0.03);
 }
 
 .label {
@@ -153,7 +149,7 @@ input {
   background: var(--amber);
   border: 0;
   border-radius: 10px;
-  box-shadow: 0 0 18px var(--neon-soft);
+  box-shadow: none;
   cursor: pointer;
 }
 .btn-primary:hover {
@@ -222,11 +218,7 @@ abbr {
 
 /* Fondo digitale (D181): griglia sottile e un bagliore verde in alto */
 body {
-  background-image:
-    radial-gradient(ellipse 70% 38% at 50% -6%, rgba(0, 255, 136, 0.16), transparent 70%),
-    linear-gradient(rgba(0, 255, 136, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 136, 0.05) 1px, transparent 1px);
-  background-size: auto, 100% 38px, 38px 100%;
+  background-image: radial-gradient(ellipse 70% 38% at 50% -6%, rgba(124, 140, 255, 0.12), transparent 70%);
   background-attachment: fixed;
 }
 
@@ -365,12 +357,10 @@ body {
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background:
-    radial-gradient(ellipse 60% 120% at 100% 0%, rgba(0, 255, 136, 0.22), transparent 70%),
-    linear-gradient(rgba(0, 255, 136, 0.07) 1px, transparent 1px) 0 0 / 100% 19px,
-    linear-gradient(90deg, rgba(0, 255, 136, 0.07) 1px, transparent 1px) 0 0 / 19px 100%,
+    radial-gradient(ellipse 60% 120% at 100% 0%, rgba(124, 140, 255, 0.14), transparent 70%),
     var(--bg-deep);
-  border-color: rgba(0, 255, 136, 0.35);
-  box-shadow: 0 0 24px rgba(0, 255, 136, 0.12);
+  border-color: rgba(124, 140, 255, 0.3);
+  box-shadow: none;
 }
 .hero h1 {
   margin: 0;
@@ -380,10 +370,7 @@ body {
   letter-spacing: 3px;
   text-transform: uppercase;
   line-height: 1;
-  color: #fff;
-  text-shadow:
-    0 0 10px var(--neon),
-    0 0 28px var(--neon-soft);
+  color: var(--accent);
 }
 .hero p {
   margin: 0;
