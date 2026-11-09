@@ -193,7 +193,6 @@ function nextDays(n: number): PickOption[] {
     label, .field { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
     select, input { min-height: 30px; padding: 2px 8px; font: inherit; font-size: 13px; color: var(--text); background: var(--bg-deep); border: 1px solid var(--line-strong); border-radius: 4px; }
     input { width: 70px; }
-    .result { background-image: linear-gradient(var(--neon-faint) 1px, transparent 1px), linear-gradient(90deg, var(--neon-faint) 1px, transparent 1px); background-size: 100% 28px, 28px 100%; }
     .board-head { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font: 600 12px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
     .board-head .mini { width: 30px; height: 30px; }
     .written > li, .totals.written { animation: write 0.55s ease-out both; animation-delay: calc(var(--i) * 0.4s); }

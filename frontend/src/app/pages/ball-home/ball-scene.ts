@@ -21,7 +21,7 @@ const FIND_FACE = /* glsl */ `
   uniform float uHexWeight;
   varying vec3 vLocal;
   varying vec3 vNormal;
-  const vec3 NEON = vec3(0.0, 1.0, 0.53);
+  const vec3 NEON = vec3(1.0, 0.6, 0.24); // arancio di Archie (D185)
   float seamGap(out int face) {
     vec3 p = normalize(vLocal);
     float best = -2.0;
@@ -51,13 +51,13 @@ const BALL_FRAGMENT = /* glsl */ `
     float light = 0.3 + 0.7 * max(dot(n, normalize(vec3(-0.45, 0.6, 0.66))), 0.0);
     vec3 color;
     if (face < 12) {
-      color = mix(NEON, vec3(0.85, 1.0, 0.93), 0.35); // l'interno del pallone è luce: si vede quando la toppa si solleva
+      color = mix(NEON, vec3(1.0, 0.9, 0.8), 0.35); // l'interno del pallone è luce: si vede quando la toppa si solleva
     } else {
-      color = vec3(0.7, 0.76, 0.74) * light;
-      color = mix(color, NEON, min(glow * 0.8, 1.0));
+      color = vec3(0.86, 0.87, 0.9) * light;
+      color = mix(color, NEON, min(glow * 0.35, 1.0));
     }
-    color = mix(color, vec3(0.78, 1.0, 0.9), core);
-    color += NEON * pow(1.0 - max(n.z, 0.0), 2.6) * (0.5 + uParty);
+    color = mix(color, vec3(1.0, 0.82, 0.62), core * 0.7);
+    color += NEON * pow(1.0 - max(n.z, 0.0), 2.6) * (0.12 + uParty);
     gl_FragColor = vec4(color, 1.0);
   }
 `;
@@ -73,7 +73,7 @@ const BEAM_FRAGMENT = /* glsl */ `
     int face;
     float gap = seamGap(face);
     float beam = (1.0 - smoothstep(0.0, uWidth, gap)) * uStrength * (0.8 + 0.2 * sin(uTime * 2.2) + 1.5 * uParty);
-    gl_FragColor = vec4(NEON * beam, beam);
+    gl_FragColor = vec4(NEON * beam * 0.45, beam * 0.45);
   }
 `;
 
@@ -82,8 +82,8 @@ const HALO_FRAGMENT = /* glsl */ `
   varying vec3 vNormal;
   uniform float uParty;
   void main() {
-    float a = pow(clamp(abs(normalize(vNormal).z) / 0.62, 0.0, 1.0), 2.4) * (0.8 + uParty);
-    gl_FragColor = vec4(vec3(0.0, 1.0, 0.53) * a, a);
+    float a = pow(clamp(abs(normalize(vNormal).z) / 0.62, 0.0, 1.0), 2.4) * (0.25 + uParty);
+    gl_FragColor = vec4(vec3(1.0, 0.6, 0.24) * a, a);
   }
 `;
 
@@ -102,11 +102,11 @@ const CAP_FRAGMENT = /* glsl */ `
   uniform float uOn;
   uniform float uTime;
   void main() {
-    vec3 neon = vec3(0.0, 1.0, 0.53);
+    vec3 neon = vec3(1.0, 0.6, 0.24);
     if (vEdge < 0.0) { gl_FragColor = vec4(mix(neon, vec3(1.0), 0.25), 1.0); return; }
-    float glow = exp(-vEdge * 6.5) * (0.6 + 0.15 * sin(uTime * 2.2));
-    vec3 color = vec3(0.012, 0.035, 0.028) + neon * (glow + uOn * (0.16 + 0.5 * exp(-vEdge * 3.0)));
-    color = mix(color, vec3(0.78, 1.0, 0.9), 1.0 - smoothstep(0.015, 0.06, vEdge));
+    float glow = exp(-vEdge * 6.5) * (0.3 + 0.08 * sin(uTime * 2.2));
+    vec3 color = vec3(0.05, 0.06, 0.09) + neon * (glow + uOn * (0.16 + 0.5 * exp(-vEdge * 3.0)));
+    color = mix(color, vec3(1.0, 0.82, 0.62), 0.6 * (1.0 - smoothstep(0.015, 0.06, vEdge)));
     gl_FragColor = vec4(color, 1.0);
   }
 `;

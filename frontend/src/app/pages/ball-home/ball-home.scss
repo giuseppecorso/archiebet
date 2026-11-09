@@ -12,9 +12,7 @@
   color: #eef1f6;
   font-family: var(--font-text);
   background:
-    radial-gradient(60% 34% at 50% 30%, rgba(124, 140, 255, 0.14), transparent 70%),
-    linear-gradient(var(--neon-faint) 1px, transparent 1px) 0 0 / 100% 34px,
-    linear-gradient(90deg, var(--neon-faint) 1px, transparent 1px) 0 0 / 34px 100%,
+    radial-gradient(60% 34% at 50% 30%, rgba(255, 154, 60, 0.08), transparent 70%),
     var(--ink);
 }
 
@@ -60,7 +58,7 @@ h1 {
     display: block;
     width: 100%;
     height: 100%;
-    filter: drop-shadow(0 0 14px rgba(47, 217, 138, 0.25));
+    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.45));
   }
 }
 
@@ -223,7 +221,7 @@ h2 {
   }
 
   .tick {
-    color: var(--neon);
+    color: var(--win);
   }
 
   .what {
