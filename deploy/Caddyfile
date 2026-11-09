@@ -1,0 +1,13 @@
+# Caddy ottiene e rinnova da solo il certificato HTTPS.
+# Archie è ad uso privato: si entra solo con il login e i motori di ricerca non devono indicizzarlo.
+archie.giuseppecorso.it {
+	encode zstd gzip
+	header {
+		X-Robots-Tag "noindex, nofollow"
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+	reverse_proxy frontend:80
+}

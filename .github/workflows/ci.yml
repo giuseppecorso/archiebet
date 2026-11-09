@@ -45,3 +45,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker compose build
+
+  deploy:
+    name: Aggiorna il server
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend, frontend, docker]
+    runs-on: ubuntu-latest
+    concurrency: production
+    steps:
+      - name: Avvia l'aggiornamento
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "Chiave di deploy non impostata: salto"
+            exit 0
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          echo "57.131.145.27 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOvBEXsOWBDbXMVhd27pzvkwp8yE6dSXpmVE1+JcDXee" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy ubuntu@57.131.145.27

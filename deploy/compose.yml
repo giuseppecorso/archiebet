@@ -1,0 +1,45 @@
+# Produzione sul server: Caddy (HTTPS) -> frontend nginx -> backend. Solo Caddy è raggiungibile da internet.
+# Fuori da Git, sul server: /srv/archie/.env (chiavi) e /srv/archie/data (database, cache, chiavi delle notifiche).
+name: archie
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      frontend:
+        condition: service_started
+
+  frontend:
+    build: ../frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  backend:
+    build: ../backend
+    restart: unless-stopped
+    env_file: /srv/archie/.env
+    environment:  # hanno la precedenza sul file .env
+      APP_ENV: production
+      COOKIE_SECURE: "true"
+      DATABASE_URL: sqlite:////app/data/archiebet.db
+      DATA_CACHE_DIR: /app/data/cache
+      FRONTEND_DIST: ""  # l'app la serve nginx
+    volumes:
+      - /srv/archie/data:/app/data
+    # Tetto: i calcoli pesanti di Archie non devono rallentare il resto del server
+    cpus: 3.0
+    mem_limit: 5g
+
+volumes:
+  caddy-data:
+  caddy-config:
