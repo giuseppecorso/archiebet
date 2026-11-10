@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Archie, il gufo di ArchieBet">
   <defs>
     <radialGradient id="bg" cx="50%" cy="40%" r="70%">
-      <stop offset="0" stop-color="#1c2639"/>
-      <stop offset="1" stop-color="#0b1019"/>
+      <stop offset="0" stop-color="#16224e"/>
+      <stop offset="1" stop-color="#070d24"/>
     </radialGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <circle cx="256" cy="262" r="196" fill="none" stroke="#ff9a3c" stroke-opacity="0.3" stroke-width="6"/>
+  <circle cx="256" cy="262" r="196" fill="none" stroke="#ff8f26" stroke-opacity="0.35" stroke-width="6"/>
   <g id="owl" transform="translate(56 50) scale(2)">
       <g>
         <g stroke="#ffc94a" stroke-width="5" stroke-linecap="round">
