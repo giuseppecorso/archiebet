@@ -13,7 +13,7 @@
     @if (!failed()) {
       <svg class="trail front" #trailFront aria-hidden="true"></svg>
       <div class="feathers front" #feathersFront aria-hidden="true"></div>
-      <div class="fly" #owl aria-hidden="true"><ab-archie-toon pose="fly" /></div>
+      <div class="fly" #owl aria-hidden="true"><ab-archie-3d pose="fly" /></div>
     }
     @for (entry of menu; track entry.label; let i = $index) {
       <button type="button" class="label" #label (click)="pick(i)">{{ entry.label }}</button>

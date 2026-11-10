@@ -43,7 +43,7 @@ const ICONS: Record<string, string> = { prima: '🎯', dieci: '📒', serie: '�
 
     @if (data.value(); as p) {
       <section class="panel box who">
-        <img src="archie-512.png" alt="" width="56" height="56" />
+        <img src="archie-owl.png" alt="" width="56" height="56" />
         <div>
           <h2 class="title name">{{ p.display_name || p.username }}</h2>
           <p class="muted small">Gioca con Archie da {{ day(p.since).toLowerCase() }} · {{ p.bets }} giocate · {{ p.won }} vinte · {{ p.lost }} perse</p>

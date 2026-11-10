@@ -7,7 +7,6 @@ import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
 import { SlipService } from '../../core/slip';
 import { StudyLeg, StudyMultiple } from '../../core/study';
 import { ArchieStudy, studyTime } from '../../shared/archie-study';
-import { ArchieToon } from '../../shared/archie-toon';
 import { Crest } from '../../shared/crest';
 import { MultiPick, PickOption } from '../../shared/multi-pick';
 import { WhyPopup } from '../../shared/why-popup';
@@ -45,7 +44,7 @@ function nextDays(n: number): PickOption[] {
 /** "Archie, fammi una multipla": i pronostici studiati da Archie (D137), ognuno con il suo perché. */
 @Component({
   selector: 'ab-generator',
-  imports: [ArchieStudy, ArchieToon, Crest, KeyValuePipe, MultiPick, RouterLink, WhyPopup],
+  imports: [ArchieStudy, Crest, KeyValuePipe, MultiPick, RouterLink, WhyPopup],
   template: `
     <section class="panel box form" aria-labelledby="gen-title">
       <h2 id="gen-title" class="title">Archie, fammi una multipla</h2>
@@ -113,7 +112,7 @@ function nextDays(n: number): PickOption[] {
         <ab-archie-study />
       } @else if (result.value(); as r) {
         @if (r.legs.length) {
-          <p class="board-head"><ab-archie-toon class="mini" /> La lavagna di Archie</p>
+          <p class="board-head"><img class="mini" src="archie-owl.png" alt="" /> La lavagna di Archie</p>
           <ol class="legs written">
             @for (l of r.legs; track l.match.id; let i = $index) {
               <li [style.--i]="i">

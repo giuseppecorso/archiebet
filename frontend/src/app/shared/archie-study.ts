@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ArchieToon } from './archie-toon';
+import { Archie3d } from './owl3d/archie-3d';
 
 /** Le idee che girano in testa ad Archie mentre studia: solo parole, i numeri li calcola il codice */
 export const IDEAS = ['xG', 'forma', 'assenti', 'in casa', 'tiri', 'quote'];
@@ -10,10 +10,10 @@ export function studyTime(): number {
   return calm ? 0 : 5000;
 }
 
-/** La scena dello studio (D184): Archie si gratta la testa con mille idee, poi scrive la multipla sulla lavagna digitale. */
+/** La scena dello studio (D184, D193): Archie in 3D pensa con mille idee attorno, poi la multipla si scrive sulla lavagna. */
 @Component({
   selector: 'ab-archie-study',
-  imports: [ArchieToon],
+  imports: [Archie3d],
   template: `
     <div class="scene" role="status">
       <div class="owl">
@@ -21,7 +21,7 @@ export function studyTime(): number {
           <span class="idea" [style.--i]="i" aria-hidden="true">{{ idea }}</span>
         }
         <span class="bulb" aria-hidden="true">!</span>
-        <ab-archie-toon pose="study" />
+        <ab-archie-3d class="owl3d" />
       </div>
       <div class="board" aria-hidden="true">
         <span class="board-title">Lavagna di Archie</span>
@@ -40,6 +40,7 @@ export function studyTime(): number {
     :host { display: block; padding: 8px 0; }
     .scene { display: flex; align-items: flex-end; gap: 4%; min-height: 230px; padding-top: 70px; }
     .owl { position: relative; flex: 0 0 34%; max-width: 170px; }
+    .owl3d { width: 100%; aspect-ratio: 1; }
     .idea {
       position: absolute; left: 50%; top: 10%;
       padding: 3px 9px; border: 1px solid var(--line-strong); border-radius: 999px;
