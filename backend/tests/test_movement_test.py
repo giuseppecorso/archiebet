@@ -74,3 +74,25 @@ def test_run_follows_the_sign_found_in_tuning():
     res = {r.market: r for r in mt.run(tuning, tuning)}["1X2"]
     assert res.direction == 1
     assert res.tuning_slope.beta > 0
+
+
+def test_recheck_switches_only_when_the_pick_drops_and_the_favourite_changes():
+    # partita 1: il 1 scende di 6 punti e il 2 diventa favorito → si passa al 2, che vince
+    m1 = [obs(1, "1", 0.45, 0.39, False), obs(1, "X", 0.25, 0.20, False), obs(1, "2", 0.30, 0.41, True)]
+    # partita 2: il 1 scende di 6 punti ma resta favorito → nessun cambio
+    m2 = [obs(2, "1", 0.60, 0.54, True), obs(2, "X", 0.22, 0.25, False), obs(2, "2", 0.18, 0.21, False)]
+    # partita 3: il favorito cambia ma il 1 scende solo di 2 punti → nessun cambio
+    m3 = [obs(3, "1", 0.40, 0.38, True), obs(3, "X", 0.25, 0.23, False), obs(3, "2", 0.35, 0.39, False)]
+    [s] = mt.rechecks(m1 + m2 + m3)
+    assert (s.match_id, s.old, s.new, s.old_won, s.new_won) == (1, "1", "2", False, True)
+    gain = mt.switch_gain([s])
+    assert gain.mean == 1.0
+
+
+def test_recheck_verdict_needs_a_positive_significant_total():
+    good = [mt.Switch(i, "1X2", "1", "2", i % 3 == 0, i % 3 != 0) for i in range(300)]
+    total = mt.switch_gain(good)
+    assert total.mean > 0 and mt.recheck_passed({"1X2": total}, total)
+    worse = [mt.Switch(i, "OU2.5", "over", "under", True, False) for i in range(10)]
+    assert not mt.recheck_passed({"1X2": total, "OU2.5": mt.switch_gain(worse)}, total)
+    assert not mt.recheck_passed({}, None)

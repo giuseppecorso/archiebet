@@ -17,6 +17,7 @@ Ultimo aggiornamento: 2026-11-09
 - [x] **D187: movimento delle quote** (`movement-test`, Pinnacle apertura → chiusura, 10 campionati, taratura 2012/13–2019/20, conferma 2020/21–2024/25): **non passa**. La chiusura ha già dentro tutto il movimento; né seguirlo né andargli contro rende, a Pinnacle né a bet365.
 - [x] **D188: Archie il professore** (stilizzato, occhiali, tocco, papillon; in home vola con scia d'aria e piume; logo e icone rifatti). Da confermare con Giuse.
 - [x] **D189/D194: scheda Strategie** (Pronostici → Strategie): costruisci a sistema con probabilità e vincite; 13 strategie famose provate sull'archivio, nessuna passa (value betting e consenso battono la chiusura ma con poche giocate).
+- [x] **D195: Archie ricontrolla** (`recheck-test`, 2012/13–2019/20, passa di misura: +6,5 punti di vinte quando il favorito cambia): avviso in bacheca prima del calcio d'inizio, in prova.
 - [x] **D191-D193**: account demo in sola lettura (utente `demo`, password `archie-demo`); schedine del Daily giocate da sole (1 € a utente) e nelle statistiche, senza monete; Archie in 3D serio e furbo con nuove icone.
 - [x] **D190: home con pochi elementi** (motto "I numeri prima del tifo", striscia Oggi, partite di oggi; via trombe, prova della festa, Occasioni, giocate e ArchieTV) e colori blu notte / arancio neon.
 - [x] Chiesti da Giuse il 2026-11-09: Archie (D184-D186), lavagna della multipla, bacheca come campo (D182), prova sui movimenti delle quote (D187).

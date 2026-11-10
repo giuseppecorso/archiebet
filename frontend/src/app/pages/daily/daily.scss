@@ -193,3 +193,24 @@ li[data-status='lost'] strong { color: var(--loss); }
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 12px; margin-bottom: 14px; }
 .chart-card { min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
 .chart-title { margin: 0 0 6px; font-size: 16px; color: var(--text); }
+
+/* D195: Archie ricontrolla (in prova) */
+.recheck {
+  grid-column: 1 / -1;
+  display: block;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--live);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text);
+  background: rgba(255, 214, 10, 0.08);
+}
+
+/* D192: la schedina è già giocata da sola */
+.played {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--win);
+}

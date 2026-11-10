@@ -193,17 +193,17 @@ def _cap_test() -> int:
     return 0
 
 
-def _movement_test() -> int:
-    """D187: il movimento di Pinnacle tra apertura e chiusura dice ancora qualcosa sul risultato?"""
-    from app.forecast import movement_test as mt
+def _movement_obs(first: str, last: str) -> list:
+    """Esiti con Pinnacle d'apertura e chiusura senza margine, risultato e quote di chiusura (D187, D195)."""
     from sqlalchemy import select
-    from app.models import Match, MatchStatus
+
+    from app.forecast import movement_test as mt
     from app.forecast.data import load_odds
     from app.forecast.demargin import shin
     from app.forecast.history_sim import SimMatch, won
     from app.forecast.learning_service import HISTORY_LEAGUES
+    from app.models import Match, MatchStatus
 
-    first, split, last = "2012/13", "2020/21", "2024/25"
     with SessionLocal() as db:
         matches = db.execute(
             select(Match).join(Competition, Match.competition_id == Competition.id)
@@ -228,6 +228,36 @@ def _movement_test() -> int:
             b365 = b365_close.get(mid, {}).get(market, {})
             for sel in sels:
                 obs.append(mt.Obs(mid, season, market, sel, p_open[sel], p_close[sel], won(fake, market, sel), c[sel], b365.get(sel)))
+    return obs
+
+
+def _recheck_test() -> int:
+    """D195: quando il pronostico d'apertura scende di almeno 4 punti e il favorito cambia, conviene passare al nuovo?"""
+    from app.forecast import movement_test as mt
+
+    obs = _movement_obs("2012/13", "2019/20")
+    by_market = {}
+    for market in mt.MARKETS:
+        sw = mt.rechecks([o for o in obs if o.market == market])
+        by_market[market] = mt.switch_gain(sw)
+        e = by_market[market]
+        old = sum(s.old_won for s in sw)
+        new = sum(s.new_won for s in sw)
+        print(f"{market}: scatta in {len(sw)} partite; vinte col vecchio {old} ({old / max(len(sw), 1):.1%}), col nuovo {new} ({new / max(len(sw), 1):.1%})"
+              + (f"; differenza {e.mean * 100:+.1f} punti ± {e.std_error * 100:.1f} (t {e.t:+.1f})" if e else ""))
+    total = mt.switch_gain(mt.rechecks(obs))
+    if total:
+        print(f"Insieme: differenza {total.mean * 100:+.1f} punti ± {total.std_error * 100:.1f} (t {total.t:+.1f}) su {total.n} cambi")
+    print("PASSA" if mt.recheck_passed(by_market, total) else "non passa")
+    return 0
+
+
+def _movement_test() -> int:
+    """D187: il movimento di Pinnacle tra apertura e chiusura dice ancora qualcosa sul risultato?"""
+    from app.forecast import movement_test as mt
+
+    first, split, last = "2012/13", "2020/21", "2024/25"
+    obs = _movement_obs(first, last)
     tuning = [o for o in obs if o.season < split]
     confirm = [o for o in obs if o.season >= split]
     print(f"Esiti: taratura {len(tuning)} ({first} - prima del {split}), conferma {len(confirm)} ({split} - {last})")
@@ -1698,6 +1728,7 @@ def main() -> int:
     commands.add_parser("types-test", help="D178: quali tipi di giocata sbagliano, per tipo e fascia di quota")
     commands.add_parser("cap-test", help="D179: il tetto a quota 2,20 sull'archivio 2012/13-2022/23")
     commands.add_parser("movement-test", help="D187: il movimento delle quote di Pinnacle dice ancora qualcosa sul risultato?")
+    commands.add_parser("recheck-test", help="D195: Archie ricontrolla i pronostici quando il mercato si sposta")
     commands.add_parser("market-strategies", help="D189: le strategie famose del mercato messe alla prova sull'archivio")
     commands.add_parser("criteria-test", help="prova D156: peso dei giocatori, motivazione e meteo stimati sul passato")
     commands.add_parser("bookmaker-test", help="prova D144: dove sbaglia il bookmaker (studio contro quota media prima della partita)")
@@ -1839,6 +1870,8 @@ def main() -> int:
         return _cap_test()
     if args.command == "movement-test":
         return _movement_test()
+    if args.command == "recheck-test":
+        return _recheck_test()
     if args.command == "market-strategies":
         return _market_strategies()
 

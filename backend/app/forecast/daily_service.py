@@ -121,6 +121,7 @@ def publish_due(db: Session, now: datetime | None = None) -> list[str]:
         legs = study_legs(db, kind, start, end) if kind.level else multiplier_legs(db, kind, start, end) if kind.multiplier_legs else clv_legs(db, kind, start, end)
         if not legs:
             continue  # niente da proporre adesso: si riprova al prossimo giro dello stesso giorno
+        legs = with_market_view(legs, pinnacle_fair(db, {leg["match_id"] for leg in legs}))
         totals = slip_totals(kind, legs)
         if totals is None:
             continue  # troppe poche partite per il sistema: si riprova al prossimo giro
@@ -129,6 +130,47 @@ def publish_due(db: Session, now: datetime | None = None) -> list[str]:
         published.append(kind.key)
     db.commit()
     return published
+
+
+RECHECK_MARKETS = ("1X2", "OU2.5")  # D195: provata solo su questi mercati
+RECHECK_DROP = 0.04
+
+
+def pinnacle_fair(db: Session, match_ids: Iterable[int]) -> dict[int, dict[str, dict[str, float]]]:
+    """Probabilità giuste di Pinnacle adesso (senza margine, Shin), solo 1X2 e Under/Over 2.5."""
+    from app.forecast.demargin import shin
+
+    out: dict[int, dict[str, dict[str, float]]] = {}
+    for mid, books in load_book_odds(db, match_ids, closing=False).items():
+        for market, prices in books.get("pinnacle", {}).items():
+            if market in RECHECK_MARKETS and len(prices) >= 2 and all(p > 1 for p in prices.values()):
+                out.setdefault(mid, {})[market] = dict(zip(prices, shin(list(prices.values()))))
+    return out
+
+
+def with_market_view(legs: list[dict], fair: dict[int, dict[str, dict[str, float]]]) -> list[dict]:
+    """D195: alla pubblicazione si segna la probabilità di Pinnacle del pronostico e se era il favorito del mercato."""
+    out = []
+    for leg in legs:
+        probs = fair.get(leg["match_id"], {}).get(leg["market"])
+        if probs and leg["selection"] in probs:
+            leg = {**leg, "p_market": round(probs[leg["selection"]], 4), "market_fav": max(probs, key=probs.__getitem__) == leg["selection"]}
+        out.append(leg)
+    return out
+
+
+def recheck_leg(leg: dict, now_probs: dict[str, float] | None) -> dict | None:
+    """D195 (passata sul 2012/13-2019/20): il pronostico era il favorito, ha perso almeno 4 punti e il favorito ora è un altro.
+    Restituisce il nuovo esito più probabile con le probabilità, o None."""
+    if leg.get("status") != OPEN or not leg.get("market_fav") or leg.get("p_market") is None or not now_probs:
+        return None
+    sel = leg["selection"]
+    if sel not in now_probs:
+        return None
+    best = max(now_probs, key=now_probs.__getitem__)
+    if best == sel or now_probs[sel] - leg["p_market"] > -RECHECK_DROP + 1e-12:
+        return None
+    return {"selection": best, "p_before": leg["p_market"], "p_now": round(now_probs[sel], 4), "p_new": round(now_probs[best], 4)}
 
 
 DAILY_STAKE = Decimal("1.00")  # D192: ogni schedina del Daily si gioca da sola con 1 € per utente

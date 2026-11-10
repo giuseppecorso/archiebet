@@ -8,11 +8,22 @@ from sqlalchemy import select
 
 from app.auth.deps import CurrentUser, DbSession
 from app.forecast.daily import KINDS, LOST, OPEN, ROME, WON, BoardCharts, board_charts, stats
-from app.forecast.study import ASSUMED_MARGIN
+from app.forecast.daily_service import pinnacle_fair, recheck_leg
+from app.forecast.study import ASSUMED_MARGIN, event_text
 from app.models import DailySlip, Match, MatchStatus
 
 router = APIRouter(prefix="/api/daily", tags=["daily"])
 ARCHIVE_DAYS = 7  # D173: in archivio solo l'ultima settimana, il resto vive nelle statistiche
+
+
+class RecheckOut(BaseModel):
+    """Archie ricontrolla (D195, in prova): ora è più probabile un altro esito."""
+
+    selection: str
+    event: str
+    p_before: float  # probabilità del pronostico alla pubblicazione
+    p_now: float  # probabilità del pronostico adesso
+    p_new: float  # probabilità del nuovo esito
 
 
 class DailyLegOut(BaseModel):
@@ -28,6 +39,9 @@ class DailyLegOut(BaseModel):
     price: float  # quota al momento della pubblicazione
     status: str  # open | won | lost | void
     from_market: bool | None = None  # pronostico costruito con le quote del mercato (None: schedine di prima)
+    p_market: float | None = None  # D195: probabilità di Pinnacle alla pubblicazione
+    market_fav: bool | None = None
+    recheck: RecheckOut | None = None  # D195: il mercato è cambiato prima del calcio d'inizio
     score: str | None = None  # risultato finale della partita, quando è finita
 
 
@@ -81,11 +95,12 @@ class DailyOut(BaseModel):
     by_source: list[SourceOut] = []
 
 
-def _out(s: DailySlip, scores: dict[int, str] | None = None) -> DailySlipOut:
+def _out(s: DailySlip, scores: dict[int, str] | None = None, rechecks: dict[tuple[int, str, str], RecheckOut] | None = None) -> DailySlipOut:
     k = KINDS[s.kind]
     scores = scores or {}
+    rechecks = rechecks or {}
     return DailySlipOut(id=s.id, kind=s.kind, title=k.title, period=s.period, published_at=s.published_at, singles=k.singles, system=k.system,
-                        legs=[DailyLegOut(**leg, score=scores.get(leg["match_id"])) for leg in s.legs], total_odds=s.total_odds, win_probability=s.win_probability, status=s.status)  # fmt: skip
+                        legs=[DailyLegOut(**{**leg, "recheck": rechecks.get((leg["match_id"], leg["market"], leg["selection"]))}, score=scores.get(leg["match_id"])) for leg in s.legs], total_odds=s.total_odds, win_probability=s.win_probability, status=s.status)  # fmt: skip
 
 
 @router.get("")
@@ -106,13 +121,30 @@ def daily(_: CurrentUser, db: DbSession) -> DailyOut:
     legs = [leg for s in slips if s.period == today for leg in s.legs]
     per_kind = stats(slips, ASSUMED_MARGIN)
     return DailyOut(
-        board=[_out(s, scores) for s in board],
+        board=[_out(s, scores, _rechecks(db, board)) for s in board],
         today=TodayOut(legs_won=sum(leg["status"] == WON for leg in legs), legs_closed=sum(leg["status"] in (WON, LOST) for leg in legs), legs_total=len(legs)),
         stats=[KindStatsOut(kind=k, title=KINDS[k].title, **vars(v)) for k, v in per_kind.items()],
         by_source=_by_source(slips),
         history=[_out(s, scores) for s in slips if s.status != OPEN and s not in board and s.period >= archive_from],
         charts=board_charts(slips, ASSUMED_MARGIN),
     )
+
+
+def _rechecks(db, board: list[DailySlip]) -> dict[tuple[int, str, str], RecheckOut]:
+    """D195: per i pronostici in bacheca non ancora iniziati, il mercato di Pinnacle di adesso contro quello della pubblicazione."""
+    now = datetime.now(UTC)
+    legs = [leg for s in board for leg in s.legs if leg.get("market_fav") and leg["status"] == OPEN
+            and datetime.fromisoformat(leg["kickoff_at"]).astimezone(UTC) > now]  # fmt: skip
+    if not legs:
+        return {}
+    fair = pinnacle_fair(db, {leg["match_id"] for leg in legs})
+    out = {}
+    for leg in legs:
+        found = recheck_leg(leg, fair.get(leg["match_id"], {}).get(leg["market"]))
+        if found:
+            event = event_text(leg["market"], found["selection"], leg["home"], leg["away"])
+            out[(leg["match_id"], leg["market"], leg["selection"])] = RecheckOut(event=event, **found)
+    return out
 
 
 def _by_source(slips) -> list[SourceOut]:

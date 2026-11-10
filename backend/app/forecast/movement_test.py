@@ -143,3 +143,43 @@ def run(tuning: Sequence[Obs], confirm: Sequence[Obs]) -> list[MarketResult]:
         chosen = plays(conf, direction, threshold) if threshold is not None else []
         out.append(MarketResult(market, s_tune, s_conf, direction, threshold, tune_roi, roi(chosen), roi(chosen, "bet365")))
     return out
+
+
+# --- D195: Archie ricontrolla --------------------------------------------------------------------------------
+
+RECHECK_DROP = 0.04
+
+
+@dataclass(frozen=True)
+class Switch:
+    match_id: int
+    market: str
+    old: str  # pronostico d'apertura (esito più probabile)
+    new: str  # esito più probabile in chiusura
+    old_won: bool
+    new_won: bool
+
+
+def rechecks(obs: Sequence[Obs], drop: float = RECHECK_DROP) -> list[Switch]:
+    """Le partite in cui il pronostico d'apertura perde almeno `drop` di probabilità e il favorito cambia."""
+    by_market: dict[tuple[int, str], list[Obs]] = defaultdict(list)
+    for o in obs:
+        by_market[(o.match_id, o.market)].append(o)
+    out = []
+    for (mid, market), group in by_market.items():
+        old = max(group, key=lambda o: o.p_open)
+        new = max(group, key=lambda o: o.p_close)
+        if new.selection != old.selection and old.p_close - old.p_open <= -drop + 1e-12:
+            out.append(Switch(mid, market, old.selection, new.selection, old.won, new.won))
+    return out
+
+
+def switch_gain(switches: Sequence[Switch]) -> Estimate | None:
+    """Vinte in più (o in meno) passando al nuovo pronostico, per partita."""
+    if not switches:
+        return None
+    return clustered_mean([float(s.new_won) - float(s.old_won) for s in switches], [s.match_id for s in switches])
+
+
+def recheck_passed(by_market: dict[str, Estimate | None], total: Estimate | None) -> bool:
+    return bool(total and total.mean > 0 and total.t >= T_CONFIRM and all(e is None or e.mean >= 0 for e in by_market.values()))

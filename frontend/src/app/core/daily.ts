@@ -18,6 +18,8 @@ export interface DailyLeg {
   status: 'open' | 'won' | 'lost' | 'void';
   /** Risultato finale, quando la partita è finita */
   score?: string | null;
+  /** D195 (in prova): prima del calcio d'inizio il mercato si è spostato e ora è più probabile un altro esito */
+  recheck?: { selection: string; event: string; p_before: number; p_now: number; p_new: number } | null;
 }
 
 export interface DailySlip {

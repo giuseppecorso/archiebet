@@ -1,11 +1,8 @@
-import { HttpClient, httpResource } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
-import { Bet } from '../../core/bets';
+import { httpResource } from '@angular/common/http';
+import { Component, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { balanceOption, monthsOption, oddsOption } from '../../core/charts';
-import { DailyLeg, DailyOut, DailySlip } from '../../core/daily';
-import { SlipLeg, SlipService } from '../../core/slip';
+import { DailyOut, DailySlip } from '../../core/daily';
 import { dayLabel, kickoffTime, odds, pct } from '../../core/format';
 import { Chart } from '../../shared/chart';
 import { PushToggle } from '../../shared/push-toggle';
@@ -30,16 +27,6 @@ import { slipImage } from './slip-image';
         </p>
       }
 
-      @if (playableSlips(d).length) {
-        <div class="panel box play-all">
-          <span>Gioca in un colpo tutte le schedine aperte di oggi</span>
-          <label>€ a schedina <input type="number" inputmode="decimal" min="0.5" step="0.5" [value]="allStake()" (input)="allStake.set(+$any($event.target).value || 0)" /></label>
-          <button type="button" class="btn-primary" (click)="playAll(d)" [disabled]="busy() || allStake() <= 0">Gioca tutte</button>
-          @if (allMsg(); as m) {
-            <p class="small" [class.err]="!m.ok" role="status">{{ m.text }}</p>
-          }
-        </div>
-      }
       @if (d.board.length) {
         <div class="pitch" [style.--rows]="rows(d.board.length)" role="group" aria-label="Le giocate di Archie in campo">
           <span class="line half" aria-hidden="true"></span>
@@ -70,6 +57,12 @@ import { slipImage } from './slip-image';
                   <span class="e">{{ capital(l.event) }}</span>
                   <span class="meta">{{ dayLabel(l.kickoff_at) }} {{ time(l.kickoff_at) }} · {{ pct(l.p) }} · quota {{ fmtOdds(l.price) }}@if (l.score) { · <strong>finita {{ l.score }}</strong> }</span>
                   <span class="mark" aria-hidden="true">{{ mark(l.status) }}</span>
+                  @if (l.recheck; as r) {
+                    <span class="recheck" role="note">
+                      <b>Archie ricontrolla</b> (in prova): il mercato è cambiato. Questo pronostico è sceso dal {{ pct(r.p_before) }} al {{ pct(r.p_now) }};
+                      ora è più probabile <b>{{ r.event }}</b> ({{ pct(r.p_new) }}).
+                    </span>
+                  }
                 </li>
               }
             </ol>
@@ -84,9 +77,7 @@ import { slipImage } from './slip-image';
               } @else {
                 <span>Quota <strong>{{ fmtOdds(s.total_odds) }}</strong> · esce 1 volta su {{ oneIn(s.win_probability) }}</span>
               }
-              @if (playable(s).length) {
-                <button type="button" class="share play" (click)="play(s)">Gioca</button>
-              }
+              <span class="played" title="D192: ogni schedina del Daily si gioca da sola e finisce nelle tue statistiche">Giocata da sola · 1 €{{ s.singles ? ' a pronostico' : '' }}</span>
               <button type="button" class="share" (click)="share(s)">Immagine</button>
             </footer>
             @if (s.status !== 'open') {
@@ -210,8 +201,6 @@ import { slipImage } from './slip-image';
   styleUrl: './daily.scss',
 })
 export class Daily {
-  private readonly slip = inject(SlipService);
-  private readonly http = inject(HttpClient);
   protected readonly data = httpResource<DailyOut>(() => '/api/daily');
   /** La giocata aperta sotto il campo (null = la prima) */
   protected readonly selected = signal<number | null>(null);
@@ -242,27 +231,6 @@ export class Daily {
     return d.stats.reduce((t, k) => ({ published: t.published + k.published, won: t.won + k.legs_won, closed: t.closed + k.legs_closed, profit: t.profit + k.profit }), { published: 0, won: 0, closed: 0, profit: 0 });
   }
 
-  /** Pronostici ancora da giocare (partita non iniziata) */
-  protected playable(s: DailySlip): DailyLeg[] {
-    return s.status === 'open' ? s.legs.filter((l) => l.status === 'open' && new Date(l.kickoff_at).getTime() > Date.now()) : [];
-  }
-
-  /** Mette la schedina nella Schedina: lì si sceglie simulata o reale e l'importo. Il sistema resta tale se tutte le partite sono ancora da giocare. */
-  protected play(s: DailySlip): void {
-    const legs = this.playable(s);
-    const team = (name: string) => ({ id: 0, name }) as SlipLeg['match']['home'];
-    this.slip.fill(
-      legs.map((l) => ({
-        match: { id: l.match_id, home: team(l.home), away: team(l.away), kickoff_at: l.kickoff_at, competition: { name: l.competition } as SlipLeg['match']['competition'] },
-        market: l.market,
-        pick: l.selection,
-        odds: l.price,
-        bookmaker: null,
-      })),
-      s.system && legs.length === s.legs.length ? s.system : null,
-    );
-  }
-
   protected capital(text: string): string {
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
@@ -286,61 +254,9 @@ export class Daily {
 
   protected readonly ARCHIVE_SHOWN = 6;
   protected readonly archiveAll = signal(false);
-  protected readonly allStake = signal(5);
-  protected readonly busy = signal(false);
-  protected readonly allMsg = signal<{ ok: boolean; text: string } | null>(null);
 
   protected hasSources(d: DailyOut): boolean {
     return (d.by_source ?? []).some((x) => x.closed > 0);
-  }
-
-  protected playableSlips(d: DailyOut): DailySlip[] {
-    return d.board.filter((s) => this.playable(s).length);
-  }
-
-  /** Firma di una giocata: le sue partite ed esiti, in ordine (per riconoscere una schedina già giocata) */
-  private signature(legs: { match_id: number; market: string; pick: string }[]): string {
-    return legs.map((l) => `${l.match_id}:${l.market}:${l.pick}`).sort().join('|');
-  }
-
-  /** Registra tutte le schedine aperte della bacheca; salta quelle già giocate (stesse partite ed esiti) */
-  protected async playAll(d: DailyOut): Promise<void> {
-    this.busy.set(true);
-    this.allMsg.set(null);
-    try {
-      const mine = await firstValueFrom(this.http.get<Bet[]>('/api/bets'));
-      const done = new Set(mine.map((b) => this.signature(b.selections.map((s) => ({ match_id: s.match.id, market: s.market, pick: s.pick })))));
-      let played = 0;
-      let skipped = 0;
-      for (const s of this.playableSlips(d)) {
-        const legs = this.playable(s);
-        const groups = s.singles ? legs.map((l) => [l]) : [legs];
-        for (const g of groups) {
-          const sig = this.signature(g.map((l) => ({ match_id: l.match_id, market: l.market, pick: l.selection })));
-          if (done.has(sig)) {
-            skipped++;
-            continue;
-          }
-          await firstValueFrom(this.http.post('/api/bets', {
-            stake: this.allStake().toFixed(2),
-            note: s.title,
-            selections: g.map((l) => ({ match_id: l.match_id, market: l.market, pick: l.selection, odds: l.price.toFixed(3) })),
-            system: s.system && g.length === s.legs.length ? s.system : null,
-          }));
-          done.add(sig);
-          played++;
-        }
-      }
-      this.allMsg.set(
-        played
-          ? { ok: true, text: `Fatto: ${played} giocate registrate${skipped ? `, ${skipped} saltate perché le avevi già giocate` : ''}. Le trovi in Il mio Archie.` }
-          : { ok: false, text: 'Le avevi già giocate tutte: nessuna giocata nuova.' },
-      );
-    } catch {
-      this.allMsg.set({ ok: false, text: 'Qualcosa non è andato: alcune giocate potrebbero non essere state registrate. Controlla in Il mio Archie.' });
-    } finally {
-      this.busy.set(false);
-    }
   }
 
   protected money(n: number): string {
