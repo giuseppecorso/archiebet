@@ -279,36 +279,53 @@ h2 {
   }
 }
 
-/* Archie vola attorno al pallone (D184): davanti nella metà bassa del giro, dietro in quella alta.
-   x e profondità sono due va-e-vieni sfasati di un quarto: insieme fanno un'ellisse. */
+/* Archie vola attorno al pallone (D188): la posizione la calcola flight.ts a ogni fotogramma
+   (davanti nella metà bassa del giro, dietro in quella alta), con scia d'aria e piume. */
 .fly {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  top: 0;
+  left: 0;
   z-index: 3;
   width: 21%;
   aspect-ratio: 1;
-  margin: -10.5% 0 0 -10.5%;
   pointer-events: none;
-  animation: fly-z 14s step-end infinite;
+  transform: translate(-200%, -200%);
+  will-change: transform;
 }
-.fx {
-  animation: fly-x 7s ease-in-out infinite alternate;
+.trail,
+.feathers {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
 }
-.fy {
-  animation: fly-y 7s ease-in-out -3.5s infinite alternate;
+.trail {
+  stroke: #e6eefc;
+  filter: blur(1.5px);
 }
-@keyframes fly-z {
-  0% { z-index: 3; }
-  50% { z-index: 0; }
+.back {
+  z-index: 0;
 }
-@keyframes fly-x {
-  from { transform: translateX(-195%); }
-  to { transform: translateX(195%); }
+.front {
+  z-index: 3;
 }
-@keyframes fly-y {
-  from { transform: translateY(-110%) scale(0.55); }
-  to { transform: translateY(75%) scale(1.05); }
+/* le piume nascono da flight.ts, fuori dal template: servono stili non incapsulati */
+.feathers ::ng-deep .feather {
+  position: absolute;
+  width: 14px;
+  height: 22px;
+  margin: -11px 0 0 -7px;
+  border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
+  background: linear-gradient(90deg, #d9701f 0 46%, #ffe0b8 46% 54%, #ff9a3c 54%);
+  opacity: 0;
+  animation: feather-fall 2.6s ease-out forwards;
+}
+@keyframes feather-fall {
+  0% { opacity: 0.95; transform: translate(0, 0) rotate(0) scale(var(--s)); }
+  30% { transform: translate(calc(var(--dx) * -0.5), 18px) rotate(calc(var(--r) * 0.4)) scale(var(--s)); }
+  100% { opacity: 0; transform: translate(var(--dx), 90px) rotate(var(--r)) scale(var(--s)); }
 }
 
 .confetti {
@@ -359,7 +376,9 @@ h2 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fly {
+  .fly,
+  .trail,
+  .feathers {
     display: none;
   }
 

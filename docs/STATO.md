@@ -15,6 +15,7 @@ Ultimo aggiornamento: 2026-11-09
 - [x] **D185: tema app sportiva** (blu notte, arancio di Archie, verde solo per le vinte, niente griglie né macchina da scrivere, pallone con luce calda bassa). Da confermare con Giuse sul telefono.
 - [x] **D186: Archie al naturale** (gufo reale fulvo senza contorni da fumetto, stesse animazioni; logo e icone rifatti). Da confermare con Giuse.
 - [x] **D187: movimento delle quote** (`movement-test`, Pinnacle apertura → chiusura, 10 campionati, taratura 2012/13–2019/20, conferma 2020/21–2024/25): **non passa**. La chiusura ha già dentro tutto il movimento; né seguirlo né andargli contro rende, a Pinnacle né a bet365.
+- [x] **D188: Archie il professore** (stilizzato, occhiali, tocco, papillon; in home vola con scia d'aria e piume; logo e icone rifatti). Da confermare con Giuse.
 - [x] Chiesti da Giuse il 2026-11-09: Archie (D184-D186), lavagna della multipla, bacheca come campo (D182), prova sui movimenti delle quote (D187).
 - [ ] Da fare: backup notturni del database fuori dal server (S3); rinnovo API-Football entro il 2026-11-20; sito vetrina e progetti del CV sul server; idea "tetto 2,20" da provare sull'archivio lungo (IDEE).
 

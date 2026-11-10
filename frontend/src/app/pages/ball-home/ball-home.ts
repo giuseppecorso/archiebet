@@ -6,6 +6,7 @@ import { odds } from '../../core/format';
 import { ArchieToon } from '../../shared/archie-toon';
 import { Home } from '../home/home';
 import { BALL_MENU, freshWins, legKey, uniqueLegs } from './ball';
+import { Flight, canFly } from './flight';
 import type { BallScene, LabelPlace } from './ball-scene';
 import { playHorns } from './horn';
 
@@ -24,6 +25,12 @@ export class BallHome {
   private readonly stage = viewChild.required<ElementRef<HTMLElement>>('stage');
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private readonly labels = viewChildren<ElementRef<HTMLElement>>('label');
+  private readonly owl = viewChild<ElementRef<HTMLElement>>('owl');
+  private readonly trailBack = viewChild<ElementRef<SVGSVGElement>>('trailBack');
+  private readonly trailFront = viewChild<ElementRef<SVGSVGElement>>('trailFront');
+  private readonly feathersBack = viewChild<ElementRef<HTMLElement>>('feathersBack');
+  private readonly feathersFront = viewChild<ElementRef<HTMLElement>>('feathersFront');
+  private flight: Flight | null = null;
   private scene: BallScene | null = null;
   private audio: AudioContext | null = null;
   /** Pronostici già festeggiati; null finché non arriva la prima bacheca (quelli già presi non suonano). */
@@ -50,6 +57,7 @@ export class BallHome {
       clearInterval(timer);
       if (this.partyTimer) clearTimeout(this.partyTimer);
       this.scene?.destroy();
+      this.flight?.destroy();
       void this.audio?.close();
     });
 
@@ -70,9 +78,22 @@ export class BallHome {
         // three.js si scarica solo qui, quando serve
         const { BallScene } = await import('./ball-scene');
         this.scene = new BallScene(this.stage().nativeElement, this.canvas().nativeElement, (places) => this.place(places), (patch) => this.pick(patch)); // prettier-ignore
+        this.startFlight();
       } catch {
         this.failed.set(true); // telefono senza grafica 3D: resta l'elenco delle voci
       }
+    });
+  }
+
+  /** Archie vola attorno al pallone con scia e piume (D188), solo se il browser sa animare. */
+  private startFlight(): void {
+    const owl = this.owl(), tb = this.trailBack(), tf = this.trailFront(), fb = this.feathersBack(), ff = this.feathersFront(); // prettier-ignore
+    if (!canFly() || !owl || !tb || !tf || !fb || !ff) return;
+    this.flight = new Flight({
+      stage: this.stage().nativeElement,
+      owl: owl.nativeElement,
+      trail: { back: tb.nativeElement, front: tf.nativeElement },
+      feathers: { back: fb.nativeElement, front: ff.nativeElement },
     });
   }
 

@@ -5,9 +5,15 @@
   </header>
 
   <div class="stage" #stage>
+    @if (!failed()) {
+      <svg class="trail back" #trailBack aria-hidden="true"></svg>
+      <div class="feathers back" #feathersBack aria-hidden="true"></div>
+    }
     <canvas #canvas aria-hidden="true"></canvas>
     @if (!failed()) {
-      <div class="fly" aria-hidden="true"><div class="fx"><div class="fy"><ab-archie-toon pose="fly" /></div></div></div>
+      <svg class="trail front" #trailFront aria-hidden="true"></svg>
+      <div class="feathers front" #feathersFront aria-hidden="true"></div>
+      <div class="fly" #owl aria-hidden="true"><ab-archie-toon pose="fly" /></div>
     }
     @for (entry of menu; track entry.label; let i = $index) {
       <button type="button" class="label" #label (click)="pick(i)">{{ entry.label }}</button>
