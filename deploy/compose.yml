@@ -1,4 +1,5 @@
-# Produzione sul server: Caddy (HTTPS) -> frontend nginx -> backend. Solo Caddy è raggiungibile da internet.
+# Produzione sul server: Nginx dell'host (HTTPS, Certbot) -> Caddy su 127.0.0.1:8090 -> frontend -> backend.
+# Caddy ascolta solo in locale: le porte 80 e 443 sono del Nginx dell'host.
 # Fuori da Git, sul server: /srv/archie/.env (chiavi) e /srv/archie/data (database, cache, chiavi delle notifiche).
 name: archie
 
@@ -7,8 +8,7 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "127.0.0.1:8090:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

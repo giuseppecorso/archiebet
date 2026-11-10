@@ -4,7 +4,7 @@ Ultimo aggiornamento: 2026-11-09
 
 ## Archie sul server e prova per tipo di giocata (2026-11-09)
 
-- [x] **Archie è online su un server proprio**: OVH VPS-2 in Germania, `https://archie.giuseppecorso.it` (Caddy con HTTPS, Docker Compose in `deploy/`, aggiornamento automatico dopo i test di GitHub). Tailscale tolto. Il PC non serve più acceso: le icone "Avvia ArchieBet" non si usano (due copie accese scriverebbero due database diversi).
+- [x] **Archie è online su un server proprio**: OVH VPS-2 in Germania, `https://archie.giuseppecorso.it` (HTTPS dal Nginx dell'host con Certbot, che passa a Caddy su 127.0.0.1:8090; Docker Compose in `deploy/`, aggiornamento automatico dopo i test di GitHub). Tailscale tolto. Il PC non serve più acceso: le icone "Avvia ArchieBet" non si usano (due copie accese scriverebbero due database diversi).
 - [x] **D178: nessun tipo di giocata sbaglia** (`types-test`, 127.000 pronostici a stagione alla cieca): le probabilità sono giuste per tutti i tipi e tutte le fasce di quota. Si perde il margine del bookmaker (circa 5% a pronostico, moltiplicato nelle multiple), non per colpa di combo o quote basse. Niente cambia nei pronostici.
 - [x] **D179: tetto a quota 2,20** (`cap-test`, 11 stagioni): sopra 2,20 il bookmaker trattiene circa 2 punti in più; passa di misura. Giorno, weekend e settimana non prendono più quote vere da 2,20 in su.
 - [x] **D180: bozza della nuova home su `/lab`**: pallone 3D come menù (three.js), festa con trombe quando Archie prende un pronostico, aspetto digitale verde neon. In attesa del giudizio di Giuse; se piace si porta l'aspetto su tutta l'app.
