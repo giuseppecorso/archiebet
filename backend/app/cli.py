@@ -193,6 +193,72 @@ def _cap_test() -> int:
     return 0
 
 
+def _movement_test() -> int:
+    """D187: il movimento di Pinnacle tra apertura e chiusura dice ancora qualcosa sul risultato?"""
+    from app.forecast import movement_test as mt
+    from sqlalchemy import select
+    from app.models import Match, MatchStatus
+    from app.forecast.data import load_odds
+    from app.forecast.demargin import shin
+    from app.forecast.history_sim import SimMatch, won
+    from app.forecast.learning_service import HISTORY_LEAGUES
+
+    first, split, last = "2012/13", "2020/21", "2024/25"
+    with SessionLocal() as db:
+        matches = db.execute(
+            select(Match).join(Competition, Match.competition_id == Competition.id)
+            .where(Competition.code.in_(HISTORY_LEAGUES), Match.season >= first, Match.season <= last,
+                   Match.status == MatchStatus.FINISHED)
+        ).scalars().all()  # fmt: skip
+        info = {m.id: (m.season, m.home_goals, m.away_goals) for m in matches if m.home_goals is not None}
+        pin_open = load_odds(db, ["pinnacle"], closing=False)
+        pin_close = load_odds(db, ["pinnacle"], closing=True)
+        b365_close = load_odds(db, ["bet365"], closing=True)
+
+    obs = []
+    for mid, (season, hg, ag) in info.items():
+        for market in mt.MARKETS:
+            o, c = pin_open.get(mid, {}).get(market), pin_close.get(mid, {}).get(market)
+            if not o or not c:
+                continue
+            sels = list(c)
+            p_open = dict(zip(sels, shin([o[k] for k in sels])))
+            p_close = dict(zip(sels, shin([c[k] for k in sels])))
+            fake = SimMatch(mid, season, "", None, None, hg, ag, {}, {}, {})
+            b365 = b365_close.get(mid, {}).get(market, {})
+            for sel in sels:
+                obs.append(mt.Obs(mid, season, market, sel, p_open[sel], p_close[sel], won(fake, market, sel), c[sel], b365.get(sel)))
+    tuning = [o for o in obs if o.season < split]
+    confirm = [o for o in obs if o.season >= split]
+    print(f"Esiti: taratura {len(tuning)} ({first} - prima del {split}), conferma {len(confirm)} ({split} - {last})")
+
+    def est(e):
+        return "nessuna giocata" if e is None else f"{e.n:5d} giocate  rendimento {e.mean * 100:+.2f}% ± {e.std_error * 100:.2f} (t {e.t:+.1f})"
+
+    def slp(s):
+        return "n.d." if s is None else f"pendenza {s.beta:+.3f} ± {s.std_error:.3f} (t {s.t:+.1f}, {s.clusters} partite)"
+
+    for r in mt.run(tuning, confirm):
+        print(f"\n== {r.market} ==")
+        print(f"Parte 1  taratura: {slp(r.tuning_slope)}")
+        print(f"         conferma: {slp(r.confirm_slope)}")
+        print(f"         -> {'PASSA' if r.slope_passed else 'non passa'}")
+        way = "seguire il movimento" if r.direction > 0 else "andare contro il movimento"
+        print(f"Parte 2  direzione dalla taratura: {way}; soglia scelta: {r.threshold}")
+        print(f"         taratura (Pinnacle chiusura): {est(r.tuning_roi)}")
+        print(f"         conferma (Pinnacle chiusura): {est(r.confirm_roi)}")
+        print(f"         conferma (bet365 chiusura):   {est(r.confirm_roi_b365)}")
+        print(f"         -> {'PASSA' if r.play_passed else 'non passa'}")
+        print("Per confronto (non decide nulla), tutte le soglie e le due direzioni in conferma, alla quota Pinnacle e bet365:")
+        conf = [o for o in confirm if o.market == r.market]
+        for direction in (1, -1):
+            for t in mt.THRESHOLDS:
+                chosen = mt.plays(conf, direction, t)
+                label = "seguire" if direction > 0 else "contro "
+                print(f"   {label} {t:.2f}: Pinnacle {est(mt.roi(chosen))} | bet365 {est(mt.roi(chosen, 'bet365'))}")
+    return 0
+
+
 def _voices_test(step: str, seasons: list[int], verification: bool) -> int:
     """D174: `seal` scrive i candidati senza guardare i risultati; `open` verifica il sigillo e confronta le regole."""
     import json as _json
@@ -1571,6 +1637,7 @@ def main() -> int:
     commands.add_parser("multiplier-test", help="D176: moltiplicatore da 6 a 10, quale composizione costa meno")
     commands.add_parser("types-test", help="D178: quali tipi di giocata sbagliano, per tipo e fascia di quota")
     commands.add_parser("cap-test", help="D179: il tetto a quota 2,20 sull'archivio 2012/13-2022/23")
+    commands.add_parser("movement-test", help="D187: il movimento delle quote di Pinnacle dice ancora qualcosa sul risultato?")
     commands.add_parser("criteria-test", help="prova D156: peso dei giocatori, motivazione e meteo stimati sul passato")
     commands.add_parser("bookmaker-test", help="prova D144: dove sbaglia il bookmaker (studio contro quota media prima della partita)")
     commands.add_parser("cup-test", help="prova D146: coppe europee con un modello che collega i campionati")
@@ -1709,6 +1776,8 @@ def main() -> int:
         return _types_test()
     if args.command == "cap-test":
         return _cap_test()
+    if args.command == "movement-test":
+        return _movement_test()
 
     if args.command == "voices-test":
         return _voices_test(args.step, args.seasons, args.verification)
