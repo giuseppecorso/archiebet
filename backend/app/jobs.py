@@ -152,12 +152,16 @@ _DAILY_LOCK = threading.Lock()  # il giro delle 10 e quello orario non devono pu
 
 def daily_job() -> None:
     """Ogni ora e alle 10: pubblica le schedine della bacheca Daily che sono dovute e chiude quelle con i risultati (D153)."""
-    from app.forecast.daily_service import publish_due, settle_daily
+    from app.betting.service import settle_open_bets
+    from app.forecast.daily_service import play_daily, publish_due, settle_daily
 
     try:
         with _DAILY_LOCK, SessionLocal() as db:
             published = publish_due(db)
             closed = settle_daily(db)
+            played = play_daily(db)  # D192: le schedine del Daily risultano giocate da tutti
+            if played:
+                settle_open_bets(db)  # quelle recuperate con le partite già finite si chiudono subito
             _announce(db, published)
         if published or closed:
             logger.info("Daily: pubblicate %s, chiuse %s", published, closed)

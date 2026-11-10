@@ -7,7 +7,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.betting.calc import at_least, selection_outcome, system_range
+from app.betting.calc import at_least, is_valid_pick, selection_outcome, system_range, total_odds
 from app.config import get_settings
 from app.forecast.daily import KINDS, OPEN, Kind, due, leg_status, slip_status
 from app.forecast.multiplier import best_slip, price_rows
@@ -16,7 +16,7 @@ from app.forecast.radar_markets import is_secondary
 from app.forecast.radar_service import load_book_odds
 from app.forecast.study import auto_legs, choose_varied, event_text, leg_price, playable_price, up_to_target
 from app.forecast.study_service import load_studies
-from app.models import DailySlip, Match, MatchStatus
+from app.models import Bet, BetKind, BetSelection, DailySlip, Match, MatchStatus, User
 
 MAX_RANKED = 30
 MIN_PRICE = 1.40  # D172: nelle schedine dello studio niente quote più basse
@@ -129,6 +129,48 @@ def publish_due(db: Session, now: datetime | None = None) -> list[str]:
         published.append(kind.key)
     db.commit()
     return published
+
+
+DAILY_STAKE = Decimal("1.00")  # D192: ogni schedina del Daily si gioca da sola con 1 € per utente
+
+
+def daily_bets(slip: DailySlip, user_id: int) -> list[Bet]:
+    """Le giocate di una schedina del Daily per un utente: una per pronostico se sono singole, altrimenti una sola.
+    Data e quote sono quelle della pubblicazione; si chiudono poi con i risultati come le altre (settle_open_bets)."""
+    kind = KINDS[slip.kind]
+    legs = [leg for leg in slip.legs if is_valid_pick(leg["market"], leg["selection"]) and leg["price"] > 1]
+    if not legs or (kind.system and len(legs) <= kind.system) or len(legs) != len(slip.legs):
+        return []
+    groups = [[leg] for leg in legs] if kind.singles else [legs]
+
+    def bet(group: list[dict]) -> Bet:
+        prices = [Decimal(str(leg["price"])) for leg in group]
+        system = kind.system if len(group) > 1 else None
+        odds = total_odds(prices) if system is None else (system_range(Decimal(100), prices, system)[1] / 100).quantize(Decimal("0.0001"))
+        return Bet(
+            user_id=user_id, kind=BetKind.REAL, stake=DAILY_STAKE, total_odds=odds, system=system, placed_at=slip.published_at,
+            note=f"Daily: {kind.title}", daily_slip_id=slip.id,
+            selections=[BetSelection(match_id=leg["match_id"], market=leg["market"], pick=leg["selection"], odds=Decimal(str(leg["price"]))) for leg in group],
+        )  # fmt: skip
+
+    return [bet(g) for g in groups]
+
+
+def play_daily(db: Session) -> int:
+    """D192: ogni schedina del Daily risulta giocata da ogni utente e finisce nelle sue statistiche.
+    Recupera anche le schedine già pubblicate; mai due volte la stessa (daily_slip_id). Restituisce le giocate create."""
+    done = set(db.execute(select(Bet.user_id, Bet.daily_slip_id).where(Bet.daily_slip_id.is_not(None))).all())
+    users = list(db.scalars(select(User.id)))
+    created = 0
+    for slip in db.scalars(select(DailySlip).order_by(DailySlip.id)):
+        for uid in users:
+            if (uid, slip.id) in done:
+                continue
+            for b in daily_bets(slip, uid):
+                db.add(b)
+                created += 1
+    db.commit()
+    return created
 
 
 def settle_daily(db: Session, now: datetime | None = None) -> int:

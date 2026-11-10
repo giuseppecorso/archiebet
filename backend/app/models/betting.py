@@ -34,6 +34,8 @@ class Bet(Base):
     note: Mapped[str | None] = mapped_column(String(300))
     placed_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
     settled_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    # D192: giocata fatta da sola per una schedina del Daily (una per utente e schedina, mai due)
+    daily_slip_id: Mapped[int | None] = mapped_column(ForeignKey("daily_slips.id", ondelete="SET NULL"), index=True)
 
     selections: Mapped[list["BetSelection"]] = relationship(
         back_populates="bet", cascade="all, delete-orphan", order_by="BetSelection.id", lazy="selectin"

@@ -61,7 +61,7 @@ def leaderboard(user: CurrentUser, db: DbSession) -> list[LeaderRow]:
     """Classifica tra gli account dell'app: monete guadagnate, poi pronostici azzeccati."""
     rows = []
     for u in db.scalars(select(User)):
-        bets = list(db.scalars(select(Bet).where(Bet.user_id == u.id)))
+        bets = list(db.scalars(select(Bet).where(Bet.user_id == u.id, Bet.daily_slip_id.is_(None))))  # D192: solo le proprie
         closed = [s for b in bets for s in b.selections if s.status in ("won", "lost")]
         rows.append(LeaderRow(username=u.display_name or u.username, coins=sum(e.coins for e in earned(bets)), bets=len(bets),
                               hit_rate=round(sum(s.status == "won" for s in closed) / len(closed), 3) if closed else None, me=u.id == user.id))  # fmt: skip

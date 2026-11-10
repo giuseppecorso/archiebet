@@ -35,7 +35,8 @@ class CoinsOut(BaseModel):
 
 
 def _state(db, user) -> CoinsOut:
-    bets = list(db.scalars(select(Bet).where(Bet.user_id == user.id)))
+    # D192: le giocate automatiche del Daily sono previsioni di Archie, non dell'utente: niente monete
+    bets = list(db.scalars(select(Bet).where(Bet.user_id == user.id, Bet.daily_slip_id.is_(None))))
     rows = earned(bets)
     total = sum(r.coins for r in rows)
     spent = db.scalar(select(func.coalesce(func.sum(CoinRedemption.coins), 0)).where(CoinRedemption.user_id == user.id)) or 0
