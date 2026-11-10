@@ -259,6 +259,66 @@ def _movement_test() -> int:
     return 0
 
 
+def _market_strategies() -> int:
+    """D189: le strategie famose del mercato sull'archivio; salva il risultato per la scheda Strategie."""
+    import json as _json
+    from datetime import UTC as _UTC
+    from datetime import datetime as _dt
+    from pathlib import Path
+
+    from sqlalchemy import select
+
+    from app.forecast import market_strategies as ms
+    from app.forecast import strategy_search as ss
+    from app.forecast.data import load_odds
+    from app.forecast.demargin import shin
+    from app.forecast.learning_service import HISTORY_LEAGUES, ROME
+    from app.models import Match, MatchStatus
+
+    with SessionLocal() as db:
+        matches = db.execute(
+            select(Match).join(Competition, Match.competition_id == Competition.id)
+            .where(Competition.code.in_(HISTORY_LEAGUES), Match.season >= ms.TUNING_FIRST, Match.season <= ms.CONFIRM_LAST)
+        ).scalars().all()  # fmt: skip
+        fixtures = [ss.Fixture(m.id, m.competition.code, m.season, m.kickoff_at, m.home_team_id, m.away_team_id) for m in matches]
+        info = {m.id: (m.season, m.competition.code, m.kickoff_at, m.home_goals, m.away_goals) for m in matches
+                if m.status == MatchStatus.FINISHED and m.home_goals is not None}  # fmt: skip
+        odds = {name: load_odds(db, [book], closing=closing) for name, book, closing in (
+            ("pin_o", "pinnacle", False), ("pin_c", "pinnacle", True), ("b365", "bet365", False), ("b365_c", "bet365", True),
+            ("avg", "market_avg", False), ("best", "market_max", False))}  # fmt: skip
+    moments = ss.season_moments(fixtures)
+
+    def fair(prices):
+        return {mk: dict(zip(sel, shin(list(sel.values())))) for mk, sel in prices.items() if mk in ("1X2", "OU2.5")}
+
+    def keep(prices):
+        return {mk: v for mk, v in prices.items() if mk in ("1X2", "OU2.5")}
+
+    games = []
+    for mid, (season, league, kickoff, hg, ag) in info.items():
+        po, pc = odds["pin_o"].get(mid, {}), odds["pin_c"].get(mid, {})
+        if "1X2" not in po or "1X2" not in pc or mid not in odds["b365"]:
+            continue
+        games.append(ms.Game(mid, season, league, kickoff.astimezone(ROME).date(), moments.get(mid), hg, ag, keep(odds["b365"][mid]),
+                             keep(odds["b365_c"].get(mid, {})), keep(odds["avg"].get(mid, {})), keep(odds["best"].get(mid, {})), fair(po), fair(pc)))
+    rows = ms.evaluate(games)
+    tune = sum(1 for g in games if g.season < ms.CONFIRM_FIRST)
+    out = {"generated_at": _dt.now(_UTC).isoformat(timespec="seconds"), "leagues": len(HISTORY_LEAGUES),
+           "tuning": {"from": ms.TUNING_FIRST, "to": "2019/20", "matches": tune},
+           "confirm": {"from": ms.CONFIRM_FIRST, "to": ms.CONFIRM_LAST, "matches": len(games) - tune}, "strategies": rows}  # fmt: skip
+    path = Path(ms.__file__).with_suffix(".json")
+    path.write_text(_json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"Partite: taratura {tune}, conferma {len(games) - tune}. Salvato in {path.name}")
+
+    def pct(e):
+        return "      -" if e is None else f"{e['mean'] * 100:+6.2f}% (t {e['t']:+5.1f})"
+
+    for r in rows:
+        a, b = r["tuning"], r["confirm"]
+        print(f"{r['name'][:38]:38s} | taratura {a['n']:6d} rend {pct(a['roi'])} CLV {pct(a['clv'])} | conferma {b['n']:6d} rend {pct(b['roi'])} CLV {pct(b['clv'])} | {'PASSA' if r['passed'] else 'no'}")
+    return 0
+
+
 def _voices_test(step: str, seasons: list[int], verification: bool) -> int:
     """D174: `seal` scrive i candidati senza guardare i risultati; `open` verifica il sigillo e confronta le regole."""
     import json as _json
@@ -1638,6 +1698,7 @@ def main() -> int:
     commands.add_parser("types-test", help="D178: quali tipi di giocata sbagliano, per tipo e fascia di quota")
     commands.add_parser("cap-test", help="D179: il tetto a quota 2,20 sull'archivio 2012/13-2022/23")
     commands.add_parser("movement-test", help="D187: il movimento delle quote di Pinnacle dice ancora qualcosa sul risultato?")
+    commands.add_parser("market-strategies", help="D189: le strategie famose del mercato messe alla prova sull'archivio")
     commands.add_parser("criteria-test", help="prova D156: peso dei giocatori, motivazione e meteo stimati sul passato")
     commands.add_parser("bookmaker-test", help="prova D144: dove sbaglia il bookmaker (studio contro quota media prima della partita)")
     commands.add_parser("cup-test", help="prova D146: coppe europee con un modello che collega i campionati")
@@ -1778,6 +1839,8 @@ def main() -> int:
         return _cap_test()
     if args.command == "movement-test":
         return _movement_test()
+    if args.command == "market-strategies":
+        return _market_strategies()
 
     if args.command == "voices-test":
         return _voices_test(args.step, args.seasons, args.verification)

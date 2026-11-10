@@ -19,6 +19,7 @@ from app.api.rules import router as rules_router
 from app.api.picks import router as picks_router
 from app.api.radar import router as radar_router
 from app.api.study import router as study_router
+from app.api.strategies import router as strategies_router
 from app.api.daily import router as daily_router
 from app.api.push import router as push_router
 from app.api.coins import router as coins_router
@@ -43,6 +44,7 @@ app.include_router(auth_router)
 app.include_router(football_router)
 app.include_router(lab_router)
 app.include_router(study_router)
+app.include_router(strategies_router)
 app.include_router(daily_router)
 app.include_router(push_router)
 app.include_router(coins_router)

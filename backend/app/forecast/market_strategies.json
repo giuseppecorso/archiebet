@@ -1,0 +1,458 @@
+{
+ "generated_at": "2026-11-10T08:16:22+00:00",
+ "leagues": 10,
+ "tuning": {
+  "from": "2012/13",
+  "to": "2019/20",
+  "matches": 31258
+ },
+ "confirm": {
+  "from": "2020/21",
+  "to": "2024/25",
+  "matches": 19241
+ },
+ "strategies": [
+  {
+   "key": "home",
+   "name": "Sempre la squadra di casa",
+   "how": "Si gioca il 1 in ogni partita.",
+   "price": "bet365 d'apertura",
+   "passed": false,
+   "beats_close": false,
+   "tuning": {
+    "n": 31258,
+    "roi": {
+     "mean": -0.04856,
+     "se": 0.00693,
+     "t": -7.0
+    },
+    "clv": {
+     "mean": -0.04914,
+     "se": 0.00045,
+     "t": -110.12
+    }
+   },
+   "confirm": {
+    "n": 19240,
+    "roi": {
+     "mean": -0.06985,
+     "se": 0.00884,
+     "t": -7.9
+    },
+    "clv": {
+     "mean": -0.05664,
+     "se": 0.00064,
+     "t": -88.92
+    }
+   }
+  },
+  {
+   "key": "draw",
+   "name": "Sempre il pareggio",
+   "how": "Si gioca la X in ogni partita.",
+   "price": "bet365 d'apertura",
+   "passed": false,
+   "beats_close": false,
+   "tuning": {
+    "n": 31258,
+    "roi": {
+     "mean": -0.04098,
+     "se": 0.00904,
+     "t": -4.53
+    },
+    "clv": {
+     "mean": -0.05526,
+     "se": 0.00035,
+     "t": -158.46
+    }
+   },
+   "confirm": {
+    "n": 19240,
+    "roi": {
+     "mean": -0.0421,
+     "se": 0.01164,
+     "t": -3.62
+    },
+    "clv": {
+     "mean": -0.04751,
+     "se": 0.00047,
+     "t": -101.72
+    }
+   }
+  },
+  {
+   "key": "away",
+   "name": "Sempre la squadra in trasferta",
+   "how": "Si gioca il 2 in ogni partita.",
+   "price": "bet365 d'apertura",
+   "passed": false,
+   "beats_close": false,
+   "tuning": {
+    "n": 31258,
+    "roi": {
+     "mean": -0.08906,
+     "se": 0.00972,
+     "t": -9.16
+    },
+    "clv": {
+     "mean": -0.06628,
+     "se": 0.00061,
+     "t": -108.96
+    }
+   },
+   "confirm": {
+    "n": 19240,
+    "roi": {
+     "mean": -0.08519,
+     "se": 0.01177,
+     "t": -7.24
+    },
+    "clv": {
+     "mean": -0.08083,
+     "se": 0.0008,
+     "t": -101.32
+    }
+   }
+  },
+  {
+   "key": "short",
+   "name": "Favoriti sicuri",
+   "how": "Ogni esito 1X2 sotto quota 1,50.",
+   "price": "bet365 d'apertura",
+   "passed": false,
+   "beats_close": false,
+   "tuning": {
+    "n": 3455,
+    "roi": {
+     "mean": -0.01431,
+     "se": 0.00958,
+     "t": -1.49
+    },
+    "clv": {
+     "mean": -0.03208,
+     "se": 0.00069,
+     "t": -46.36
+    }
+   },
+   "confirm": {
+    "n": 2136,
+    "roi": {
+     "mean": -0.00825,
+     "se": 0.01256,
+     "t": -0.66
+    },
+    "clv": {
+     "mean": -0.03318,
+     "se": 0.00097,
+     "t": -34.07
+    }
+   }
+  },
+  {
+   "key": "long",
+   "name": "Sfavoriti a quota alta",
+   "how": "Ogni esito 1X2 da quota 5 in su.",
+   "price": "bet365 d'apertura",
+   "passed": false,
+   "beats_close": false,
+   "tuning": {
+    "n": 10748,
+    "roi": {
+     "mean": -0.10672,
+     "se": 0.02306,
+     "t": -4.63
+    },
+    "clv": {
+     "mean": -0.09478,
+     "se": 0.00157,
+     "t": -60.53
+    }
+   },
+   "confirm": {
+    "n": 6361,
+    "roi": {
+     "mean": -0.13398,
+     "se": 0.02825,
+     "t": -4.74
+    },
+    "clv": {
+     "mean": -0.10635,
+     "se": 0.00204,
+     "t": -52.17
+    }
+   }
+  },
+  {
+   "key": "even_draw",
+   "name": "Pareggio tra squadre alla pari",
+   "how": "La X quando 1 e 2 sono entrambe tra 2,30 e 3,50.",
+   "price": "bet365 d'apertura",
+   "passed": false,
+   "beats_close": false,
+   "tuning": {
+    "n": 9221,
+    "roi": {
+     "mean": -0.00192,
+     "se": 0.01544,
+     "t": -0.12
+    },
+    "clv": {
+     "mean": -0.04351,
+     "se": 0.00041,
+     "t": -106.31
+    }
+   },
+   "confirm": {
+    "n": 5618,
+    "roi": {
+     "mean": 0.00193,
+     "se": 0.01988,
+     "t": 0.1
+    },
+    "clv": {
+     "mean": -0.02883,
+     "se": 0.00059,
+     "t": -49.11
+    }
+   }
+  },
+  {
+   "key": "over",
+   "name": "Sempre Over 2.5",
+   "how": "Più di 2,5 gol in ogni partita.",
+   "price": "bet365 d'apertura",
+   "passed": false,
+   "beats_close": false,
+   "tuning": {
+    "n": 3686,
+    "roi": {
+     "mean": -0.05197,
+     "se": 0.01629,
+     "t": -3.19
+    },
+    "clv": {
+     "mean": -0.05948,
+     "se": 0.00099,
+     "t": -60.03
+    }
+   },
+   "confirm": {
+    "n": 19229,
+    "roi": {
+     "mean": -0.05047,
+     "se": 0.00717,
+     "t": -7.04
+    },
+    "clv": {
+     "mean": -0.05782,
+     "se": 0.00046,
+     "t": -125.02
+    }
+   }
+  },
+  {
+   "key": "under",
+   "name": "Sempre Under 2.5",
+   "how": "Meno di 2,5 gol in ogni partita.",
+   "price": "bet365 d'apertura",
+   "passed": false,
+   "beats_close": false,
+   "tuning": {
+    "n": 3686,
+    "roi": {
+     "mean": -0.06688,
+     "se": 0.01585,
+     "t": -4.22
+    },
+    "clv": {
+     "mean": -0.05711,
+     "se": 0.00105,
+     "t": -54.44
+    }
+   },
+   "confirm": {
+    "n": 19229,
+    "roi": {
+     "mean": -0.05795,
+     "se": 0.00694,
+     "t": -8.35
+    },
+    "clv": {
+     "mean": -0.04916,
+     "se": 0.00046,
+     "t": -107.09
+    }
+   }
+  },
+  {
+   "key": "late_draw",
+   "name": "Pareggio a fine stagione",
+   "how": "La X nelle ultime 6 giornate.",
+   "price": "bet365 d'apertura",
+   "passed": false,
+   "beats_close": false,
+   "tuning": {
+    "n": 4697,
+    "roi": {
+     "mean": -0.09161,
+     "se": 0.02358,
+     "t": -3.89
+    },
+    "clv": {
+     "mean": -0.0738,
+     "se": 0.0011,
+     "t": -67.06
+    }
+   },
+   "confirm": {
+    "n": 2960,
+    "roi": {
+     "mean": -0.09099,
+     "se": 0.02992,
+     "t": -3.04
+    },
+    "clv": {
+     "mean": -0.0701,
+     "se": 0.0014,
+     "t": -50.15
+    }
+   }
+  },
+  {
+   "key": "treble",
+   "name": "Multipla dei favoriti",
+   "how": "Ogni giorno i 3 favoriti con la quota più bassa (fino a 1,60) in una multipla.",
+   "price": "bet365 d'apertura",
+   "passed": false,
+   "beats_close": false,
+   "tuning": {
+    "n": 717,
+    "roi": {
+     "mean": -0.0459,
+     "se": 0.04015,
+     "t": -1.14
+    },
+    "clv": {
+     "mean": -0.09271,
+     "se": 0.00255,
+     "t": -36.33
+    }
+   },
+   "confirm": {
+    "n": 464,
+    "roi": {
+     "mean": -0.06965,
+     "se": 0.05369,
+     "t": -1.3
+    },
+    "clv": {
+     "mean": -0.09906,
+     "se": 0.00348,
+     "t": -28.45
+    }
+   }
+  },
+  {
+   "key": "steam",
+   "name": "Seguire la quota che scende",
+   "how": "L'esito che Pinnacle abbassa di più tra apertura e chiusura (almeno 4 punti di probabilità).",
+   "price": "bet365 di chiusura (dal 2019/20)",
+   "passed": false,
+   "beats_close": false,
+   "tuning": {
+    "n": 607,
+    "roi": {
+     "mean": -0.08738,
+     "se": 0.04617,
+     "t": -1.89
+    },
+    "clv": {
+     "mean": -0.04763,
+     "se": 0.00133,
+     "t": -35.7
+    }
+   },
+   "confirm": {
+    "n": 3226,
+    "roi": {
+     "mean": -0.04431,
+     "se": 0.01949,
+     "t": -2.27
+    },
+    "clv": {
+     "mean": -0.05015,
+     "se": 0.00053,
+     "t": -94.91
+    }
+   }
+  },
+  {
+   "key": "value",
+   "name": "Value betting (le Occasioni di Archie)",
+   "how": "Quando bet365 paga più del prezzo giusto di Pinnacle (regola D72).",
+   "price": "bet365 d'apertura",
+   "passed": false,
+   "beats_close": true,
+   "tuning": {
+    "n": 431,
+    "roi": {
+     "mean": -0.04715,
+     "se": 0.06943,
+     "t": -0.68
+    },
+    "clv": {
+     "mean": 0.02212,
+     "se": 0.00364,
+     "t": 6.08
+    }
+   },
+   "confirm": {
+    "n": 271,
+    "roi": {
+     "mean": 0.05218,
+     "se": 0.09175,
+     "t": 0.57
+    },
+    "clv": {
+     "mean": 0.02792,
+     "se": 0.00457,
+     "t": 6.1
+    }
+   }
+  },
+  {
+   "key": "consensus",
+   "name": "Consenso dei bookmaker",
+   "how": "Quando la quota più alta del mercato supera di molto la media (Kaunitz e altri, 2017).",
+   "price": "la quota più alta del mercato (spesso non giocabile in Italia)",
+   "passed": false,
+   "beats_close": true,
+   "tuning": {
+    "n": 501,
+    "roi": {
+     "mean": 0.08511,
+     "se": 0.04662,
+     "t": 1.83
+    },
+    "clv": {
+     "mean": 0.0941,
+     "se": 0.00523,
+     "t": 17.99
+    }
+   },
+   "confirm": {
+    "n": 78,
+    "roi": {
+     "mean": 0.14064,
+     "se": 0.11431,
+     "t": 1.23
+    },
+    "clv": {
+     "mean": 0.09394,
+     "se": 0.01318,
+     "t": 7.13
+    }
+   }
+  }
+ ]
+}
