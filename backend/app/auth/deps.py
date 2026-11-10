@@ -3,12 +3,13 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from app.auth.service import user_from_token
+from app.auth.service import DEMO_USERNAME, user_from_token
 from app.config import get_settings
 from app.db import get_db
 from app.models import User
 
 DbSession = Annotated[Session, Depends(get_db)]
+READ_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 
 def get_current_user(request: Request, db: DbSession) -> User:
@@ -16,6 +17,9 @@ def get_current_user(request: Request, db: DbSession) -> User:
     user = user_from_token(db, token) if token else None
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Accesso richiesto")
+    if user.username == DEMO_USERNAME and request.method not in READ_METHODS:
+        # sola lettura: niente giocate, cambi di password, domande all'AI che costano (D191)
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Account demo: si può guardare tutto ma non modificare nulla")
     return user
 
 

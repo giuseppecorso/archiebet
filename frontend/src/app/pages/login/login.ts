@@ -4,6 +4,9 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 
+/** Le stesse credenziali di backend/app/auth/service.py (DEMO_USERNAME, DEMO_PASSWORD) */
+export const DEMO = { username: 'demo', password: 'archie-demo' };
+
 @Component({
   selector: 'ab-login',
   imports: [ReactiveFormsModule],
@@ -20,6 +23,13 @@ export class Login {
   });
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
+  /** Account demo in sola lettura (D191): le credenziali sono pubbliche apposta, per chi vuole vedere l'app */
+  protected readonly demo = DEMO;
+
+  protected enterDemo(): void {
+    this.form.setValue({ ...DEMO });
+    void this.submit();
+  }
 
   protected async submit(): Promise<void> {
     if (this.form.invalid) {

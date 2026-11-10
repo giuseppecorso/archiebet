@@ -72,3 +72,37 @@ form {
 .btn-primary {
   margin-top: 6px;
 }
+
+.demo {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--text-2);
+
+  p {
+    margin: 0 0 6px;
+  }
+
+  code {
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--amber);
+    background: var(--chip);
+  }
+}
+
+.btn-demo {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 4px;
+  border: 1px solid var(--amber);
+  border-radius: 999px;
+  font: 700 13px var(--font-text);
+  text-transform: uppercase;
+  color: var(--amber);
+  background: transparent;
+  cursor: pointer;
+}

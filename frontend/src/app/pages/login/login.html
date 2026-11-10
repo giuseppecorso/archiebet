@@ -27,5 +27,11 @@
 
       <button type="submit" class="btn-primary" [disabled]="busy()">{{ busy() ? 'Entro…' : 'Entra' }}</button>
     </form>
+
+    <aside class="demo" aria-label="Account demo">
+      <p><strong>Vuoi solo dare un'occhiata?</strong> Entra con l'account demo, in sola lettura.</p>
+      <p class="creds">utente <code>{{ demo.username }}</code> · password <code>{{ demo.password }}</code></p>
+      <button type="button" class="btn-demo" [disabled]="busy()" (click)="enterDemo()">Entra come ospite</button>
+    </aside>
   </section>
 </main>

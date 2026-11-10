@@ -10,12 +10,33 @@ from app.models.base import utcnow
 
 MAX_USERS = 6  # l'amministratore e al massimo 5 amici
 
+# Account demo (D191) per chi vuole vedere l'app (es. un recruiter): le credenziali sono scritte nella pagina di login,
+# quindi non sono un segreto. È in sola lettura (vedi deps.py) e non conta nel limite degli amici.
+DEMO_USERNAME = "demo"
+DEMO_PASSWORD = "archie-demo"
+
+
+def ensure_demo_user(db: Session) -> User:
+    """Crea l'account demo se manca e gli rimette la password nota (all'avvio del backend)."""
+    from datetime import UTC, datetime
+
+    user = db.scalar(select(User).where(User.username == DEMO_USERNAME))
+    if user is None:
+        user = User(username=DEMO_USERNAME, password_hash=hash_password(DEMO_PASSWORD), display_name="Ospite demo")
+        db.add(user)
+    elif not verify_password(DEMO_PASSWORD, user.password_hash):
+        user.password_hash = hash_password(DEMO_PASSWORD)
+    user.is_admin = False
+    user.premium_paid_until = datetime(2099, 1, 1, tzinfo=UTC)  # vede anche le funzioni Premium
+    db.commit()
+    return user
+
 
 def create_user(db: Session, username: str, password: str, is_admin: bool = False) -> User:
     username = username.strip().lower()
     if not username:
         raise ValueError("Il nome utente non può essere vuoto")
-    if len(db.scalars(select(User.id)).all()) >= MAX_USERS:
+    if len(db.scalars(select(User.id).where(User.username != DEMO_USERNAME)).all()) >= MAX_USERS:
         raise ValueError(f"Ci sono già {MAX_USERS} utenti: l'amministratore e 5 amici al massimo")
     if db.scalar(select(User).where(User.username == username)):
         raise ValueError(f"L'utente '{username}' esiste già")

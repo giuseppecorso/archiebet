@@ -33,6 +33,15 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    if get_settings().demo_account:  # account demo per i recruiter (D191)
+        from app.auth.service import ensure_demo_user
+        from app.db import SessionLocal
+
+        try:
+            with SessionLocal() as db:
+                ensure_demo_user(db)
+        except Exception:  # database non ancora pronto (es. nei test): l'app parte lo stesso
+            logging.getLogger(__name__).warning("Account demo non creato", exc_info=True)
     scheduler = start_scheduler(get_settings())
     yield
     if scheduler:
