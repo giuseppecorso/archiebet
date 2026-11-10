@@ -104,7 +104,7 @@ describe('Archie: navigazione', () => {
     localStorage.removeItem('archiebet.matches.competition');
   });
 
-  it('la home mostra le partite di oggi, le occasioni e ArchieTV', async () => {
+  it('la home ha pochi elementi: pallone con il motto, la striscia Oggi e le partite di oggi (D190)', async () => {
     const harness = await navigateAs('/', true);
     expect(TestBed.inject(Router).url).toBe('/');
     const won = { match_id: 1, kickoff_at: '2026-11-09T18:00:00Z', competition: 'Serie A', home: 'Como', away: 'Cagliari', market: 'OU2.5', selection: 'over', event: 'Più di 2,5 gol', p: 0.55, price: 1.85, status: 'won', score: '2-1' };
@@ -113,20 +113,16 @@ describe('Archie: navigazione', () => {
     (await nextRequest('/api/daily')).flush({ board: [{ ...slip, legs: [won, { ...won, match_id: 2, status: 'open' }] }, { ...slip, id: 2, legs: [won] }], today: { legs_won: 1, legs_closed: 1, legs_total: 2 }, stats: [], history: [] });
     (await nextRequest((r) => r.url.startsWith('/api/matches?view=upcoming'))).flush([]);
     (await nextRequest('/api/study/headlines?horizon=today')).flush({});
-    (await nextRequest('/api/radar')).flush({ threshold: 0.02, max_price: 4, playable: [], simulation_bookmakers: [], upcoming: [], recent: [], live: null, live_secondary: null });
-    (await nextRequest('/api/bets')).flush([]);
-    (await nextRequest('/api/tv')).flush([
-      { video_id: 'abc', title: 'Highlights Inter-Milan', channel: 'Serie A', published: '2026-10-20T21:00:00+00:00', thumbnail: 'https://i.ytimg.com/vi/abc/hqdefault.jpg' },
-    ]);
     await harness.fixture.whenStable();
     const page = harness.routeNativeElement!;
-    expect(page.querySelector('.hero h1')?.textContent).toContain('Oggi');
+    expect(page.querySelector('.top .motto')?.textContent).toContain('I numeri prima del tifo');
     // il pallone è il menù (D181): una voce per toppa nera, e il riquadro dei pronostici presi
     expect([...page.querySelectorAll('.stage .label')].map((b) => b.textContent?.trim())).toContain('Multipla');
     expect(page.querySelectorAll('.stage .label').length).toBe(12);
-    expect(page.querySelector('.fest .score')?.textContent).toContain('1su 1 chiusi');
-    expect(page.querySelectorAll('.strip li').length).toBe(1);
-    expect(page.querySelector('ab-archie-tv')?.textContent).toContain('Highlights Inter-Milan');
+    const stats = [...page.querySelectorAll('.today .stat')].map((p) => p.textContent?.replace(/\s+/g, ' ').trim());
+    expect(stats).toEqual(['1presi oggisu 1 chiusi', '1in giocoancora aperti']);
+    expect(page.querySelector('ab-archie-tv, .switch, .demo')).toBeNull(); // via ArchieTV, trombe e prova della festa
+    expect(page.querySelectorAll('ab-home section').length).toBe(1); // solo le partite di oggi
     expect(page.querySelector('nav.nav a[aria-current="page"]')?.textContent?.trim()).toBe('Home');
   });
 

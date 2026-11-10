@@ -1,7 +1,7 @@
 <section class="deck" [class.party]="party()">
   <header class="top">
     <h1>Archie</h1>
-    <p class="hint">Gira il pallone e tocca una toppa nera</p>
+    <p class="motto">I numeri prima del tifo</p>
   </header>
 
   <div class="stage" #stage>
@@ -35,54 +35,24 @@
     </nav>
   }
 
-  <section class="fest" aria-live="polite">
-    <div class="fest-head">
-      <h2>Presi oggi</h2>
-      <p class="score">
-        <b>{{ won().length }}</b><span>su {{ closed() }} chiusi</span>
-      </p>
-      <button type="button" class="switch" [class.on]="horns()" [attr.aria-pressed]="horns()" (click)="toggleHorns()">
-        Trombe {{ horns() ? 'accese' : 'spente' }}
-      </button>
+  <div class="today" aria-live="polite">
+    <p class="stat">
+      <b>{{ won().length }}</b>
+      <span>presi oggi<small>su {{ closed() }} chiusi</small></span>
+    </p>
+    <p class="stat">
+      <b>{{ open().length }}</b>
+      <span>in gioco<small>ancora aperti</small></span>
+    </p>
+    <a class="go" routerLink="/pronostici">Pronostici</a>
+  </div>
+
+  @if (party(); as leg) {
+    <div class="goal">
+      <span class="goal-word">Preso!</span>
+      <span class="goal-text">{{ leg.home }} – {{ leg.away }} · {{ leg.event }}</span>
+      <span class="num">{{ fmt.odds(leg.price) }}</span>
     </div>
-
-    @if (party(); as leg) {
-      <div class="goal">
-        <span class="goal-word">Preso!</span>
-        <span class="goal-text">{{ leg.home }} – {{ leg.away }} · {{ leg.event }}</span>
-        <span class="num">{{ fmt.odds(leg.price) }}</span>
-      </div>
-    }
-
-    @if (won().length) {
-      <ul class="rows">
-        @for (leg of won(); track $index) {
-          <li>
-            <span class="tick">✓</span>
-            <span class="what">{{ leg.home }} – {{ leg.away }}<small>{{ leg.event }}{{ leg.score ? ' · ' + leg.score : '' }}</small></span>
-            <span class="num">{{ fmt.odds(leg.price) }}</span>
-          </li>
-        }
-      </ul>
-    } @else {
-      <p class="empty">Ancora nessun pronostico preso oggi. Quando succede, qui parte la festa.</p>
-    }
-    <button type="button" class="demo" (click)="demo()">Prova la festa</button>
-  </section>
-
-  @if (open().length) {
-    <section class="strip" aria-label="Pronostici aperti">
-      <h2>In gioco</h2>
-      <ul>
-        @for (leg of open(); track $index) {
-          <li>
-            <small>{{ leg.home }} – {{ leg.away }}</small>
-            <span>{{ leg.event }}</span>
-            <b class="num">{{ fmt.odds(leg.price) }}</b>
-          </li>
-        }
-      </ul>
-    </section>
   }
 </section>
 

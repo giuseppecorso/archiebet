@@ -1,6 +1,6 @@
 import { httpResource } from '@angular/common/http';
 import { Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal, viewChild, viewChildren } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { DailyLeg, DailyOut } from '../../core/daily';
 import { odds } from '../../core/format';
 import { ArchieToon } from '../../shared/archie-toon';
@@ -8,15 +8,14 @@ import { Home } from '../home/home';
 import { BALL_MENU, freshWins, legKey, uniqueLegs } from './ball';
 import { Flight, canFly } from './flight';
 import type { BallScene, LabelPlace } from './ball-scene';
-import { playHorns } from './horn';
 
 const REFRESH_MS = 60_000;
 const PARTY_MS = 6_000;
 
-/** La home (D181): il pallone è il menù, la festa suona quando Archie prende un pronostico; sotto, i riquadri di oggi. */
+/** La home (D181, D190): il pallone è il menù, la festa parte quando Archie prende un pronostico; sotto, le partite di oggi. */
 @Component({
   selector: 'ab-ball-home',
-  imports: [ArchieToon, Home],
+  imports: [ArchieToon, Home, RouterLink],
   templateUrl: './ball-home.html',
   styleUrl: './ball-home.scss',
 })
@@ -32,7 +31,6 @@ export class BallHome {
   private readonly feathersFront = viewChild<ElementRef<HTMLElement>>('feathersFront');
   private flight: Flight | null = null;
   private scene: BallScene | null = null;
-  private audio: AudioContext | null = null;
   /** Pronostici già festeggiati; null finché non arriva la prima bacheca (quelli già presi non suonano). */
   private celebrated: Set<string> | null = null;
   private partyTimer: ReturnType<typeof setTimeout> | null = null;
@@ -41,7 +39,6 @@ export class BallHome {
   protected readonly fmt = { odds };
   protected readonly confetti = Array.from({ length: 28 }, (_, i) => i);
   protected readonly failed = signal(false);
-  protected readonly horns = signal(false);
   protected readonly party = signal<DailyLeg | null>(null);
   protected readonly data = httpResource<DailyOut>(() => '/api/daily');
 
@@ -58,7 +55,6 @@ export class BallHome {
       if (this.partyTimer) clearTimeout(this.partyTimer);
       this.scene?.destroy();
       this.flight?.destroy();
-      void this.audio?.close();
     });
 
     effect(() => {
@@ -105,29 +101,9 @@ export class BallHome {
     else go();
   }
 
-  /** L'interruttore delle trombe: il browser lascia partire l'audio solo dopo un tocco, e questo lo è. */
-  protected toggleHorns(): void {
-    const on = !this.horns();
-    this.horns.set(on);
-    if (on) {
-      this.audio ??= new AudioContext();
-      void this.audio.resume();
-      playHorns(this.audio);
-    }
-  }
-
-  /** Fa vedere la festa senza aspettare una partita. */
-  protected demo(): void {
-    this.celebrate({
-      match_id: 0, kickoff_at: '', competition: 'Prova', home: 'Como', away: 'Cagliari',
-      market: 'OU2.5', selection: 'over', event: 'Più di 2,5 gol', p: 0.55, price: 1.85, status: 'won', score: '2-1',
-    }); // prettier-ignore
-  }
-
   private celebrate(leg: DailyLeg): void {
     this.party.set(leg);
     this.scene?.celebrate();
-    if (this.horns() && this.audio) playHorns(this.audio);
     if (this.partyTimer) clearTimeout(this.partyTimer);
     this.partyTimer = setTimeout(() => this.party.set(null), PARTY_MS);
   }

@@ -21,7 +21,7 @@ const FIND_FACE = /* glsl */ `
   uniform float uHexWeight;
   varying vec3 vLocal;
   varying vec3 vNormal;
-  const vec3 NEON = vec3(1.0, 0.6, 0.24); // arancio di Archie (D185)
+  const vec3 NEON = vec3(1.0, 0.56, 0.15); // arancio di Archie, un po' neon (D190)
   float seamGap(out int face) {
     vec3 p = normalize(vLocal);
     float best = -2.0;
@@ -83,7 +83,7 @@ const HALO_FRAGMENT = /* glsl */ `
   uniform float uParty;
   void main() {
     float a = pow(clamp(abs(normalize(vNormal).z) / 0.62, 0.0, 1.0), 2.4) * (0.25 + uParty);
-    gl_FragColor = vec4(vec3(1.0, 0.6, 0.24) * a, a);
+    gl_FragColor = vec4(vec3(1.0, 0.56, 0.15) * a, a);
   }
 `;
 
@@ -102,7 +102,7 @@ const CAP_FRAGMENT = /* glsl */ `
   uniform float uOn;
   uniform float uTime;
   void main() {
-    vec3 neon = vec3(1.0, 0.6, 0.24);
+    vec3 neon = vec3(1.0, 0.56, 0.15);
     if (vEdge < 0.0) { gl_FragColor = vec4(mix(neon, vec3(1.0), 0.25), 1.0); return; }
     float glow = exp(-vEdge * 6.5) * (0.3 + 0.08 * sin(uTime * 2.2));
     vec3 color = vec3(0.05, 0.06, 0.09) + neon * (glow + uOn * (0.16 + 0.5 * exp(-vEdge * 3.0)));

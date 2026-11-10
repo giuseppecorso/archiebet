@@ -1,23 +1,7 @@
 :host {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.home-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-  gap: 10px;
-  align-items: start;
-}
-@media (max-width: 900px) {
-  .home-grid {
-    grid-template-columns: 1fr;
-  }
-}
-.side {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: block;
+  max-width: 720px;
+  margin: 14px auto 0;
 }
 .box {
   padding: 16px 18px;
@@ -31,26 +15,8 @@
 }
 .box-title {
   margin: 0;
-  font-size: 16px;
-  color: var(--amber);
-}
-.occ,
-.bet {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 0;
+  font: 700 18px var(--font-title);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--text);
-  text-decoration: none;
-  border-top: 1px solid var(--line-row);
-}
-.occ:hover,
-.bet:hover {
-  color: var(--amber);
-}
-.occ-match {
-  font-weight: 700;
-}
-.pos {
-  color: var(--value);
 }

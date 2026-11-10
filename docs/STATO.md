@@ -16,6 +16,8 @@ Ultimo aggiornamento: 2026-11-09
 - [x] **D186: Archie al naturale** (gufo reale fulvo senza contorni da fumetto, stesse animazioni; logo e icone rifatti). Da confermare con Giuse.
 - [x] **D187: movimento delle quote** (`movement-test`, Pinnacle apertura → chiusura, 10 campionati, taratura 2012/13–2019/20, conferma 2020/21–2024/25): **non passa**. La chiusura ha già dentro tutto il movimento; né seguirlo né andargli contro rende, a Pinnacle né a bet365.
 - [x] **D188: Archie il professore** (stilizzato, occhiali, tocco, papillon; in home vola con scia d'aria e piume; logo e icone rifatti). Da confermare con Giuse.
+- [ ] **D189: scheda Strategie**: backend fatto (13 strategie famose provate sull'archivio, nessuna passa; value betting e consenso battono la chiusura ma con poche giocate), pagina da fare.
+- [x] **D190: home con pochi elementi** (motto "I numeri prima del tifo", striscia Oggi, partite di oggi; via trombe, prova della festa, Occasioni, giocate e ArchieTV) e colori blu notte / arancio neon.
 - [x] Chiesti da Giuse il 2026-11-09: Archie (D184-D186), lavagna della multipla, bacheca come campo (D182), prova sui movimenti delle quote (D187).
 - [ ] Da fare: backup notturni del database fuori dal server (S3); rinnovo API-Football entro il 2026-11-20; sito vetrina e progetti del CV sul server; idea "tetto 2,20" da provare sull'archivio lungo (IDEE).
 

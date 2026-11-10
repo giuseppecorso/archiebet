@@ -3,35 +3,35 @@
    ambra = live, in corso, quote e orari. Il colore non è mai l'unico segnale. */
 
 :root {
-  /* "App sportiva" (D185): blu notte, arancio di Archie per azioni e numeri, verde = vinta, rosso = persa, giallo = in corso.
+  /* "App sportiva" (D185, colori D190): blu notte profondo, arancio di Archie un po' neon per azioni e numeri, verde = vinta, rosso = persa, giallo = in corso.
      Carattere normale e leggibile, niente griglie né bagliori. */
-  --bg: #0f1522;
-  --bg-deep: #0b1019;
-  --bg-header: rgba(15, 21, 34, 0.94);
-  --bg-ticker: #121a29;
-  --panel: #172031;
-  --panel-head: #1c2639;
-  --chip: #232e44;
+  --bg: #0a1230;
+  --bg-deep: #070d24;
+  --bg-header: rgba(10, 18, 48, 0.94);
+  --bg-ticker: #0d1638;
+  --panel: #111c42;
+  --panel-head: #16224e;
+  --chip: #1d2a5a;
 
-  --line: #253049;
-  --line-strong: #34425f;
-  --line-row: #1f2940;
-  --line-muted: #4a5876;
+  --line: #22305f;
+  --line-strong: #31437c;
+  --line-row: #1a2652;
+  --line-muted: #4a5a8c;
 
   --text: #f3f5f9;
-  --text-2: #c9d0dd;
-  --muted: #93a0b8;
-  --dim: #64708a;
+  --text-2: #c8d0ea;
+  --muted: #8f9bc4;
+  --dim: #5f6c98;
 
   /* Il colore principale: l'arancio di Archie. Il nome "amber" resta per non toccare cento file */
-  --amber: #ff9a3c;
-  --amber-hover: #ffb672;
-  --neon: #ff9a3c;
+  --amber: #ff8f26;
+  --amber-hover: #ffab5a;
+  --neon: #ff8f26;
   --neon-soft: rgba(255, 255, 255, 0.16);
   --neon-faint: rgba(255, 255, 255, 0.07);
   --accent: #f3f5f9; /* titoli: bianchi */
-  --ink: #0f1522;
-  --glass: rgba(23, 32, 49, 0.92);
+  --ink: #0a1230;
+  --glass: rgba(17, 28, 66, 0.92);
   --live: #ffd60a; /* in corso: giallo */
   --value: #34d399;
   --loss: #ff6b6b;
@@ -44,7 +44,7 @@
   --font-title: 'Rajdhani', 'Arial Narrow', sans-serif;
   --font-text: 'Barlow', system-ui, sans-serif;
 
-  --led-glow: none;
+  --led-glow: 0 0 10px rgba(255, 143, 38, 0.3); /* un filo di neon sui numeri arancio (D190) */
   --led-glow-small: none;
 
   color-scheme: dark;
@@ -71,7 +71,7 @@ body {
   margin: 0;
   min-height: 100%;
   background: var(--bg);
-  background-image: radial-gradient(ellipse 70% 38% at 50% -6%, rgba(255, 154, 60, 0.12), transparent 70%);
+  background-image: radial-gradient(ellipse 70% 38% at 50% -6%, rgba(255, 143, 38, 0.1), transparent 70%), radial-gradient(ellipse 90% 60% at 50% 0%, #121f5a, transparent 75%);
   background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-text);
@@ -219,7 +219,7 @@ abbr {
 
 /* Fondo digitale (D181): griglia sottile e un bagliore verde in alto */
 body {
-  background-image: radial-gradient(ellipse 70% 38% at 50% -6%, rgba(255, 154, 60, 0.12), transparent 70%);
+  background-image: radial-gradient(ellipse 70% 38% at 50% -6%, rgba(255, 143, 38, 0.1), transparent 70%), radial-gradient(ellipse 90% 60% at 50% 0%, #121f5a, transparent 75%);
   background-attachment: fixed;
 }
 
@@ -358,9 +358,9 @@ body {
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background:
-    radial-gradient(ellipse 60% 120% at 100% 0%, rgba(255, 154, 60, 0.14), transparent 70%),
+    radial-gradient(ellipse 60% 120% at 100% 0%, rgba(255, 143, 38, 0.14), transparent 70%),
     var(--bg-deep);
-  border-color: rgba(255, 154, 60, 0.3);
+  border-color: rgba(255, 143, 38, 0.3);
   box-shadow: none;
 }
 .hero h1 {
