@@ -119,6 +119,7 @@ export const PRONOSTICI_TABS: SubItem[] = [
   { label: 'Daily', link: '/pronostici' },
   { label: 'Fammi una multipla', link: '/pronostici', query: { tab: 'multipla' } },
   { label: 'Occasioni', link: '/pronostici', query: { tab: 'occasioni' } },
+  { label: 'Strategie', link: '/pronostici', query: { tab: 'strategie' } },
 ];
 
 export const MIO_ARCHIE_TABS: SubItem[] = [

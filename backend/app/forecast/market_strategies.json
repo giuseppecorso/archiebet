@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-10T08:16:22+00:00",
+ "generated_at": "2026-11-10T21:02:43+00:00",
  "leagues": 10,
  "tuning": {
   "from": "2012/13",
@@ -21,6 +21,9 @@
    "beats_close": false,
    "tuning": {
     "n": 31258,
+    "won": 13884,
+    "hit_rate": 0.4442,
+    "avg_price": 2.518,
     "roi": {
      "mean": -0.04856,
      "se": 0.00693,
@@ -34,6 +37,9 @@
    },
    "confirm": {
     "n": 19240,
+    "won": 8228,
+    "hit_rate": 0.4277,
+    "avg_price": 2.58,
     "roi": {
      "mean": -0.06985,
      "se": 0.00884,
@@ -55,6 +61,9 @@
    "beats_close": false,
    "tuning": {
     "n": 31258,
+    "won": 8599,
+    "hit_rate": 0.2751,
+    "avg_price": 3.672,
     "roi": {
      "mean": -0.04098,
      "se": 0.00904,
@@ -68,6 +77,9 @@
    },
    "confirm": {
     "n": 19240,
+    "won": 5192,
+    "hit_rate": 0.2699,
+    "avg_price": 3.704,
     "roi": {
      "mean": -0.0421,
      "se": 0.01164,
@@ -89,6 +101,9 @@
    "beats_close": false,
    "tuning": {
     "n": 31258,
+    "won": 8775,
+    "hit_rate": 0.2807,
+    "avg_price": 4.27,
     "roi": {
      "mean": -0.08906,
      "se": 0.00972,
@@ -102,6 +117,9 @@
    },
    "confirm": {
     "n": 19240,
+    "won": 5820,
+    "hit_rate": 0.3025,
+    "avg_price": 3.895,
     "roi": {
      "mean": -0.08519,
      "se": 0.01177,
@@ -123,6 +141,9 @@
    "beats_close": false,
    "tuning": {
     "n": 3455,
+    "won": 2625,
+    "hit_rate": 0.7598,
+    "avg_price": 1.308,
     "roi": {
      "mean": -0.01431,
      "se": 0.00958,
@@ -136,6 +157,9 @@
    },
    "confirm": {
     "n": 2136,
+    "won": 1601,
+    "hit_rate": 0.7495,
+    "avg_price": 1.329,
     "roi": {
      "mean": -0.00825,
      "se": 0.01256,
@@ -157,6 +181,9 @@
    "beats_close": false,
    "tuning": {
     "n": 10748,
+    "won": 1431,
+    "hit_rate": 0.1331,
+    "avg_price": 7.805,
     "roi": {
      "mean": -0.10672,
      "se": 0.02306,
@@ -170,6 +197,9 @@
    },
    "confirm": {
     "n": 6361,
+    "won": 852,
+    "hit_rate": 0.1339,
+    "avg_price": 7.089,
     "roi": {
      "mean": -0.13398,
      "se": 0.02825,
@@ -191,6 +221,9 @@
    "beats_close": false,
    "tuning": {
     "n": 9221,
+    "won": 2887,
+    "hit_rate": 0.3131,
+    "avg_price": 3.201,
     "roi": {
      "mean": -0.00192,
      "se": 0.01544,
@@ -204,6 +237,9 @@
    },
    "confirm": {
     "n": 5618,
+    "won": 1757,
+    "hit_rate": 0.3127,
+    "avg_price": 3.221,
     "roi": {
      "mean": 0.00193,
      "se": 0.01988,
@@ -225,6 +261,9 @@
    "beats_close": false,
    "tuning": {
     "n": 3686,
+    "won": 1826,
+    "hit_rate": 0.4954,
+    "avg_price": 1.989,
     "roi": {
      "mean": -0.05197,
      "se": 0.01629,
@@ -238,6 +277,9 @@
    },
    "confirm": {
     "n": 19229,
+    "won": 9463,
+    "hit_rate": 0.4921,
+    "avg_price": 1.998,
     "roi": {
      "mean": -0.05047,
      "se": 0.00717,
@@ -259,6 +301,9 @@
    "beats_close": false,
    "tuning": {
     "n": 3686,
+    "won": 1860,
+    "hit_rate": 0.5046,
+    "avg_price": 1.938,
     "roi": {
      "mean": -0.06688,
      "se": 0.01585,
@@ -272,6 +317,9 @@
    },
    "confirm": {
     "n": 19229,
+    "won": 9766,
+    "hit_rate": 0.5079,
+    "avg_price": 1.931,
     "roi": {
      "mean": -0.05795,
      "se": 0.00694,
@@ -293,6 +341,9 @@
    "beats_close": false,
    "tuning": {
     "n": 4697,
+    "won": 1182,
+    "hit_rate": 0.2516,
+    "avg_price": 3.831,
     "roi": {
      "mean": -0.09161,
      "se": 0.02358,
@@ -306,6 +357,9 @@
    },
    "confirm": {
     "n": 2960,
+    "won": 735,
+    "hit_rate": 0.2483,
+    "avg_price": 3.855,
     "roi": {
      "mean": -0.09099,
      "se": 0.02992,
@@ -327,6 +381,9 @@
    "beats_close": false,
    "tuning": {
     "n": 717,
+    "won": 332,
+    "hit_rate": 0.463,
+    "avg_price": 2.195,
     "roi": {
      "mean": -0.0459,
      "se": 0.04015,
@@ -340,6 +397,9 @@
    },
    "confirm": {
     "n": 464,
+    "won": 191,
+    "hit_rate": 0.4116,
+    "avg_price": 2.361,
     "roi": {
      "mean": -0.06965,
      "se": 0.05369,
@@ -361,6 +421,9 @@
    "beats_close": false,
    "tuning": {
     "n": 607,
+    "won": 272,
+    "hit_rate": 0.4481,
+    "avg_price": 2.386,
     "roi": {
      "mean": -0.08738,
      "se": 0.04617,
@@ -374,6 +437,9 @@
    },
    "confirm": {
     "n": 3226,
+    "won": 1523,
+    "hit_rate": 0.4721,
+    "avg_price": 2.256,
     "roi": {
      "mean": -0.04431,
      "se": 0.01949,
@@ -395,6 +461,9 @@
    "beats_close": true,
    "tuning": {
     "n": 431,
+    "won": 140,
+    "hit_rate": 0.3248,
+    "avg_price": 3.095,
     "roi": {
      "mean": -0.04715,
      "se": 0.06943,
@@ -408,6 +477,9 @@
    },
    "confirm": {
     "n": 271,
+    "won": 91,
+    "hit_rate": 0.3358,
+    "avg_price": 3.197,
     "roi": {
      "mean": 0.05218,
      "se": 0.09175,
@@ -429,6 +501,9 @@
    "beats_close": true,
    "tuning": {
     "n": 501,
+    "won": 279,
+    "hit_rate": 0.5569,
+    "avg_price": 2.161,
     "roi": {
      "mean": 0.08511,
      "se": 0.04662,
@@ -442,6 +517,9 @@
    },
    "confirm": {
     "n": 78,
+    "won": 45,
+    "hit_rate": 0.5769,
+    "avg_price": 2.062,
     "roi": {
      "mean": 0.14064,
      "se": 0.11431,

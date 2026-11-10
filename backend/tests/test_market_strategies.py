@@ -83,6 +83,7 @@ def test_consensus_rule_of_kaunitz():
 def test_pass_needs_positive_tuning_and_significant_confirmation():
     good = ms.part([ms.Bet(i, "2021/22", 3.0, i % 2 == 0, 0.0) for i in range(400)])
     assert good.roi.mean == pytest.approx(0.5)  # metà vinte a quota 3: torna 1,5 per ogni euro
+    assert good.hit_rate == pytest.approx(0.5) and good.avg_price == pytest.approx(3.0)
     assert ms.passed(good, good)
     bad = ms.part([ms.Bet(i, "2014/15", 2.0, i % 3 == 0, 0.0) for i in range(300)])
     assert bad.roi.mean < 0

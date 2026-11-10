@@ -193,6 +193,12 @@ class Part:
     n: int
     roi: Estimate | None
     clv: Estimate | None
+    won: int = 0  # giocate vinte
+    avg_price: float | None = None  # quota media
+
+    @property
+    def hit_rate(self) -> float | None:
+        return self.won / self.n if self.n else None
 
 
 def part(bets: Sequence[Bet]) -> Part:
@@ -201,7 +207,7 @@ def part(bets: Sequence[Bet]) -> Part:
     roi = clustered_mean([b.profit for b in bets], [b.cluster for b in bets])
     with_clv = [b for b in bets if b.clv is not None]
     clv = clustered_mean([b.clv for b in with_clv], [b.cluster for b in with_clv]) if with_clv else None  # type: ignore[misc]
-    return Part(len(bets), roi, clv)
+    return Part(len(bets), roi, clv, sum(b.won for b in bets), sum(b.price for b in bets) / len(bets))
 
 
 def passed(tuning: Part, confirm: Part) -> bool:
@@ -219,6 +225,11 @@ def _est(e: Estimate | None) -> dict | None:
     return {"mean": round(e.mean, 5), "se": round(e.std_error, 5) if math.isfinite(e.std_error) else None, "t": round(e.t, 2)}
 
 
+def _part_dict(p: Part) -> dict:
+    return {"n": p.n, "won": p.won, "hit_rate": round(p.hit_rate, 4) if p.hit_rate is not None else None,
+            "avg_price": round(p.avg_price, 3) if p.avg_price else None, "roi": _est(p.roi), "clv": _est(p.clv)}  # fmt: skip
+
+
 def evaluate(games: Sequence[Game]) -> list[dict]:
     """Ogni strategia in taratura e in conferma, pronta da salvare in JSON."""
     tune = [g for g in games if g.season < CONFIRM_FIRST]
@@ -228,7 +239,7 @@ def evaluate(games: Sequence[Game]) -> list[dict]:
         a, b = part(s.rule(tune)), part(s.rule(conf))
         out.append({
             "key": s.key, "name": s.name, "how": s.how, "price": s.price, "passed": passed(a, b), "beats_close": beats_close(a, b),
-            "tuning": {"n": a.n, "roi": _est(a.roi), "clv": _est(a.clv)},
-            "confirm": {"n": b.n, "roi": _est(b.roi), "clv": _est(b.clv)},
+            "tuning": _part_dict(a),
+            "confirm": _part_dict(b),
         })  # fmt: skip
     return out
