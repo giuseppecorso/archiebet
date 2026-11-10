@@ -13,6 +13,7 @@ Ultimo aggiornamento: 2026-11-09
 - [x] **D183: stile digitale calmo** (meno verde, niente bagliori, secondo colore viola-azzurro). Da confermare con Giuse: tonalità e pallone della home.
 - [x] **D184: Archie a cartone arancio** (logo, volo attorno al pallone, scena della lavagna da 5 s).
 - [x] **D185: tema app sportiva** (blu notte, arancio di Archie, verde solo per le vinte, niente griglie né macchina da scrivere, pallone con luce calda bassa). Da confermare con Giuse sul telefono.
+- [x] **D186: Archie al naturale** (gufo reale fulvo senza contorni da fumetto, stesse animazioni; logo e icone rifatti). Da confermare con Giuse.
 - [ ] Prossimi (chiesti da Giuse): Archie futuristico, animazione della multipla con lavagna digitale, bacheca come campo di calcio (IDEE); poi la prova sui movimenti delle quote.
 - [ ] Da fare: backup notturni del database fuori dal server (S3); rinnovo API-Football entro il 2026-11-20; sito vetrina e progetti del CV sul server; idea "tetto 2,20" da provare sull'archivio lungo (IDEE).
 
